@@ -5,12 +5,14 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { validateEnvironment } from './config/environment';
 import { HealthModule } from './health/health.module';
 import { SecurityModule } from './common/security/security.module';
+import { MailModule } from './common/mail/mail.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnvironment }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
     HealthModule,
     SecurityModule,
+    MailModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
