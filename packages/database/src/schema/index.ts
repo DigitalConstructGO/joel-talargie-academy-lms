@@ -24,6 +24,7 @@ const timestamps = {
 const tsvector = customType<{ data: string }>({ dataType: () => 'tsvector' });
 
 export const userStatus = pgEnum('user_status', ['ACTIVE', 'SUSPENDED', 'PENDING']);
+export const authProvider = pgEnum('auth_provider', ['LOCAL', 'GOOGLE']);
 export const courseStatus = pgEnum('course_status', ['DRAFT', 'PUBLISHED', 'ARCHIVED']);
 export const courseVisibility = pgEnum('course_visibility', ['PUBLIC', 'PRIVATE']);
 export const courseAccessType = pgEnum('course_access_type', ['FREE', 'PAID']);
@@ -51,12 +52,17 @@ export const users = pgTable(
     email: text('email').notNull(),
     emailNormalized: text('email_normalized').notNull(),
     passwordHash: text('password_hash').notNull(),
+    googleId: text('google_id'),
+    avatarUrl: text('avatar_url'),
+    provider: authProvider('provider').notNull().default('LOCAL'),
+    emailVerified: boolean('email_verified').notNull().default(false),
     status: userStatus('status').notNull().default('PENDING'),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
     ...timestamps,
   },
   (table) => [
     uniqueIndex('users_email_normalized_uidx').on(table.emailNormalized),
+    uniqueIndex('users_google_id_uidx').on(table.googleId),
     index('users_active_idx')
       .on(table.id)
       .where(sql`${table.status} = 'ACTIVE' AND ${table.archivedAt} IS NULL`),
@@ -95,6 +101,34 @@ export const refreshSessions = pgTable(
       .where(sql`${table.revokedAt} IS NULL`),
   ],
 );
+
+export const emailVerificationTokens = pgTable('email_verification_tokens', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  tokenHash: text('token_hash').notNull().unique(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+export const passwordResetTokens = pgTable('password_reset_tokens', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  tokenHash: text('token_hash').notNull().unique(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+export const loginAttempts = pgTable('login_attempts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  emailNormalized: text('email_normalized').notNull(),
+  successful: boolean('successful').notNull(),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const roles = pgTable('roles', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -516,6 +550,9 @@ export const schema = {
   users,
   userProfiles,
   refreshSessions,
+  emailVerificationTokens,
+  passwordResetTokens,
+  loginAttempts,
   roles,
   permissions,
   userRoles,

@@ -22,6 +22,20 @@
       "when": 1785576288162,
       "tag": "0002_dark_princess_powerful",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1785578215011,
+      "tag": "0003_open_skullbuster",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1785579076132,
+      "tag": "0004_romantic_mephisto",
+      "breakpoints": true
     }
   ]
 }

@@ -23,3 +23,4 @@ export {
   type ActivityLogRecord,
   type BackgroundJobRecord,
 } from './infrastructure.ts';
+export * from './infrastructure.ts';

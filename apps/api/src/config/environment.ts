@@ -12,6 +12,23 @@ export const environmentSchema = z
       .regex(/^\d+(?:kb|mb)$/i)
       .default('1mb'),
     BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(10).max(14).default(12),
+    JWT_ACCESS_SECRET: z
+      .string()
+      .min(32)
+      .default('development-access-secret-change-me-now'),
+    JWT_REFRESH_SECRET: z
+      .string()
+      .min(32)
+      .default('development-refresh-secret-change-me-now'),
+    JWT_ACCESS_TTL: z.string().default('15m'),
+    JWT_REFRESH_TTL: z.string().default('7d'),
+    AUTH_COOKIE_SECURE: z.stringbool().default(false),
+    GOOGLE_CLIENT_ID: z.string().default(''),
+    GOOGLE_CLIENT_SECRET: z.string().default(''),
+    GOOGLE_CALLBACK_URL: z
+      .string()
+      .url()
+      .default('http://localhost:5000/api/v1/auth/google/callback'),
     DATABASE_URL: z.string().default(''),
     DATABASE_DIRECT_URL: z.string().default(''),
     DATABASE_TEST_URL: z.string().default(''),
@@ -47,6 +64,26 @@ export const environmentSchema = z
     MAIL_ENABLED: z.stringbool().default(false),
   })
   .superRefine((environment, context) => {
+    if (
+      Boolean(environment.GOOGLE_CLIENT_ID) !==
+      Boolean(environment.GOOGLE_CLIENT_SECRET)
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['GOOGLE_CLIENT_ID'],
+        message: 'Google client ID and secret must be configured together',
+      });
+    }
+    if (
+      environment.NODE_ENV === 'production' &&
+      (!environment.GOOGLE_CLIENT_ID || !environment.GOOGLE_CLIENT_SECRET)
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['GOOGLE_CLIENT_ID'],
+        message: 'Google OAuth credentials are required in production',
+      });
+    }
     const validateUrl = (
       key: 'DATABASE_URL' | 'DATABASE_DIRECT_URL' | 'DATABASE_TEST_URL',
     ) => {
