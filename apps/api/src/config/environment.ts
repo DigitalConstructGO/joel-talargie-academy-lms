@@ -7,6 +7,20 @@ export const environmentSchema = z
     API_PORT: z.coerce.number().int().min(1).max(65535).default(4000),
     WEB_URL: z.string().url().default('http://localhost:3000'),
     BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(10).max(14).default(12),
+    DATABASE_URL: z.string().default(''),
+    DATABASE_DIRECT_URL: z.string().default(''),
+    DATABASE_TEST_URL: z.string().default(''),
+    DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).default(10),
+    DATABASE_CONNECTION_TIMEOUT_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(10_000),
+    DATABASE_IDLE_TIMEOUT_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(30_000),
     SMTP_HOST: z.string().default(''),
     SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
     SMTP_SECURE: z.stringbool().default(false),
@@ -28,6 +42,53 @@ export const environmentSchema = z
     MAIL_ENABLED: z.stringbool().default(false),
   })
   .superRefine((environment, context) => {
+    const validateUrl = (
+      key: 'DATABASE_URL' | 'DATABASE_DIRECT_URL' | 'DATABASE_TEST_URL',
+    ) => {
+      const value = environment[key];
+      if (!value) return;
+      try {
+        const url = new URL(value);
+        const sslMode = url.searchParams.get('sslmode');
+        if (
+          !['postgres:', 'postgresql:'].includes(url.protocol) ||
+          url.pathname.length <= 1 ||
+          !sslMode ||
+          ['disable', 'allow', 'prefer'].includes(sslMode)
+        )
+          throw new Error();
+      } catch {
+        context.addIssue({
+          code: 'custom',
+          path: [key],
+          message: 'must be a valid SSL PostgreSQL URL',
+        });
+      }
+    };
+
+    validateUrl('DATABASE_URL');
+    validateUrl('DATABASE_DIRECT_URL');
+    validateUrl('DATABASE_TEST_URL');
+    if (environment.NODE_ENV === 'production' && !environment.DATABASE_URL) {
+      context.addIssue({
+        code: 'custom',
+        path: ['DATABASE_URL'],
+        message: 'is required in production',
+      });
+    }
+    if (
+      environment.DATABASE_TEST_URL &&
+      [environment.DATABASE_URL, environment.DATABASE_DIRECT_URL].includes(
+        environment.DATABASE_TEST_URL,
+      )
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['DATABASE_TEST_URL'],
+        message: 'must use an isolated test database',
+      });
+    }
+
     if (!environment.MAIL_ENABLED) return;
 
     if (!environment.SMTP_HOST) {
@@ -78,7 +139,7 @@ export function validateEnvironment(
   const result = environmentSchema.safeParse(value);
   if (!result.success)
     throw new Error(
-      `Invalid application configuration: ${result.error.issues.map((i) => `${i.path.includes('SMTP_PASSWORD') ? 'SMTP configuration' : i.path.join('.')}: ${i.message}`).join('; ')}`,
+      `Invalid application configuration: ${result.error.issues.map((i) => `${i.path.some((part) => String(part).startsWith('DATABASE_')) ? 'Database configuration' : i.path.includes('SMTP_PASSWORD') ? 'SMTP configuration' : i.path.join('.')}: ${i.message}`).join('; ')}`,
     );
   return result.data;
 }

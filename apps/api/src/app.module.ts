@@ -6,6 +6,7 @@ import { validateEnvironment } from './config/environment';
 import { HealthModule } from './health/health.module';
 import { SecurityModule } from './common/security/security.module';
 import { MailModule } from './common/mail/mail.module';
+import { DatabaseModule } from './common/database/database.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnvironment }),
@@ -13,6 +14,7 @@ import { MailModule } from './common/mail/mail.module';
     HealthModule,
     SecurityModule,
     MailModule,
+    DatabaseModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

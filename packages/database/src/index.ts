@@ -1,1 +1,16 @@
-/** Database integration is intentionally deferred to Phase 2. */ export {};
+export {
+  assertIsolatedTestDatabase,
+  getDirectDatabaseUrl,
+  validateDatabaseUrl,
+  type DatabaseUrlOptions,
+} from './config.ts';
+export { schema } from './schema/index.ts';
+export {
+  MAX_PAGE_SIZE,
+  claimBackgroundJobsQuery,
+  pendingPaymentsQuery,
+  publicCourseCatalogQuery,
+  unreadNotificationsQuery,
+  type AcademyDatabase,
+  type DateCursor,
+} from './queries.ts';

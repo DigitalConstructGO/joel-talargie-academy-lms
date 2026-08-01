@@ -1,10 +1,16 @@
 # Architecture overview
 
-The system is a TypeScript npm-workspace modular monolith. Next.js owns the browser interface, NestJS exposes a versioned REST API, and `@joel-academy/contracts` is the single source for wire contracts. Feature-based Nest modules will preserve clean boundaries. Phase 1 has no persistence layer.
+The system is a TypeScript npm-workspace modular monolith. Next.js owns the browser interface, NestJS exposes a versioned REST API, and `@joel-academy/contracts` is the single source for wire contracts. Feature-based Nest modules preserve clean boundaries.
+
+## Database
+
+Neon PostgreSQL is the primary development and production database. The API creates one `pg.Pool` per NestJS process using the pooled `DATABASE_URL`, wraps it with `drizzle-orm/node-postgres`, and closes it during application shutdown. Drizzle Kit, migrations, checks, and controlled seed commands use only the direct `DATABASE_DIRECT_URL`. Neither URL is available to Next.js, logged, or returned through an API.
+
+Automated database integration tests must use `DATABASE_TEST_URL` backed by a separate Neon branch/database or optional local PostgreSQL test container. Test startup rejects URLs shared with runtime or migrations. Remote reset/drop-all commands are deliberately absent.
 
 ## Frontend state
 
-Zustand manages limited, non-persisted client-side interface state. Native `fetch` communicates with the REST API and health requests retain `cache: "no-store"`; Zustand does not cache server responses. PostgreSQL remains the future source of truth for business data. Passwords, refresh tokens, payment details, and other sensitive authentication information are never stored in Zustand.
+Zustand manages limited, non-persisted client-side interface state. Native `fetch` communicates with the REST API and health requests retain `cache: "no-store"`; Zustand does not cache server responses. PostgreSQL is the source of truth for business data. Passwords, refresh tokens, payment details, and other sensitive authentication information are never stored in Zustand.
 
 The Phase 1 frontend stack is Next.js, React, TypeScript, Tailwind CSS, Shadcn UI, Zustand, React Hook Form, Zod, TanStack React Table, Recharts, Lucide React, Sonner, and native fetch.
 
