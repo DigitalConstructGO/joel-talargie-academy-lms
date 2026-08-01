@@ -12,4 +12,9 @@ export class HealthController {
   getHealth() {
     return this.health.getHealth();
   }
+  @Get('database')
+  @ApiOkResponse({ description: 'Sanitized database connectivity status' })
+  getDatabaseHealth() {
+    return this.health.getDatabaseHealth();
+  }
 }

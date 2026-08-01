@@ -14,3 +14,12 @@ export {
   type AcademyDatabase,
   type DateCursor,
 } from './queries.ts';
+export {
+  checkDatabaseConnection,
+  createDatabaseClient,
+  insertActivityLog,
+  insertBackgroundJob,
+  updateBackgroundJobStatus,
+  type ActivityLogRecord,
+  type BackgroundJobRecord,
+} from './infrastructure.ts';

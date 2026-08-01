@@ -1,5 +1,5 @@
 import { Inject, Injectable, OnApplicationShutdown } from '@nestjs/common';
-import { sql } from 'drizzle-orm';
+import { checkDatabaseConnection } from '@joel-academy/database';
 import type { Pool } from 'pg';
 import { DATABASE_CLIENT, DATABASE_POOL } from './database.constants';
 import type { AcademyDatabase } from './database.types';
@@ -22,7 +22,7 @@ export class DatabaseService implements OnApplicationShutdown {
   async checkConnection(): Promise<DatabaseConnectionStatus> {
     if (!this.database) return 'not-configured';
     try {
-      await this.database.execute(sql`select 1`);
+      await checkDatabaseConnection(this.database);
       return 'available';
     } catch {
       return 'unavailable';

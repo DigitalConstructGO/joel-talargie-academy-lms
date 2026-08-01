@@ -15,6 +15,13 @@
       "when": 1785574366888,
       "tag": "0001_smiling_drax",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785576288162,
+      "tag": "0002_dark_princess_powerful",
+      "breakpoints": true
     }
   ]
 }

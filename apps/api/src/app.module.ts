@@ -7,6 +7,13 @@ import { HealthModule } from './health/health.module';
 import { SecurityModule } from './common/security/security.module';
 import { MailModule } from './common/mail/mail.module';
 import { DatabaseModule } from './common/database/database.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { JobsModule } from './modules/jobs/jobs.module';
+import { StorageModule } from './modules/storage/storage.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
+import { RolesModule } from './modules/roles/roles.module';
+import { PermissionsModule } from './modules/permissions/permissions.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnvironment }),
@@ -15,6 +22,13 @@ import { DatabaseModule } from './common/database/database.module';
     SecurityModule,
     MailModule,
     DatabaseModule,
+    AuditModule,
+    JobsModule,
+    StorageModule,
+    AuthModule,
+    UsersModule,
+    RolesModule,
+    PermissionsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

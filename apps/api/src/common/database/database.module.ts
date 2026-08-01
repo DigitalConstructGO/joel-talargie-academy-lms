@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { schema, validateDatabaseUrl } from '@joel-academy/database';
-import { drizzle } from 'drizzle-orm/node-postgres';
+import {
+  createDatabaseClient,
+  validateDatabaseUrl,
+} from '@joel-academy/database';
 import { Pool } from 'pg';
 import type { Environment } from '../../config/environment';
 import { DATABASE_CLIENT, DATABASE_POOL } from './database.constants';
@@ -26,7 +28,7 @@ function createPool(config: ConfigService<Environment, true>): Pool | null {
 }
 
 function createDatabase(pool: Pool | null): AcademyDatabase | null {
-  return pool ? drizzle({ client: pool, schema }) : null;
+  return pool ? createDatabaseClient(pool) : null;
 }
 
 @Module({

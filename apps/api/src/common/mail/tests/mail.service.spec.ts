@@ -8,6 +8,8 @@ const enabledEnvironment: Environment = {
   NODE_ENV: 'test',
   API_PORT: 4000,
   WEB_URL: 'http://localhost:3000',
+  TRUST_PROXY: false,
+  BODY_LIMIT: '1mb',
   BCRYPT_SALT_ROUNDS: 12,
   DATABASE_URL: '',
   DATABASE_DIRECT_URL: '',

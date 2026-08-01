@@ -82,6 +82,9 @@
     ],
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
+    "moduleNameMapper": {
+      "^@joel-academy/database$": "<rootDir>/../test/database.mock.ts"
+    },
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },

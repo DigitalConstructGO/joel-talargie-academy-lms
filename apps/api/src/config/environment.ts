@@ -6,6 +6,11 @@ export const environmentSchema = z
       .default('development'),
     API_PORT: z.coerce.number().int().min(1).max(65535).default(4000),
     WEB_URL: z.string().url().default('http://localhost:3000'),
+    TRUST_PROXY: z.stringbool().default(false),
+    BODY_LIMIT: z
+      .string()
+      .regex(/^\d+(?:kb|mb)$/i)
+      .default('1mb'),
     BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(10).max(14).default(12),
     DATABASE_URL: z.string().default(''),
     DATABASE_DIRECT_URL: z.string().default(''),

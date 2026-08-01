@@ -462,6 +462,8 @@ export const activityLogs = pgTable(
     entityId: uuid('entity_id'),
     before: jsonb('before'),
     after: jsonb('after'),
+    ipAddress: text('ip_address'),
+    userAgent: text('user_agent'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [

@@ -26,6 +26,13 @@ describe('API (e2e)', () => {
     expect(result.body.data.status).toBe('ok');
     expect(result.body.error).toBeNull();
   });
+  it('GET /api/v1/health/database returns a sanitized status', async () => {
+    const result = await request(app.getHttpServer())
+      .get('/api/v1/health/database')
+      .expect(200);
+    expect(result.body.data.status).toBe('not-configured');
+    expect(JSON.stringify(result.body)).not.toContain('DATABASE_URL');
+  });
   it('formats global errors', async () => {
     const result = await request(app.getHttpServer())
       .get('/api/v1/missing')
