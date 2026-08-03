@@ -106,6 +106,22 @@ async function run(): Promise<void> {
             { key: 'payment.support_contact', value: 'Configure academy support contact' },
           ])
           .onConflictDoNothing({ target: schema.platformSettings.key });
+        await tx
+          .insert(schema.certificateTemplates)
+          .values({
+            name: 'Joel Talargie Academy Default',
+            version: 1,
+            isActive: true,
+            isDefault: true,
+            configuration: {
+              academyName: 'Joel Talargie Academy',
+              title: 'Certificate of Completion',
+              primaryColor: '#15324A',
+              accentColor: '#C9A227',
+              footerText: 'Issued by Joel Talargie Academy',
+            },
+          })
+          .onConflictDoNothing();
       });
       process.stdout.write('RBAC roles and permission catalog seeded idempotently.\n');
       return;

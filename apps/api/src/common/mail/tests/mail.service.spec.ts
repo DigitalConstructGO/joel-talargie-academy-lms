@@ -42,6 +42,12 @@ const enabledEnvironment: Environment = {
   STORAGE_ACCESS_KEY: '',
   STORAGE_SECRET_KEY: '',
   STORAGE_FORCE_PATH_STYLE: false,
+  CERTIFICATE_PUBLIC_BASE_URL: 'http://localhost:3000/certificates/verify',
+  CERTIFICATE_WORKER_ENABLED: false,
+  CERTIFICATE_WORKER_POLL_MS: 5000,
+  CERTIFICATE_WORKER_BATCH_SIZE: 2,
+  CERTIFICATE_JOB_LOCK_TIMEOUT_MS: 300_000,
+  CERTIFICATE_JOB_MAX_ATTEMPTS: 5,
 };
 
 function createService(overrides: Partial<Environment> = {}) {

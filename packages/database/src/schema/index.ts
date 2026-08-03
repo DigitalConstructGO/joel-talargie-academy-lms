@@ -68,7 +68,12 @@ export const progressStatus = pgEnum('progress_status', [
   'COMPLETED',
 ]);
 export const paymentStatus = pgEnum('payment_status', ['PENDING', 'APPROVED', 'DECLINED']);
-export const certificateStatus = pgEnum('certificate_status', ['PENDING', 'GENERATED', 'REVOKED']);
+export const certificateStatus = pgEnum('certificate_status', [
+  'PENDING',
+  'GENERATED',
+  'FAILED',
+  'REVOKED',
+]);
 export const notificationStatus = pgEnum('notification_status', ['PENDING', 'SENT', 'FAILED']);
 export const notificationChannel = pgEnum('notification_channel', ['IN_APP', 'EMAIL']);
 export const jobStatus = pgEnum('job_status', ['PENDING', 'RUNNING', 'COMPLETED', 'FAILED']);
@@ -607,9 +612,18 @@ export const certificateTemplates = pgTable(
     name: text('name').notNull(),
     version: integer('version').notNull(),
     configuration: jsonb('configuration').notNull(),
+    templateStorageKey: text('template_storage_key'),
+    isActive: boolean('is_active').notNull().default(true),
+    isDefault: boolean('is_default').notNull().default(false),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'restrict' }),
     ...timestamps,
   },
-  (table) => [unique('certificate_templates_name_version_uq').on(table.name, table.version)],
+  (table) => [
+    unique('certificate_templates_name_version_uq').on(table.name, table.version),
+    uniqueIndex('certificate_templates_one_default_uq')
+      .on(table.isDefault)
+      .where(sql`${table.isDefault} = true AND ${table.isActive} = true`),
+  ],
 );
 export const certificates = pgTable(
   'certificates',
@@ -625,9 +639,23 @@ export const certificates = pgTable(
     verificationToken: text('verification_token').notNull().unique(),
     studentNameAtIssue: text('student_name_at_issue').notNull(),
     courseTitleAtIssue: text('course_title_at_issue').notNull(),
+    completionDateSnapshot: timestamp('completion_date_snapshot', { withTimezone: true }),
+    templateNameSnapshot: text('template_name_snapshot'),
+    templateVersionSnapshot: integer('template_version_snapshot'),
+    pdfStorageKey: text('pdf_storage_key'),
     status: certificateStatus('status').notNull().default('PENDING'),
     issuedAt: timestamp('issued_at', { withTimezone: true }),
+    generatedAt: timestamp('generated_at', { withTimezone: true }),
+    generatedBy: uuid('generated_by').references(() => users.id, { onDelete: 'restrict' }),
+    generationVersion: integer('generation_version').notNull().default(1),
+    pdfChecksum: text('pdf_checksum'),
+    pdfFileSize: integer('pdf_file_size'),
+    pdfMimeType: text('pdf_mime_type'),
+    failureCode: text('failure_code'),
+    failureMessage: text('failure_message'),
+    lastGenerationAttemptAt: timestamp('last_generation_attempt_at', { withTimezone: true }),
     revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    revocationReason: text('revocation_reason'),
     ...timestamps,
   },
   (table) => [
@@ -636,6 +664,43 @@ export const certificates = pgTable(
       .on(table.issuedAt.desc(), table.id)
       .where(sql`${table.status} = 'GENERATED' AND ${table.revokedAt} IS NULL`),
     index('certificates_template_idx').on(table.templateId),
+    uniqueIndex('certificates_active_enrollment_uq')
+      .on(table.enrollmentId)
+      .where(sql`${table.status} <> 'REVOKED'`),
+    index('certificates_status_updated_idx').on(table.status, table.updatedAt.desc(), table.id),
+  ],
+);
+
+export const certificateFiles = pgTable(
+  'certificate_files',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    certificateId: uuid('certificate_id')
+      .notNull()
+      .references(() => certificates.id, { onDelete: 'restrict' }),
+    version: integer('version').notNull(),
+    storageKey: text('storage_key').notNull(),
+    originalFileName: text('original_file_name').notNull(),
+    mimeType: text('mime_type').notNull(),
+    fileSize: integer('file_size').notNull(),
+    checksum: text('checksum').notNull(),
+    isCurrent: boolean('is_current').notNull().default(true),
+    generatedBy: uuid('generated_by').references(() => users.id, { onDelete: 'restrict' }),
+    generatedAt: timestamp('generated_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique('certificate_files_certificate_version_uq').on(table.certificateId, table.version),
+    uniqueIndex('certificate_files_one_current_uq')
+      .on(table.certificateId)
+      .where(sql`${table.isCurrent} = true`),
+    index('certificate_files_certificate_generated_idx').on(
+      table.certificateId,
+      table.generatedAt.desc(),
+      table.id,
+    ),
+    check('certificate_files_version_check', sql`${table.version} > 0`),
+    check('certificate_files_size_check', sql`${table.fileSize} > 0`),
   ],
 );
 export const certificateEvents = pgTable(
@@ -647,6 +712,8 @@ export const certificateEvents = pgTable(
       .references(() => certificates.id, { onDelete: 'cascade' }),
     actorId: uuid('actor_id').references(() => users.id, { onDelete: 'restrict' }),
     action: text('action').notNull(),
+    reason: text('reason'),
+    metadata: jsonb('metadata'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -738,8 +805,10 @@ export const backgroundJobs = pgTable(
     priority: integer('priority').notNull().default(100),
     scheduledAt: timestamp('scheduled_at', { withTimezone: true }).notNull().defaultNow(),
     lockedAt: timestamp('locked_at', { withTimezone: true }),
+    lockedBy: text('locked_by'),
     attempts: integer('attempts').notNull().default(0),
     lastError: text('last_error'),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -782,6 +851,7 @@ export const schema = {
   certificateTemplates,
   certificates,
   certificateEvents,
+  certificateFiles,
   notifications,
   activityLogs,
   platformSettings,

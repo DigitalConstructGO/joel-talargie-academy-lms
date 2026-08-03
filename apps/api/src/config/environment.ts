@@ -68,6 +68,34 @@ export const environmentSchema = z
     STORAGE_ACCESS_KEY: z.string().default(''),
     STORAGE_SECRET_KEY: z.string().default(''),
     STORAGE_FORCE_PATH_STYLE: z.stringbool().default(false),
+    CERTIFICATE_PUBLIC_BASE_URL: z
+      .string()
+      .url()
+      .default('http://localhost:3000/certificates/verify'),
+    CERTIFICATE_WORKER_ENABLED: z.stringbool().default(false),
+    CERTIFICATE_WORKER_POLL_MS: z.coerce
+      .number()
+      .int()
+      .min(1000)
+      .max(60000)
+      .default(5000),
+    CERTIFICATE_WORKER_BATCH_SIZE: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(10)
+      .default(2),
+    CERTIFICATE_JOB_LOCK_TIMEOUT_MS: z.coerce
+      .number()
+      .int()
+      .min(60000)
+      .default(300000),
+    CERTIFICATE_JOB_MAX_ATTEMPTS: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(20)
+      .default(5),
   })
   .superRefine((environment, context) => {
     if (

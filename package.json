@@ -29,6 +29,8 @@
     "db:seed": "npm run db:seed -w @joel-academy/database",
     "db:seed:performance": "npm run db:seed:performance -w @joel-academy/database",
     "db:check": "npm run db:check -w @joel-academy/database",
+    "worker:certificates": "npm run worker:certificates -w @joel-academy/api",
+    "certificates:reconcile": "npm run certificates:reconcile -w @joel-academy/api",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "clean": "rimraf **/dist **/.next **/coverage playwright-report test-results",
