@@ -16,6 +16,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
+import { AuthorizationModule } from './modules/authorization/authorization.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnvironment }),
@@ -31,6 +32,7 @@ import { PermissionsModule } from './modules/permissions/permissions.module';
     UsersModule,
     RolesModule,
     PermissionsModule,
+    AuthorizationModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

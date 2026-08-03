@@ -24,3 +24,5 @@ export {
   type BackgroundJobRecord,
 } from './infrastructure.ts';
 export * from './infrastructure.ts';
+export * from './rbac.ts';
+export * from './permission-catalog.ts';

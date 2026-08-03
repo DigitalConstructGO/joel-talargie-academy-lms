@@ -24,6 +24,18 @@ export const consumeEmailVerification = jest.fn();
 export const changeUserPassword = jest.fn();
 export const findAuthUserByGoogleId = jest.fn();
 export const upsertGoogleUser = jest.fn();
+export const PERMISSION_CODES = ['permissions.read', 'roles.read'];
+export const getAuthorizationContext = jest.fn();
+export const listPermissionCatalog = jest.fn();
+export const listRoles = jest.fn();
+export const getRoleDetails = jest.fn();
+export const createRoleWithPermissions = jest.fn();
+export const updateCustomRole = jest.fn();
+export const replaceCustomRolePermissions = jest.fn();
+export const archiveCustomRole = jest.fn();
+export const listUserRoles = jest.fn();
+export const assignRoleToUser = jest.fn();
+export const removeRoleFromUser = jest.fn();
 
 export function validateDatabaseUrl(value: string): string {
   return value;

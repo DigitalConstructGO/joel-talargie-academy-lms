@@ -37,11 +37,19 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const details = validationMessages.map((validationMessage) => ({
       message: validationMessage,
     }));
+    const errorCode =
+      typeof raw === 'object' &&
+      raw &&
+      'code' in raw &&
+      typeof (raw as { code?: unknown }).code === 'string'
+        ? (raw as { code: string }).code
+        : undefined;
     response.status(status).json(
       ResponseBuilder.error(
-        status === HttpStatus.BAD_REQUEST && details.length
-          ? 'VALIDATION_ERROR'
-          : `HTTP_${status}`,
+        errorCode ??
+          (status === HttpStatus.BAD_REQUEST && details.length
+            ? 'VALIDATION_ERROR'
+            : `HTTP_${status}`),
         message,
         details,
         {

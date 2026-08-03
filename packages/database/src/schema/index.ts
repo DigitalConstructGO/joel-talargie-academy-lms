@@ -63,6 +63,7 @@ export const users = pgTable(
   (table) => [
     uniqueIndex('users_email_normalized_uidx').on(table.emailNormalized),
     uniqueIndex('users_google_id_uidx').on(table.googleId),
+    index('users_status_idx').on(table.status),
     index('users_active_idx')
       .on(table.id)
       .where(sql`${table.status} = 'ACTIVE' AND ${table.archivedAt} IS NULL`),
@@ -130,16 +131,26 @@ export const loginAttempts = pgTable('login_attempts', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const roles = pgTable('roles', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  code: text('code').notNull().unique(),
-  name: text('name').notNull().unique(),
-  description: text('description'),
-});
+export const roles = pgTable(
+  'roles',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    code: text('code').notNull().unique(),
+    name: text('name').notNull().unique(),
+    description: text('description'),
+    isSystem: boolean('is_system').notNull().default(false),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('roles_active_code_idx').on(table.archivedAt, table.code)],
+);
 export const permissions = pgTable('permissions', {
   id: uuid('id').primaryKey().defaultRandom(),
   code: text('code').notNull().unique(),
+  module: text('module').notNull(),
   description: text('description'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 export const userRoles = pgTable(
   'user_roles',
@@ -151,6 +162,7 @@ export const userRoles = pgTable(
       .notNull()
       .references(() => roles.id, { onDelete: 'restrict' }),
     assignedAt: timestamp('assigned_at', { withTimezone: true }).notNull().defaultNow(),
+    assignedBy: uuid('assigned_by').references(() => users.id, { onDelete: 'restrict' }),
   },
   (table) => [
     primaryKey({ columns: [table.userId, table.roleId] }),
@@ -166,6 +178,7 @@ export const rolePermissions = pgTable(
     permissionId: uuid('permission_id')
       .notNull()
       .references(() => permissions.id, { onDelete: 'restrict' }),
+    assignedAt: timestamp('assigned_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     primaryKey({ columns: [table.roleId, table.permissionId] }),
