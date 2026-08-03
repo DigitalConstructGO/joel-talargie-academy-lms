@@ -508,6 +508,8 @@ export const lessonProgress = pgTable(
       .references(() => lessons.id, { onDelete: 'restrict' }),
     status: progressStatus('status').notNull().default('NOT_STARTED'),
     progressPercent: integer('progress_percent').notNull().default(0),
+    lastPositionSeconds: integer('last_position_seconds'),
+    firstOpenedAt: timestamp('first_opened_at', { withTimezone: true }),
     lastViewedAt: timestamp('last_viewed_at', { withTimezone: true }),
     completedAt: timestamp('completed_at', { withTimezone: true }),
     ...timestamps,
@@ -517,6 +519,14 @@ export const lessonProgress = pgTable(
     index('lesson_progress_lesson_idx').on(table.lessonId),
     index('lesson_progress_enrollment_status_idx').on(table.enrollmentId, table.status),
     index('lesson_progress_recent_idx').on(table.enrollmentId, table.lastViewedAt.desc(), table.id),
+    index('lesson_progress_completed_idx')
+      .on(table.completedAt.desc(), table.id)
+      .where(sql`${table.status} = 'COMPLETED'`),
+    check(
+      'lesson_progress_position_check',
+      sql`${table.lastPositionSeconds} IS NULL OR ${table.lastPositionSeconds} >= 0`,
+    ),
+    check('lesson_progress_percent_check', sql`${table.progressPercent} BETWEEN 0 AND 100`),
   ],
 );
 
@@ -694,6 +704,7 @@ export const backgroundJobs = pgTable(
     jobType: text('job_type').notNull(),
     status: jobStatus('status').notNull().default('PENDING'),
     payload: jsonb('payload').notNull(),
+    deduplicationKey: text('deduplication_key'),
     priority: integer('priority').notNull().default(100),
     scheduledAt: timestamp('scheduled_at', { withTimezone: true }).notNull().defaultNow(),
     lockedAt: timestamp('locked_at', { withTimezone: true }),
@@ -708,6 +719,9 @@ export const backgroundJobs = pgTable(
       .where(sql`${table.status} = 'PENDING'`),
     index('background_jobs_locked_idx').on(table.status, table.lockedAt),
     index('background_jobs_type_schedule_idx').on(table.jobType, table.status, table.scheduledAt),
+    uniqueIndex('background_jobs_deduplication_key_uq')
+      .on(table.deduplicationKey)
+      .where(sql`${table.deduplicationKey} IS NOT NULL`),
   ],
 );
 

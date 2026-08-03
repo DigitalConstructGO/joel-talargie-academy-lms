@@ -71,6 +71,13 @@
       "when": 1785759129756,
       "tag": "0009_fantastic_garia",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1785759973621,
+      "tag": "0010_known_yellow_claw",
+      "breakpoints": true
     }
   ]
 }
