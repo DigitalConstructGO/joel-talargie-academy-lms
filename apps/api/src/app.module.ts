@@ -19,6 +19,7 @@ import { RolesModule } from './modules/roles/roles.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { AuthorizationModule } from './modules/authorization/authorization.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
+import { EnrollmentsModule } from './modules/enrollments/enrollments.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -44,6 +45,7 @@ import { CatalogModule } from './modules/catalog/catalog.module';
     PermissionsModule,
     AuthorizationModule,
     CatalogModule,
+    EnrollmentsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

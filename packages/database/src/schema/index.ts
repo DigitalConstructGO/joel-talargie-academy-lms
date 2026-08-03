@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   boolean,
+  check,
   customType,
   index,
   integer,
@@ -53,10 +54,13 @@ export const resourceVisibility = pgEnum('resource_visibility', [
   'ADMIN_ONLY',
 ]);
 export const enrollmentStatus = pgEnum('enrollment_status', [
-  'PENDING',
-  'ACTIVE',
+  'PENDING_PAYMENT',
+  'WAITING_APPROVAL',
+  'ENROLLED',
+  'IN_PROGRESS',
   'COMPLETED',
   'CANCELLED',
+  'ACCESS_REVOKED',
 ]);
 export const progressStatus = pgEnum('progress_status', [
   'NOT_STARTED',
@@ -447,13 +451,21 @@ export const enrollments = pgTable(
       .notNull()
       .references(() => courses.id, { onDelete: 'restrict' }),
     lastLessonId: uuid('last_lesson_id').references(() => lessons.id, { onDelete: 'set null' }),
-    status: enrollmentStatus('status').notNull().default('PENDING'),
+    status: enrollmentStatus('status').notNull().default('PENDING_PAYMENT'),
     priceAtEnrollment: numeric('price_at_enrollment', { precision: 12, scale: 2 }).notNull(),
     currencyAtEnrollment: text('currency_at_enrollment').notNull(),
     discountAtEnrollment: numeric('discount_at_enrollment', { precision: 12, scale: 2 })
       .notNull()
       .default('0'),
+    progressPercentage: integer('progress_percentage').notNull().default(0),
+    enrolledAt: timestamp('enrolled_at', { withTimezone: true }),
+    startedAt: timestamp('started_at', { withTimezone: true }),
     completedAt: timestamp('completed_at', { withTimezone: true }),
+    cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+    cancelledBy: uuid('cancelled_by').references(() => users.id, { onDelete: 'restrict' }),
+    cancellationReason: text('cancellation_reason'),
+    accessRevokedAt: timestamp('access_revoked_at', { withTimezone: true }),
+    accessRevocationReason: text('access_revocation_reason'),
     ...timestamps,
   },
   (table) => [
@@ -465,7 +477,23 @@ export const enrollments = pgTable(
       table.id,
     ),
     index('enrollments_course_status_idx').on(table.courseId, table.status),
+    index('enrollments_student_created_idx').on(table.studentId, table.createdAt.desc(), table.id),
+    index('enrollments_course_created_idx').on(table.courseId, table.createdAt.desc(), table.id),
+    index('enrollments_status_created_idx').on(table.status, table.createdAt.desc(), table.id),
+    index('enrollments_status_updated_idx').on(table.status, table.updatedAt.desc(), table.id),
+    index('enrollments_capacity_idx')
+      .on(table.courseId, table.status)
+      .where(
+        sql`${table.status} IN ('PENDING_PAYMENT', 'WAITING_APPROVAL', 'ENROLLED', 'IN_PROGRESS', 'COMPLETED')`,
+      ),
+    index('enrollments_cancelled_by_idx').on(table.cancelledBy),
     index('enrollments_last_lesson_idx').on(table.lastLessonId),
+    check(
+      'enrollments_progress_percentage_check',
+      sql`${table.progressPercentage} BETWEEN 0 AND 100`,
+    ),
+    check('enrollments_price_snapshot_check', sql`${table.priceAtEnrollment} >= 0`),
+    check('enrollments_discount_snapshot_check', sql`${table.discountAtEnrollment} >= 0`),
   ],
 );
 export const lessonProgress = pgTable(

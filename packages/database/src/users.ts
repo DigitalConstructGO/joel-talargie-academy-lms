@@ -329,7 +329,7 @@ export const getUserRecordSummary = async (db: AcademyDatabase, userId: string) 
       .select({
         enrollmentCount: count(),
         activeEnrollmentCount: count(
-          sql`case when ${schema.enrollments.status} = 'ACTIVE' then 1 end`,
+          sql`case when ${schema.enrollments.status} in ('ENROLLED', 'IN_PROGRESS') then 1 end`,
         ),
         completedEnrollmentCount: count(
           sql`case when ${schema.enrollments.status} = 'COMPLETED' then 1 end`,
