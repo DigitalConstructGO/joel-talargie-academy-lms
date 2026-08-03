@@ -61,7 +61,7 @@ export type AuthUserRecord = {
   id: string;
   email: string;
   passwordHash: string;
-  status: 'ACTIVE' | 'SUSPENDED' | 'PENDING';
+  status: 'ACTIVE' | 'SUSPENDED' | 'PENDING' | 'PENDING_VERIFICATION' | 'ARCHIVED';
   firstName: string;
   lastName: string;
   roles: string[];
@@ -137,6 +137,19 @@ export const upsertGoogleUser = async (
           updatedAt: new Date(),
         })
         .where(eq(schema.users.id, googleMatch.id));
+      await tx
+        .insert(schema.oauthAccounts)
+        .values({
+          userId: googleMatch.id,
+          provider: 'GOOGLE',
+          providerAccountId: input.googleId,
+          providerEmail: input.email,
+          lastLoginAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: [schema.oauthAccounts.provider, schema.oauthAccounts.providerAccountId],
+          set: { providerEmail: input.email, lastLoginAt: new Date() },
+        });
       return hydrateAuthUser(database, {
         ...googleMatch,
         avatarUrl: input.avatarUrl ?? null,
@@ -159,6 +172,18 @@ export const upsertGoogleUser = async (
           updatedAt: new Date(),
         })
         .where(eq(schema.users.id, emailMatch.id));
+      await tx
+        .insert(schema.oauthAccounts)
+        .values({
+          userId: emailMatch.id,
+          provider: 'GOOGLE',
+          providerAccountId: input.googleId,
+          providerEmail: input.email,
+        })
+        .onConflictDoUpdate({
+          target: [schema.oauthAccounts.provider, schema.oauthAccounts.providerAccountId],
+          set: { providerEmail: input.email, lastLoginAt: new Date() },
+        });
       return hydrateAuthUser(database, {
         ...emailMatch,
         googleId: input.googleId,
@@ -185,6 +210,12 @@ export const upsertGoogleUser = async (
     await tx
       .insert(schema.userProfiles)
       .values({ userId: created.id, firstName: input.firstName, lastName: input.lastName });
+    await tx.insert(schema.oauthAccounts).values({
+      userId: created.id,
+      provider: 'GOOGLE',
+      providerAccountId: input.googleId,
+      providerEmail: input.email,
+    });
     let role = await tx.query.roles.findFirst({ where: eq(schema.roles.code, 'STUDENT') });
     if (!role)
       [role] = await tx
@@ -234,7 +265,13 @@ export const createStudentUser = async (
   });
 export const createRefreshSession = async (
   database: AcademyDatabase,
-  input: { userId: string; tokenHash: string; expiresAt: Date },
+  input: {
+    userId: string;
+    tokenHash: string;
+    expiresAt: Date;
+    ipAddress?: string;
+    userAgent?: string;
+  },
 ) => {
   const [session] = await database
     .insert(schema.refreshSessions)
@@ -251,7 +288,7 @@ export const rotateRefreshSession = async (
 ) => {
   const rows = await database
     .update(schema.refreshSessions)
-    .set({ tokenHash, expiresAt })
+    .set({ tokenHash, expiresAt, lastUsedAt: new Date() })
     .where(
       and(
         eq(schema.refreshSessions.id, id),
@@ -293,7 +330,7 @@ export const recordLoginAttempt = async (
 export const updateLastLogin = async (database: AcademyDatabase, userId: string) => {
   await database
     .update(schema.users)
-    .set({ updatedAt: new Date() })
+    .set({ lastLoginAt: new Date(), updatedAt: new Date() })
     .where(eq(schema.users.id, userId));
 };
 export const createPasswordReset = async (

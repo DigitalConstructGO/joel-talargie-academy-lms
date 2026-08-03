@@ -36,6 +36,17 @@ export const archiveCustomRole = jest.fn();
 export const listUserRoles = jest.fn();
 export const assignRoleToUser = jest.fn();
 export const removeRoleFromUser = jest.fn();
+export const getSafeUser = jest.fn();
+export const updateSafeProfile = jest.fn();
+export const getUserPreferences = jest.fn();
+export const updateUserPreferences = jest.fn();
+export const listActiveSessions = jest.fn();
+export const revokeOwnedSession = jest.fn();
+export const revokeSessionsExcept = jest.fn();
+export const listManagedUsers = jest.fn();
+export const getUserRecordSummary = jest.fn();
+export const transitionUserStatus = jest.fn();
+export const listUserActivity = jest.fn();
 
 export function validateDatabaseUrl(value: string): string {
   return value;

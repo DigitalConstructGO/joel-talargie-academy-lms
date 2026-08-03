@@ -7,6 +7,7 @@ export interface AuthUser {
   avatarUrl: string | null;
   provider: 'LOCAL' | 'GOOGLE';
   emailVerified: boolean;
+  sessionId?: string;
 }
 export interface GoogleProfile {
   googleId: string;

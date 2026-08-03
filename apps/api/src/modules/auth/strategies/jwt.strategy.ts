@@ -30,6 +30,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       avatarUrl: user.avatarUrl,
       provider: user.provider,
       emailVerified: user.emailVerified,
+      sessionId: payload.sid,
     };
   }
 }

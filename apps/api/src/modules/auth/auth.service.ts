@@ -65,13 +65,14 @@ export class AuthService {
       emailVerified: user.emailVerified,
     };
   }
-  private signAccess(user: AuthUser) {
+  private signAccess(user: AuthUser, sessionId?: string) {
     const payload: JwtPayload = {
       id: user.id,
       sub: user.id,
       email: user.email,
       roles: user.roles,
       type: 'access',
+      sid: sessionId,
     };
     return this.jwt.sign(payload, {
       secret: this.config.getOrThrow('JWT_ACCESS_SECRET'),
@@ -146,7 +147,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     if (user.status !== 'ACTIVE')
       throw new UnauthorizedException(
-        user.status === 'PENDING'
+        ['PENDING', 'PENDING_VERIFICATION'].includes(user.status)
           ? 'Verify your email before logging in'
           : 'Account is unavailable',
       );
@@ -156,6 +157,7 @@ export class AuthService {
       userId: user.id,
       tokenHash: placeholder,
       expiresAt: new Date(Date.now() + refreshSeconds * 1000),
+      ...meta,
     });
     const refreshToken = this.signRefresh(safe, sessionId);
     await rotateRefreshSession(
@@ -168,7 +170,11 @@ export class AuthService {
       updateLastLogin(this.database.client, user.id),
       this.audit.logLogin(user.id, meta),
     ]);
-    return { user: safe, accessToken: this.signAccess(safe), refreshToken };
+    return {
+      user: safe,
+      accessToken: this.signAccess(safe, sessionId),
+      refreshToken,
+    };
   }
   async loginWithGoogle(
     profile: GoogleProfile,
@@ -191,6 +197,7 @@ export class AuthService {
       userId: user.id,
       tokenHash: hashToken(secureToken()),
       expiresAt: new Date(Date.now() + refreshSeconds * 1000),
+      ...meta,
     });
     const refreshToken = this.signRefresh(safe, sessionId);
     await rotateRefreshSession(
@@ -203,7 +210,11 @@ export class AuthService {
       updateLastLogin(this.database.client, user.id),
       this.audit.logLogin(user.id, meta),
     ]);
-    return { user: safe, accessToken: this.signAccess(safe), refreshToken };
+    return {
+      user: safe,
+      accessToken: this.signAccess(safe, sessionId),
+      refreshToken,
+    };
   }
   async refresh(token: string) {
     let payload: JwtPayload;
@@ -230,7 +241,11 @@ export class AuthService {
       new Date(Date.now() + refreshSeconds * 1000),
     );
     if (!rotated) throw new UnauthorizedException();
-    return { user: safe, accessToken: this.signAccess(safe), refreshToken };
+    return {
+      user: safe,
+      accessToken: this.signAccess(safe, payload.sid),
+      refreshToken,
+    };
   }
   async logout(token: string | undefined, user: AuthUser) {
     if (token) {

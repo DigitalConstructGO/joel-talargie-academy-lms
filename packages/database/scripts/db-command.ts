@@ -94,10 +94,18 @@ async function run(): Promise<void> {
 
 run().catch((error: unknown) => {
   const missing = error instanceof Error && error.message === 'DATABASE_DIRECT_URL_MISSING';
+  const cause = error instanceof Error && error.cause instanceof Error ? error.cause : undefined;
+  const source = cause ?? (error instanceof Error ? error : undefined);
+  const detail = source
+    ? source.message
+        .replace(/postgres(?:ql)?:\/\/[^\s]+/gi, '[REDACTED_DATABASE_URL]')
+        .replace(/password\s*[=:]\s*[^\s]+/gi, 'password=[REDACTED]')
+    : 'Unknown database error';
+  const code = source && 'code' in source ? String(source.code) : 'UNKNOWN';
   process.stderr.write(
     missing
       ? 'Database command failed: DATABASE_DIRECT_URL is missing. Add it to the repository .env file.\n'
-      : 'Database command failed. Verify the direct Neon URL, network access, and migration state.\n',
+      : `Database command failed (${code}): ${detail}\n`,
   );
   process.exitCode = 1;
 });

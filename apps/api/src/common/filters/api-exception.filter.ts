@@ -4,11 +4,13 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { ResponseBuilder } from '../api/api-response';
 @Catch()
 export class ApiExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(ApiExceptionFilter.name);
   constructor(private readonly production: boolean) {}
   catch(exception: unknown, host: ArgumentsHost) {
     const response = host.switchToHttp().getResponse<Response>();
@@ -17,6 +19,18 @@ export class ApiExceptionFilter implements ExceptionFilter {
       exception instanceof HttpException
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
+    if (status >= 500) {
+      const source =
+        exception instanceof Error && exception.cause instanceof Error
+          ? exception.cause
+          : exception instanceof Error
+            ? exception
+            : undefined;
+      const diagnostic = (source?.stack || source?.message || String(exception))
+        .replace(/postgres(?:ql)?:\/\/[^\s]+/gi, '[REDACTED_DATABASE_URL]')
+        .replace(/password\s*[=:]\s*[^\s]+/gi, 'password=[REDACTED]');
+      this.logger.error(diagnostic ?? 'Unhandled non-Error exception');
+    }
     const raw =
       exception instanceof HttpException ? exception.getResponse() : undefined;
     const rawMessage =

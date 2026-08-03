@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { resolve } from 'node:path';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
@@ -17,9 +18,18 @@ import { UsersModule } from './modules/users/users.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { AuthorizationModule } from './modules/authorization/authorization.module';
+import { CatalogModule } from './modules/catalog/catalog.module';
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, validate: validateEnvironment }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      validate: validateEnvironment,
+      ignoreEnvFile: process.env.NODE_ENV === 'test',
+      envFilePath: [
+        resolve(process.cwd(), '.env'),
+        resolve(process.cwd(), '../../.env'),
+      ],
+    }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
     HealthModule,
     SecurityModule,
@@ -33,6 +43,7 @@ import { AuthorizationModule } from './modules/authorization/authorization.modul
     RolesModule,
     PermissionsModule,
     AuthorizationModule,
+    CatalogModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

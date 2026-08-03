@@ -8,7 +8,7 @@
     "start:dev": "nest start --watch",
     "lint": "eslint \"{src,test}/**/*.ts\"",
     "lint:fix": "npm run lint -- --fix",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit --incremental false",
     "test": "jest --runInBand && npm run test:e2e",
     "test:e2e": "jest --config ./test/jest-e2e.json --runInBand"
   },
@@ -87,7 +87,8 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "moduleNameMapper": {
-      "^@joel-academy/database$": "<rootDir>/../test/database.mock.ts"
+      "^@joel-academy/database$": "<rootDir>/../test/database.mock.ts",
+      "^sanitize-html$": "<rootDir>/../test/sanitize-html.mock.ts"
     },
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"

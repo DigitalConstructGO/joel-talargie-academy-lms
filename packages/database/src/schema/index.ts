@@ -23,11 +23,35 @@ const timestamps = {
 };
 const tsvector = customType<{ data: string }>({ dataType: () => 'tsvector' });
 
-export const userStatus = pgEnum('user_status', ['ACTIVE', 'SUSPENDED', 'PENDING']);
+export const userStatus = pgEnum('user_status', [
+  'ACTIVE',
+  'SUSPENDED',
+  'PENDING',
+  'PENDING_VERIFICATION',
+  'ARCHIVED',
+]);
 export const authProvider = pgEnum('auth_provider', ['LOCAL', 'GOOGLE']);
 export const courseStatus = pgEnum('course_status', ['DRAFT', 'PUBLISHED', 'ARCHIVED']);
-export const courseVisibility = pgEnum('course_visibility', ['PUBLIC', 'PRIVATE']);
+export const courseVisibility = pgEnum('course_visibility', ['PUBLIC', 'PRIVATE', 'UNLISTED']);
 export const courseAccessType = pgEnum('course_access_type', ['FREE', 'PAID']);
+export const courseDifficulty = pgEnum('course_difficulty', [
+  'BEGINNER',
+  'INTERMEDIATE',
+  'ADVANCED',
+  'ALL_LEVELS',
+]);
+export const lessonType = pgEnum('lesson_type', [
+  'VIDEO',
+  'TEXT',
+  'DOCUMENT',
+  'DOWNLOAD',
+  'EXTERNAL_LINK',
+]);
+export const resourceVisibility = pgEnum('resource_visibility', [
+  'PUBLIC',
+  'ENROLLED_STUDENTS',
+  'ADMIN_ONLY',
+]);
 export const enrollmentStatus = pgEnum('enrollment_status', [
   'PENDING',
   'ACTIVE',
@@ -56,8 +80,9 @@ export const users = pgTable(
     avatarUrl: text('avatar_url'),
     provider: authProvider('provider').notNull().default('LOCAL'),
     emailVerified: boolean('email_verified').notNull().default(false),
-    status: userStatus('status').notNull().default('PENDING'),
+    status: userStatus('status').notNull().default('PENDING_VERIFICATION'),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
+    lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
     ...timestamps,
   },
   (table) => [
@@ -79,6 +104,7 @@ export const userProfiles = pgTable('user_profiles', {
   firstName: text('first_name').notNull(),
   lastName: text('last_name').notNull(),
   phone: text('phone'),
+  bio: text('bio'),
   ...timestamps,
 });
 
@@ -92,6 +118,9 @@ export const refreshSessions = pgTable(
     tokenHash: text('token_hash').notNull(),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
     revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    ipAddress: text('ip_address'),
+    userAgent: text('user_agent'),
+    lastUsedAt: timestamp('last_used_at', { withTimezone: true }).notNull().defaultNow(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -102,6 +131,42 @@ export const refreshSessions = pgTable(
       .where(sql`${table.revokedAt} IS NULL`),
   ],
 );
+
+export const oauthAccounts = pgTable(
+  'oauth_accounts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    provider: authProvider('provider').notNull(),
+    providerAccountId: text('provider_account_id').notNull(),
+    providerEmail: text('provider_email'),
+    linkedAt: timestamp('linked_at', { withTimezone: true }).notNull().defaultNow(),
+    lastLoginAt: timestamp('last_login_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique('oauth_accounts_provider_account_uq').on(table.provider, table.providerAccountId),
+    unique('oauth_accounts_user_provider_uq').on(table.userId, table.provider),
+    index('oauth_accounts_user_idx').on(table.userId),
+  ],
+);
+
+export const userNotificationPreferences = pgTable('user_notification_preferences', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .notNull()
+    .unique()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  emailSecurity: boolean('email_security').notNull().default(true),
+  emailLearning: boolean('email_learning').notNull().default(true),
+  emailPayments: boolean('email_payments').notNull().default(true),
+  emailCertificates: boolean('email_certificates').notNull().default(true),
+  inAppLearning: boolean('in_app_learning').notNull().default(true),
+  inAppPayments: boolean('in_app_payments').notNull().default(true),
+  inAppCertificates: boolean('in_app_certificates').notNull().default(true),
+  ...timestamps,
+});
 
 export const emailVerificationTokens = pgTable('email_verification_tokens', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -195,14 +260,19 @@ export const categories = pgTable(
     }),
     name: text('name').notNull(),
     slug: text('slug').notNull().unique(),
+    description: text('description'),
+    imageKey: text('image_key'),
+    isActive: boolean('is_active').notNull().default(true),
+    sortOrder: integer('sort_order').notNull().default(0),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
     ...timestamps,
   },
   (table) => [
     index('categories_parent_idx').on(table.parentId),
+    index('categories_parent_sort_idx').on(table.parentId, table.sortOrder, table.id),
     index('categories_active_idx')
       .on(table.name)
-      .where(sql`${table.archivedAt} IS NULL`),
+      .where(sql`${table.isActive} = true AND ${table.archivedAt} IS NULL`),
   ],
 );
 
@@ -219,13 +289,22 @@ export const courses = pgTable(
     title: text('title').notNull(),
     slug: text('slug').notNull().unique(),
     shortDescription: text('short_description').notNull(),
+    description: text('description').notNull().default(''),
+    thumbnailKey: text('thumbnail_key'),
     presenterName: text('presenter_name').notNull(),
     status: courseStatus('status').notNull().default('DRAFT'),
     visibility: courseVisibility('visibility').notNull().default('PRIVATE'),
     accessType: courseAccessType('access_type').notNull().default('FREE'),
     featured: boolean('featured').notNull().default(false),
     price: numeric('price', { precision: 12, scale: 2 }).notNull().default('0'),
+    discountPrice: numeric('discount_price', { precision: 12, scale: 2 }),
     currency: text('currency').notNull().default('USD'),
+    difficulty: courseDifficulty('difficulty').notNull().default('ALL_LEVELS'),
+    estimatedDurationMinutes: integer('estimated_duration_minutes'),
+    certificateEnabled: boolean('certificate_enabled').notNull().default(false),
+    enrollmentOpenAt: timestamp('enrollment_open_at', { withTimezone: true }),
+    enrollmentCloseAt: timestamp('enrollment_close_at', { withTimezone: true }),
+    capacity: integer('capacity'),
     publishedAt: timestamp('published_at', { withTimezone: true }),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
     searchVector: tsvector('search_vector').generatedAlwaysAs(
@@ -243,6 +322,7 @@ export const courses = pgTable(
     ),
     index('courses_category_catalog_idx').on(table.categoryId, table.status, table.visibility),
     index('courses_access_catalog_idx').on(table.accessType, table.status, table.visibility),
+    index('courses_difficulty_catalog_idx').on(table.difficulty, table.status, table.visibility),
     index('courses_featured_catalog_idx').on(
       table.featured,
       table.status,
@@ -257,6 +337,34 @@ export const courses = pgTable(
   ],
 );
 
+export const courseOutcomes = pgTable(
+  'course_outcomes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    courseId: uuid('course_id')
+      .notNull()
+      .references(() => courses.id, { onDelete: 'cascade' }),
+    outcome: text('outcome').notNull(),
+    sortOrder: integer('sort_order').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique('course_outcomes_order_uq').on(table.courseId, table.sortOrder)],
+);
+
+export const courseRequirements = pgTable(
+  'course_requirements',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    courseId: uuid('course_id')
+      .notNull()
+      .references(() => courses.id, { onDelete: 'cascade' }),
+    requirement: text('requirement').notNull(),
+    sortOrder: integer('sort_order').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique('course_requirements_order_uq').on(table.courseId, table.sortOrder)],
+);
+
 export const courseSections = pgTable(
   'course_sections',
   {
@@ -265,7 +373,9 @@ export const courseSections = pgTable(
       .notNull()
       .references(() => courses.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
+    description: text('description'),
     position: integer('position').notNull(),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
     ...timestamps,
   },
   (table) => [unique('course_sections_position_uq').on(table.courseId, table.position)],
@@ -283,8 +393,14 @@ export const lessons = pgTable(
     title: text('title').notNull(),
     slug: text('slug').notNull(),
     content: text('content'),
+    lessonType: lessonType('lesson_type').notNull().default('TEXT'),
+    videoUrl: text('video_url'),
+    externalUrl: text('external_url'),
+    durationSeconds: integer('duration_seconds'),
     position: integer('position').notNull(),
     isMandatory: boolean('is_mandatory').notNull().default(true),
+    isPreview: boolean('is_preview').notNull().default(false),
+    isPublished: boolean('is_published').notNull().default(false),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
     ...timestamps,
   },
@@ -294,6 +410,9 @@ export const lessons = pgTable(
     index('lessons_active_course_idx')
       .on(table.courseId, table.position)
       .where(sql`${table.archivedAt} IS NULL`),
+    index('lessons_published_idx')
+      .on(table.courseId, table.position, table.id)
+      .where(sql`${table.isPublished} = true AND ${table.archivedAt} IS NULL`),
   ],
 );
 export const lessonResources = pgTable(
@@ -305,7 +424,12 @@ export const lessonResources = pgTable(
       .references(() => lessons.id, { onDelete: 'cascade' }),
     label: text('label').notNull(),
     resourceType: text('resource_type').notNull(),
-    storageKey: text('storage_key').notNull(),
+    storageKey: text('storage_key'),
+    externalUrl: text('external_url'),
+    originalFileName: text('original_file_name'),
+    mimeType: text('mime_type'),
+    fileSize: integer('file_size'),
+    visibility: resourceVisibility('visibility').notNull().default('ENROLLED_STUDENTS'),
     position: integer('position').notNull(),
     ...timestamps,
   },
@@ -563,6 +687,8 @@ export const schema = {
   users,
   userProfiles,
   refreshSessions,
+  oauthAccounts,
+  userNotificationPreferences,
   emailVerificationTokens,
   passwordResetTokens,
   loginAttempts,
@@ -572,6 +698,8 @@ export const schema = {
   rolePermissions,
   categories,
   courses,
+  courseOutcomes,
+  courseRequirements,
   courseSections,
   lessons,
   lessonResources,

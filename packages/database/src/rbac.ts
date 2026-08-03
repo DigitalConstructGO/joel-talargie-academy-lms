@@ -3,7 +3,7 @@ import { schema } from './schema/index.ts';
 import type { AcademyDatabase } from './queries.ts';
 export interface AuthorizationContext {
   userId: string;
-  status: 'ACTIVE' | 'SUSPENDED' | 'PENDING';
+  status: 'ACTIVE' | 'SUSPENDED' | 'PENDING' | 'PENDING_VERIFICATION' | 'ARCHIVED';
   roles: string[];
   permissions: string[];
   isAdministrator: boolean;

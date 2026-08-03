@@ -50,6 +50,20 @@
       "when": 1785738241954,
       "tag": "0006_third_killer_shrike",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1785754919814,
+      "tag": "0007_wise_nightcrawler",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1785756373394,
+      "tag": "0008_slow_tusk",
+      "breakpoints": true
     }
   ]
 }
