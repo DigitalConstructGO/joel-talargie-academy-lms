@@ -10,6 +10,7 @@ export function createMailTransporter(
   config: ConfigService<Environment, true>,
 ): MailTransporter {
   return nodemailer.createTransport({
+    pool: config.get('SMTP_POOL_ENABLED', { infer: true }),
     host: config.get('SMTP_HOST', { infer: true }),
     port: config.get('SMTP_PORT', { infer: true }),
     secure: config.get('SMTP_SECURE', { infer: true }),
@@ -24,6 +25,8 @@ export function createMailTransporter(
     }),
     greetingTimeout: config.get('SMTP_GREETING_TIMEOUT_MS', { infer: true }),
     socketTimeout: config.get('SMTP_SOCKET_TIMEOUT_MS', { infer: true }),
+    maxConnections: config.get('SMTP_POOL_MAX_CONNECTIONS', { infer: true }),
+    maxMessages: config.get('SMTP_POOL_MAX_MESSAGES', { infer: true }),
   });
 }
 

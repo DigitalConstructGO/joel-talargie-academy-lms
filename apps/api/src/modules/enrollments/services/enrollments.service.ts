@@ -16,10 +16,14 @@ import type {
   ListMyEnrollmentsDto,
 } from '../dto/enrollment.dto';
 import { EnrollmentsRepository } from '../repositories/enrollments.repository';
+import { NotificationsService } from '../../notifications/services/notifications.service';
 
 @Injectable()
 export class EnrollmentsService {
-  constructor(private readonly repository: EnrollmentsRepository) {}
+  constructor(
+    private readonly repository: EnrollmentsRepository,
+    private readonly notifications: NotificationsService,
+  ) {}
   private present<T extends { status: string }>(enrollment: T) {
     return {
       ...enrollment,
@@ -83,6 +87,45 @@ export class EnrollmentsService {
       });
     try {
       const result = await this.repository.create(user.id, courseId);
+      const enrollment = await this.repository.studentEnrollment(
+        user.id,
+        result.enrollment.id,
+      );
+      if (result.created && enrollment) {
+        const free = enrollment.status === 'ENROLLED';
+        await this.notifications
+          .notify({
+            userId: user.id,
+            recipientEmail: user.email,
+            recipientName: user.firstName ?? 'Student',
+            templateCode: free
+              ? 'FREE_ENROLLMENT_CONFIRMED'
+              : 'PAID_ENROLLMENT_CREATED',
+            variables: free
+              ? {
+                  recipientName: user.firstName ?? 'Student',
+                  courseTitle: enrollment.courseTitle,
+                  dashboardUrl: `${process.env.EMAIL_PUBLIC_APP_URL ?? 'http://localhost:3000'}/dashboard/my-courses`,
+                  academyName: 'Joel Talargie Academy',
+                }
+              : {
+                  recipientName: user.firstName ?? 'Student',
+                  courseTitle: enrollment.courseTitle,
+                  paymentUrl: `${process.env.EMAIL_PUBLIC_APP_URL ?? 'http://localhost:3000'}/dashboard/payments`,
+                  academyName: 'Joel Talargie Academy',
+                },
+            deduplicationKey: `enrollment-created:${result.enrollment.id}`,
+            category: 'learning',
+            title: free ? 'Enrollment confirmed' : 'Payment required',
+            message: free
+              ? `You now have access to ${enrollment.courseTitle}.`
+              : `Submit payment for ${enrollment.courseTitle} to continue.`,
+            actionUrl: free ? '/dashboard/my-courses' : '/dashboard/payments',
+            relatedEntityType: 'enrollment',
+            relatedEntityId: result.enrollment.id,
+          })
+          .catch(() => null);
+      }
       return { ...result, enrollment: this.present(result.enrollment) };
     } catch (error) {
       this.map(error);

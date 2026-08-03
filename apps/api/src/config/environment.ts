@@ -50,6 +50,7 @@ export const environmentSchema = z
     SMTP_PASSWORD: z.string().default(''),
     SMTP_FROM_NAME: z.string().min(1).default('Joel Talargie Academy'),
     SMTP_FROM_EMAIL: z.string().default(''),
+    SMTP_REPLY_TO: z.union([z.literal(''), z.string().email()]).default(''),
     SMTP_CONNECTION_TIMEOUT_MS: z.coerce
       .number()
       .int()
@@ -60,7 +61,57 @@ export const environmentSchema = z
       .int()
       .positive()
       .default(10_000),
-    SMTP_SOCKET_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
+    SMTP_SOCKET_TIMEOUT_MS: z.coerce.number().int().positive().default(20_000),
+    SMTP_POOL_ENABLED: z.stringbool().default(true),
+    SMTP_POOL_MAX_CONNECTIONS: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(20)
+      .default(3),
+    SMTP_POOL_MAX_MESSAGES: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(10_000)
+      .default(100),
+    EMAIL_WORKER_ENABLED: z.stringbool().default(false),
+    EMAIL_WORKER_ID: z.string().max(100).default(''),
+    EMAIL_WORKER_BATCH_SIZE: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(100)
+      .default(10),
+    EMAIL_WORKER_POLL_INTERVAL_MS: z.coerce
+      .number()
+      .int()
+      .min(1000)
+      .default(5000),
+    EMAIL_WORKER_LOCK_TIMEOUT_MS: z.coerce
+      .number()
+      .int()
+      .min(10_000)
+      .default(120_000),
+    EMAIL_MAX_RETRY_ATTEMPTS: z.coerce.number().int().min(1).max(20).default(5),
+    EMAIL_INITIAL_RETRY_DELAY_SECONDS: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .default(60),
+    EMAIL_MAX_RETRY_DELAY_SECONDS: z.coerce
+      .number()
+      .int()
+      .min(60)
+      .default(21_600),
+    EMAIL_PUBLIC_APP_URL: z.string().url().default('http://localhost:3000'),
+    EMAIL_SUPPORT_ADDRESS: z
+      .union([z.literal(''), z.string().email()])
+      .default(''),
+    EMAIL_DEFAULT_LOCALE: z
+      .string()
+      .regex(/^[a-z]{2}(?:-[A-Z]{2})?$/)
+      .default('en'),
     MAIL_ENABLED: z.stringbool().default(false),
     STORAGE_ENDPOINT: z.string().default(''),
     STORAGE_REGION: z.string().default(''),

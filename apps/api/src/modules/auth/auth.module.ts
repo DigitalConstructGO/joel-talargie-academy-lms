@@ -4,6 +4,7 @@ import { PassportModule } from '@nestjs/passport';
 import { DatabaseModule } from '../../common/database/database.module';
 import { SecurityModule } from '../../common/security/security.module';
 import { AuditModule } from '../audit/audit.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -14,6 +15,7 @@ import { GoogleAuthGuard } from './guards/google-auth.guard';
     DatabaseModule,
     SecurityModule,
     AuditModule,
+    NotificationsModule,
     PassportModule,
     JwtModule.register({}),
   ],

@@ -23,6 +23,7 @@ import type {
   SubmitPaymentDto,
 } from '../dto/payments.dto';
 import { PaymentsRepository } from '../repositories/payments.repository';
+import { NotificationsService } from '../../notifications/services/notifications.service';
 
 const RECEIPT_TYPES: Record<
   string,
@@ -55,6 +56,7 @@ export class PaymentsService {
   constructor(
     private readonly repository: PaymentsRepository,
     @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async instructions(user: AuthUser, enrollmentId: string) {
@@ -163,6 +165,27 @@ export class PaymentsService {
         receipt,
         expectedAmount,
       );
+      await this.notifications
+        .notify({
+          userId: user.id,
+          recipientEmail: user.email,
+          recipientName: user.firstName ?? 'Student',
+          templateCode: 'PAYMENT_SUBMITTED',
+          variables: {
+            recipientName: user.firstName ?? 'Student',
+            courseTitle: enrollment.courseTitle,
+            dashboardUrl: `${process.env.EMAIL_PUBLIC_APP_URL ?? 'http://localhost:3000'}/dashboard/payments`,
+            academyName: 'Joel Talargie Academy',
+          },
+          deduplicationKey: `payment-submitted:${payment.id}`,
+          category: 'payments',
+          title: 'Payment submitted',
+          message: `Your payment for ${enrollment.courseTitle} was submitted for review.`,
+          actionUrl: '/dashboard/payments',
+          relatedEntityType: 'payment',
+          relatedEntityId: payment.id,
+        })
+        .catch(() => null);
       return {
         ...this.studentPayment(payment),
         enrollmentStatus: 'WAITING_APPROVAL',
@@ -255,10 +278,39 @@ export class PaymentsService {
         message: 'Duplicate transaction warning must be acknowledged',
       });
     try {
-      return await this.repository.review(actorId, paymentId, 'approve', {
-        reason: dto.mismatchApprovalReason,
-        reviewNote: dto.reviewNote,
-      });
+      const reviewed = await this.repository.review(
+        actorId,
+        paymentId,
+        'approve',
+        {
+          reason: dto.mismatchApprovalReason,
+          reviewNote: dto.reviewNote,
+        },
+      );
+      await this.notifications
+        .notify({
+          userId: payment.studentId,
+          recipientEmail: payment.studentEmail,
+          recipientName: 'Student',
+          templateCode: 'PAYMENT_APPROVED',
+          variables: {
+            recipientName: 'Student',
+            courseTitle: payment.courseTitle,
+            approvedAt: new Date().toISOString(),
+            dashboardUrl: `${process.env.EMAIL_PUBLIC_APP_URL ?? 'http://localhost:3000'}/dashboard/my-courses`,
+            academyName: 'Joel Talargie Academy',
+          },
+          deduplicationKey: `payment-approved:${paymentId}`,
+          category: 'payments',
+          title: 'Payment approved',
+          message: `Your payment for ${payment.courseTitle} was approved.`,
+          actionUrl: '/dashboard/my-courses',
+          relatedEntityType: 'payment',
+          relatedEntityId: paymentId,
+          priority: 'HIGH',
+        })
+        .catch(() => null);
+      return reviewed;
     } catch (error) {
       this.map(error);
     }
@@ -266,10 +318,40 @@ export class PaymentsService {
 
   async decline(actorId: string, paymentId: string, dto: DeclinePaymentDto) {
     try {
-      return await this.repository.review(actorId, paymentId, 'decline', {
-        reason: dto.reason.trim(),
-        reviewNote: dto.reviewNote,
-      });
+      const payment = await this.adminDetail(paymentId);
+      const reviewed = await this.repository.review(
+        actorId,
+        paymentId,
+        'decline',
+        {
+          reason: dto.reason.trim(),
+          reviewNote: dto.reviewNote,
+        },
+      );
+      await this.notifications
+        .notify({
+          userId: payment.studentId,
+          recipientEmail: payment.studentEmail,
+          recipientName: 'Student',
+          templateCode: 'PAYMENT_DECLINED',
+          variables: {
+            recipientName: 'Student',
+            courseTitle: payment.courseTitle,
+            declineReason: dto.reason.trim(),
+            paymentUrl: `${process.env.EMAIL_PUBLIC_APP_URL ?? 'http://localhost:3000'}/dashboard/payments`,
+            academyName: 'Joel Talargie Academy',
+          },
+          deduplicationKey: `payment-declined:${paymentId}`,
+          category: 'payments',
+          title: 'Payment declined',
+          message: `Your payment for ${payment.courseTitle} was declined.`,
+          actionUrl: '/dashboard/payments',
+          relatedEntityType: 'payment',
+          relatedEntityId: paymentId,
+          priority: 'HIGH',
+        })
+        .catch(() => null);
+      return reviewed;
     } catch (error) {
       this.map(error);
     }

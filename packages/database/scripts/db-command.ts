@@ -15,6 +15,30 @@ loadEnvironment({ path: resolve(scriptDirectory, '../.env'), quiet: true, overri
 
 type DatabaseCommand = 'check' | 'migrate' | 'seed';
 
+const emailTemplateCodes = [
+  'EMAIL_VERIFICATION',
+  'PASSWORD_RESET',
+  'PASSWORD_CHANGED',
+  'NEW_LOGIN_ALERT',
+  'GOOGLE_ACCOUNT_LINKED',
+  'GOOGLE_ACCOUNT_UNLINKED',
+  'ACCOUNT_ACTIVATED',
+  'ACCOUNT_SUSPENDED',
+  'ACCOUNT_ARCHIVED',
+  'ACCOUNT_RESTORED',
+  'ROLE_ASSIGNED',
+  'ROLE_REMOVED',
+  'SESSION_REVOKED_BY_ADMIN',
+  'FREE_ENROLLMENT_CONFIRMED',
+  'PAID_ENROLLMENT_CREATED',
+  'PAYMENT_SUBMITTED',
+  'PAYMENT_APPROVED',
+  'PAYMENT_DECLINED',
+  'COURSE_COMPLETED',
+  'CERTIFICATE_READY',
+  'CERTIFICATE_REVOKED',
+] as const;
+
 async function run(): Promise<void> {
   const command = process.argv[2] as DatabaseCommand | undefined;
   if (!command || !['check', 'migrate', 'seed'].includes(command)) {
@@ -121,6 +145,29 @@ async function run(): Promise<void> {
               footerText: 'Issued by Joel Talargie Academy',
             },
           })
+          .onConflictDoNothing();
+        await tx
+          .insert(schema.emailTemplates)
+          .values(
+            emailTemplateCodes.map((code) => ({
+              code,
+              name: code
+                .toLowerCase()
+                .split('_')
+                .map((part) => part[0]!.toUpperCase() + part.slice(1))
+                .join(' '),
+              subjectTemplate: `Joel Talargie Academy: ${code.toLowerCase().replaceAll('_', ' ')}`,
+              htmlTemplate:
+                '<!doctype html><html><body style="font-family:Arial,sans-serif;color:#15324a"><main style="max-width:600px;margin:auto"><h1>Joel Talargie Academy</h1><p>Hello {{recipientName}},</p><p>This is an important transactional notification about your academy account.</p><p>If you need help, contact academy support.</p><hr><small>Joel Talargie Academy</small></main></body></html>',
+              textTemplate:
+                'Joel Talargie Academy\n\nHello {{recipientName}},\n\nThis is an important transactional notification about your academy account.\n\nContact academy support if you need help.',
+              version: 1,
+              locale: 'en',
+              isActive: true,
+              isSystem: true,
+              description: `System transactional template for ${code}.`,
+            })),
+          )
           .onConflictDoNothing();
       });
       process.stdout.write('RBAC roles and permission catalog seeded idempotently.\n');

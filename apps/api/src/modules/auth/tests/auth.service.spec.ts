@@ -39,12 +39,14 @@ describe('AuthService', () => {
     logLogout: jest.fn(),
     logCustom: jest.fn(),
   };
+  const notifications = { notify: jest.fn().mockResolvedValue(null) };
   const service = new AuthService(
     database as never,
     passwords as never,
     jwt,
     config,
     audit as never,
+    notifications as never,
   );
   beforeEach(() => jest.clearAllMocks());
   it('rejects duplicate registration emails', async () => {

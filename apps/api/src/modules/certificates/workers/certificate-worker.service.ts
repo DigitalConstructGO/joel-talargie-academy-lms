@@ -8,6 +8,7 @@ import {
   type StorageService,
 } from '../../storage/storage.interface';
 import { generateCertificatePdf } from '../generators/certificate.generator';
+import { NotificationsService } from '../../notifications/services/notifications.service';
 
 interface CertificateJob {
   id: string;
@@ -24,6 +25,7 @@ export class CertificateWorkerService {
     private readonly database: DatabaseService,
     private readonly config: ConfigService,
     @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async tick() {
@@ -89,6 +91,7 @@ export class CertificateWorkerService {
         generationVersion: schema.certificates.generationVersion,
         templateConfiguration: schema.certificateTemplates.configuration,
         studentId: schema.enrollments.studentId,
+        studentEmail: schema.users.email,
       })
       .from(schema.certificates)
       .innerJoin(
@@ -98,6 +101,10 @@ export class CertificateWorkerService {
       .innerJoin(
         schema.enrollments,
         eq(schema.enrollments.id, schema.certificates.enrollmentId),
+      )
+      .innerJoin(
+        schema.users,
+        eq(schema.users.id, schema.enrollments.studentId),
       )
       .where(eq(schema.certificates.id, job.certificateId))
       .limit(1);
@@ -210,6 +217,29 @@ export class CertificateWorkerService {
           })
           .where(eq(schema.backgroundJobs.id, job.id));
       });
+      await this.notifications
+        .notify({
+          userId: data.studentId,
+          recipientEmail: data.studentEmail,
+          recipientName: data.studentName,
+          templateCode: 'CERTIFICATE_READY',
+          variables: {
+            recipientName: data.studentName,
+            courseTitle: data.courseTitle,
+            certificateNumber: data.number,
+            certificateUrl: `${process.env.EMAIL_PUBLIC_APP_URL ?? 'http://localhost:3000'}/dashboard/certificates`,
+            verificationUrl: `${base}/${data.token}`,
+            academyName: 'Joel Talargie Academy',
+          },
+          deduplicationKey: `certificate-ready:${data.id}:v${data.generationVersion}`,
+          category: 'certificates',
+          title: 'Certificate ready',
+          message: `Your certificate for ${data.courseTitle} is ready.`,
+          actionUrl: '/dashboard/certificates',
+          relatedEntityType: 'certificate',
+          relatedEntityId: data.id,
+        })
+        .catch(() => null);
     } catch (error) {
       await this.storage.delete(key).catch(() => undefined);
       throw error;

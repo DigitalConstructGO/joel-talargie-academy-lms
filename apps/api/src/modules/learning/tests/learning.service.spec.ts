@@ -17,7 +17,11 @@ describe('LearningService', () => {
     adminProgress: jest.fn(),
     activity: jest.fn(),
   };
-  const service = new LearningService(repository as never);
+  const notifications = { notify: jest.fn().mockResolvedValue(null) };
+  const service = new LearningService(
+    repository as never,
+    notifications as never,
+  );
   const student = {
     id: 'student',
     roles: ['STUDENT'],

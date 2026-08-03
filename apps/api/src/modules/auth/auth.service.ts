@@ -25,6 +25,7 @@ import {
 import { DatabaseService } from '../../common/database/database.service';
 import { PasswordHasherService } from '../../common/security/password-hasher.service';
 import { AuditService } from '../audit/audit.service';
+import { NotificationsService } from '../notifications/services/notifications.service';
 import type {
   ChangePasswordDto,
   LoginDto,
@@ -48,6 +49,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly audit: AuditService,
+    private readonly notifications: NotificationsService,
   ) {}
   private normalizeEmail(email: string) {
     return email.trim().toLowerCase();
@@ -122,12 +124,33 @@ export class AuthService {
       email: user.email,
       roles: user.roles,
     });
+    await this.notifications
+      .notify({
+        userId: user.id,
+        recipientEmail: user.email,
+        recipientName:
+          `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || 'Student',
+        templateCode: 'EMAIL_VERIFICATION',
+        variables: {
+          recipientName: user.firstName ?? 'Student',
+          verificationUrl: `${this.config.get('EMAIL_PUBLIC_APP_URL')}/auth/verify-email?token=${verificationToken}`,
+          expiresInMinutes: '1440',
+          academyName: 'Joel Talargie Academy',
+          supportEmail:
+            this.config.get('EMAIL_SUPPORT_ADDRESS') || 'academy support',
+        },
+        deduplicationKey: `email-verification:${user.id}:${hashToken(verificationToken)}`,
+        category: 'security',
+        title: 'Verify your email',
+        message: 'Verify your email address to activate your academy account.',
+        actionUrl: '/auth/verify-email',
+        relatedEntityType: 'user',
+        relatedEntityId: user.id,
+        priority: 'HIGH',
+      })
+      .catch(() => null);
     return {
       user: this.safe(user),
-      verificationToken:
-        this.config.get('NODE_ENV') === 'production'
-          ? undefined
-          : verificationToken,
       message: 'Registration successful. Verify your email before logging in.',
     };
   }
@@ -170,6 +193,26 @@ export class AuthService {
       updateLastLogin(this.database.client, user.id),
       this.audit.logLogin(user.id, meta),
     ]);
+    await this.notifications
+      .notify({
+        userId: user.id,
+        recipientEmail: user.email,
+        recipientName: user.firstName ?? 'Student',
+        templateCode: 'NEW_LOGIN_ALERT',
+        variables: {
+          recipientName: user.firstName ?? 'Student',
+          academyName: 'Joel Talargie Academy',
+          supportEmail:
+            this.config.get('EMAIL_SUPPORT_ADDRESS') || 'academy support',
+        },
+        deduplicationKey: `new-login:${sessionId}`,
+        category: 'security',
+        title: 'New login',
+        message: 'A new login to your academy account was detected.',
+        actionUrl: '/dashboard/security',
+        priority: 'CRITICAL',
+      })
+      .catch(() => null);
     return {
       user: safe,
       accessToken: this.signAccess(safe, sessionId),
@@ -282,12 +325,33 @@ export class AuthService {
         tokenHash: hashToken(resetToken),
         expiresAt: new Date(Date.now() + 60 * 60 * 1000),
       });
+      await this.notifications
+        .notify({
+          userId: user.id,
+          recipientEmail: user.email,
+          recipientName: user.firstName ?? 'Student',
+          templateCode: 'PASSWORD_RESET',
+          variables: {
+            recipientName: user.firstName ?? 'Student',
+            resetUrl: `${this.config.get('EMAIL_PUBLIC_APP_URL')}/auth/reset-password?token=${resetToken}`,
+            expiresInMinutes: '60',
+            academyName: 'Joel Talargie Academy',
+            supportEmail:
+              this.config.get('EMAIL_SUPPORT_ADDRESS') || 'academy support',
+          },
+          deduplicationKey: `password-reset:${user.id}:${hashToken(resetToken)}`,
+          category: 'security',
+          title: 'Password reset requested',
+          message:
+            'Password reset instructions were requested for your account.',
+          actionUrl: '/auth/reset-password',
+          priority: 'CRITICAL',
+        })
+        .catch(() => null);
     }
     return {
       message:
         'If the account exists, password reset instructions have been created.',
-      resetToken:
-        this.config.get('NODE_ENV') === 'production' ? undefined : resetToken,
     };
   }
   async resetPassword(dto: ResetPasswordDto) {
@@ -305,6 +369,28 @@ export class AuthService {
       entityType: 'user',
       entityId: id,
     });
+    const changedUser = await findAuthUserById(this.database.client, id);
+    if (changedUser)
+      await this.notifications
+        .notify({
+          userId: id,
+          recipientEmail: changedUser.email,
+          recipientName: changedUser.firstName ?? 'Student',
+          templateCode: 'PASSWORD_CHANGED',
+          variables: {
+            recipientName: changedUser.firstName ?? 'Student',
+            academyName: 'Joel Talargie Academy',
+            supportEmail:
+              this.config.get('EMAIL_SUPPORT_ADDRESS') || 'academy support',
+          },
+          deduplicationKey: `password-changed:${id}:${Date.now()}`,
+          category: 'security',
+          title: 'Password changed',
+          message: 'Your academy password was changed.',
+          actionUrl: '/dashboard/security',
+          priority: 'CRITICAL',
+        })
+        .catch(() => null);
     return { message: 'Password reset successfully' };
   }
   async changePassword(user: AuthUser, dto: ChangePasswordDto) {
@@ -330,6 +416,26 @@ export class AuthService {
       entityType: 'user',
       entityId: user.id,
     });
+    await this.notifications
+      .notify({
+        userId: user.id,
+        recipientEmail: user.email,
+        recipientName: user.firstName ?? 'Student',
+        templateCode: 'PASSWORD_CHANGED',
+        variables: {
+          recipientName: user.firstName ?? 'Student',
+          academyName: 'Joel Talargie Academy',
+          supportEmail:
+            this.config.get('EMAIL_SUPPORT_ADDRESS') || 'academy support',
+        },
+        deduplicationKey: `password-changed:${user.id}:${Date.now()}`,
+        category: 'security',
+        title: 'Password changed',
+        message: 'Your academy password was changed.',
+        actionUrl: '/dashboard/security',
+        priority: 'CRITICAL',
+      })
+      .catch(() => null);
     return { message: 'Password changed. Sign in again.' };
   }
   async profile(id: string) {

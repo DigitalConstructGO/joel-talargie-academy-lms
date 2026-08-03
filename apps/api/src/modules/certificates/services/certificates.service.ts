@@ -22,6 +22,7 @@ import type {
   UpdateCertificateTemplateDto,
 } from '../dto/certificates.dto';
 import { CertificatesRepository } from '../repositories/certificates.repository';
+import { NotificationsService } from '../../notifications/services/notifications.service';
 
 @Injectable()
 export class CertificatesService {
@@ -29,6 +30,7 @@ export class CertificatesService {
     private readonly repository: CertificatesRepository,
     private readonly config: ConfigService,
     @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async request(user: AuthUser, enrollmentId: string) {
@@ -125,11 +127,38 @@ export class CertificatesService {
 
   async revoke(actorId: string, certificateId: string, reason: string) {
     try {
-      return await this.repository.revoke(
+      const certificate = await this.repository.admin(certificateId);
+      const revoked = await this.repository.revoke(
         actorId,
         certificateId,
         reason.trim(),
       );
+      if (certificate)
+        await this.notifications
+          .notify({
+            userId: certificate.studentId,
+            recipientEmail: certificate.studentEmail,
+            recipientName: certificate.studentName,
+            templateCode: 'CERTIFICATE_REVOKED',
+            variables: {
+              recipientName: certificate.studentName,
+              courseTitle: certificate.courseTitle,
+              certificateNumber: certificate.certificateNumber,
+              academyName: 'Joel Talargie Academy',
+              supportEmail:
+                this.config.get('EMAIL_SUPPORT_ADDRESS') || 'academy support',
+            },
+            deduplicationKey: `certificate-revoked:${certificateId}`,
+            category: 'certificates',
+            title: 'Certificate revoked',
+            message: `Your certificate for ${certificate.courseTitle} was revoked. Contact academy support.`,
+            actionUrl: '/dashboard/certificates',
+            relatedEntityType: 'certificate',
+            relatedEntityId: certificateId,
+            priority: 'CRITICAL',
+          })
+          .catch(() => null);
+      return revoked;
     } catch (error) {
       this.map(error);
     }

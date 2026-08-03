@@ -2,6 +2,8 @@
 
 The backend includes certificate eligibility, PostgreSQL-backed generation jobs, private versioned PDF storage, secure downloads, and rate-limited public verification. See [certificate architecture](docs/certificate-architecture.md).
 
+Backend Phase 10 adds centralized transactional email and in-app notification delivery with PostgreSQL-backed workers. See [notification architecture](docs/notification-architecture.md).
+
 An npm-workspace modular monolith for Digital Construct, with a Next.js frontend, NestJS REST API, and Neon PostgreSQL/Drizzle database foundation.
 
 ## Prerequisites and setup

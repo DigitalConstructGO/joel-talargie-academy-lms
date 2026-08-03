@@ -16,7 +16,11 @@ describe('EnrollmentsService', () => {
     transition: jest.fn(),
     activity: jest.fn(),
   };
-  const service = new EnrollmentsService(repository as never);
+  const notifications = { notify: jest.fn().mockResolvedValue(null) };
+  const service = new EnrollmentsService(
+    repository as never,
+    notifications as never,
+  );
   const student = {
     id: 'student-id',
     roles: ['STUDENT'],

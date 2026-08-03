@@ -30,10 +30,12 @@ describe('CertificatesService', () => {
     delete: jest.fn(),
     getSignedUrl: jest.fn(),
   };
+  const notifications = { notify: jest.fn().mockResolvedValue(null) };
   const service = new CertificatesService(
     repository as never,
     config as never,
     storage,
+    notifications as never,
   );
   const user = {
     id: 'student',

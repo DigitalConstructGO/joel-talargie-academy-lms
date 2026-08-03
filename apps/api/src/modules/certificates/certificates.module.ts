@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../../common/database/database.module';
 import { StorageModule } from '../storage/storage.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import {
   AdminCertificatesController,
   CertificateTemplatesController,
@@ -12,7 +13,7 @@ import { CertificatesService } from './services/certificates.service';
 import { CertificateWorkerService } from './workers/certificate-worker.service';
 
 @Module({
-  imports: [DatabaseModule, StorageModule],
+  imports: [DatabaseModule, StorageModule, NotificationsModule],
   controllers: [
     StudentCertificatesController,
     PublicCertificatesController,

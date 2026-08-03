@@ -8,10 +8,14 @@ import sanitizeHtml from 'sanitize-html';
 import type { AuthUser } from '../../auth/interfaces/auth-user.interface';
 import type { LearningActivityQueryDto } from '../dto/learning.dto';
 import { LearningRepository } from '../repositories/learning.repository';
+import { NotificationsService } from '../../notifications/services/notifications.service';
 
 @Injectable()
 export class LearningService {
-  constructor(private readonly repository: LearningRepository) {}
+  constructor(
+    private readonly repository: LearningRepository,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async overview(user: AuthUser, enrollmentId: string) {
     const access = await this.requireAccess(user, enrollmentId);
@@ -135,7 +139,34 @@ export class LearningService {
   async complete(user: AuthUser, enrollmentId: string, lessonId: string) {
     const access = await this.requireAccess(user, enrollmentId);
     await this.requireLesson(access.courseId, lessonId);
-    return this.repository.complete(user.id, enrollmentId, lessonId);
+    const result = await this.repository.complete(
+      user.id,
+      enrollmentId,
+      lessonId,
+    );
+    if (result.courseCompleted)
+      await this.notifications
+        .notify({
+          userId: user.id,
+          recipientEmail: user.email,
+          recipientName: user.firstName ?? 'Student',
+          templateCode: 'COURSE_COMPLETED',
+          variables: {
+            recipientName: user.firstName ?? 'Student',
+            courseTitle: access.courseTitle,
+            dashboardUrl: `${process.env.EMAIL_PUBLIC_APP_URL ?? 'http://localhost:3000'}/dashboard/my-courses`,
+            academyName: 'Joel Talargie Academy',
+          },
+          deduplicationKey: `course-completed:${enrollmentId}`,
+          category: 'learning',
+          title: 'Course completed',
+          message: `Congratulations! You completed ${access.courseTitle}.`,
+          actionUrl: '/dashboard/my-courses',
+          relatedEntityType: 'enrollment',
+          relatedEntityId: enrollmentId,
+        })
+        .catch(() => null);
+    return result;
   }
 
   async adminProgress(enrollmentId: string) {

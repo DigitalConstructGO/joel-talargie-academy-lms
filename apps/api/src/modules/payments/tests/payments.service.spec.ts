@@ -25,7 +25,12 @@ describe('PaymentsService', () => {
     delete: jest.fn(),
     getSignedUrl: jest.fn(),
   };
-  const service = new PaymentsService(repository as never, storage);
+  const notifications = { notify: jest.fn().mockResolvedValue(null) };
+  const service = new PaymentsService(
+    repository as never,
+    storage,
+    notifications as never,
+  );
   const user = {
     id: 'student',
     roles: ['STUDENT'],

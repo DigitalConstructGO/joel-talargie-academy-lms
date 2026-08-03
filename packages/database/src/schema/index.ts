@@ -76,6 +76,27 @@ export const certificateStatus = pgEnum('certificate_status', [
 ]);
 export const notificationStatus = pgEnum('notification_status', ['PENDING', 'SENT', 'FAILED']);
 export const notificationChannel = pgEnum('notification_channel', ['IN_APP', 'EMAIL']);
+export const notificationPriority = pgEnum('notification_priority', [
+  'LOW',
+  'NORMAL',
+  'HIGH',
+  'CRITICAL',
+]);
+export const emailDeliveryStatus = pgEnum('email_delivery_status', [
+  'QUEUED',
+  'PROCESSING',
+  'SENT',
+  'RETRY_SCHEDULED',
+  'FAILED',
+  'CANCELLED',
+  'SUPPRESSED',
+]);
+export const emailAttemptStatus = pgEnum('email_attempt_status', [
+  'PROCESSING',
+  'SUCCEEDED',
+  'TEMPORARY_FAILURE',
+  'PERMANENT_FAILURE',
+]);
 export const jobStatus = pgEnum('job_status', ['PENDING', 'RUNNING', 'COMPLETED', 'FAILED']);
 
 export const users = pgTable(
@@ -734,11 +755,19 @@ export const notifications = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     channel: notificationChannel('channel').notNull(),
     status: notificationStatus('status').notNull().default('PENDING'),
+    type: text('type').notNull().default('GENERAL'),
     title: text('title').notNull(),
     body: text('body').notNull(),
+    actionUrl: text('action_url'),
+    relatedEntityType: text('related_entity_type'),
+    relatedEntityId: uuid('related_entity_id'),
+    priority: notificationPriority('priority').notNull().default('NORMAL'),
+    deduplicationKey: text('deduplication_key'),
     metadata: jsonb('metadata'),
     readAt: timestamp('read_at', { withTimezone: true }),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     index('notifications_user_read_created_idx').on(
@@ -753,9 +782,154 @@ export const notifications = pgTable(
       table.createdAt.desc(),
       table.id,
     ),
-    index('notifications_unread_in_app_idx')
+    index('notifications_unread_active_in_app_idx')
       .on(table.userId, table.createdAt.desc(), table.id)
-      .where(sql`${table.readAt} IS NULL AND ${table.channel} = 'IN_APP'`),
+      .where(
+        sql`${table.readAt} IS NULL AND ${table.archivedAt} IS NULL AND ${table.channel} = 'IN_APP'`,
+      ),
+    uniqueIndex('notifications_deduplication_key_uq')
+      .on(table.deduplicationKey)
+      .where(sql`${table.deduplicationKey} IS NOT NULL`),
+    index('notifications_user_type_priority_idx').on(
+      table.userId,
+      table.type,
+      table.priority,
+      table.createdAt.desc(),
+    ),
+  ],
+);
+
+export const emailTemplates = pgTable(
+  'email_templates',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    code: text('code').notNull(),
+    name: text('name').notNull(),
+    subjectTemplate: text('subject_template').notNull(),
+    htmlTemplate: text('html_template').notNull(),
+    textTemplate: text('text_template').notNull(),
+    version: integer('version').notNull().default(1),
+    locale: text('locale').notNull().default('en'),
+    isActive: boolean('is_active').notNull().default(true),
+    isSystem: boolean('is_system').notNull().default(true),
+    description: text('description'),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'restrict' }),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    unique('email_templates_code_version_locale_uq').on(table.code, table.version, table.locale),
+    uniqueIndex('email_templates_active_code_locale_uq')
+      .on(table.code, table.locale)
+      .where(sql`${table.isActive} = true AND ${table.archivedAt} IS NULL`),
+    index('email_templates_catalog_idx').on(table.code, table.locale, table.version.desc()),
+    check('email_templates_version_check', sql`${table.version} > 0`),
+    check('email_templates_code_check', sql`${table.code} ~ '^[A-Z][A-Z0-9_]{2,79}$'`),
+    check('email_templates_locale_check', sql`${table.locale} ~ '^[a-z]{2}(-[A-Z]{2})?$'`),
+  ],
+);
+
+export const emailDeliveries = pgTable(
+  'email_deliveries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    recipientEmail: text('recipient_email').notNull(),
+    recipientName: text('recipient_name'),
+    templateCode: text('template_code').notNull(),
+    templateVersion: integer('template_version').notNull(),
+    locale: text('locale').notNull().default('en'),
+    subjectSnapshot: text('subject_snapshot').notNull(),
+    textBodySnapshot: text('text_body_snapshot').notNull(),
+    htmlBodySnapshot: text('html_body_snapshot').notNull(),
+    status: emailDeliveryStatus('status').notNull().default('QUEUED'),
+    priority: notificationPriority('priority').notNull().default('NORMAL'),
+    deduplicationKey: text('deduplication_key'),
+    relatedEntityType: text('related_entity_type'),
+    relatedEntityId: uuid('related_entity_id'),
+    scheduledAt: timestamp('scheduled_at', { withTimezone: true }).notNull().defaultNow(),
+    sentAt: timestamp('sent_at', { withTimezone: true }),
+    failedAt: timestamp('failed_at', { withTimezone: true }),
+    cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+    attemptCount: integer('attempt_count').notNull().default(0),
+    maximumAttempts: integer('maximum_attempts').notNull().default(5),
+    lastAttemptAt: timestamp('last_attempt_at', { withTimezone: true }),
+    nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }),
+    lockedAt: timestamp('locked_at', { withTimezone: true }),
+    lockedBy: text('locked_by'),
+    providerMessageId: text('provider_message_id'),
+    failureCode: text('failure_code'),
+    failureMessage: text('failure_message'),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('email_deliveries_deduplication_key_uq')
+      .on(table.deduplicationKey)
+      .where(sql`${table.deduplicationKey} IS NOT NULL`),
+    index('email_deliveries_claim_idx')
+      .on(table.priority.desc(), table.scheduledAt, table.id)
+      .where(sql`${table.status} IN ('QUEUED', 'RETRY_SCHEDULED')`),
+    index('email_deliveries_user_created_idx').on(table.userId, table.createdAt.desc(), table.id),
+    index('email_deliveries_status_created_idx').on(table.status, table.createdAt.desc(), table.id),
+    index('email_deliveries_template_created_idx').on(table.templateCode, table.createdAt.desc()),
+    check('email_deliveries_attempts_check', sql`${table.maximumAttempts} > 0`),
+  ],
+);
+
+export const emailDeliveryAttempts = pgTable(
+  'email_delivery_attempts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    deliveryId: uuid('delivery_id')
+      .notNull()
+      .references(() => emailDeliveries.id, { onDelete: 'restrict' }),
+    attemptNumber: integer('attempt_number').notNull(),
+    workerId: text('worker_id'),
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    status: emailAttemptStatus('status').notNull().default('PROCESSING'),
+    providerResponseCode: text('provider_response_code'),
+    providerMessageId: text('provider_message_id'),
+    failureCode: text('failure_code'),
+    failureMessage: text('failure_message'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique('email_delivery_attempts_delivery_number_uq').on(table.deliveryId, table.attemptNumber),
+    index('email_delivery_attempts_delivery_created_idx').on(
+      table.deliveryId,
+      table.createdAt.desc(),
+      table.id,
+    ),
+  ],
+);
+
+export const notificationEvents = pgTable(
+  'notification_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
+    notificationId: uuid('notification_id').references(() => notifications.id, {
+      onDelete: 'restrict',
+    }),
+    emailDeliveryId: uuid('email_delivery_id').references(() => emailDeliveries.id, {
+      onDelete: 'restrict',
+    }),
+    eventType: text('event_type').notNull(),
+    channel: notificationChannel('channel').notNull(),
+    relatedEntityType: text('related_entity_type'),
+    relatedEntityId: uuid('related_entity_id'),
+    safeMetadataJson: jsonb('safe_metadata_json'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('notification_events_user_created_idx').on(table.userId, table.createdAt.desc()),
+    index('notification_events_delivery_created_idx').on(
+      table.emailDeliveryId,
+      table.createdAt.desc(),
+    ),
   ],
 );
 export const activityLogs = pgTable(
@@ -853,6 +1027,10 @@ export const schema = {
   certificateEvents,
   certificateFiles,
   notifications,
+  emailTemplates,
+  emailDeliveries,
+  emailDeliveryAttempts,
+  notificationEvents,
   activityLogs,
   platformSettings,
   backgroundJobs,

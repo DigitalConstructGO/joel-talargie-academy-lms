@@ -12,6 +12,7 @@
     "test": "jest --runInBand && npm run test:e2e",
     "test:e2e": "jest --config ./test/jest-e2e.json --runInBand",
     "worker:certificates": "node dist/src/modules/certificates/workers/certificate.worker.js",
+    "worker:email": "node dist/src/modules/notifications/workers/email.worker.js",
     "certificates:reconcile": "tsx scripts/certificates-reconcile.ts"
   },
   "dependencies": {
