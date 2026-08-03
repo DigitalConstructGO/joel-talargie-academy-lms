@@ -62,6 +62,12 @@ export const environmentSchema = z
       .default(10_000),
     SMTP_SOCKET_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
     MAIL_ENABLED: z.stringbool().default(false),
+    STORAGE_ENDPOINT: z.string().default(''),
+    STORAGE_REGION: z.string().default(''),
+    STORAGE_BUCKET: z.string().default(''),
+    STORAGE_ACCESS_KEY: z.string().default(''),
+    STORAGE_SECRET_KEY: z.string().default(''),
+    STORAGE_FORCE_PATH_STYLE: z.stringbool().default(false),
   })
   .superRefine((environment, context) => {
     if (

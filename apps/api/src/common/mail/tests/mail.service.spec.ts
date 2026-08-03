@@ -36,6 +36,12 @@ const enabledEnvironment: Environment = {
   SMTP_GREETING_TIMEOUT_MS: 10_000,
   SMTP_SOCKET_TIMEOUT_MS: 15_000,
   MAIL_ENABLED: true,
+  STORAGE_ENDPOINT: '',
+  STORAGE_REGION: '',
+  STORAGE_BUCKET: '',
+  STORAGE_ACCESS_KEY: '',
+  STORAGE_SECRET_KEY: '',
+  STORAGE_FORCE_PATH_STYLE: false,
 };
 
 function createService(overrides: Partial<Environment> = {}) {

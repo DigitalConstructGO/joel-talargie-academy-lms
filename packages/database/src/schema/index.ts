@@ -540,9 +540,20 @@ export const payments = pgTable(
     reviewerId: uuid('reviewer_id').references(() => users.id, { onDelete: 'restrict' }),
     attemptNumber: integer('attempt_number').notNull(),
     transactionId: text('transaction_id'),
+    transactionIdNormalized: text('transaction_id_normalized'),
     amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
+    expectedAmountSnapshot: numeric('expected_amount_snapshot', { precision: 12, scale: 2 })
+      .notNull()
+      .default('0'),
     currency: text('currency').notNull(),
+    paymentDate: timestamp('payment_date', { withTimezone: true }),
+    studentNote: text('student_note'),
     status: paymentStatus('status').notNull().default('PENDING'),
+    amountMismatch: boolean('amount_mismatch').notNull().default(false),
+    mismatchApprovalReason: text('mismatch_approval_reason'),
+    reviewNote: text('review_note'),
+    declineReason: text('decline_reason'),
+    duplicateTransactionCount: integer('duplicate_transaction_count').notNull().default(0),
     submittedAt: timestamp('submitted_at', { withTimezone: true }).notNull().defaultNow(),
     reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
     ...timestamps,
@@ -554,6 +565,18 @@ export const payments = pgTable(
       .where(sql`${table.status} = 'PENDING'`),
     index('payments_reviewer_reviewed_idx').on(table.reviewerId, table.reviewedAt.desc()),
     index('payments_transaction_idx').on(table.transactionId),
+    index('payments_transaction_normalized_idx').on(table.transactionIdNormalized),
+    index('payments_enrollment_submitted_idx').on(
+      table.enrollmentId,
+      table.submittedAt.desc(),
+      table.id,
+    ),
+    index('payments_status_submitted_idx').on(table.status, table.submittedAt.desc(), table.id),
+    uniqueIndex('payments_one_pending_per_enrollment_uq')
+      .on(table.enrollmentId)
+      .where(sql`${table.status} = 'PENDING'`),
+    check('payments_amount_positive_check', sql`${table.amount} > 0`),
+    check('payments_expected_amount_nonnegative_check', sql`${table.expectedAmountSnapshot} >= 0`),
   ],
 );
 export const paymentReceipts = pgTable(
@@ -564,10 +587,17 @@ export const paymentReceipts = pgTable(
       .notNull()
       .references(() => payments.id, { onDelete: 'cascade' }),
     storageKey: text('storage_key').notNull(),
+    originalFileName: text('original_file_name').notNull().default('receipt'),
     mimeType: text('mime_type').notNull(),
+    detectedMimeType: text('detected_mime_type'),
+    fileExtension: text('file_extension'),
+    fileSize: integer('file_size').notNull().default(0),
+    checksum: text('checksum'),
+    storageProvider: text('storage_provider'),
+    uploadedAt: timestamp('uploaded_at', { withTimezone: true }).notNull().defaultNow(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index('payment_receipts_payment_idx').on(table.paymentId)],
+  (table) => [unique('payment_receipts_payment_uq').on(table.paymentId)],
 );
 
 export const certificateTemplates = pgTable(

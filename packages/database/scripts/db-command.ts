@@ -81,6 +81,31 @@ async function run(): Promise<void> {
         await tx
           .delete(schema.rolePermissions)
           .where(eq(schema.rolePermissions.roleId, student.id));
+        await tx
+          .insert(schema.platformSettings)
+          .values([
+            { key: 'payment.manual.enabled', value: true },
+            { key: 'payment.bank_name', value: 'Configured Bank' },
+            { key: 'payment.account_name', value: 'Joel Talargie Academy' },
+            { key: 'payment.account_number', value: 'Configure before production use' },
+            { key: 'payment.branch', value: 'Configured branch' },
+            {
+              key: 'payment.reference_instructions',
+              value: 'Include your full name where supported.',
+            },
+            {
+              key: 'payment.general_instructions',
+              value: ['Transfer the exact amount.', 'Upload a clear receipt.'],
+            },
+            { key: 'payment.default_currency', value: 'ETB' },
+            { key: 'payment.receipt_max_size_mb', value: 12 },
+            {
+              key: 'payment.receipt_allowed_types',
+              value: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+            },
+            { key: 'payment.support_contact', value: 'Configure academy support contact' },
+          ])
+          .onConflictDoNothing({ target: schema.platformSettings.key });
       });
       process.stdout.write('RBAC roles and permission catalog seeded idempotently.\n');
       return;
