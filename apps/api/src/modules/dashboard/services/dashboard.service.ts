@@ -262,17 +262,25 @@ export class DashboardService {
     financial: boolean,
   ) {
     const range = this.dates.resolve(query);
-    const order = {
-      ENROLLMENTS: 'new_enrollments DESC',
-      COMPLETIONS: 'completed_enrollments DESC',
-      COMPLETION_RATE: 'completion_rate DESC NULLS LAST',
-      AVERAGE_PROGRESS: 'average_progress DESC',
-      REVENUE: 'revenue DESC NULLS LAST',
-    }[query.sort];
+    // sql.raw is only ever given these five hardcoded, whitelisted strings -
+    // query.sort is itself restricted to the same five values by @IsIn() on
+    // the DTO, but we never interpolate the query value into raw SQL.
+    const order =
+      {
+        ENROLLMENTS: sql.raw('new_enrollments DESC'),
+        COMPLETIONS: sql.raw('completed_enrollments DESC'),
+        COMPLETION_RATE: sql.raw('completion_rate DESC NULLS LAST'),
+        AVERAGE_PROGRESS: sql.raw('average_progress DESC'),
+        REVENUE: sql.raw('revenue DESC NULLS LAST'),
+      }[query.sort] ?? sql.raw('new_enrollments DESC');
+    const financialSelect = financial
+      ? sql`,coalesce(sum(p.amount) FILTER (WHERE p.status='APPROVED' AND p.reviewed_at >= ${range.from} AND p.reviewed_at < ${range.to}),0)::text revenue`
+      : sql``;
+    const financialJoin = financial
+      ? sql`LEFT JOIN payments p ON p.enrollment_id=e.id`
+      : sql``;
     const rows = await this.rows(
-      sql.raw(
-        `SELECT c.id,c.title,c.status,c.access_type,count(e.id)::int total_enrollments,count(e.id) FILTER (WHERE e.created_at >= '${range.from.toISOString()}' AND e.created_at < '${range.to.toISOString()}')::int new_enrollments,count(e.id) FILTER (WHERE e.status='COMPLETED')::int completed_enrollments,round(avg(e.progress_percentage),2)::text average_progress,CASE WHEN count(e.id) FILTER (WHERE e.status IN ('ENROLLED','IN_PROGRESS','COMPLETED'))=0 THEN NULL ELSE round(100.0*count(e.id) FILTER (WHERE e.status='COMPLETED')/count(e.id) FILTER (WHERE e.status IN ('ENROLLED','IN_PROGRESS','COMPLETED')),2) END::text completion_rate ${financial ? ",coalesce(sum(p.amount) FILTER (WHERE p.status='APPROVED' AND p.reviewed_at >= '" + range.from.toISOString() + "' AND p.reviewed_at < '" + range.to.toISOString() + "'),0)::text revenue" : ''} FROM courses c LEFT JOIN enrollments e ON e.course_id=c.id ${financial ? 'LEFT JOIN payments p ON p.enrollment_id=e.id' : ''} GROUP BY c.id ORDER BY ${order} LIMIT ${query.limit}`,
-      ),
+      sql`SELECT c.id,c.title,c.status,c.access_type,count(e.id)::int total_enrollments,count(e.id) FILTER (WHERE e.created_at >= ${range.from} AND e.created_at < ${range.to})::int new_enrollments,count(e.id) FILTER (WHERE e.status='COMPLETED')::int completed_enrollments,round(avg(e.progress_percentage),2)::text average_progress,CASE WHEN count(e.id) FILTER (WHERE e.status IN ('ENROLLED','IN_PROGRESS','COMPLETED'))=0 THEN NULL ELSE round(100.0*count(e.id) FILTER (WHERE e.status='COMPLETED')/count(e.id) FILTER (WHERE e.status IN ('ENROLLED','IN_PROGRESS','COMPLETED')),2) END::text completion_rate ${financialSelect} FROM courses c LEFT JOIN enrollments e ON e.course_id=c.id ${financialJoin} GROUP BY c.id ORDER BY ${order} LIMIT ${query.limit}`,
     );
     return rows;
   }

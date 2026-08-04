@@ -23,6 +23,9 @@ export enum EnrollmentStatus {
 }
 export class CreateEnrollmentDto {
   @IsUUID() courseId!: string;
+  @IsOptional()
+  @IsUUID()
+  redemptionId?: string;
 }
 export class EnrollmentPaginationDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) page = 1;

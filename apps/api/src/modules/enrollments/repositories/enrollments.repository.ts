@@ -26,7 +26,7 @@ export class EnrollmentsRepository {
     return this.database.client;
   }
 
-  create(studentId: string, courseId: string) {
+  create(studentId: string, courseId: string, redemptionId?: string) {
     return this.db.transaction(async (tx) => {
       await tx.execute(
         sql`SELECT id FROM courses WHERE id = ${courseId} FOR UPDATE`,
@@ -105,15 +105,38 @@ export class EnrollmentsRepository {
           throw new Error('COURSE_CAPACITY_REACHED');
         }
       }
-      const status =
-        course.accessType === 'FREE' ? 'ENROLLED' : 'PENDING_PAYMENT';
+      // A promo redemption, if supplied, is re-validated here under a row
+      // lock rather than trusted from the caller - this is the only place
+      // that can safely close the TOCTOU window between "redemption looked
+      // valid" and "redemption gets spent on an enrollment".
+      let redemption: typeof schema.promoRedemptions.$inferSelect | undefined;
+      if (redemptionId) {
+        await tx.execute(
+          sql`SELECT id FROM promo_redemptions WHERE id = ${redemptionId} FOR UPDATE`,
+        );
+        redemption = await tx.query.promoRedemptions.findFirst({
+          where: eq(schema.promoRedemptions.id, redemptionId),
+        });
+        if (
+          !redemption ||
+          redemption.studentId !== studentId ||
+          redemption.courseId !== courseId ||
+          redemption.status !== 'CONFIRMED' ||
+          redemption.enrollmentId
+        )
+          throw new Error('REDEMPTION_NOT_AVAILABLE');
+      }
+      const effectivelyFree =
+        course.accessType === 'FREE' ||
+        (redemption ? Number(redemption.finalPrice) === 0 : false);
+      const status = effectivelyFree ? 'ENROLLED' : 'PENDING_PAYMENT';
       const priceSnapshot = assertValidMoneySnapshot(
-        course.accessType === 'FREE' ? '0.00' : course.price,
+        effectivelyFree ? '0.00' : (redemption?.originalPrice ?? course.price),
       );
       const discountSnapshot = assertValidMoneySnapshot(
-        course.accessType === 'FREE'
+        effectivelyFree
           ? '0.00'
-          : (course.discountPrice ?? '0.00'),
+          : (redemption?.finalPrice ?? course.discountPrice ?? '0.00'),
       );
       const [enrollment] = await tx
         .insert(schema.enrollments)
@@ -129,6 +152,11 @@ export class EnrollmentsRepository {
         })
         .returning();
       if (!enrollment) throw new Error('ENROLLMENT_CREATE_FAILED');
+      if (redemption)
+        await tx
+          .update(schema.promoRedemptions)
+          .set({ enrollmentId: enrollment.id, updatedAt: now })
+          .where(eq(schema.promoRedemptions.id, redemption.id));
       await tx.insert(schema.activityLogs).values({
         actorId: studentId,
         action: 'enrollment.created',
@@ -139,6 +167,7 @@ export class EnrollmentsRepository {
           status,
           priceAtEnrollment: enrollment.priceAtEnrollment,
           currencyAtEnrollment: enrollment.currencyAtEnrollment,
+          redemptionId: redemption?.id ?? null,
         },
       });
       await tx.insert(schema.notifications).values({

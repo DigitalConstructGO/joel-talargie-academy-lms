@@ -16,7 +16,7 @@ import { RequirePermissions } from '../../../authorization/decorators/require-pe
 import {
   CreateReportExportDto,
   ExportListQueryDto,
-  ReasonDto,
+  ReportExportReasonDto,
 } from '../dto/reports.dto';
 import { ReportExportService } from '../services/report-export.service';
 @Controller('admin/report-exports')
@@ -75,7 +75,7 @@ export class AdminReportExportsController {
   @Post(':id/retry') @RequirePermissions('reports.retry_exports') retry(
     @CurrentUser() u: AuthUser,
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() d: ReasonDto,
+    @Body() d: ReportExportReasonDto,
     @Req() r: Request,
   ) {
     return this.service.retry(u.id, id, d.reason, this.all(r));
@@ -83,7 +83,7 @@ export class AdminReportExportsController {
   @Post(':id/cancel') @RequirePermissions('reports.cancel_exports') cancel(
     @CurrentUser() u: AuthUser,
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() d: ReasonDto,
+    @Body() d: ReportExportReasonDto,
     @Req() r: Request,
   ) {
     return this.service.cancel(u.id, id, d.reason, this.all(r));

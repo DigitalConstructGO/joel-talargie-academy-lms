@@ -59,7 +59,7 @@ export class DeliveryListDto extends PageDto {
   @IsOptional() @IsDateString() from?: string;
   @IsOptional() @IsDateString() to?: string;
 }
-export class ReasonDto {
+export class NotificationReasonDto {
   @IsString() @Length(3, 500) reason!: string;
 }
 export class TemplatePreviewDto {

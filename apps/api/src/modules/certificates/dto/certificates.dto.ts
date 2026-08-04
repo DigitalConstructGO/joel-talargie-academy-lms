@@ -33,11 +33,11 @@ export class GenerateCertificateDto {
   @IsOptional() @IsUUID() templateId?: string;
 }
 
-export class ReasonDto {
+export class CertificateReasonDto {
   @IsString() @MinLength(3) @MaxLength(500) reason!: string;
 }
 
-export class RegenerateCertificateDto extends ReasonDto {
+export class RegenerateCertificateDto extends CertificateReasonDto {
   @IsOptional() @IsUUID() templateId?: string;
 }
 

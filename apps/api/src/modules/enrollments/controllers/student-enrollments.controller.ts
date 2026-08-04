@@ -30,7 +30,7 @@ export class StudentEnrollmentsController {
     summary: 'Enroll the authenticated Student in an available course',
   })
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateEnrollmentDto) {
-    return this.enrollments.create(user, dto.courseId);
+    return this.enrollments.create(user, dto.courseId, dto.redemptionId);
   }
   @Get('me/enrollments')
   @Roles('STUDENT')

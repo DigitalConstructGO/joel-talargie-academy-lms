@@ -2,6 +2,7 @@ import {
   ConflictException,
   ForbiddenException,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { EnrollmentsService } from '../services/enrollments.service';
 
@@ -95,5 +96,32 @@ describe('EnrollmentsService', () => {
     await expect(
       service.revoke('admin-id', 'pending-id', 'Policy'),
     ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('passes an optional redemptionId through to the repository', async () => {
+    repository.create.mockResolvedValue({
+      created: true,
+      enrollment: { id: 'enrollment-id', status: 'ENROLLED' },
+    });
+    repository.studentEnrollment.mockResolvedValue({
+      id: 'enrollment-id',
+      status: 'ENROLLED',
+      courseTitle: 'Course',
+    });
+    await service.create(student as never, 'course-id', 'redemption-id');
+    expect(repository.create).toHaveBeenCalledWith(
+      'student-id',
+      'course-id',
+      'redemption-id',
+    );
+  });
+
+  it('maps an unusable promo redemption to a 422', async () => {
+    repository.create.mockRejectedValueOnce(
+      new Error('REDEMPTION_NOT_AVAILABLE'),
+    );
+    await expect(
+      service.create(student as never, 'course-id', 'redemption-id'),
+    ).rejects.toBeInstanceOf(UnprocessableEntityException);
   });
 });

@@ -17,7 +17,7 @@ import { RequirePermissions } from '../../authorization/decorators/require-permi
 import {
   ActivityQueryDto,
   ListUsersQueryDto,
-  ReasonDto,
+  UserActionReasonDto,
   UpdateProfileDto,
 } from '../dto/users.dto';
 import { UsersService } from '../services/users.service';
@@ -61,7 +61,7 @@ export class AdminUsersController {
   suspend(
     @CurrentUser() actor: AuthUser,
     @Param('userId', new ParseUUIDPipe()) id: string,
-    @Body() dto: ReasonDto,
+    @Body() dto: UserActionReasonDto,
   ) {
     return this.users.transition(
       actor.id,
@@ -74,7 +74,7 @@ export class AdminUsersController {
   @Delete(':userId') @RequirePermissions('users.archive') archive(
     @CurrentUser() actor: AuthUser,
     @Param('userId', new ParseUUIDPipe()) id: string,
-    @Body() dto: ReasonDto,
+    @Body() dto: UserActionReasonDto,
   ) {
     return this.users.transition(
       actor.id,

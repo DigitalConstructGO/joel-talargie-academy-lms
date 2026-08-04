@@ -44,7 +44,7 @@ export class RevokeSessionsDto {
   @IsBoolean()
   includeCurrentSession = false;
 }
-export class ReasonDto {
+export class UserActionReasonDto {
   @ApiProperty() @IsString() @MinLength(3) @MaxLength(500) reason!: string;
 }
 export enum UserStatusFilter {

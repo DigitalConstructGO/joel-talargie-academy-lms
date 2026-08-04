@@ -19,7 +19,7 @@ import {
   CertificateListDto,
   CreateCertificateTemplateDto,
   GenerateCertificateDto,
-  ReasonDto,
+  CertificateReasonDto,
   RegenerateCertificateDto,
   UpdateCertificateTemplateDto,
 } from '../dto/certificates.dto';
@@ -128,7 +128,7 @@ export class AdminCertificatesController {
   revoke(
     @CurrentUser() actor: AuthUser,
     @Param('certificateId', ParseUUIDPipe) id: string,
-    @Body() dto: ReasonDto,
+    @Body() dto: CertificateReasonDto,
   ) {
     return this.certificates.revoke(actor.id, id, dto.reason);
   }

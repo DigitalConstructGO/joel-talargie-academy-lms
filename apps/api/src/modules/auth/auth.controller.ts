@@ -73,6 +73,7 @@ export class AuthController {
     return response.redirect(redirect.toString());
   }
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('register')
   @ApiOperation({ summary: 'Register a student account' })
   register(@Body() dto: RegisterDto) {
@@ -95,7 +96,11 @@ export class AuthController {
     this.setCookie(response, result.refreshToken);
     return { user: result.user, accessToken: result.accessToken };
   }
-  @Public() @HttpCode(200) @Post('refresh') async refresh(
+  @Public()
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @HttpCode(200)
+  @Post('refresh')
+  async refresh(
     @Body() body: Partial<TokenDto>,
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
@@ -115,7 +120,11 @@ export class AuthController {
     response.clearCookie('refresh_token', { path: '/' });
     return result;
   }
-  @Public() @HttpCode(200) @Post('verify-email') verify(@Body() dto: TokenDto) {
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @HttpCode(200)
+  @Post('verify-email')
+  verify(@Body() dto: TokenDto) {
     return this.auth.verifyEmail(dto.token);
   }
   @Public()
@@ -125,15 +134,18 @@ export class AuthController {
   forgot(@Body() dto: ForgotPasswordDto) {
     return this.auth.forgotPassword(dto.email);
   }
-  @Public() @HttpCode(200) @Post('reset-password') reset(
-    @Body() dto: ResetPasswordDto,
-  ) {
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @HttpCode(200)
+  @Post('reset-password')
+  reset(@Body() dto: ResetPasswordDto) {
     return this.auth.resetPassword(dto);
   }
-  @ApiBearerAuth() @HttpCode(200) @Post('change-password') change(
-    @CurrentUser() user: AuthUser,
-    @Body() dto: ChangePasswordDto,
-  ) {
+  @ApiBearerAuth()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @HttpCode(200)
+  @Post('change-password')
+  change(@CurrentUser() user: AuthUser, @Body() dto: ChangePasswordDto) {
     return this.auth.changePassword(user, dto);
   }
   @ApiBearerAuth() @Get('profile') profile(@CurrentUser() user: AuthUser) {

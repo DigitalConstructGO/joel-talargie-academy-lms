@@ -54,6 +54,7 @@ export class EnrollmentsService {
       'ENROLLMENT_NOT_OPEN',
       'ENROLLMENT_CLOSED',
       'INVALID_PRICE_SNAPSHOT',
+      'REDEMPTION_NOT_AVAILABLE',
     ])
       if (value.includes(code))
         throw new UnprocessableEntityException({
@@ -74,7 +75,7 @@ export class EnrollmentsService {
         });
     throw error;
   }
-  async create(user: AuthUser, courseId: string) {
+  async create(user: AuthUser, courseId: string, redemptionId?: string) {
     if (!user.roles.includes('STUDENT'))
       throw new ForbiddenException({
         code: 'STUDENT_ROLE_REQUIRED',
@@ -86,7 +87,11 @@ export class EnrollmentsService {
         message: 'A verified email is required',
       });
     try {
-      const result = await this.repository.create(user.id, courseId);
+      const result = await this.repository.create(
+        user.id,
+        courseId,
+        redemptionId,
+      );
       const enrollment = await this.repository.studentEnrollment(
         user.id,
         result.enrollment.id,

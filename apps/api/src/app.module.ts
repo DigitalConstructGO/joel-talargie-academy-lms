@@ -26,6 +26,7 @@ import { CertificatesModule } from './modules/certificates/certificates.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AdministrationModule } from './modules/administration/administration.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { PromotionsModule } from './modules/promotions/promotions.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -58,6 +59,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     NotificationsModule,
     AdministrationModule,
     DashboardModule,
+    PromotionsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

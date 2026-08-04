@@ -74,6 +74,6 @@ export class ExportListQueryDto extends ReportQueryDto {
   @IsIn(['CSV', 'XLSX', 'PDF'])
   format?: string;
 }
-export class ReasonDto {
+export class ReportExportReasonDto {
   @ApiProperty() @IsString() @Length(5, 500) reason!: string;
 }

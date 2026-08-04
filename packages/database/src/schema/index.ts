@@ -113,6 +113,59 @@ export const uploadCategory = pgEnum('upload_category', [
   'LESSON_RESOURCE',
 ]);
 
+export const promoCampaignType = pgEnum('promo_campaign_type', [
+  'PERCENTAGE_DISCOUNT',
+  'FIXED_DISCOUNT',
+  'FREE_COURSE',
+  'SCHOLARSHIP',
+  'BUNDLE_DISCOUNT',
+  'REFERRAL_REWARD',
+  'AFFILIATE_DISCOUNT',
+  'CORPORATE_DISCOUNT',
+  'PARTNER_DISCOUNT',
+  'EVENT_PROMOTION',
+  'FLASH_SALE',
+  'SEASONAL_PROMOTION',
+  'FIRST_STUDENT_DISCOUNT',
+  'BIRTHDAY_COUPON',
+  'MANUAL_COUPON',
+  'AUTOMATIC_PROMOTION',
+]);
+export const promoCampaignStatus = pgEnum('promo_campaign_status', [
+  'DRAFT',
+  'ACTIVE',
+  'PAUSED',
+  'EXPIRED',
+  'ARCHIVED',
+]);
+export const promoDiscountType = pgEnum('promo_discount_type', ['PERCENTAGE', 'FIXED', 'FREE']);
+export const promoCodeType = pgEnum('promo_code_type', [
+  'MANUAL',
+  'REFERRAL',
+  'AFFILIATE',
+  'CORPORATE',
+  'UNIVERSITY_PARTNER',
+  'SYSTEM_GENERATED',
+]);
+export const promoCodeStatus = pgEnum('promo_code_status', [
+  'ACTIVE',
+  'PAUSED',
+  'EXPIRED',
+  'REVOKED',
+]);
+export const promoRedemptionStatus = pgEnum('promo_redemption_status', [
+  'RESERVED',
+  'CONFIRMED',
+  'CANCELLED',
+  'FAILED',
+]);
+export const promoAffiliateStatus = pgEnum('promo_affiliate_status', [
+  'PENDING',
+  'ACTIVE',
+  'SUSPENDED',
+  'TERMINATED',
+]);
+
 export const users = pgTable(
   'users',
   {
@@ -1096,6 +1149,296 @@ export const uploadedFiles = pgTable(
   ],
 );
 
+export const promoAffiliates = pgTable(
+  'promo_affiliates',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    name: text('name').notNull(),
+    email: text('email').notNull(),
+    status: promoAffiliateStatus('status').notNull().default('PENDING'),
+    commissionType: promoDiscountType('commission_type').notNull().default('PERCENTAGE'),
+    commissionRate: numeric('commission_rate', { precision: 5, scale: 2 }),
+    commissionFixedAmount: numeric('commission_fixed_amount', { precision: 12, scale: 2 }),
+    totalClicks: integer('total_clicks').notNull().default(0),
+    totalEnrollments: integer('total_enrollments').notNull().default(0),
+    totalRevenue: numeric('total_revenue', { precision: 14, scale: 2 }).notNull().default('0'),
+    totalCommission: numeric('total_commission', { precision: 14, scale: 2 })
+      .notNull()
+      .default('0'),
+    notes: text('notes'),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    index('promo_affiliates_user_idx').on(table.userId),
+    index('promo_affiliates_status_idx').on(table.status),
+    check(
+      'promo_affiliates_commission_rate_check',
+      sql`${table.commissionRate} IS NULL OR (${table.commissionRate} >= 0 AND ${table.commissionRate} <= 100)`,
+    ),
+    check(
+      'promo_affiliates_commission_fixed_check',
+      sql`${table.commissionFixedAmount} IS NULL OR ${table.commissionFixedAmount} >= 0`,
+    ),
+  ],
+);
+
+export const promoCampaigns = pgTable(
+  'promo_campaigns',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: text('name').notNull(),
+    description: text('description'),
+    type: promoCampaignType('type').notNull(),
+    status: promoCampaignStatus('status').notNull().default('DRAFT'),
+    discountType: promoDiscountType('discount_type').notNull(),
+    discountValue: numeric('discount_value', { precision: 12, scale: 2 }).notNull().default('0'),
+    maxDiscountAmount: numeric('max_discount_amount', { precision: 12, scale: 2 }),
+    minimumPurchaseAmount: numeric('minimum_purchase_amount', { precision: 12, scale: 2 }),
+    isAutomatic: boolean('is_automatic').notNull().default(false),
+    priority: integer('priority').notNull().default(0),
+    startsAt: timestamp('starts_at', { withTimezone: true }).notNull().defaultNow(),
+    endsAt: timestamp('ends_at', { withTimezone: true }),
+    maxRedemptions: integer('max_redemptions'),
+    maxRedemptionsPerUser: integer('max_redemptions_per_user').notNull().default(1),
+    redemptionCount: integer('redemption_count').notNull().default(0),
+    allowedRoles: text('allowed_roles').array(),
+    allowedCountries: text('allowed_countries').array(),
+    allowedEmailDomains: text('allowed_email_domains').array(),
+    allowedPaymentMethods: text('allowed_payment_methods').array(),
+    allowedDaysOfWeek: integer('allowed_days_of_week').array(),
+    allowedHourStart: integer('allowed_hour_start'),
+    allowedHourEnd: integer('allowed_hour_end'),
+    newStudentsOnly: boolean('new_students_only').notNull().default(false),
+    restrictToInstructorId: uuid('restrict_to_instructor_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    requiresApproval: boolean('requires_approval').notNull().default(false),
+    totalSeats: integer('total_seats'),
+    seatsUsed: integer('seats_used').notNull().default(0),
+    sponsorName: text('sponsor_name'),
+    sponsorNotes: text('sponsor_notes'),
+    referrerRewardType: promoDiscountType('referrer_reward_type'),
+    referrerRewardValue: numeric('referrer_reward_value', { precision: 12, scale: 2 }),
+    affiliateId: uuid('affiliate_id').references(() => promoAffiliates.id, {
+      onDelete: 'set null',
+    }),
+    metadata: jsonb('metadata').notNull().default({}),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    index('promo_campaigns_status_idx').on(table.status, table.startsAt.desc()),
+    index('promo_campaigns_automatic_idx')
+      .on(table.isAutomatic, table.status, table.priority.desc())
+      .where(sql`${table.isAutomatic} = true AND ${table.archivedAt} IS NULL`),
+    index('promo_campaigns_type_idx').on(table.type),
+    index('promo_campaigns_window_idx').on(table.startsAt, table.endsAt),
+    index('promo_campaigns_affiliate_idx').on(table.affiliateId),
+    check('promo_campaigns_discount_value_check', sql`${table.discountValue} >= 0`),
+    check(
+      'promo_campaigns_percentage_bounds_check',
+      sql`${table.discountType} <> 'PERCENTAGE' OR ${table.discountValue} <= 100`,
+    ),
+    check(
+      'promo_campaigns_window_check',
+      sql`${table.endsAt} IS NULL OR ${table.endsAt} > ${table.startsAt}`,
+    ),
+    check(
+      'promo_campaigns_seats_check',
+      sql`${table.totalSeats} IS NULL OR ${table.seatsUsed} <= ${table.totalSeats}`,
+    ),
+    check(
+      'promo_campaigns_hour_bounds_check',
+      sql`(${table.allowedHourStart} IS NULL AND ${table.allowedHourEnd} IS NULL) OR (${table.allowedHourStart} BETWEEN 0 AND 23 AND ${table.allowedHourEnd} BETWEEN 0 AND 23)`,
+    ),
+  ],
+);
+
+export const promoCodes = pgTable(
+  'promo_codes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    campaignId: uuid('campaign_id')
+      .notNull()
+      .references(() => promoCampaigns.id, { onDelete: 'cascade' }),
+    code: text('code').notNull(),
+    codeType: promoCodeType('code_type').notNull().default('MANUAL'),
+    status: promoCodeStatus('status').notNull().default('ACTIVE'),
+    ownerUserId: uuid('owner_user_id').references(() => users.id, { onDelete: 'set null' }),
+    affiliateId: uuid('affiliate_id').references(() => promoAffiliates.id, {
+      onDelete: 'set null',
+    }),
+    isSingleUse: boolean('is_single_use').notNull().default(false),
+    maxRedemptions: integer('max_redemptions'),
+    maxRedemptionsPerUser: integer('max_redemptions_per_user'),
+    redemptionCount: integer('redemption_count').notNull().default(0),
+    validFrom: timestamp('valid_from', { withTimezone: true }),
+    validUntil: timestamp('valid_until', { withTimezone: true }),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('promo_codes_code_uq').on(table.code),
+    index('promo_codes_campaign_idx').on(table.campaignId),
+    index('promo_codes_owner_idx').on(table.ownerUserId),
+    index('promo_codes_affiliate_idx').on(table.affiliateId),
+    index('promo_codes_status_idx').on(table.status),
+    check(
+      'promo_codes_single_use_check',
+      sql`NOT ${table.isSingleUse} OR ${table.maxRedemptions} = 1`,
+    ),
+    check(
+      'promo_codes_window_check',
+      sql`${table.validFrom} IS NULL OR ${table.validUntil} IS NULL OR ${table.validUntil} > ${table.validFrom}`,
+    ),
+  ],
+);
+
+export const promoCourseRules = pgTable(
+  'promo_course_rules',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    campaignId: uuid('campaign_id')
+      .notNull()
+      .references(() => promoCampaigns.id, { onDelete: 'cascade' }),
+    courseId: uuid('course_id')
+      .notNull()
+      .references(() => courses.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique('promo_course_rules_campaign_course_uq').on(table.campaignId, table.courseId),
+    index('promo_course_rules_course_idx').on(table.courseId),
+  ],
+);
+
+export const promoCategoryRules = pgTable(
+  'promo_category_rules',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    campaignId: uuid('campaign_id')
+      .notNull()
+      .references(() => promoCampaigns.id, { onDelete: 'cascade' }),
+    categoryId: uuid('category_id')
+      .notNull()
+      .references(() => categories.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique('promo_category_rules_campaign_category_uq').on(table.campaignId, table.categoryId),
+    index('promo_category_rules_category_idx').on(table.categoryId),
+  ],
+);
+
+export const promoUserRules = pgTable(
+  'promo_user_rules',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    campaignId: uuid('campaign_id')
+      .notNull()
+      .references(() => promoCampaigns.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique('promo_user_rules_campaign_user_uq').on(table.campaignId, table.userId),
+    index('promo_user_rules_user_idx').on(table.userId),
+  ],
+);
+
+export const promoRedemptions = pgTable(
+  'promo_redemptions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    campaignId: uuid('campaign_id')
+      .notNull()
+      .references(() => promoCampaigns.id, { onDelete: 'restrict' }),
+    codeId: uuid('code_id').references(() => promoCodes.id, { onDelete: 'restrict' }),
+    studentId: uuid('student_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
+    courseId: uuid('course_id')
+      .notNull()
+      .references(() => courses.id, { onDelete: 'restrict' }),
+    enrollmentId: uuid('enrollment_id').references(() => enrollments.id, {
+      onDelete: 'set null',
+    }),
+    paymentId: uuid('payment_id').references(() => payments.id, { onDelete: 'set null' }),
+    status: promoRedemptionStatus('status').notNull().default('RESERVED'),
+    originalPrice: numeric('original_price', { precision: 12, scale: 2 }).notNull(),
+    discountAmount: numeric('discount_amount', { precision: 12, scale: 2 }).notNull(),
+    finalPrice: numeric('final_price', { precision: 12, scale: 2 }).notNull(),
+    currency: text('currency').notNull(),
+    referralOwnerId: uuid('referral_owner_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    referrerRewardAmount: numeric('referrer_reward_amount', { precision: 12, scale: 2 }),
+    affiliateId: uuid('affiliate_id').references(() => promoAffiliates.id, {
+      onDelete: 'set null',
+    }),
+    affiliateCommissionAmount: numeric('affiliate_commission_amount', {
+      precision: 12,
+      scale: 2,
+    }),
+    ipAddress: text('ip_address'),
+    userAgent: text('user_agent'),
+    deviceType: text('device_type'),
+    redeemedAt: timestamp('redeemed_at', { withTimezone: true }).notNull().defaultNow(),
+    approvedBy: uuid('approved_by').references(() => users.id, { onDelete: 'set null' }),
+    approvalDecisionAt: timestamp('approval_decision_at', { withTimezone: true }),
+    rejectionReason: text('rejection_reason'),
+    ...timestamps,
+  },
+  (table) => [
+    index('promo_redemptions_campaign_idx').on(table.campaignId, table.redeemedAt.desc()),
+    index('promo_redemptions_code_idx').on(table.codeId),
+    index('promo_redemptions_student_idx').on(table.studentId, table.redeemedAt.desc()),
+    index('promo_redemptions_course_idx').on(table.courseId),
+    index('promo_redemptions_referral_owner_idx').on(table.referralOwnerId),
+    index('promo_redemptions_affiliate_idx').on(table.affiliateId),
+    uniqueIndex('promo_redemptions_active_code_student_uq')
+      .on(table.codeId, table.studentId)
+      .where(sql`${table.status} IN ('RESERVED', 'CONFIRMED') AND ${table.codeId} IS NOT NULL`),
+    check('promo_redemptions_discount_check', sql`${table.discountAmount} >= 0`),
+    check('promo_redemptions_final_price_check', sql`${table.finalPrice} >= 0`),
+    check(
+      'promo_redemptions_final_price_bounds_check',
+      sql`${table.finalPrice} <= ${table.originalPrice}`,
+    ),
+  ],
+);
+
+export const promoUsageLogs = pgTable(
+  'promo_usage_logs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    campaignId: uuid('campaign_id').references(() => promoCampaigns.id, { onDelete: 'set null' }),
+    codeId: uuid('code_id').references(() => promoCodes.id, { onDelete: 'set null' }),
+    actorId: uuid('actor_id').references(() => users.id, { onDelete: 'set null' }),
+    action: text('action').notNull(),
+    metadata: jsonb('metadata').notNull().default({}),
+    ipAddress: text('ip_address'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('promo_usage_logs_campaign_idx').on(table.campaignId, table.createdAt.desc()),
+    index('promo_usage_logs_code_idx').on(table.codeId, table.createdAt.desc()),
+    index('promo_usage_logs_action_idx').on(table.action, table.createdAt.desc()),
+  ],
+);
+
 export const schema = {
   users,
   userProfiles,
@@ -1134,4 +1477,12 @@ export const schema = {
   reportExports,
   backgroundJobs,
   uploadedFiles,
+  promoAffiliates,
+  promoCampaigns,
+  promoCodes,
+  promoCourseRules,
+  promoCategoryRules,
+  promoUserRules,
+  promoRedemptions,
+  promoUsageLogs,
 };

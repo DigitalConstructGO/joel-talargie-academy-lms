@@ -18,7 +18,7 @@ import {
   DeliveryListDto,
   MarkNotificationsReadDto,
   NotificationListDto,
-  ReasonDto,
+  NotificationReasonDto,
   TemplatePreviewDto,
 } from '../dto/notifications.dto';
 import { NotificationsService } from '../services/notifications.service';
@@ -91,7 +91,7 @@ export class AdminEmailDeliveriesController {
   retry(
     @CurrentUser() actor: AuthUser,
     @Param('deliveryId', ParseUUIDPipe) id: string,
-    @Body() dto: ReasonDto,
+    @Body() dto: NotificationReasonDto,
   ) {
     return this.notifications.retry(actor.id, id, dto.reason);
   }
@@ -101,7 +101,7 @@ export class AdminEmailDeliveriesController {
   cancel(
     @CurrentUser() actor: AuthUser,
     @Param('deliveryId', ParseUUIDPipe) id: string,
-    @Body() dto: ReasonDto,
+    @Body() dto: NotificationReasonDto,
   ) {
     return this.notifications.cancel(actor.id, id, dto.reason);
   }
