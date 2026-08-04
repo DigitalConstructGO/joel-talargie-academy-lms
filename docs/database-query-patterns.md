@@ -10,5 +10,6 @@ All list queries run inside PostgreSQL, select explicit required columns, valida
 - Certificate verification: unique token lookup selecting only safe public snapshot/status/date fields.
 - Notifications and audit logs: cursor pagination by `created_at DESC, id DESC`.
 - Background jobs: claim due jobs by `scheduled_at, priority, id` with `FOR UPDATE SKIP LOCKED`.
+- Administrator dashboard: fixed aggregate, trend, and bounded preview queries over source-of-truth tables. Revenue uses PostgreSQL numeric sums grouped by currency; dashboard request values never select arbitrary tables, columns, or expressions.
 
 Small administrator grids may use bounded offset pages. Large operational histories use cursors. External email, uploads, PDFs, and network calls occur after transaction commit. Large offsets, JavaScript pagination, `SELECT *`, and row-by-row query loops are prohibited.

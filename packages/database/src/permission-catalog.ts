@@ -105,6 +105,11 @@ export const PERMISSION_CODES = [
   'settings.update_certificates',
   'settings.update_notifications',
   'settings.view_history',
+  'dashboard.read',
+  'dashboard.read_financial',
+  'dashboard.read_sensitive',
+  'dashboard.read_operational_health',
+  'dashboard.read_administrator_activity',
 ] as const;
 export type PermissionCode = (typeof PERMISSION_CODES)[number];
 export const permissionSeed = PERMISSION_CODES.map((code) => ({

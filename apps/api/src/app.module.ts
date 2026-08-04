@@ -25,6 +25,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { CertificatesModule } from './modules/certificates/certificates.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AdministrationModule } from './modules/administration/administration.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -56,6 +57,7 @@ import { AdministrationModule } from './modules/administration/administration.mo
     CertificatesModule,
     NotificationsModule,
     AdministrationModule,
+    DashboardModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

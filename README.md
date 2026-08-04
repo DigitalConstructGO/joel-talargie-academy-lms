@@ -23,3 +23,5 @@ Common commands: `npm run dev`, `npm run lint`, `npm run typecheck`, `npm test`,
 
 Development occurs on `develop`; releasable work merges to `main`. Passwords are one-way hashed with `bcrypt.hash()` and checked with `bcrypt.compare()`. They cannot be decrypted and must never be logged. Database credentials are server-only and must never be logged or committed.
 Backend Phase 11 administrative reporting, secure CSV/XLSX exports, audit exploration, and typed platform settings are documented in [docs/phase-11-report.md](docs/phase-11-report.md). Start the dedicated PostgreSQL report worker with `npm run worker:reports`.
+
+Backend Phase 12 provides the permission-aware administrator dashboard API; see [docs/phase-12-report.md](docs/phase-12-report.md).

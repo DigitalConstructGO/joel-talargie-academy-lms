@@ -19,3 +19,7 @@ The Phase 1 frontend stack is Next.js, React, TypeScript, Tailwind CSS, Shadcn U
 Nodemailer provides server-only SMTP delivery through one reusable transporter owned by the NestJS `MailModule`. Future authentication, payment, notification, and certificate modules will call its exported `MailService`. SMTP configuration is never exposed through the API or browser environment. Failed-email retries will use a future PostgreSQL-backed job system; Redis and BullMQ are not used.
 
 The Phase 1 backend stack is Node.js, NestJS, TypeScript, REST, Swagger/OpenAPI, bcrypt, Nodemailer, Passport/JWT foundations, Class Validator, Class Transformer, Zod, Helmet, Multer, AWS S3 SDK, PDFKit, QRCode, and ExcelJS.
+
+## Administrator dashboard
+
+Phase 12 adds a backend-only, permission-aware Administrator Dashboard module. It uses bounded PostgreSQL aggregate and preview queries over normalized operational tables; it does not add a metric snapshot table, application cache, Redis, BullMQ, or a dashboard export workflow.

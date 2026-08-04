@@ -40,6 +40,6 @@ import { PlatformSettingsService } from './settings/platform-settings.service';
     SettingRegistryService,
     PlatformSettingsService,
   ],
-  exports: [ReportExportProcessor],
+  exports: [ReportExportProcessor, ReportPrivacyService],
 })
 export class AdministrationModule {}
