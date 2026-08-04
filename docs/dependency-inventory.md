@@ -10,12 +10,13 @@
 
 Future-facing API packages are installed but have no business implementation in Phase 1.
 
-| Package             | Workspace           | Type        | Purpose                                                                   |
-| ------------------- | ------------------- | ----------- | ------------------------------------------------------------------------- |
-| `zustand`           | `apps/web`          | Runtime     | Lightweight frontend UI state; not API caching or permanent business data |
-| `nodemailer`        | `apps/api`          | Runtime     | SMTP transactional-email foundation                                       |
-| `@types/nodemailer` | `apps/api`          | Development | TypeScript definitions for Nodemailer                                     |
-| `drizzle-orm`       | `packages/database` | Runtime     | Typed PostgreSQL queries and schema integration                           |
-| `pg`                | `packages/database` | Runtime     | Pooled Neon PostgreSQL connections                                        |
-| `drizzle-kit`       | `packages/database` | Development | Schema generation and migration tooling                                   |
-| `@types/pg`         | `packages/database` | Development | TypeScript definitions for node-postgres                                  |
+| Package                                                                                                                                                 | Workspace           | Type        | Purpose                                                                   |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ----------- | ------------------------------------------------------------------------- |
+| `zustand`                                                                                                                                               | `apps/web`          | Runtime     | Lightweight frontend UI state; not API caching or permanent business data |
+| `nodemailer`                                                                                                                                            | `apps/api`          | Runtime     | SMTP transactional-email foundation                                       |
+| `@types/nodemailer`                                                                                                                                     | `apps/api`          | Development | TypeScript definitions for Nodemailer                                     |
+| `drizzle-orm`                                                                                                                                           | `packages/database` | Runtime     | Typed PostgreSQL queries and schema integration                           |
+| `pg`                                                                                                                                                    | `packages/database` | Runtime     | Pooled Neon PostgreSQL connections                                        |
+| `drizzle-kit`                                                                                                                                           | `packages/database` | Development | Schema generation and migration tooling                                   |
+| `@types/pg`                                                                                                                                             | `packages/database` | Development | TypeScript definitions for node-postgres                                  |
+| Phase 11 reuses ExcelJS for XLSX generation and PDFKit for PDF generation. Redis and BullMQ are intentionally absent; export work is PostgreSQL-backed. |

@@ -24,6 +24,7 @@ import { LearningModule } from './modules/learning/learning.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { CertificatesModule } from './modules/certificates/certificates.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { AdministrationModule } from './modules/administration/administration.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -54,6 +55,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     PaymentsModule,
     CertificatesModule,
     NotificationsModule,
+    AdministrationModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

@@ -32,3 +32,9 @@ Both primary URLs must use PostgreSQL connection-string format, include a databa
 | `SMTP_SOCKET_TIMEOUT_MS`     | `15000`                 | Positive integer.                                        |
 
 For optional local testing, a later infrastructure phase can point these values at Mailpit and expose its development-only inbox UI. It is not required for Phase 1 tests. Never use personal Gmail passwords, commit `.env` files, JWT secrets, SMTP credentials, or storage keys. Production rejects obvious placeholder SMTP credentials.
+
+## Phase 11 reporting
+
+- `REPORT_EXPORTS_ENABLED`: deployment hard switch for report exports.
+- `REPORT_EXPORT_MAX_ROWS`: hard upper row limit; database settings cannot exceed it.
+- `REPORT_EXPORT_RETENTION_DAYS`: private-file retention period.

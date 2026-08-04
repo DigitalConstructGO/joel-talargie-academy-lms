@@ -22,3 +22,4 @@ Unique constraints cover normalized identity and relationship rules: normalized 
 | background_jobs | status/locked_at and type/status/schedule                | B-tree         | Recovery and operational filtering                   |
 
 Remaining indexes support documented foreign-key joins and deletion checks. Composite unique indexes are reused when their leading column satisfies a lookup. Index value must be confirmed with `EXPLAIN ANALYZE` on representative data before removal or expansion.
+Phase 11 adds requester/created, status/created, status/expiry, and active deduplication indexes to `report_exports`.

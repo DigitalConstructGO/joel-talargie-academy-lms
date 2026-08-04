@@ -98,6 +98,15 @@ export const emailAttemptStatus = pgEnum('email_attempt_status', [
   'PERMANENT_FAILURE',
 ]);
 export const jobStatus = pgEnum('job_status', ['PENDING', 'RUNNING', 'COMPLETED', 'FAILED']);
+export const reportExportStatus = pgEnum('report_export_status', [
+  'QUEUED',
+  'PROCESSING',
+  'COMPLETED',
+  'FAILED',
+  'CANCELLED',
+  'EXPIRED',
+]);
+export const reportExportFormat = pgEnum('report_export_format', ['CSV', 'XLSX', 'PDF']);
 
 export const users = pgTable(
   'users',
@@ -968,6 +977,59 @@ export const platformSettings = pgTable(
   },
   (table) => [index('platform_settings_updated_by_idx').on(table.updatedBy)],
 );
+export const reportExports = pgTable(
+  'report_exports',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    requestedBy: uuid('requested_by')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
+    reportType: text('report_type').notNull(),
+    format: reportExportFormat('format').notNull(),
+    status: reportExportStatus('status').notNull().default('QUEUED'),
+    filtersJson: jsonb('filters_json').notNull().default({}),
+    selectedColumnsJson: jsonb('selected_columns_json'),
+    sortJson: jsonb('sort_json'),
+    locale: text('locale').notNull().default('en'),
+    timezone: text('timezone').notNull().default('UTC'),
+    requestedAt: timestamp('requested_at', { withTimezone: true }).notNull().defaultNow(),
+    startedAt: timestamp('started_at', { withTimezone: true }),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    failedAt: timestamp('failed_at', { withTimezone: true }),
+    cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
+    rowCount: integer('row_count'),
+    fileStorageKey: text('file_storage_key'),
+    originalFileName: text('original_file_name'),
+    mimeType: text('mime_type'),
+    fileSize: integer('file_size'),
+    checksum: text('checksum'),
+    attemptCount: integer('attempt_count').notNull().default(0),
+    maximumAttempts: integer('maximum_attempts').notNull().default(3),
+    failureCode: text('failure_code'),
+    failureMessage: text('failure_message'),
+    deduplicationKey: text('deduplication_key'),
+    ...timestamps,
+  },
+  (table) => [
+    index('report_exports_requester_created_idx').on(
+      table.requestedBy,
+      table.createdAt.desc(),
+      table.id,
+    ),
+    index('report_exports_status_created_idx').on(table.status, table.createdAt.desc(), table.id),
+    index('report_exports_expiry_idx').on(table.status, table.expiresAt),
+    uniqueIndex('report_exports_active_dedup_uq')
+      .on(table.deduplicationKey)
+      .where(
+        sql`${table.deduplicationKey} IS NOT NULL AND ${table.status} IN ('QUEUED','PROCESSING')`,
+      ),
+    check(
+      'report_exports_attempts_check',
+      sql`${table.maximumAttempts} > 0 AND ${table.attemptCount} >= 0`,
+    ),
+  ],
+);
 export const backgroundJobs = pgTable(
   'background_jobs',
   {
@@ -1033,5 +1095,6 @@ export const schema = {
   notificationEvents,
   activityLogs,
   platformSettings,
+  reportExports,
   backgroundJobs,
 };

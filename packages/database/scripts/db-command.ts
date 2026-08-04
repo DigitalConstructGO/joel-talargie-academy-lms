@@ -96,15 +96,9 @@ async function run(): Promise<void> {
         const permissions = await tx.select({ id: schema.permissions.id }).from(schema.permissions);
         if (!administrator || !student) throw new Error('System roles could not be seeded');
         await tx
-          .delete(schema.rolePermissions)
-          .where(eq(schema.rolePermissions.roleId, administrator.id));
-        await tx
           .insert(schema.rolePermissions)
           .values(permissions.map(({ id }) => ({ roleId: administrator.id, permissionId: id })))
           .onConflictDoNothing();
-        await tx
-          .delete(schema.rolePermissions)
-          .where(eq(schema.rolePermissions.roleId, student.id));
         await tx
           .insert(schema.platformSettings)
           .values([

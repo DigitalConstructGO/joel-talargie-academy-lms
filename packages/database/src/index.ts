@@ -27,4 +27,18 @@ export * from './infrastructure.ts';
 export * from './rbac.ts';
 export * from './permission-catalog.ts';
 export * from './users.ts';
-export { and, asc, count, desc, eq, inArray, isNull, ne, or, sql } from 'drizzle-orm';
+export {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  ilike,
+  inArray,
+  isNull,
+  lte,
+  ne,
+  or,
+  sql,
+} from 'drizzle-orm';
