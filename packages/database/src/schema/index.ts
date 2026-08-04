@@ -107,6 +107,11 @@ export const reportExportStatus = pgEnum('report_export_status', [
   'EXPIRED',
 ]);
 export const reportExportFormat = pgEnum('report_export_format', ['CSV', 'XLSX', 'PDF']);
+export const uploadCategory = pgEnum('upload_category', [
+  'AVATAR',
+  'COURSE_THUMBNAIL',
+  'LESSON_RESOURCE',
+]);
 
 export const users = pgTable(
   'users',
@@ -1060,6 +1065,37 @@ export const backgroundJobs = pgTable(
   ],
 );
 
+export const uploadedFiles = pgTable(
+  'uploaded_files',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    category: uploadCategory('category').notNull(),
+    storageKey: text('storage_key').notNull().unique(),
+    variantStorageKey: text('variant_storage_key'),
+    originalFileName: text('original_file_name').notNull(),
+    storedFileName: text('stored_file_name').notNull(),
+    mimeType: text('mime_type').notNull(),
+    fileSize: integer('file_size').notNull(),
+    checksum: text('checksum').notNull(),
+    width: integer('width'),
+    height: integer('height'),
+    relatedUserId: uuid('related_user_id').references(() => users.id, { onDelete: 'cascade' }),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    index('uploaded_files_category_idx').on(table.category, table.createdAt.desc()),
+    index('uploaded_files_created_by_idx').on(table.createdBy),
+    uniqueIndex('uploaded_files_active_avatar_uq')
+      .on(table.relatedUserId)
+      .where(sql`${table.category} = 'AVATAR' AND ${table.deletedAt} IS NULL`),
+    check('uploaded_files_size_check', sql`${table.fileSize} > 0`),
+  ],
+);
+
 export const schema = {
   users,
   userProfiles,
@@ -1097,4 +1133,5 @@ export const schema = {
   platformSettings,
   reportExports,
   backgroundJobs,
+  uploadedFiles,
 };

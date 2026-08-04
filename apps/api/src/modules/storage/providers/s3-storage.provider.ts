@@ -7,10 +7,15 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { StorageService, UploadInput } from './storage.interface';
+import type { StorageService, UploadInput } from '../storage.interface';
 
+/**
+ * Future S3-compatible provider. Kept behind the same `StorageService`
+ * contract as `LocalStorageProvider` so switching `STORAGE_DRIVER=s3` is the
+ * only change required anywhere in the app - see storage.module.ts.
+ */
 @Injectable()
-export class S3StorageService implements StorageService {
+export class S3StorageProvider implements StorageService {
   private readonly bucket: string;
   private readonly client: S3Client;
 

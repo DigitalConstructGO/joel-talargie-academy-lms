@@ -33,6 +33,16 @@ Both primary URLs must use PostgreSQL connection-string format, include a databa
 
 For optional local testing, a later infrastructure phase can point these values at Mailpit and expose its development-only inbox UI. It is not required for Phase 1 tests. Never use personal Gmail passwords, commit `.env` files, JWT secrets, SMTP credentials, or storage keys. Production rejects obvious placeholder SMTP credentials.
 
+## Storage (Phase 13)
+
+| Variable                                                                                                                  | Default                           | Notes                                                                                |
+| ------------------------------------------------------------------------------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------ |
+| `STORAGE_DRIVER`                                                                                                          | `local`                           | `local` or `s3`. See [file-storage-architecture.md](./file-storage-architecture.md). |
+| `STORAGE_ROOT`                                                                                                            | empty (auto-detected repo root)   | Overrides the resolved `/storage` directory.                                         |
+| `STORAGE_SIGNING_SECRET`                                                                                                  | falls back to `JWT_ACCESS_SECRET` | HMAC secret for local signed download tokens.                                        |
+| `STORAGE_SIGNED_URL_TTL_SECONDS`                                                                                          | `900`                             | Default signed URL lifetime (30-86400s) when a caller omits one.                     |
+| `STORAGE_ENDPOINT`/`STORAGE_REGION`/`STORAGE_BUCKET`/`STORAGE_ACCESS_KEY`/`STORAGE_SECRET_KEY`/`STORAGE_FORCE_PATH_STYLE` | empty                             | Only read when `STORAGE_DRIVER=s3`.                                                  |
+
 ## Phase 11 reporting
 
 - `REPORT_EXPORTS_ENABLED`: deployment hard switch for report exports.

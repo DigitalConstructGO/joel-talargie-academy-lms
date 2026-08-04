@@ -218,6 +218,6 @@ export class ReportExportService {
     return this.present(row);
   }
   key(actorId: string, id: string, format: string) {
-    return `reports/${process.env.NODE_ENV ?? 'development'}/${actorId}/${id}/${randomUUID()}.${format.toLowerCase()}`;
+    return `exports/${process.env.NODE_ENV ?? 'development'}/${actorId}/${id}/${randomUUID()}.${format.toLowerCase()}`;
   }
 }

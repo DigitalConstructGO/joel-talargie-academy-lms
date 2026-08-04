@@ -113,6 +113,15 @@ export const environmentSchema = z
       .regex(/^[a-z]{2}(?:-[A-Z]{2})?$/)
       .default('en'),
     MAIL_ENABLED: z.stringbool().default(false),
+    STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
+    STORAGE_ROOT: z.string().default(''),
+    STORAGE_SIGNING_SECRET: z.string().default(''),
+    STORAGE_SIGNED_URL_TTL_SECONDS: z.coerce
+      .number()
+      .int()
+      .min(30)
+      .max(86_400)
+      .default(900),
     STORAGE_ENDPOINT: z.string().default(''),
     STORAGE_REGION: z.string().default(''),
     STORAGE_BUCKET: z.string().default(''),

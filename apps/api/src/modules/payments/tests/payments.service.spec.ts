@@ -106,7 +106,7 @@ describe('PaymentsService', () => {
     });
     expect(storage.upload).toHaveBeenCalledWith(
       expect.objectContaining({
-        key: expect.stringContaining('private/payment-receipts/'),
+        key: expect.stringContaining('payment-receipts/'),
       }),
     );
     expect(repository.submit).toHaveBeenCalledWith(

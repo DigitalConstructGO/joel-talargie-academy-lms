@@ -135,7 +135,7 @@ export class CertificateWorkerService {
     if (pdf.length < 100 || pdf.subarray(0, 5).toString() !== '%PDF-')
       throw new Error('CERTIFICATE_PDF_INVALID');
     const checksum = createHash('sha256').update(pdf).digest('hex');
-    const key = `private/certificates/${data.id}/v${data.generationVersion}/${randomUUID()}.pdf`;
+    const key = `certificates/${data.id}/v${data.generationVersion}/${randomUUID()}.pdf`;
     await this.storage.upload({
       key,
       body: pdf,

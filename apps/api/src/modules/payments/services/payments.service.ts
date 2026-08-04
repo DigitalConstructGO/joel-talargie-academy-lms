@@ -440,7 +440,7 @@ export class PaymentsService {
       .replace(/[^A-Za-z0-9._-]/g, '_')
       .slice(0, 120);
     return {
-      key: `private/payment-receipts/${enrollmentId}/${randomUUID()}${rule.extension}`,
+      key: `payment-receipts/${enrollmentId}/${randomUUID()}${rule.extension}`,
       originalFileName: safeName,
       mimeType: file.mimetype,
       detectedMimeType: file.mimetype,
