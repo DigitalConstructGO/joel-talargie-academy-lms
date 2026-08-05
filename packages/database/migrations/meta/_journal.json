@@ -134,6 +134,13 @@
       "when": 1785846588623,
       "tag": "0018_parallel_starhawk",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1785916568603,
+      "tag": "0019_robust_steel_serpent",
+      "breakpoints": true
     }
   ]
 }

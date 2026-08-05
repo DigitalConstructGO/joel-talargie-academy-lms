@@ -43,6 +43,22 @@ export const environmentSchema = z
       .int()
       .positive()
       .default(30_000),
+    DATABASE_STATEMENT_TIMEOUT_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(15_000),
+    DATABASE_QUERY_TIMEOUT_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(20_000),
+    DATABASE_IDLE_IN_TRANSACTION_TIMEOUT_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(30_000),
+    DATABASE_MAX_USES: z.coerce.number().int().positive().default(7_500),
     SMTP_HOST: z.string().default(''),
     SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
     SMTP_SECURE: z.stringbool().default(false),

@@ -26,4 +26,40 @@ describe('RequestLoggerMiddleware', () => {
     expect(log.mock.calls[0]?.[0]).not.toContain('password');
     log.mockRestore();
   });
+
+  it('suppresses a successful health-check ping', () => {
+    const log = jest
+      .spyOn(Logger.prototype, 'log')
+      .mockImplementation(() => undefined);
+    const response = Object.assign(new EventEmitter(), {
+      statusCode: 200,
+    }) as unknown as Response;
+    const request = {
+      method: 'GET',
+      path: '/api/v1/health',
+      ip: '127.0.0.1',
+    } as Request;
+    new RequestLoggerMiddleware().use(request, response, jest.fn());
+    response.emit('finish');
+    expect(log).not.toHaveBeenCalled();
+    log.mockRestore();
+  });
+
+  it('still logs a failing health-check ping (e.g. readiness returning 503)', () => {
+    const log = jest
+      .spyOn(Logger.prototype, 'log')
+      .mockImplementation(() => undefined);
+    const response = Object.assign(new EventEmitter(), {
+      statusCode: 503,
+    }) as unknown as Response;
+    const request = {
+      method: 'GET',
+      path: '/api/v1/health/ready',
+      ip: '127.0.0.1',
+    } as Request;
+    new RequestLoggerMiddleware().use(request, response, jest.fn());
+    response.emit('finish');
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('"status":503'));
+    log.mockRestore();
+  });
 });

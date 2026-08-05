@@ -88,6 +88,14 @@ export class PromotionsRepository {
     return this.buildRuleSet(row.campaign, row.code, userId);
   }
 
+  /**
+   * Batch-fetches automatic campaigns for a course/user pricing check.
+   * Rule rows and redemption counts are fetched once each across every
+   * candidate campaign (`inArray` + `groupBy`) instead of per-campaign, so
+   * this stays at a fixed 5 round trips regardless of how many automatic
+   * campaigns are active - avoids an N+1 that used to scale linearly with
+   * campaign count on this checkout/pricing hot path.
+   */
   async findAutomaticCandidates(
     courseId: string,
     userId: string,
@@ -103,8 +111,74 @@ export class PromotionsRepository {
         ),
       );
     void courseId;
-    return Promise.all(
-      campaigns.map((campaign) => this.buildRuleSet(campaign, null, userId)),
+    if (!campaigns.length) return [];
+    const campaignIds = campaigns.map((campaign) => campaign.id);
+    const [courseRules, categoryRules, userRules, redemptionCounts] =
+      await Promise.all([
+        this.db
+          .select({
+            campaignId: schema.promoCourseRules.campaignId,
+            courseId: schema.promoCourseRules.courseId,
+          })
+          .from(schema.promoCourseRules)
+          .where(inArray(schema.promoCourseRules.campaignId, campaignIds)),
+        this.db
+          .select({
+            campaignId: schema.promoCategoryRules.campaignId,
+            categoryId: schema.promoCategoryRules.categoryId,
+          })
+          .from(schema.promoCategoryRules)
+          .where(inArray(schema.promoCategoryRules.campaignId, campaignIds)),
+        this.db
+          .select({
+            campaignId: schema.promoUserRules.campaignId,
+            userId: schema.promoUserRules.userId,
+          })
+          .from(schema.promoUserRules)
+          .where(inArray(schema.promoUserRules.campaignId, campaignIds)),
+        this.db
+          .select({
+            campaignId: schema.promoRedemptions.campaignId,
+            value: count(),
+          })
+          .from(schema.promoRedemptions)
+          .where(
+            and(
+              eq(schema.promoRedemptions.studentId, userId),
+              inArray(schema.promoRedemptions.campaignId, campaignIds),
+              inArray(
+                schema.promoRedemptions.status,
+                ACTIVE_REDEMPTION_STATUSES,
+              ),
+            ),
+          )
+          .groupBy(schema.promoRedemptions.campaignId),
+      ]);
+    const byCampaign = <T, V>(rows: T[], value: (row: T) => V) => {
+      const map = new Map<string, V[]>();
+      for (const row of rows) {
+        const campaignId = (row as { campaignId: string }).campaignId;
+        const list = map.get(campaignId);
+        if (list) list.push(value(row));
+        else map.set(campaignId, [value(row)]);
+      }
+      return map;
+    };
+    const courseRuleMap = byCampaign(courseRules, (r) => r.courseId);
+    const categoryRuleMap = byCampaign(categoryRules, (r) => r.categoryId);
+    const userRuleMap = byCampaign(userRules, (r) => r.userId);
+    const redemptionMap = new Map(
+      redemptionCounts.map((row) => [row.campaignId, row.value]),
+    );
+    return campaigns.map((campaign) =>
+      this.presentRuleSet(
+        campaign,
+        null,
+        courseRuleMap.get(campaign.id) ?? [],
+        categoryRuleMap.get(campaign.id) ?? [],
+        userRuleMap.get(campaign.id) ?? [],
+        { forCampaign: redemptionMap.get(campaign.id) ?? 0, forCode: 0 },
+      ),
     );
   }
 
@@ -129,6 +203,24 @@ export class PromotionsRepository {
           .where(eq(schema.promoUserRules.campaignId, campaign.id)),
         this.redemptionCountsFor(userId, campaign.id, code?.id ?? null),
       ]);
+    return this.presentRuleSet(
+      campaign,
+      code,
+      courseRuleIds.map((r) => r.courseId),
+      categoryRuleIds.map((r) => r.categoryId),
+      userRuleIds.map((r) => r.userId),
+      redemptionCounts,
+    );
+  }
+
+  private presentRuleSet(
+    campaign: typeof schema.promoCampaigns.$inferSelect,
+    code: typeof schema.promoCodes.$inferSelect | null,
+    courseRuleCourseIds: string[],
+    categoryRuleCategoryIds: string[],
+    userRuleUserIds: string[],
+    redemptionCounts: { forCode: number; forCampaign: number },
+  ): EngineRuleSet {
     return {
       campaign: {
         id: campaign.id,
@@ -177,9 +269,9 @@ export class PromotionsRepository {
             validUntil: code.validUntil,
           }
         : null,
-      courseRuleCourseIds: courseRuleIds.map((r) => r.courseId),
-      categoryRuleCategoryIds: categoryRuleIds.map((r) => r.categoryId),
-      userRuleUserIds: userRuleIds.map((r) => r.userId),
+      courseRuleCourseIds,
+      categoryRuleCategoryIds,
+      userRuleUserIds,
       userRedemptionCountForCode: redemptionCounts.forCode,
       userRedemptionCountForCampaign: redemptionCounts.forCampaign,
     };

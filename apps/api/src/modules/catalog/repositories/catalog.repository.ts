@@ -659,43 +659,69 @@ export class CatalogRepository {
             sortOrder: x.sortOrder,
           })),
         );
-      const sectionIds = new Map<string, string>();
-      for (const section of sections) {
-        const [copy] = await tx
-          .insert(schema.courseSections)
-          .values({
-            courseId: course.id,
-            title: section.title,
-            description: section.description,
-            position: section.position,
-          })
-          .returning({ id: schema.courseSections.id });
-        if (copy) sectionIds.set(section.id, copy.id);
-      }
-      const lessonIds = new Map<string, string>();
-      for (const lesson of lessons) {
-        const sectionId = sectionIds.get(lesson.sectionId);
-        if (!sectionId) continue;
-        const [copy] = await tx
-          .insert(schema.lessons)
-          .values({
-            courseId: course.id,
-            sectionId,
-            title: lesson.title,
-            slug: lesson.slug,
-            lessonType: lesson.lessonType,
-            content: lesson.content,
-            videoUrl: lesson.videoUrl,
-            externalUrl: lesson.externalUrl,
-            durationSeconds: lesson.durationSeconds,
-            position: lesson.position,
-            isMandatory: lesson.isMandatory,
-            isPreview: lesson.isPreview,
-            isPublished: false,
-          })
-          .returning({ id: schema.lessons.id });
-        if (copy) lessonIds.set(lesson.id, copy.id);
-      }
+      // Multi-row INSERT ... RETURNING preserves the input VALUES order for a
+      // plain insert (no ON CONFLICT), so a single batched insert can be
+      // safely zipped back to source ids by index - this replaces what used
+      // to be one round trip per section/lesson with one round trip total,
+      // without changing which rows end up copied.
+      const sectionCopies = sections.length
+        ? await tx
+            .insert(schema.courseSections)
+            .values(
+              sections.map((section) => ({
+                courseId: course.id,
+                title: section.title,
+                description: section.description,
+                position: section.position,
+              })),
+            )
+            .returning({ id: schema.courseSections.id })
+        : [];
+      const sectionIds = new Map<string, string>(
+        sections.map((section, index) => [
+          section.id,
+          sectionCopies[index]!.id,
+        ]),
+      );
+      const lessonsToCopy = lessons
+        .map((lesson) => ({
+          lesson,
+          sectionId: sectionIds.get(lesson.sectionId),
+        }))
+        .filter(
+          (
+            entry,
+          ): entry is { lesson: (typeof lessons)[number]; sectionId: string } =>
+            Boolean(entry.sectionId),
+        );
+      const lessonCopies = lessonsToCopy.length
+        ? await tx
+            .insert(schema.lessons)
+            .values(
+              lessonsToCopy.map(({ lesson, sectionId }) => ({
+                courseId: course.id,
+                sectionId,
+                title: lesson.title,
+                slug: lesson.slug,
+                lessonType: lesson.lessonType,
+                content: lesson.content,
+                videoUrl: lesson.videoUrl,
+                externalUrl: lesson.externalUrl,
+                durationSeconds: lesson.durationSeconds,
+                position: lesson.position,
+                isMandatory: lesson.isMandatory,
+                isPreview: lesson.isPreview,
+                isPublished: false,
+              })),
+            )
+            .returning({ id: schema.lessons.id })
+        : [];
+      const lessonIds = new Map<string, string>(
+        lessonsToCopy.map(({ lesson }, index) => [
+          lesson.id,
+          lessonCopies[index]!.id,
+        ]),
+      );
       if (lessonIds.size) {
         const resources = await tx
           .select()

@@ -1,4 +1,8 @@
-import { createReadStream, promises as fs } from 'node:fs';
+import {
+  constants as fsConstants,
+  createReadStream,
+  promises as fs,
+} from 'node:fs';
 import { dirname, join } from 'node:path';
 import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -60,6 +64,16 @@ export class LocalStorageProvider implements StorageService, OnModuleInit {
 
   onModuleInit(): void {
     ensureStorageFolders(this.root);
+  }
+
+  /** Read/write access check on the storage root - no file I/O, so it's cheap enough to call on every readiness probe. */
+  async checkHealth(): Promise<'available' | 'unavailable'> {
+    try {
+      await fs.access(this.root, fsConstants.R_OK | fsConstants.W_OK);
+      return 'available';
+    } catch {
+      return 'unavailable';
+    }
   }
 
   async upload(input: UploadInput): Promise<{ key: string }> {

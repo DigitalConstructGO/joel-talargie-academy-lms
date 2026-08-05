@@ -265,33 +265,45 @@ export const userNotificationPreferences = pgTable('user_notification_preference
   ...timestamps,
 });
 
-export const emailVerificationTokens = pgTable('email_verification_tokens', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  tokenHash: text('token_hash').notNull().unique(),
-  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
-export const passwordResetTokens = pgTable('password_reset_tokens', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  tokenHash: text('token_hash').notNull().unique(),
-  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
-export const loginAttempts = pgTable('login_attempts', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
-  emailNormalized: text('email_normalized').notNull(),
-  successful: boolean('successful').notNull(),
-  ipAddress: text('ip_address'),
-  userAgent: text('user_agent'),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+export const emailVerificationTokens = pgTable(
+  'email_verification_tokens',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    tokenHash: text('token_hash').notNull().unique(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('email_verification_tokens_user_idx').on(table.userId)],
+);
+export const passwordResetTokens = pgTable(
+  'password_reset_tokens',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    tokenHash: text('token_hash').notNull().unique(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('password_reset_tokens_user_idx').on(table.userId)],
+);
+export const loginAttempts = pgTable(
+  'login_attempts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    emailNormalized: text('email_normalized').notNull(),
+    successful: boolean('successful').notNull(),
+    ipAddress: text('ip_address'),
+    userAgent: text('user_agent'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('login_attempts_user_idx').on(table.userId)],
+);
 
 export const roles = pgTable(
   'roles',
@@ -1408,6 +1420,8 @@ export const promoRedemptions = pgTable(
     index('promo_redemptions_course_idx').on(table.courseId),
     index('promo_redemptions_referral_owner_idx').on(table.referralOwnerId),
     index('promo_redemptions_affiliate_idx').on(table.affiliateId),
+    index('promo_redemptions_enrollment_idx').on(table.enrollmentId),
+    index('promo_redemptions_payment_idx').on(table.paymentId),
     uniqueIndex('promo_redemptions_active_code_student_uq')
       .on(table.codeId, table.studentId)
       .where(sql`${table.status} IN ('RESERVED', 'CONFIRMED') AND ${table.codeId} IS NOT NULL`),

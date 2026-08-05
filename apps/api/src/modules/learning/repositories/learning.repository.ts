@@ -317,7 +317,12 @@ export class LearningRepository {
 
   complete(studentId: string, enrollmentId: string, lessonId: string) {
     return this.db.transaction(async (tx) => {
-      const enrollment = await this.lockAccessible(tx, studentId, enrollmentId);
+      const enrollment = await this.lockAccessible(
+        tx,
+        studentId,
+        enrollmentId,
+        true,
+      );
       const now = new Date();
       const existingProgress = await tx.query.lessonProgress.findFirst({
         where: and(
@@ -486,10 +491,18 @@ export class LearningRepository {
       .offset((query.page - 1) * query.pageSize);
   }
 
+  /**
+   * `withCourse` defaults to false: `open()`/`position()` (the latter fires
+   * on every video-position heartbeat - the single highest-frequency write
+   * in the app) never read `certificateEnabled`, so they skip the extra
+   * course round trip. Only `complete()` needs it, to decide whether to
+   * queue certificate generation.
+   */
   private async lockAccessible(
     tx: Parameters<Parameters<AcademyDatabase['transaction']>[0]>[0],
     studentId: string,
     enrollmentId: string,
+    withCourse = false,
   ) {
     await tx.execute(
       sql`SELECT id FROM enrollments WHERE id = ${enrollmentId} FOR UPDATE`,
@@ -507,6 +520,7 @@ export class LearningRepository {
       )
     )
       throw new Error('ENROLLMENT_ACCESS_DENIED');
+    if (!withCourse) return { ...enrollment, certificateEnabled: false };
     const course = await tx.query.courses.findFirst({
       where: eq(schema.courses.id, enrollment.courseId),
     });
