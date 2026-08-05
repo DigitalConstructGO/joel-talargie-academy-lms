@@ -22,7 +22,7 @@ export function DashboardUiControls() {
       >
         {isFocusMode ? 'Exit' : 'Enter'} focus mode
       </Button>
-      <span className="self-center text-sm text-zinc-600" aria-live="polite">
+      <span className="self-center text-sm text-muted-foreground" aria-live="polite">
         Sidebar {isSidebarOpen ? 'open' : 'closed'} · Focus mode {isFocusMode ? 'on' : 'off'}
       </span>
     </div>

@@ -1,20 +1,22 @@
 import Link from 'next/link';
+import { GraduationCap } from 'lucide-react';
+import { ROUTES } from '@/constants/routes';
+import { siteConfig } from '@/config/site.config';
+
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-screen bg-slate-950 px-4 py-12 text-slate-100">
-      <div className="mx-auto grid max-w-5xl overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl md:grid-cols-2">
-        <section className="hidden bg-gradient-to-br from-blue-700 to-indigo-950 p-12 md:block">
-          <Link href="/" className="text-lg font-semibold">
-            Joel Talargie Academy
-          </Link>
-          <h1 className="mt-24 text-4xl font-bold leading-tight">
-            Learn with purpose.
-            <br />
-            Build with confidence.
-          </h1>
-          <p className="mt-5 text-blue-100">Secure access to your learning experience.</p>
-        </section>
-        <section className="p-7 sm:p-12">{children}</section>
+    <main className="flex min-h-screen items-center justify-center bg-linear-to-br from-auth-gradient-from via-auth-gradient-via to-auth-gradient-to px-4 py-16">
+      <div className="relative w-full max-w-md">
+        <Link
+          href={ROUTES.home}
+          aria-label={siteConfig.name}
+          className="absolute left-1/2 top-0 z-10 flex size-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-2xl bg-brand text-brand-foreground shadow-lg ring-4 ring-background"
+        >
+          <GraduationCap className="size-7" aria-hidden="true" />
+        </Link>
+        <div className="rounded-3xl border border-border bg-card p-8 pt-12 shadow-xl sm:p-10 sm:pt-14">
+          {children}
+        </div>
       </div>
     </main>
   );

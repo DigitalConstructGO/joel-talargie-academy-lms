@@ -4,20 +4,15 @@ import { Button } from '@/components/ui/button';
 export function GoogleLoginButton() {
   const loginWithGoogle = useAuthStore((state) => state.loginWithGoogle);
   return (
-    <Button
-      type="button"
-      variant="outline"
-      className="w-full border-slate-700 bg-slate-950 text-slate-100 hover:bg-slate-800"
-      onClick={loginWithGoogle}
-    >
+    <Button type="button" variant="outline" className="w-full" onClick={loginWithGoogle}>
       <GoogleMark />
-      Continue with Google
+      Google
     </Button>
   );
 }
 function GoogleMark() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className="mr-2 size-4">
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="size-4">
       <path
         fill="#4285F4"
         d="M21.6 12.23c0-.71-.06-1.4-.18-2.06H12v3.9h5.38a4.6 4.6 0 0 1-2 3.02v2.53h3.24c1.9-1.75 2.98-4.32 2.98-7.39Z"

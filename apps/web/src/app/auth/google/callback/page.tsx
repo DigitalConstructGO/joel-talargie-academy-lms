@@ -18,8 +18,10 @@ export default function GoogleCallbackPage() {
   }, [handle, router]);
   return (
     <div className="py-20 text-center">
-      <p className="text-lg font-medium">Completing Google sign-in...</p>
-      <p className="mt-2 text-sm text-slate-400">Please wait while we secure your session.</p>
+      <p className="text-lg font-medium text-foreground">Completing Google sign-in...</p>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Please wait while we secure your session.
+      </p>
     </div>
   );
 }
