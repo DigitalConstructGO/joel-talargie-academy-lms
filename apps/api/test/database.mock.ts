@@ -1,13 +1,48 @@
-export const schema = {};
+// Real drizzle-orm query-builder operators are pure, side-effect-free
+// functions (they build a SQL AST, they don't execute anything) - re-exporting
+// them for real, exactly like the real @joel-academy/database package does,
+// lets controller/repository code call eq()/and()/etc. in tests without a
+// live database.
+export {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  ilike,
+  inArray,
+  isNull,
+  lte,
+  ne,
+  or,
+  sql,
+} from 'drizzle-orm';
+
+// `schema` itself has no live database to describe, but code under test may
+// still reference arbitrary `schema.someTable.someColumn` paths (e.g. a
+// controller building a raw where-clause). An infinite proxy resolves any
+// such chain to another proxy instead of throwing on `undefined.someColumn`.
+function columnProxy(): unknown {
+  return new Proxy(() => undefined, { get: () => columnProxy() });
+}
+export const schema: Record<string, unknown> = new Proxy(
+  {},
+  { get: () => columnProxy() },
+);
 export const checkDatabaseConnection = async (database: {
   execute: () => Promise<unknown>;
 }): Promise<void> => {
   await database.execute();
 };
 export const createDatabaseClient = (pool: unknown): unknown => pool;
-export const insertActivityLog = async (): Promise<void> => undefined;
-export const insertBackgroundJob = async (): Promise<string> => 'job-id';
-export const updateBackgroundJobStatus = async (): Promise<boolean> => true;
+export const insertActivityLog = jest.fn(async (): Promise<void> => undefined);
+export const insertBackgroundJob = jest.fn(
+  async (): Promise<string> => 'job-id',
+);
+export const updateBackgroundJobStatus = jest.fn(
+  async (): Promise<boolean> => true,
+);
 export const findAuthUserByEmail = jest.fn();
 export const findAuthUserById = jest.fn();
 export const createStudentUser = jest.fn();
