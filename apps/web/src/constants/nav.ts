@@ -26,11 +26,9 @@ import type { NavSection } from '@/types';
 
 export const STUDENT_NAV: NavSection[] = [
   {
-    items: [{ label: 'Dashboard', href: ROUTES.dashboard.root, icon: LayoutDashboard }],
-  },
-  {
-    label: 'Learning',
+    label: 'Main Menu',
     items: [
+      { label: 'Dashboard', href: ROUTES.dashboard.root, icon: LayoutDashboard },
       { label: 'Browse Courses', href: ROUTES.courses.list, icon: Compass },
       { label: 'My Courses', href: ROUTES.dashboard.courses, icon: BookOpen },
       { label: 'Wishlist', href: ROUTES.dashboard.wishlist, icon: Heart },
@@ -38,17 +36,17 @@ export const STUDENT_NAV: NavSection[] = [
     ],
   },
   {
-    label: 'Billing',
+    label: 'Account',
     items: [
       { label: 'Checkout', href: ROUTES.dashboard.checkout, icon: ShoppingCart },
       { label: 'Payments', href: ROUTES.dashboard.payments, icon: CreditCard },
+      { label: 'Notifications', href: ROUTES.dashboard.notifications, icon: Bell },
+      { label: 'Support', href: ROUTES.dashboard.support, icon: LifeBuoy },
     ],
   },
   {
-    label: 'Account',
+    label: 'Settings',
     items: [
-      { label: 'Notifications', href: ROUTES.dashboard.notifications, icon: Bell },
-      { label: 'Support', href: ROUTES.dashboard.support, icon: LifeBuoy },
       { label: 'Profile', href: ROUTES.dashboard.profile, icon: UserCircle },
       { label: 'Security', href: ROUTES.dashboard.security, icon: KeyRound },
       { label: 'Settings', href: ROUTES.dashboard.settings, icon: Settings },

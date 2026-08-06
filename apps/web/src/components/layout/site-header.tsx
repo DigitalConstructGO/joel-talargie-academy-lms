@@ -1,60 +1,60 @@
 import Link from 'next/link';
-import { GraduationCap, Search } from 'lucide-react';
+import { GraduationCap } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
-import { Button } from '@/components/ui/button';
 import { NotificationBell } from '@/components/layout/notification-bell';
-import { ProfileMenu } from '@/components/layout/profile-menu';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
+import { ProfileMenu } from '@/components/layout/profile-menu';
+import { CommandPalette } from '@/components/dashboard/command-palette';
 import { ROUTES } from '@/constants/routes';
 import { siteConfig } from '@/config/site.config';
+import type { NavSection } from '@/types';
 
 export interface SiteHeaderProps {
   breadcrumb?: React.ReactNode;
-  onOpenCommandPalette?: () => void;
+  /** Page title shown under the breadcrumb - only the two dashboard home pages set this. */
+  title?: string;
+  sections: NavSection[];
+  commandPaletteOpen: boolean;
+  onCommandPaletteOpenChange: (open: boolean) => void;
 }
 
-export function SiteHeader({ breadcrumb, onOpenCommandPalette }: SiteHeaderProps) {
+export function SiteHeader({
+  breadcrumb,
+  title,
+  sections,
+  commandPaletteOpen,
+  onCommandPaletteOpenChange,
+}: SiteHeaderProps) {
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/80 px-4 backdrop-blur supports-backdrop-filter:bg-background/60">
+    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b border-border bg-background/80 px-4 shadow-navbar backdrop-blur supports-backdrop-filter:bg-background/60 sm:px-6">
       <SidebarTrigger className="-ml-1" />
-      <Separator orientation="vertical" className="mr-2 h-4" />
-      <Link href={ROUTES.home} className="flex shrink-0 items-center gap-2 md:hidden">
-        <span className="flex size-6 items-center justify-center rounded-md bg-brand text-brand-foreground">
-          <GraduationCap className="size-3.5" />
-        </span>
-        <span className="truncate text-sm font-semibold">{siteConfig.shortName}</span>
+      <Separator orientation="vertical" className="h-4" />
+      <Link
+        href={ROUTES.home}
+        aria-label={siteConfig.shortName}
+        className="flex size-6 shrink-0 items-center justify-center rounded-md bg-brand text-brand-foreground md:hidden"
+      >
+        <GraduationCap className="size-3.5" />
       </Link>
-      <div className="min-w-0 flex-1">{breadcrumb}</div>
-      <div className="flex items-center gap-1">
-        {onOpenCommandPalette && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onOpenCommandPalette}
-            className="hidden h-8 gap-2 px-2.5 text-muted-foreground sm:inline-flex"
-          >
-            <Search className="size-3.5" />
-            <span className="text-xs">Search…</span>
-            <kbd className="pointer-events-none ml-1 inline-flex h-5 select-none items-center gap-0.5 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium">
-              ⌘K
-            </kbd>
-          </Button>
-        )}
-        {onOpenCommandPalette && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onOpenCommandPalette}
-            aria-label="Search"
-            className="sm:hidden"
-          >
-            <Search className="size-4" />
-          </Button>
-        )}
+      <div className="min-w-0 flex-1">
+        <div className="hidden sm:block">{breadcrumb}</div>
+        {title && <h1 className="truncate text-xl font-bold text-foreground">{title}</h1>}
+      </div>
+      <div className="flex items-center gap-1 sm:gap-2">
+        <CommandPalette
+          sections={sections}
+          open={commandPaletteOpen}
+          onOpenChange={onCommandPaletteOpenChange}
+        />
         <NotificationBell />
-        <ThemeToggle />
-        <ProfileMenu />
+        <div className="hidden sm:block">
+          <ThemeToggle />
+        </div>
+        {/* On desktop, the profile/logout affordance lives in the sidebar footer instead. */}
+        <div className="md:hidden">
+          <ProfileMenu />
+        </div>
       </div>
     </header>
   );

@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { LogOut, Settings, UserCircle } from 'lucide-react';
 import {
   DropdownMenu,
@@ -15,26 +14,15 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/stores';
-import { toast } from '@/lib/toast';
+import { useLogout } from '@/hooks/use-logout';
 
 function initials(firstName: string, lastName: string) {
   return `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase() || 'U';
 }
 
 export function ProfileMenu() {
-  const router = useRouter();
   const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
-
-  async function handleLogout() {
-    try {
-      await logout();
-      toast.success('Signed out');
-      router.replace(ROUTES.auth.login);
-    } catch {
-      toast.error('Could not sign out', 'Please try again.');
-    }
-  }
+  const handleLogout = useLogout();
 
   return (
     <DropdownMenu>

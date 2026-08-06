@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { LayoutDashboard, LogOut, Moon, Settings, Sun, UserCircle } from 'lucide-react';
+import { LayoutDashboard, LogOut, Moon, Search, Settings, Sun, UserCircle } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
-  CommandDialog,
+  Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
@@ -15,8 +16,7 @@ import {
   CommandShortcut,
 } from '@/components/ui/command';
 import { ROUTES } from '@/constants/routes';
-import { useAuthStore } from '@/stores';
-import { toast } from '@/lib/toast';
+import { useLogout } from '@/hooks/use-logout';
 import type { NavItem, NavSection } from '@/types';
 
 export interface CommandPaletteProps {
@@ -37,11 +37,15 @@ function flattenNavItems(sections: NavSection[]): NavItem[] {
   return items;
 }
 
-/** Global Cmd/Ctrl+K command palette - navigation search plus a handful of account quick actions. */
+/**
+ * Global Cmd/Ctrl+K search - an anchored dropdown under the header search
+ * field (not a centered modal), so it doesn't dim the page and reads like
+ * VS Code / Notion / Linear command search.
+ */
 export function CommandPalette({ sections, open, onOpenChange }: CommandPaletteProps) {
   const router = useRouter();
   const { setTheme } = useTheme();
-  const logout = useAuthStore((state) => state.logout);
+  const handleLogout = useLogout();
   const navItems = useMemo(() => flattenNavItems(sections), [sections]);
 
   function go(href: string) {
@@ -49,68 +53,82 @@ export function CommandPalette({ sections, open, onOpenChange }: CommandPaletteP
     router.push(href);
   }
 
-  async function handleLogout() {
-    onOpenChange(false);
-    try {
-      await logout();
-      toast.success('Signed out');
-      router.replace(ROUTES.auth.login);
-    } catch {
-      toast.error('Could not sign out', 'Please try again.');
-    }
-  }
-
   return (
-    <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput placeholder="Search pages and actions…" />
-      <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
-        <CommandGroup heading="Navigation">
-          {navItems.map((item) => (
-            <CommandItem key={item.href} value={item.label} onSelect={() => go(item.href)}>
-              {item.icon ? <item.icon /> : <LayoutDashboard />}
-              <span>{item.label}</span>
-            </CommandItem>
-          ))}
-        </CommandGroup>
-        <CommandSeparator />
-        <CommandGroup heading="Quick actions">
-          <CommandItem value="View profile" onSelect={() => go(ROUTES.dashboard.profile)}>
-            <UserCircle />
-            <span>View profile</span>
-          </CommandItem>
-          <CommandItem value="Open settings" onSelect={() => go(ROUTES.dashboard.settings)}>
-            <Settings />
-            <span>Open settings</span>
-          </CommandItem>
-          <CommandItem
-            value="Switch to light theme"
-            onSelect={() => {
-              setTheme('light');
-              onOpenChange(false);
-            }}
-          >
-            <Sun />
-            <span>Switch to light theme</span>
-          </CommandItem>
-          <CommandItem
-            value="Switch to dark theme"
-            onSelect={() => {
-              setTheme('dark');
-              onOpenChange(false);
-            }}
-          >
-            <Moon />
-            <span>Switch to dark theme</span>
-          </CommandItem>
-          <CommandItem value="Sign out" onSelect={handleLogout}>
-            <LogOut />
-            <span>Sign out</span>
-            <CommandShortcut>⌘K</CommandShortcut>
-          </CommandItem>
-        </CommandGroup>
-      </CommandList>
-    </CommandDialog>
+    <Popover open={open} onOpenChange={onOpenChange}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label="Search"
+          className="flex h-9 w-9 items-center justify-center gap-2 rounded-sm bg-muted px-0 text-sm text-muted-foreground transition-colors hover:bg-accent lg:w-64 lg:justify-start lg:px-4"
+        >
+          <Search className="size-4 shrink-0" />
+          <span className="hidden flex-1 truncate text-left lg:inline">
+            Search courses, mentors…
+          </span>
+          <kbd className="pointer-events-none hidden h-5 shrink-0 select-none items-center gap-0.5 rounded border border-border bg-background px-1.5 font-mono text-[10px] font-medium lg:inline-flex">
+            ⌘K
+          </kbd>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" sideOffset={8} className="w-90 p-0">
+        <Command>
+          <CommandInput placeholder="Search pages and actions…" />
+          <CommandList>
+            <CommandEmpty>No results found.</CommandEmpty>
+            <CommandGroup heading="Navigation">
+              {navItems.map((item) => (
+                <CommandItem key={item.href} value={item.label} onSelect={() => go(item.href)}>
+                  {item.icon ? <item.icon /> : <LayoutDashboard />}
+                  <span>{item.label}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            <CommandSeparator />
+            <CommandGroup heading="Quick actions">
+              <CommandItem value="View profile" onSelect={() => go(ROUTES.dashboard.profile)}>
+                <UserCircle />
+                <span>View profile</span>
+              </CommandItem>
+              <CommandItem value="Open settings" onSelect={() => go(ROUTES.dashboard.settings)}>
+                <Settings />
+                <span>Open settings</span>
+              </CommandItem>
+              <CommandItem
+                value="Switch to light theme"
+                onSelect={() => {
+                  setTheme('light');
+                  onOpenChange(false);
+                }}
+              >
+                <Sun />
+                <span>Switch to light theme</span>
+              </CommandItem>
+              <CommandItem
+                value="Switch to dark theme"
+                onSelect={() => {
+                  setTheme('dark');
+                  onOpenChange(false);
+                }}
+              >
+                <Moon />
+                <span>Switch to dark theme</span>
+              </CommandItem>
+              <CommandItem
+                value="Sign out"
+                onSelect={() => {
+                  onOpenChange(false);
+                  handleLogout();
+                }}
+              >
+                <LogOut />
+                <span>Sign out</span>
+                <CommandShortcut>⌘K</CommandShortcut>
+              </CommandItem>
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
 
