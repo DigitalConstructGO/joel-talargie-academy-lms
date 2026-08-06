@@ -104,6 +104,16 @@
   --auth-gradient-from: 261 60% 97%;
   --auth-gradient-via: 0 0% 100%;
   --auth-gradient-to: 217 70% 96%;
+
+  /*
+   * Deliberately theme-independent near-black surface used for cinematic
+   * hero/dark-band marketing sections (home hero image panel, CTA banner,
+   * "how it works" band, course thumbnail placeholder) - same rationale as
+   * --sidebar above: fixed in both themes, not swapped by .dark. #120c08
+   * converted to HSL exactly (RGB 18/12/8 -> 24deg 38% 5%).
+   */
+  --surface-dark: 24 38% 5%;
+  --surface-dark-foreground: 0 0% 100%;
 }
 
 .dark {
@@ -223,6 +233,9 @@
   --color-auth-gradient-from: hsl(var(--auth-gradient-from));
   --color-auth-gradient-via: hsl(var(--auth-gradient-via));
   --color-auth-gradient-to: hsl(var(--auth-gradient-to));
+
+  --color-surface-dark: hsl(var(--surface-dark));
+  --color-surface-dark-foreground: hsl(var(--surface-dark-foreground));
 
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);

@@ -28,7 +28,7 @@ export const environmentSchema = z
     GOOGLE_CALLBACK_URL: z
       .string()
       .url()
-      .default('http://localhost:5000/api/v1/auth/google/callback'),
+      .default('http://localhost:4000/api/v1/auth/google/callback'),
     DATABASE_URL: z.string().default(''),
     DATABASE_DIRECT_URL: z.string().default(''),
     DATABASE_TEST_URL: z.string().default(''),

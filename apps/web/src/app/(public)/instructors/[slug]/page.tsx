@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Github, Globe, Linkedin, Star, UserRound, Users } from 'lucide-react';
 import { PageBreadcrumb } from '@/components/common/page-breadcrumb';
+import { JsonLd } from '@/components/common/json-ld';
+import { buildBreadcrumbJsonLd } from '@/lib/json-ld';
 import { CourseCard } from '@/features/catalog/components/course-card';
 import { Badge } from '@/components/ui/badge';
 import { catalogApi } from '@/features/catalog/api/catalog.api';
@@ -46,15 +48,16 @@ export default async function InstructorDetailPage({ params }: InstructorPagePro
       (course) => course.presenterName === instructor.name,
     ).map(toCourseSummary);
 
+    const mockBreadcrumbItems = [
+      { label: 'Home', href: ROUTES.home },
+      { label: 'Instructors', href: ROUTES.instructors.list },
+      { label: instructor.name },
+    ];
+
     return (
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-10 sm:px-6">
-        <PageBreadcrumb
-          items={[
-            { label: 'Home', href: ROUTES.home },
-            { label: 'Instructors', href: ROUTES.instructors.list },
-            { label: instructor.name },
-          ]}
-        />
+        <JsonLd data={buildBreadcrumbJsonLd(mockBreadcrumbItems)} />
+        <PageBreadcrumb items={mockBreadcrumbItems} />
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           <div className="flex flex-col items-center gap-4 text-center lg:col-span-1 lg:items-start lg:text-left">
@@ -159,15 +162,16 @@ export default async function InstructorDetailPage({ params }: InstructorPagePro
   const courses = await loadLiveInstructorCourses(name);
   if (courses.length === 0) notFound();
 
+  const liveBreadcrumbItems = [
+    { label: 'Home', href: ROUTES.home },
+    { label: 'Instructors', href: ROUTES.instructors.list },
+    { label: name },
+  ];
+
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6">
-      <PageBreadcrumb
-        items={[
-          { label: 'Home', href: ROUTES.home },
-          { label: 'Instructors', href: ROUTES.instructors.list },
-          { label: name },
-        ]}
-      />
+      <JsonLd data={buildBreadcrumbJsonLd(liveBreadcrumbItems)} />
+      <PageBreadcrumb items={liveBreadcrumbItems} />
 
       <div className="flex items-center gap-4">
         <span className="flex size-16 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand">

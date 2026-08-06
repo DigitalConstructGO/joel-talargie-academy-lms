@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -43,6 +44,7 @@ const accessSeconds = 15 * 60;
 const refreshSeconds = 7 * 24 * 60 * 60;
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   constructor(
     private readonly database: DatabaseService,
     private readonly passwords: PasswordHasherService,
@@ -120,10 +122,14 @@ export class AuthService {
         );
       throw error;
     }
-    await this.audit.logCreate('user', user.id, {
-      email: user.email,
-      roles: user.roles,
-    });
+    await Promise.resolve(
+      this.audit.logCreate('user', user.id, {
+        email: user.email,
+        roles: user.roles,
+      }),
+    ).catch((error) =>
+      this.logger.error('Failed to record registration audit log', error),
+    );
     await this.notifications
       .notify({
         userId: user.id,
@@ -190,8 +196,13 @@ export class AuthService {
       new Date(Date.now() + refreshSeconds * 1000),
     );
     await Promise.all([
-      updateLastLogin(this.database.client, user.id),
-      this.audit.logLogin(user.id, meta),
+      Promise.resolve(updateLastLogin(this.database.client, user.id)).catch(
+        (error) =>
+          this.logger.error('Failed to update last login timestamp', error),
+      ),
+      Promise.resolve(this.audit.logLogin(user.id, meta)).catch((error) =>
+        this.logger.error('Failed to record login audit log', error),
+      ),
     ]);
     await this.notifications
       .notify({
@@ -250,8 +261,13 @@ export class AuthService {
       new Date(Date.now() + refreshSeconds * 1000),
     );
     await Promise.all([
-      updateLastLogin(this.database.client, user.id),
-      this.audit.logLogin(user.id, meta),
+      Promise.resolve(updateLastLogin(this.database.client, user.id)).catch(
+        (error) =>
+          this.logger.error('Failed to update last login timestamp', error),
+      ),
+      Promise.resolve(this.audit.logLogin(user.id, meta)).catch((error) =>
+        this.logger.error('Failed to record login audit log', error),
+      ),
     ]);
     return {
       user: safe,
@@ -302,7 +318,9 @@ export class AuthService {
         // Logout is idempotent even when the refresh cookie is already invalid.
       }
     }
-    await this.audit.logLogout(user.id);
+    await Promise.resolve(this.audit.logLogout(user.id)).catch((error) =>
+      this.logger.error('Failed to record logout audit log', error),
+    );
     return { message: 'Logged out successfully' };
   }
   async verifyEmail(token: string) {

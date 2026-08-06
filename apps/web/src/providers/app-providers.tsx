@@ -5,6 +5,7 @@ import { TooltipProvider } from '@radix-ui/react-tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/sonner';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { AuthBootstrap } from '@/components/auth/auth-bootstrap';
 
 function createQueryClient() {
   return new QueryClient({
@@ -24,6 +25,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
         <TooltipProvider delayDuration={200}>
+          <AuthBootstrap />
           {children}
           <Toaster position="top-right" richColors closeButton expand />
         </TooltipProvider>

@@ -15,6 +15,7 @@ import { GoogleLoginButton } from './google-login-button';
 import { authClient, unwrap } from '@/lib/api/auth-client';
 import { ROUTES } from '@/constants/routes';
 import { siteConfig } from '@/config/site.config';
+import { resolvePostLoginRedirect } from '@/lib/authorization/redirect';
 const strong = z
   .string()
   .min(8)
@@ -97,7 +98,12 @@ export function AuthForm({ kind }: { kind: Kind }) {
           email: String(values.email ?? ''),
           password: String(values.password ?? ''),
         });
-        router.replace(ROUTES.dashboard.root);
+        // Default lands on `/` - a preserved `?redirect=` (set by
+        // middleware.ts when this visitor was bounced here from a
+        // protected route) wins if present and safe, re-validated against
+        // the account's actual area once `user.roles` is known.
+        const { user } = useAuthStore.getState();
+        router.replace(resolvePostLoginRedirect(search.get('redirect'), user?.roles ?? []));
         return;
       }
       if (kind === 'register') {
@@ -133,7 +139,7 @@ export function AuthForm({ kind }: { kind: Kind }) {
       <p className="mt-1.5 text-center text-sm text-muted-foreground">{subtitle}</p>
       {isSocial && (
         <div className="mt-8">
-          <GoogleLoginButton />
+          <GoogleLoginButton redirectTo={search.get('redirect')} />
           <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
             <span className="h-px flex-1 bg-border" />
             Or continue with

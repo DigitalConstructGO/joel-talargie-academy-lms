@@ -66,7 +66,7 @@ export function HeroSection() {
           </div>
         </div>
 
-        <div className="relative aspect-4/3 w-full overflow-hidden rounded-3xl bg-[#120c08] lg:aspect-square">
+        <div className="relative aspect-4/3 w-full overflow-hidden rounded-3xl bg-surface-dark lg:aspect-square">
           <Image
             src="/images/hero/network-abstract.jpg"
             alt="Abstract digital network visualization"
@@ -79,12 +79,12 @@ export function HeroSection() {
             className="absolute inset-0 opacity-60 mix-blend-multiply"
             style={{
               backgroundImage:
-                'radial-gradient(circle at 20% 20%, rgba(163,230,53,0.5), transparent 45%), radial-gradient(circle at 80% 30%, rgba(18,12,8,0.6), transparent 50%)',
+                'radial-gradient(circle at 20% 20%, hsl(var(--chart-1) / 0.5), transparent 45%), radial-gradient(circle at 80% 30%, hsl(var(--surface-dark) / 0.6), transparent 50%)',
             }}
             aria-hidden="true"
           />
           <div
-            className="absolute inset-0 bg-linear-to-t from-[#120c08] via-[#120c08]/10 to-transparent"
+            className="absolute inset-0 bg-linear-to-t from-surface-dark via-surface-dark/10 to-transparent"
             aria-hidden="true"
           />
           <div className="absolute inset-x-0 bottom-0 p-8">

@@ -16,6 +16,8 @@ export interface DashboardShellProps {
   breadcrumb?: React.ReactNode;
   /** Page title shown in the header - only the dashboard/admin home pages set this. */
   title?: string;
+  /** Drives `AppSidebar`'s permission-based nav filtering - defaults to allowing everything. */
+  hasPermission?: (permission: string) => boolean;
   children: React.ReactNode;
 }
 
@@ -26,13 +28,19 @@ export function DashboardShell({
   rootHref,
   breadcrumb,
   title,
+  hasPermission,
   children,
 }: DashboardShellProps) {
   const { open, setOpen } = useCommandPaletteState();
 
   return (
     <SidebarProvider>
-      <AppSidebar sections={sections} portalLabel={portalLabel} rootHref={rootHref} />
+      <AppSidebar
+        sections={sections}
+        portalLabel={portalLabel}
+        rootHref={rootHref}
+        hasPermission={hasPermission}
+      />
       <SidebarInset>
         <SiteHeader
           breadcrumb={breadcrumb}

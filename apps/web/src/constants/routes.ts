@@ -6,6 +6,7 @@
 export const ROUTES = {
   home: '/',
   health: '/health',
+  forbidden: '/403',
   about: '/about',
   pricing: '/pricing',
   contact: '/contact',

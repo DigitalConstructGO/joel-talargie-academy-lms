@@ -11,18 +11,38 @@ describe('CurrentAuthorizationController', () => {
     contexts.resolve.mockResolvedValue({
       roles: ['STUDENT'],
       permissions: ['learning.read'],
+      isAdministrator: false,
     });
     const result = await controller.current(user);
     expect(contexts.resolve).toHaveBeenCalledWith('user-1');
     expect(result).toEqual({
       roles: ['STUDENT'],
       permissions: ['learning.read'],
+      isAdministrator: false,
     });
   });
 
-  it('returns empty arrays when the context cannot be resolved', async () => {
+  it('returns the administrator bypass flag for an administrator', async () => {
+    contexts.resolve.mockResolvedValue({
+      roles: ['ADMINISTRATOR'],
+      permissions: [],
+      isAdministrator: true,
+    });
+    const result = await controller.current(user);
+    expect(result).toEqual({
+      roles: ['ADMINISTRATOR'],
+      permissions: [],
+      isAdministrator: true,
+    });
+  });
+
+  it('returns empty arrays and isAdministrator false when the context cannot be resolved', async () => {
     contexts.resolve.mockResolvedValue(undefined);
     const result = await controller.current(user);
-    expect(result).toEqual({ roles: [], permissions: [] });
+    expect(result).toEqual({
+      roles: [],
+      permissions: [],
+      isAdministrator: false,
+    });
   });
 });

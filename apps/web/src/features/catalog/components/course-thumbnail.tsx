@@ -37,11 +37,11 @@ const CATEGORY_ICONS: Record<string, typeof BookOpen> = {
 const CATEGORY_PHOTOS = new Set(Object.keys(CATEGORY_ICONS));
 
 const TINTS = [
-  { icon: 'text-lime-400', ring: 'ring-lime-400/30', glow: 'rgba(163,230,53,0.35)' },
-  { icon: 'text-sky-400', ring: 'ring-sky-400/30', glow: 'rgba(56,189,248,0.35)' },
-  { icon: 'text-violet-400', ring: 'ring-violet-400/30', glow: 'rgba(167,139,250,0.35)' },
-  { icon: 'text-amber-400', ring: 'ring-amber-400/30', glow: 'rgba(251,191,36,0.35)' },
-  { icon: 'text-rose-400', ring: 'ring-rose-400/30', glow: 'rgba(251,113,133,0.35)' },
+  { icon: 'text-chart-1', ring: 'ring-chart-1/30', glow: 'hsl(var(--chart-1) / 0.35)' },
+  { icon: 'text-chart-2', ring: 'ring-chart-2/30', glow: 'hsl(var(--chart-2) / 0.35)' },
+  { icon: 'text-chart-4', ring: 'ring-chart-4/30', glow: 'hsl(var(--chart-4) / 0.35)' },
+  { icon: 'text-chart-3', ring: 'ring-chart-3/30', glow: 'hsl(var(--chart-3) / 0.35)' },
+  { icon: 'text-chart-5', ring: 'ring-chart-5/30', glow: 'hsl(var(--chart-5) / 0.35)' },
 ];
 
 function pickTint(seed: string) {
@@ -106,7 +106,7 @@ export function CourseThumbnail({
   return (
     <div
       className={cn(
-        'relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-t-xl bg-[#120c08]',
+        'relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-t-xl bg-surface-dark',
         className,
       )}
     >
@@ -121,7 +121,7 @@ export function CourseThumbnail({
         className="absolute inset-0 opacity-30"
         style={{
           backgroundImage:
-            'linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px)',
+            'linear-gradient(hsl(var(--surface-dark-foreground) / 0.08) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--surface-dark-foreground) / 0.08) 1px, transparent 1px)',
           backgroundSize: '24px 24px',
         }}
         aria-hidden="true"

@@ -640,9 +640,15 @@ const SidebarMenuSkeleton = React.forwardRef<
     showIcon?: boolean;
   }
 >(({ className, showIcon = false, ...props }, ref) => {
-  // Random width between 50 to 90%.
-  const width = React.useMemo(() => {
-    return `${Math.floor(Math.random() * 40) + 50}%`;
+  // Randomized width between 50-90%, but only after mount - picking it
+  // during render would differ between the server-rendered HTML and the
+  // client's first render (Math.random() isn't deterministic across the
+  // two), which React flags as a hydration mismatch. Starting from a fixed
+  // width keeps server and client markup identical at hydration time; the
+  // randomized value only ever applies in a client-only re-render after.
+  const [width, setWidth] = React.useState('70%');
+  React.useEffect(() => {
+    setWidth(`${Math.floor(Math.random() * 40) + 50}%`);
   }, []);
 
   return (

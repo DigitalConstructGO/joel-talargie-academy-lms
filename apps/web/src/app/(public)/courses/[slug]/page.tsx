@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation';
 import { Star, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { PageBreadcrumb } from '@/components/common/page-breadcrumb';
+import { JsonLd } from '@/components/common/json-ld';
+import { buildBreadcrumbJsonLd } from '@/lib/json-ld';
 import { catalogApi } from '@/features/catalog/api/catalog.api';
 import { getCourseBySlug } from '@/features/catalog/api/catalog.server';
 import { CourseCurriculum } from '@/features/catalog/components/course-curriculum';
@@ -71,23 +73,20 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
       : {}),
   };
 
+  const breadcrumbItems = [
+    { label: 'Home', href: ROUTES.home },
+    { label: 'Courses', href: ROUTES.courses.list },
+    ...(course.categoryName && course.categorySlug
+      ? [{ label: course.categoryName, href: ROUTES.categories.detail(course.categorySlug) }]
+      : []),
+    { label: course.title },
+  ];
+
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={[jsonLd, buildBreadcrumbJsonLd(breadcrumbItems)]} />
 
-      <PageBreadcrumb
-        items={[
-          { label: 'Home', href: ROUTES.home },
-          { label: 'Courses', href: ROUTES.courses.list },
-          ...(course.categoryName && course.categorySlug
-            ? [{ label: course.categoryName, href: ROUTES.categories.detail(course.categorySlug) }]
-            : []),
-          { label: course.title },
-        ]}
-      />
+      <PageBreadcrumb items={breadcrumbItems} />
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="flex flex-col gap-8 lg:col-span-2">

@@ -15,6 +15,7 @@ export class CurrentAuthorizationController {
     return {
       roles: context?.roles ?? [],
       permissions: context?.permissions ?? [],
+      isAdministrator: context?.isAdministrator ?? false,
     };
   }
 }

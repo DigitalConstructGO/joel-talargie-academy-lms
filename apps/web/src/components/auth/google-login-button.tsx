@@ -1,10 +1,15 @@
 'use client';
 import { useAuthStore } from '@/stores/auth.store';
 import { Button } from '@/components/ui/button';
-export function GoogleLoginButton() {
+import { storeGoogleRedirect } from '@/lib/authorization/redirect';
+export function GoogleLoginButton({ redirectTo }: { redirectTo?: string | null }) {
   const loginWithGoogle = useAuthStore((state) => state.loginWithGoogle);
+  const handleClick = () => {
+    storeGoogleRedirect(redirectTo);
+    loginWithGoogle();
+  };
   return (
-    <Button type="button" variant="outline" className="w-full" onClick={loginWithGoogle}>
+    <Button type="button" variant="outline" className="w-full" onClick={handleClick}>
       <GoogleMark />
       Google
     </Button>

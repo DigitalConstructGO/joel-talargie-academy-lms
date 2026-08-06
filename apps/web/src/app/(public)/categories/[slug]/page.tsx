@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { SearchX } from 'lucide-react';
 import { PageBreadcrumb } from '@/components/common/page-breadcrumb';
+import { JsonLd } from '@/components/common/json-ld';
+import { buildBreadcrumbJsonLd } from '@/lib/json-ld';
 import { EmptyState } from '@/components/common/empty-state';
 import { CourseCard } from '@/features/catalog/components/course-card';
 import { PublicPagination } from '@/components/common/public-pagination';
@@ -41,16 +43,16 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
 
   const { category, courses } = result;
   const totalPages = Math.max(1, Math.ceil(courses.total / DEFAULT_PAGE_SIZE));
+  const breadcrumbItems = [
+    { label: 'Home', href: ROUTES.home },
+    { label: 'Categories', href: ROUTES.categories.list },
+    { label: category.name },
+  ];
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-10 sm:px-6">
-      <PageBreadcrumb
-        items={[
-          { label: 'Home', href: ROUTES.home },
-          { label: 'Categories', href: ROUTES.categories.list },
-          { label: category.name },
-        ]}
-      />
+      <JsonLd data={buildBreadcrumbJsonLd(breadcrumbItems)} />
+      <PageBreadcrumb items={breadcrumbItems} />
 
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">{category.name}</h1>

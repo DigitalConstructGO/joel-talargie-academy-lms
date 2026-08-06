@@ -7,7 +7,7 @@ const STEPS = [
 
 export function HowItWorksSection() {
   return (
-    <section className="bg-[#120c08] text-white">
+    <section className="bg-surface-dark text-surface-dark-foreground">
       <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6">
         <div className="mb-10 text-center">
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">

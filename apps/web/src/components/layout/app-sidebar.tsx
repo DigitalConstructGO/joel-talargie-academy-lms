@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChevronRight, ChevronsLeft, GraduationCap, X } from 'lucide-react';
+import { ChevronRight, ChevronsLeft, GraduationCap, Home, X } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   Sidebar,
@@ -92,6 +92,18 @@ const navItemClassName =
 /** Hides a nav item's label when the sidebar collapses to icon-only, without leaving it as an invisible flex child that would skew the icon off-center. */
 const navLabelClassName =
   'min-w-0 flex-1 truncate transition-[opacity,width] duration-200 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:flex-none group-data-[collapsible=icon]:opacity-0';
+
+/** Explicit, labeled way back to the public site - the wordmark link in the sidebar header goes to the same place but isn't labeled as such. Unlike `SidebarCollapseButton`, this stays visible on mobile and when collapsed (tooltip shows the label). */
+function SidebarHomeLink() {
+  return (
+    <SidebarMenuButton asChild tooltip="Back to website">
+      <Link href={ROUTES.home}>
+        <Home />
+        <span>Website</span>
+      </Link>
+    </SidebarMenuButton>
+  );
+}
 
 function SidebarCollapseButton() {
   const { state, toggleSidebar, isMobile } = useSidebar();
@@ -219,6 +231,9 @@ export function AppSidebar({
       <SidebarFooter className="border-t border-sidebar-border pt-2">
         <SidebarUserFooter roleLabel={portalLabel} />
         <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarHomeLink />
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarCollapseButton />
           </SidebarMenuItem>

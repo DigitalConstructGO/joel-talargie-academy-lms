@@ -18,7 +18,7 @@ const enabledEnvironment: Environment = {
   AUTH_COOKIE_SECURE: false,
   GOOGLE_CLIENT_ID: '',
   GOOGLE_CLIENT_SECRET: '',
-  GOOGLE_CALLBACK_URL: 'http://localhost:5000/api/v1/auth/google/callback',
+  GOOGLE_CALLBACK_URL: 'http://localhost:4000/api/v1/auth/google/callback',
   DATABASE_URL: '',
   DATABASE_DIRECT_URL: '',
   DATABASE_TEST_URL: '',

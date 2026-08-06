@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useWishlistStore } from '@/stores';
@@ -13,8 +14,18 @@ export interface WishlistButtonProps {
 }
 
 export function WishlistButton({ courseId, courseTitle, className }: WishlistButtonProps) {
-  const isWishlisted = useWishlistStore((state) => state.isWishlisted(courseId));
+  // `useWishlistStore` is `persist`-backed (localStorage), which hydrates
+  // before React's first client render - the server-rendered HTML never
+  // saw that data, so reading it unconditionally here would mismatch on
+  // hydration for any already-wishlisted course. Ignoring it until after
+  // mount keeps the first client render identical to the server's (always
+  // "not wishlisted"), then a normal client-only re-render picks up the
+  // real value.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const wishlisted = useWishlistStore((state) => state.isWishlisted(courseId));
   const toggleWishlist = useWishlistStore((state) => state.toggleWishlist);
+  const isWishlisted = mounted && wishlisted;
 
   return (
     <Button
