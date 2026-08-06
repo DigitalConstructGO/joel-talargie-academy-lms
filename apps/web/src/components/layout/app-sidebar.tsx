@@ -87,7 +87,7 @@ function filterByPermission(
  * collapsed button's fixed 32px box once `!p-2` claims 8px on every side.
  */
 const navItemClassName =
-  'min-h-12 gap-3 rounded-sm px-4 py-3 transition-colors duration-300 ease-in-out hover:bg-white/8 hover:text-sidebar-foreground data-[active=true]:bg-sidebar-active-background data-[active=true]:text-sidebar-active-foreground data-[active=true]:font-medium data-[active=true]:hover:bg-sidebar-active-background data-[active=true]:hover:text-sidebar-active-foreground group-data-[collapsible=icon]:min-h-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 [&>svg]:size-5 group-data-[collapsible=icon]:[&>svg]:size-4';
+  'min-h-9 gap-3 rounded-sm px-4 py-3 transition-colors duration-300 ease-in-out hover:bg-white/8 hover:text-sidebar-foreground data-[active=true]:bg-sidebar-active-background data-[active=true]:text-sidebar-active-foreground data-[active=true]:font-medium data-[active=true]:hover:bg-sidebar-active-background data-[active=true]:hover:text-sidebar-active-foreground group-data-[collapsible=icon]:min-h-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 [&>svg]:size-5 group-data-[collapsible=icon]:[&>svg]:size-4';
 
 /** Hides a nav item's label when the sidebar collapses to icon-only, without leaving it as an invisible flex child that would skew the icon off-center. */
 const navLabelClassName =
