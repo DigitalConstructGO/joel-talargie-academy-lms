@@ -6,6 +6,7 @@ export type CourseSort =
 export interface CourseSummary {
   id: string;
   title: string;
+  subtitle?: string;
   slug: string;
   shortDescription: string;
   thumbnailKey: string | null;
@@ -22,6 +23,13 @@ export interface CourseSummary {
   certificateEnabled: boolean;
   featured: boolean;
   publishedAt: string | null;
+  /** Not part of the live backend contract yet - populated by mock data only. */
+  rating?: number;
+  studentsCount?: number;
+  language?: string;
+  tags?: string[];
+  lessonCount?: number;
+  moduleCount?: number;
 }
 
 export interface CourseListResult {
@@ -61,6 +69,7 @@ export interface CourseSection {
 export interface CourseDetail {
   id: string;
   title: string;
+  subtitle?: string;
   slug: string;
   shortDescription: string;
   description: string;
@@ -76,6 +85,14 @@ export interface CourseDetail {
   outcomes: string[];
   requirements: string[];
   sections: CourseSection[];
+  /** Not part of the live backend contract yet - populated by mock data only. */
+  rating?: number;
+  studentsCount?: number;
+  language?: string;
+  tags?: string[];
+  categoryId?: string;
+  categoryName?: string;
+  categorySlug?: string;
 }
 
 export interface Category {

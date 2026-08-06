@@ -1,8 +1,8 @@
 import Link from 'next/link';
-import { Clock, Signal } from 'lucide-react';
+import { Clock, Signal, Star, Users } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { formatDurationMinutes } from '@/lib/format';
+import { formatCompactNumber, formatDurationMinutes } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { ROUTES } from '@/constants/routes';
 import { CourseThumbnail } from './course-thumbnail';
@@ -17,6 +17,21 @@ export interface CourseCardProps {
   view?: 'grid' | 'list';
 }
 
+function CourseRatingStat({ course }: { course: CourseSummary }) {
+  if (course.rating === undefined) return null;
+  return (
+    <span className="flex items-center gap-1 text-xs font-medium text-foreground">
+      <Star className="size-3.5 fill-warning text-warning" />
+      {course.rating.toFixed(1)}
+      {course.studentsCount !== undefined && (
+        <span className="font-normal text-muted-foreground">
+          ({formatCompactNumber(course.studentsCount)})
+        </span>
+      )}
+    </span>
+  );
+}
+
 export function CourseCard({ course, className, view = 'grid' }: CourseCardProps) {
   const href = ROUTES.courses.detail(course.slug);
 
@@ -27,6 +42,7 @@ export function CourseCard({ course, className, view = 'grid' }: CourseCardProps
           <CourseThumbnail
             title={course.title}
             categoryName={course.categoryName}
+            categorySlug={course.categorySlug}
             className="w-full rounded-t-xl sm:w-56 sm:rounded-l-xl sm:rounded-tr-none"
           />
           <div className="flex flex-1 flex-col gap-2 p-4 pt-0 sm:pt-4">
@@ -35,7 +51,9 @@ export function CourseCard({ course, className, view = 'grid' }: CourseCardProps
               <WishlistButton courseId={course.id} courseTitle={course.title} />
             </div>
             <p className="line-clamp-2 text-sm text-muted-foreground">{course.shortDescription}</p>
+            <p className="text-xs text-muted-foreground">by {course.presenterName}</p>
             <div className="mt-auto flex flex-wrap items-center gap-3 pt-2 text-xs text-muted-foreground">
+              <CourseRatingStat course={course} />
               <span className="flex items-center gap-1">
                 <Signal className="size-3.5" /> {DIFFICULTY_LABELS[course.difficulty]}
               </span>
@@ -64,7 +82,11 @@ export function CourseCard({ course, className, view = 'grid' }: CourseCardProps
     <Card className={cn('group overflow-hidden transition-shadow hover:shadow-md', className)}>
       <Link href={href}>
         <div className="relative">
-          <CourseThumbnail title={course.title} categoryName={course.categoryName} />
+          <CourseThumbnail
+            title={course.title}
+            categoryName={course.categoryName}
+            categorySlug={course.categorySlug}
+          />
           <WishlistButton
             courseId={course.id}
             courseTitle={course.title}
@@ -80,7 +102,15 @@ export function CourseCard({ course, className, view = 'grid' }: CourseCardProps
           </h3>
           <p className="line-clamp-2 text-sm text-muted-foreground">{course.shortDescription}</p>
           <p className="text-xs text-muted-foreground">by {course.presenterName}</p>
-          <div className="flex items-center justify-between pt-2">
+          <div className="flex items-center gap-3 pt-1">
+            <CourseRatingStat course={course} />
+            {course.studentsCount !== undefined && course.rating === undefined && (
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Users className="size-3.5" /> {formatCompactNumber(course.studentsCount)}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center justify-between pt-1">
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <Signal className="size-3.5" /> {DIFFICULTY_LABELS[course.difficulty]}
             </span>

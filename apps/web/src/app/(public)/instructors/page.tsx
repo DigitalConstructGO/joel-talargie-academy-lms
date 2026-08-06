@@ -3,8 +3,11 @@ import { UserRound } from 'lucide-react';
 import { PageHeader } from '@/components/common/page-header';
 import { EmptyState } from '@/components/common/empty-state';
 import { catalogApi } from '@/features/catalog/api/catalog.api';
+import { CATALOG_DATA_SOURCE } from '@/config/data-source.config';
 import { deriveInstructors } from '@/features/instructors/utils/derive-instructors';
 import { InstructorCard } from '@/features/instructors/components/instructor-card';
+import { InstructorProfileCard } from '@/features/instructors/components/instructor-profile-card';
+import { MOCK_INSTRUCTORS } from '@/features/instructors/data/mock-instructors.data';
 
 export const metadata: Metadata = {
   title: 'Instructors',
@@ -12,19 +15,28 @@ export const metadata: Metadata = {
 };
 
 export default async function InstructorsPage() {
-  const courses = await catalogApi.listCourses({ pageSize: 100, sort: 'newest' });
-  const instructors = deriveInstructors(courses.items);
+  const isMock = CATALOG_DATA_SOURCE === 'mock';
+  const instructors = isMock ? MOCK_INSTRUCTORS : null;
+  const derivedInstructors = isMock
+    ? []
+    : deriveInstructors((await catalogApi.listCourses({ pageSize: 100, sort: 'newest' })).items);
+
+  const isEmpty = isMock ? instructors!.length === 0 : derivedInstructors.length === 0;
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-10 sm:px-6">
       <PageHeader title="Instructors" description="Meet the people behind our courses." />
-      {instructors.length === 0 ? (
+      {isEmpty ? (
         <EmptyState icon={UserRound} title="No instructors yet" />
       ) : (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-3 lg:grid-cols-5">
-          {instructors.map((instructor) => (
-            <InstructorCard key={instructor.name} instructor={instructor} />
-          ))}
+          {isMock
+            ? instructors!.map((instructor) => (
+                <InstructorProfileCard key={instructor.id} instructor={instructor} />
+              ))
+            : derivedInstructors.map((instructor) => (
+                <InstructorCard key={instructor.name} instructor={instructor} />
+              ))}
         </div>
       )}
     </div>

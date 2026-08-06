@@ -1,48 +1,141 @@
-import { BookOpen } from 'lucide-react';
+import Image from 'next/image';
+import {
+  BarChart3,
+  BookOpen,
+  Briefcase,
+  Cloud,
+  Code2,
+  Database,
+  Megaphone,
+  Palette,
+  Server,
+  Shield,
+  Smartphone,
+  TestTube2,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const GRADIENTS = [
-  'from-brand/70 via-brand/40 to-transparent',
-  'from-violet-500/70 via-violet-500/30 to-transparent',
-  'from-sky-500/70 via-sky-500/30 to-transparent',
-  'from-amber-500/70 via-amber-500/30 to-transparent',
-  'from-emerald-500/70 via-emerald-500/30 to-transparent',
-  'from-rose-500/70 via-rose-500/30 to-transparent',
+const CATEGORY_ICONS: Record<string, typeof BookOpen> = {
+  'web-development': Code2,
+  'mobile-development': Smartphone,
+  'data-science': BarChart3,
+  'artificial-intelligence': Server,
+  'cloud-computing': Cloud,
+  devops: Server,
+  cybersecurity: Shield,
+  'ui-ux-design': Palette,
+  'programming-languages': Code2,
+  'database-systems': Database,
+  'business-management': Briefcase,
+  'digital-marketing': Megaphone,
+  'graphic-design': Palette,
+  'project-management': Briefcase,
+  'software-testing': TestTube2,
+};
+
+/** Categories with a real (licensed, downloaded) photo under /public/images/categories/. */
+const CATEGORY_PHOTOS = new Set(Object.keys(CATEGORY_ICONS));
+
+const TINTS = [
+  { icon: 'text-lime-400', ring: 'ring-lime-400/30', glow: 'rgba(163,230,53,0.35)' },
+  { icon: 'text-sky-400', ring: 'ring-sky-400/30', glow: 'rgba(56,189,248,0.35)' },
+  { icon: 'text-violet-400', ring: 'ring-violet-400/30', glow: 'rgba(167,139,250,0.35)' },
+  { icon: 'text-amber-400', ring: 'ring-amber-400/30', glow: 'rgba(251,191,36,0.35)' },
+  { icon: 'text-rose-400', ring: 'ring-rose-400/30', glow: 'rgba(251,113,133,0.35)' },
 ];
 
-function pickGradient(seed: string) {
+function pickTint(seed: string) {
   let hash = 0;
   for (let index = 0; index < seed.length; index += 1) {
     hash = (hash * 31 + seed.charCodeAt(index)) >>> 0;
   }
-  return GRADIENTS[hash % GRADIENTS.length];
+  return TINTS[hash % TINTS.length] ?? TINTS[0]!;
 }
 
 export interface CourseThumbnailProps {
   title: string;
   categoryName?: string;
+  categorySlug?: string;
   className?: string;
 }
 
 /**
  * The public catalog API does not yet expose a pre-resolved thumbnail URL
- * (uploaded images live behind expiring signed-URL tokens), so this renders
- * a deterministic gradient placeholder instead of attempting a broken image
- * fetch. Swap for a real `next/image` once the backend resolves the URL.
+ * (uploaded images live behind expiring signed-URL tokens). For categories
+ * with a downloaded, freely-licensed Unsplash photo under
+ * /public/images/categories/, that photo is used; otherwise this falls back
+ * to a generated category-icon placeholder rather than a broken image.
  */
-export function CourseThumbnail({ title, categoryName, className }: CourseThumbnailProps) {
-  const gradient = pickGradient(title);
+export function CourseThumbnail({
+  title,
+  categoryName,
+  categorySlug,
+  className,
+}: CourseThumbnailProps) {
+  if (categorySlug && CATEGORY_PHOTOS.has(categorySlug)) {
+    return (
+      <div
+        className={cn(
+          'relative aspect-video w-full overflow-hidden rounded-t-xl bg-muted',
+          className,
+        )}
+      >
+        <Image
+          src={`/images/categories/${categorySlug}.jpg`}
+          alt={categoryName ?? title}
+          fill
+          sizes="(min-width: 1024px) 25vw, 50vw"
+          className="object-cover"
+        />
+        <div
+          className="absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-transparent"
+          aria-hidden="true"
+        />
+        {categoryName && (
+          <span className="absolute bottom-2 left-2 rounded-full bg-background/90 px-2.5 py-1 text-xs font-medium text-foreground backdrop-blur">
+            {categoryName}
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  const tint = pickTint(title);
+  const Icon = (categorySlug && CATEGORY_ICONS[categorySlug]) || BookOpen;
+
   return (
     <div
       className={cn(
-        'relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-t-xl bg-muted',
+        'relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-t-xl bg-[#120c08]',
         className,
       )}
     >
-      <div className={cn('absolute inset-0 bg-gradient-to-br', gradient)} aria-hidden="true" />
-      <BookOpen className="relative size-10 text-background/90" aria-hidden="true" />
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: `radial-gradient(circle at 30% 30%, ${tint.glow}, transparent 60%)`,
+        }}
+        aria-hidden="true"
+      />
+      <div
+        className="absolute inset-0 opacity-30"
+        style={{
+          backgroundImage:
+            'linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px)',
+          backgroundSize: '24px 24px',
+        }}
+        aria-hidden="true"
+      />
+      <span
+        className={cn(
+          'relative flex size-12 items-center justify-center rounded-2xl bg-white/10 ring-1 backdrop-blur-sm',
+          tint.ring,
+        )}
+      >
+        <Icon className={cn('size-6', tint.icon)} aria-hidden="true" />
+      </span>
       {categoryName && (
-        <span className="absolute bottom-2 left-2 rounded-full bg-background/85 px-2.5 py-1 text-xs font-medium text-foreground backdrop-blur">
+        <span className="absolute bottom-2 left-2 rounded-full bg-background/90 px-2.5 py-1 text-xs font-medium text-foreground backdrop-blur">
           {categoryName}
         </span>
       )}

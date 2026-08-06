@@ -1,8 +1,10 @@
+import type { LucideIcon } from 'lucide-react';
 import { AlertTriangle, RotateCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 export interface ErrorStateProps {
+  icon?: LucideIcon;
   title?: string;
   description?: string;
   onRetry?: () => void;
@@ -11,6 +13,7 @@ export interface ErrorStateProps {
 }
 
 export function ErrorState({
+  icon: Icon = AlertTriangle,
   title = 'Something went wrong',
   description = 'An unexpected error occurred. Please try again.',
   onRetry,
@@ -26,7 +29,7 @@ export function ErrorState({
       )}
     >
       <div className="flex size-12 items-center justify-center rounded-full bg-destructive/10">
-        <AlertTriangle className="size-6 text-destructive" aria-hidden="true" />
+        <Icon className="size-6 text-destructive" aria-hidden="true" />
       </div>
       <h3 className="mt-4 text-sm font-semibold text-foreground">{title}</h3>
       <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">{description}</p>

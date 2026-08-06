@@ -3,6 +3,8 @@
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { SiteHeader } from '@/components/layout/site-header';
+import { CommandPalette, useCommandPaletteState } from '@/components/dashboard/command-palette';
+import { DashboardPageTransition } from '@/components/dashboard/dashboard-page-transition';
 import type { NavSection } from '@/types';
 
 export interface DashboardShellProps {
@@ -19,13 +21,18 @@ export function DashboardShell({
   breadcrumb,
   children,
 }: DashboardShellProps) {
+  const { open, setOpen } = useCommandPaletteState();
+
   return (
     <SidebarProvider>
       <AppSidebar sections={sections} portalLabel={portalLabel} />
       <SidebarInset>
-        <SiteHeader breadcrumb={breadcrumb} />
-        <main className="flex flex-1 flex-col">{children}</main>
+        <SiteHeader breadcrumb={breadcrumb} onOpenCommandPalette={() => setOpen(true)} />
+        <main className="flex flex-1 flex-col">
+          <DashboardPageTransition>{children}</DashboardPageTransition>
+        </main>
       </SidebarInset>
+      <CommandPalette sections={sections} open={open} onOpenChange={setOpen} />
     </SidebarProvider>
   );
 }

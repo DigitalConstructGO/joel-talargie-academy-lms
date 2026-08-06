@@ -8,19 +8,14 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/features/catalog/api/catalog.api', () => ({
   catalogApi: {
-    listCategories: vi.fn().mockResolvedValue({
-      items: [{ id: 'cat-1', name: 'Web Development', slug: 'web-development', description: null }],
-      total: 1,
-    }),
     featuredCourses: vi.fn().mockResolvedValue({ items: [], total: 0 }),
-    listCourses: vi.fn().mockResolvedValue({ items: [], total: 0 }),
   },
 }));
 
 it('renders the academy homepage', async () => {
   render(await Home());
   expect(
-    screen.getByRole('heading', { name: 'Learn with purpose. Build with confidence.' }),
+    screen.getByRole('heading', { name: 'Engineer Your Next Career Move.' }),
   ).toBeInTheDocument();
-  expect(screen.getByText('Web Development')).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Ready to Start?' })).toBeInTheDocument();
 });

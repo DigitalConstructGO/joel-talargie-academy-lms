@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/common/empty-state';
+import { NotificationCard } from '@/components/dashboard/notification-card';
 import { useNotificationStore } from '@/stores';
 
 export function NotificationBell() {
@@ -57,9 +58,12 @@ export function NotificationBell() {
         ) : (
           <ul className="max-h-80 space-y-1 overflow-y-auto p-1">
             {notifications.map((notification) => (
-              <li key={notification.id} className="rounded-md px-2 py-2 text-sm hover:bg-accent">
-                <p className="font-medium text-foreground">{notification.title}</p>
-                <p className="text-xs text-muted-foreground">{notification.body}</p>
+              <li key={notification.id}>
+                <NotificationCard
+                  title={notification.title}
+                  description={notification.body}
+                  read={notification.read}
+                />
               </li>
             ))}
           </ul>

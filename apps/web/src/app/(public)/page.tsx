@@ -1,12 +1,18 @@
 import type { Metadata } from 'next';
+import { Reveal } from '@/components/common/reveal';
 import { catalogApi } from '@/features/catalog/api/catalog.api';
+import { CATALOG_DATA_SOURCE } from '@/config/data-source.config';
+import { computePlatformStats } from '@/features/home/utils/compute-platform-stats';
+import { getInstructorBySlug } from '@/features/instructors/data/mock-instructors.data';
+import type { InstructorProfile } from '@/features/instructors/types/instructor.types';
 import { HeroSection } from '@/features/home/components/hero-section';
-import { StatsSection } from '@/features/home/components/stats-section';
-import { CategoriesSection } from '@/features/home/components/categories-section';
-import { FeaturedCoursesSection } from '@/features/home/components/featured-courses-section';
+import { ValuePillsSection } from '@/features/home/components/value-pills-section';
 import { WhyChooseUsSection } from '@/features/home/components/why-choose-us-section';
 import { HowItWorksSection } from '@/features/home/components/how-it-works-section';
-import { PricingPreviewSection } from '@/features/home/components/pricing-preview-section';
+import { FeaturedCoursesSection } from '@/features/home/components/featured-courses-section';
+import { MentorSpotlightSection } from '@/features/home/components/mentor-spotlight-section';
+import { StatsBandSection } from '@/features/home/components/stats-band-section';
+import { TestimonialsSection } from '@/features/testimonials/components/testimonials-section';
 import { FaqPreviewSection } from '@/features/home/components/faq-preview-section';
 import { CtaBannerSection } from '@/features/home/components/cta-banner-section';
 
@@ -18,46 +24,68 @@ export const metadata: Metadata = {
 
 async function loadHomeData() {
   try {
-    const [categories, featured, courseSample, freeCourses] = await Promise.all([
-      catalogApi.listCategories({ pageSize: 4 }),
-      catalogApi.featuredCourses({ pageSize: 8 }),
-      catalogApi.listCourses({ pageSize: 100 }),
-      catalogApi.listCourses({ pageSize: 1, accessType: 'FREE' }),
-    ]);
-    const instructorCount = new Set(courseSample.items.map((course) => course.presenterName)).size;
-    return {
-      categories: categories.items,
-      featured: featured.items,
-      stats: {
-        totalCourses: courseSample.total,
-        totalCategories: categories.total,
-        freeCourses: freeCourses.total,
-        instructorCount,
-      },
-    };
+    const featured = await catalogApi.featuredCourses({ pageSize: 8 });
+    const isMock = CATALOG_DATA_SOURCE === 'mock';
+
+    const topMentor: InstructorProfile | null = isMock
+      ? (getInstructorBySlug('joel-talargie') ?? null)
+      : null;
+
+    const platformStats = isMock ? computePlatformStats() : null;
+
+    return { featured: featured.items, topMentor, platformStats };
   } catch {
-    return {
-      categories: [],
-      featured: [],
-      stats: { totalCourses: 0, totalCategories: 0, freeCourses: 0, instructorCount: 0 },
-    };
+    return { featured: [], topMentor: null, platformStats: null };
   }
 }
 
 export default async function Home() {
-  const { categories, featured, stats } = await loadHomeData();
+  const { featured, topMentor, platformStats } = await loadHomeData();
 
   return (
     <main>
       <HeroSection />
-      <StatsSection stats={stats} />
-      <CategoriesSection categories={categories} />
-      <FeaturedCoursesSection courses={featured} />
-      <WhyChooseUsSection />
-      <HowItWorksSection />
-      <PricingPreviewSection />
-      <FaqPreviewSection />
-      <CtaBannerSection />
+      <ValuePillsSection />
+      <Reveal>
+        <WhyChooseUsSection />
+      </Reveal>
+      <Reveal>
+        <HowItWorksSection />
+      </Reveal>
+      <Reveal>
+        <FeaturedCoursesSection courses={featured} />
+      </Reveal>
+      <Reveal>
+        <MentorSpotlightSection instructor={topMentor} />
+      </Reveal>
+      {platformStats && (
+        <Reveal>
+          <StatsBandSection
+            items={[
+              { value: platformStats.studentsEnrolled, label: 'Students enrolled', kind: 'count' },
+              {
+                value: platformStats.averageRating,
+                label: 'Average course rating',
+                kind: 'rating',
+              },
+              {
+                value: platformStats.satisfactionPercent,
+                label: 'Student satisfaction',
+                kind: 'percent',
+              },
+            ]}
+          />
+        </Reveal>
+      )}
+      <Reveal>
+        <TestimonialsSection />
+      </Reveal>
+      <Reveal>
+        <FaqPreviewSection />
+      </Reveal>
+      <Reveal>
+        <CtaBannerSection />
+      </Reveal>
     </main>
   );
 }
