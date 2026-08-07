@@ -1,4 +1,5 @@
 import {
+  Activity,
   Award,
   BadgeCheck,
   BarChart3,
@@ -12,6 +13,7 @@ import {
   LayoutDashboard,
   Layers,
   LifeBuoy,
+  Mail,
   MessageSquare,
   Settings,
   ShieldCheck,
@@ -67,30 +69,61 @@ export const ADMIN_NAV: NavSection[] = [
   {
     label: 'Management',
     items: [
-      { label: 'User Management', href: ROUTES.admin.users, icon: Users, permission: 'users.read' },
+      {
+        label: 'User Management',
+        href: ROUTES.admin.users,
+        icon: Users,
+        permission: 'users.read',
+        items: [
+          { label: 'Users', href: ROUTES.admin.users, icon: Users, permission: 'users.read' },
+          {
+            label: 'Roles',
+            href: ROUTES.admin.systemRoles,
+            icon: ShieldCheck,
+            permission: 'roles.read',
+          },
+          {
+            label: 'Permissions',
+            href: ROUTES.admin.systemPermissions,
+            icon: KeyRound,
+            permission: 'permissions.read',
+          },
+        ],
+      },
       {
         label: 'Academic Management',
         href: ROUTES.admin.academics,
         icon: GraduationCap,
-        permission: 'catalog.read',
+        // 'catalog.read' does not exist on the backend (verified against
+        // every real @RequirePermissions() string) - courses.read is the
+        // closest real permission covering this whole area.
+        permission: 'courses.read',
         items: [
           {
             label: 'Courses',
             href: ROUTES.admin.academicsCourses,
             icon: BookOpen,
-            permission: 'catalog.read',
+            permission: 'courses.read',
           },
           {
             label: 'Categories',
             href: ROUTES.admin.academicsCategories,
             icon: Layers,
-            permission: 'catalog.read',
+            permission: 'categories.read',
           },
           {
             label: 'Instructors',
             href: ROUTES.admin.academicsInstructors,
             icon: UserCog,
-            permission: 'catalog.read',
+            // No dedicated instructor permission exists on the backend -
+            // instructor management is part of course content management.
+            permission: 'courses.read',
+          },
+          {
+            label: 'Enrollments',
+            href: ROUTES.admin.academicsEnrollments,
+            icon: GraduationCap,
+            permission: 'enrollments.read',
           },
         ],
       },
@@ -135,6 +168,27 @@ export const ADMIN_NAV: NavSection[] = [
         href: ROUTES.admin.communication,
         icon: MessageSquare,
         permission: 'notifications.read',
+        items: [
+          {
+            label: 'Notifications',
+            href: ROUTES.admin.communicationNotifications,
+            icon: Bell,
+            permission: 'notifications.read',
+          },
+          {
+            label: 'Email Templates',
+            href: ROUTES.admin.communicationEmailTemplates,
+            icon: Mail,
+            permission: 'notifications.read',
+          },
+          {
+            label: 'Support',
+            href: ROUTES.admin.communicationSupport,
+            icon: LifeBuoy,
+            disabled: true,
+            badge: { label: 'Soon', variant: 'warning' },
+          },
+        ],
       },
     ],
   },
@@ -156,20 +210,25 @@ export const ADMIN_NAV: NavSection[] = [
         label: 'System',
         href: ROUTES.admin.system,
         icon: ShieldCheck,
-        permission: 'roles.read',
+        permission: 'settings.read',
         items: [
           {
-            label: 'Roles',
-            href: ROUTES.admin.systemRoles,
-            icon: ShieldCheck,
-            permission: 'roles.read',
+            label: 'Activity Logs',
+            href: ROUTES.admin.systemActivityLogs,
+            icon: Activity,
+            permission: 'audit.read',
           },
           {
-            label: 'Permissions',
-            href: ROUTES.admin.systemPermissions,
-            icon: KeyRound,
-            permission: 'permissions.read',
+            label: 'Academy Settings',
+            href: ROUTES.admin.systemAcademySettings,
+            icon: Settings,
+            permission: 'settings.read',
           },
+          // Profile/Security are self-service (any authenticated staff
+          // member manages their own) - no permission gate, same as the
+          // student portal's equivalents.
+          { label: 'Profile', href: ROUTES.admin.systemProfile, icon: UserCircle },
+          { label: 'Security', href: ROUTES.admin.systemSecurity, icon: KeyRound },
         ],
       },
     ],

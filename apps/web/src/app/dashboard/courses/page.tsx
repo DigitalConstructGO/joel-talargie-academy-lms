@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { PageHeader } from '@/components/common/page-header';
 import { SearchBar } from '@/components/common/search-bar';
 import { DynamicPagination } from '@/components/common/dynamic-pagination';
@@ -168,7 +169,7 @@ export default function CoursesPage() {
           <NoCoursesEmptyState
             action={
               <Button asChild>
-                <a href={ROUTES.dashboard.browseCourses}>Browse courses</a>
+                <Link href={ROUTES.dashboard.browseCourses}>Browse courses</Link>
               </Button>
             }
           />

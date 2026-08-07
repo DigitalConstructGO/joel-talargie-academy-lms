@@ -1,9 +1,15 @@
-import { Download, ExternalLink, FileText } from 'lucide-react';
+'use client';
+
+import { Download, ExternalLink, FileText, NotebookPen } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { formatFileSize } from '@/lib/format';
+import { Textarea } from '@/components/ui/textarea';
+import { formatFileSize, formatRelativeTime } from '@/lib/format';
+import { useLessonNotes } from '../hooks/use-lesson-notes';
 import type { LessonContent } from '../types/learning.types';
 
 export function LessonTabs({ lesson }: { lesson: LessonContent }) {
+  const { text, savedAt, updateText } = useLessonNotes(lesson.id);
+
   return (
     <Tabs defaultValue="description" className="mt-6">
       <TabsList className="bg-white/5 text-sidebar-foreground/70">
@@ -23,6 +29,12 @@ export function LessonTabs({ lesson }: { lesson: LessonContent }) {
               {lesson.resources.length}
             </span>
           )}
+        </TabsTrigger>
+        <TabsTrigger
+          value="notes"
+          className="data-[state=active]:bg-sidebar-primary data-[state=active]:text-sidebar-primary-foreground"
+        >
+          Notes
         </TabsTrigger>
       </TabsList>
 
@@ -98,6 +110,24 @@ export function LessonTabs({ lesson }: { lesson: LessonContent }) {
             })}
           </div>
         )}
+      </TabsContent>
+
+      <TabsContent value="notes" className="mt-5 max-w-3xl">
+        <div className="space-y-2">
+          <Textarea
+            value={text}
+            onChange={(event) => updateText(event.target.value)}
+            placeholder="Write notes for this lesson..."
+            rows={8}
+            className="border-sidebar-border bg-white/5 text-sidebar-foreground placeholder:text-sidebar-foreground/40 focus-visible:ring-sidebar-primary"
+          />
+          <p className="flex items-center gap-1.5 text-xs text-sidebar-foreground/50">
+            <NotebookPen className="size-3.5" aria-hidden="true" />
+            {savedAt
+              ? `Saved ${formatRelativeTime(new Date(savedAt).toISOString())} - on this device only`
+              : 'Notes are saved on this device only, not synced across devices.'}
+          </p>
+        </div>
       </TabsContent>
     </Tabs>
   );

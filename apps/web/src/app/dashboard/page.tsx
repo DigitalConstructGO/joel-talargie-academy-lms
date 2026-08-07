@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Award, BookOpen, CircleCheck, Loader } from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
 import { Reveal } from '@/components/common/reveal';
@@ -109,7 +110,7 @@ export default function DashboardPage() {
                 : "You haven't enrolled in any courses yet - browse the catalog to get started."
             }
             ctaLabel={mostRecent ? 'Resume Learning' : 'Browse Courses'}
-            ctaHref={mostRecent ? ROUTES.dashboard.courses : ROUTES.courses.list}
+            ctaHref={mostRecent ? ROUTES.dashboard.courses : ROUTES.dashboard.browseCourses}
           />
           {mostRecent && (
             <ProgressCard
@@ -135,14 +136,14 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <h3 className="text-2xl font-bold text-foreground">My Courses</h3>
               <Button variant="link" asChild className="h-auto p-0 text-primary">
-                <a href={ROUTES.dashboard.courses}>View All</a>
+                <Link href={ROUTES.dashboard.courses}>View All</Link>
               </Button>
             </div>
             {recentCourses.length === 0 ? (
               <NoCoursesEmptyState
                 action={
                   <Button asChild>
-                    <a href={ROUTES.courses.list}>Browse courses</a>
+                    <Link href={ROUTES.dashboard.browseCourses}>Browse courses</Link>
                   </Button>
                 }
               />
@@ -150,7 +151,7 @@ export default function DashboardPage() {
               recentCourses.map((enrollment) => (
                 <CourseProgressCard
                   key={enrollment.id}
-                  href={ROUTES.courses.detail(enrollment.courseSlug)}
+                  href={ROUTES.dashboard.learn(enrollment.id)}
                   category={enrollment.categoryName}
                   categorySlug={enrollment.categorySlug}
                   title={enrollment.courseTitle}
@@ -177,7 +178,7 @@ export default function DashboardPage() {
               eyebrow="Recommended for you"
               title="AI-Driven UI Design"
               description="Explore how generative AI is transforming the design workflow."
-              href={ROUTES.courses.list}
+              href={ROUTES.dashboard.browseCourses}
             />
           </div>
         </div>

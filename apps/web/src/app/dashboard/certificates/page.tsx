@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
 import { PageHeader } from '@/components/common/page-header';
@@ -149,7 +150,7 @@ export default function CertificatesPage() {
           <NoCertificatesEmptyState
             action={
               <Button asChild>
-                <a href={ROUTES.dashboard.courses}>View my courses</a>
+                <Link href={ROUTES.dashboard.courses}>View my courses</Link>
               </Button>
             }
           />

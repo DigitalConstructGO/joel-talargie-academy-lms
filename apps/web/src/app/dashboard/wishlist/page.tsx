@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { ShoppingCart } from 'lucide-react';
 import { PageHeader } from '@/components/common/page-header';
 import { ContentContainer } from '@/components/layout/content-container';
@@ -28,7 +29,7 @@ export default function WishlistPage() {
         <NoWishlistEmptyState
           action={
             <Button asChild>
-              <a href={ROUTES.dashboard.browseCourses}>Browse courses</a>
+              <Link href={ROUTES.dashboard.browseCourses}>Browse courses</Link>
             </Button>
           }
         />
@@ -42,10 +43,10 @@ export default function WishlistPage() {
             <div key={course.id} className="flex flex-col gap-3">
               <CourseCard course={course} href={ROUTES.dashboard.courseDetail(course.slug)} />
               <Button variant="outline" asChild className="w-full">
-                <a href={`${ROUTES.dashboard.checkout}?course=${course.slug}`}>
+                <Link href={`${ROUTES.dashboard.checkout}?course=${course.slug}`}>
                   <ShoppingCart className="size-4" />
                   Move to Checkout
-                </a>
+                </Link>
               </Button>
             </div>
           ))}

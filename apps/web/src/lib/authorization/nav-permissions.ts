@@ -79,3 +79,6 @@ export function isRouteAllowed(
   if (options.fallbackPermissions) return canAny(granted, options.fallbackPermissions);
   return true;
 }
+
+/** Same check, under the name the wider spec/vocabulary uses - `AuthorizationGate` is the real caller. */
+export const canAccessRoute = isRouteAllowed;

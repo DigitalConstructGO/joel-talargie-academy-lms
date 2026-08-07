@@ -210,7 +210,7 @@ export default function CheckoutPage() {
               redemption={redemption}
               onApplied={setRedemption}
               onClear={() => setRedemption(null)}
-              onBack={() => router.push(ROUTES.courses.detail(course.slug))}
+              onBack={() => router.push(ROUTES.dashboard.courseDetail(course.slug))}
               onNext={handlePromoNext}
               isAdvancing={createEnrollment.isPending}
             />

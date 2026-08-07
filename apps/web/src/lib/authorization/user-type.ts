@@ -21,3 +21,13 @@ export function isStudent(roles: string[]): boolean {
 export function getPostLoginRoute(roles: string[]): string {
   return isStudent(roles) ? ROUTES.dashboard.root : ROUTES.admin.root;
 }
+
+/** Does this account carry the given role code, regardless of what else it carries? */
+export function hasRole(roles: string[], role: string): boolean {
+  return roles.includes(role);
+}
+
+/** True if `required` is empty (nothing to satisfy) or the account carries at least one of them. */
+export function hasAnyRole(roles: string[], required: string[]): boolean {
+  return required.length === 0 || required.some((role) => roles.includes(role));
+}
