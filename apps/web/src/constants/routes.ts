@@ -87,6 +87,7 @@ export const ROUTES = {
       `/admin/financial/promotions/${promotionId}/edit`,
     financialPromotionUsage: (promotionId: string) =>
       `/admin/financial/promotions/${promotionId}/usage`,
+    financialPromoCodes: '/admin/financial/promo-codes',
     certificates: '/admin/certificates',
     certificateDetail: (certificateId: string) => `/admin/certificates/${certificateId}`,
     verifyCertificate: '/admin/verify-certificate',

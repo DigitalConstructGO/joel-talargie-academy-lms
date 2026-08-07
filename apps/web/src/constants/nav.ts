@@ -140,8 +140,14 @@ export const ADMIN_NAV: NavSection[] = [
             permission: 'payments.read',
           },
           {
-            label: 'Promotions',
+            label: 'Campaigns',
             href: ROUTES.admin.financialPromotions,
+            icon: Tag,
+            permission: 'promotions.read',
+          },
+          {
+            label: 'Promo Codes',
+            href: ROUTES.admin.financialPromoCodes,
             icon: Tag,
             permission: 'promotions.read',
           },

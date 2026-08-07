@@ -49,6 +49,9 @@ export interface DataTableProps<TData, TValue> {
   /** Sticky header row while the table body scrolls. */
   stickyHeader?: boolean;
 
+  /** Makes each row clickable (e.g. to open a detail view/sheet) - adds a pointer cursor automatically. */
+  onRowClick?: (row: TData) => void;
+
   /** Adds a checkbox column and reports the selected rows back to the caller. */
   enableRowSelection?: boolean;
   onRowSelectionChange?: (selectedRows: TData[]) => void;
@@ -82,6 +85,7 @@ export function DataTable<TData, TValue>({
   pageSize = 10,
   className,
   stickyHeader = false,
+  onRowClick,
   enableRowSelection = false,
   onRowSelectionChange,
   bulkActions,
@@ -244,7 +248,12 @@ export function DataTable<TData, TValue>({
                   </TableRow>
                 ) : (
                   table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && 'selected'}
+                      onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+                      className={cn(onRowClick && 'cursor-pointer')}
+                    >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
