@@ -25,6 +25,8 @@ import {
 import { ROUTES } from '@/constants/routes';
 import { siteConfig } from '@/config/site.config';
 import { SidebarUserFooter } from '@/components/layout/sidebar-user-footer';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import type { NavItem, NavSection } from '@/types';
 
 export interface AppSidebarProps {
@@ -205,6 +207,30 @@ export function AppSidebar({
                           </CollapsibleContent>
                         </SidebarMenuItem>
                       </Collapsible>
+                    ) : item.disabled ? (
+                      <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton
+                          aria-disabled="true"
+                          tooltip={item.label}
+                          className={cn(
+                            navItemClassName,
+                            'pointer-events-none cursor-not-allowed opacity-60',
+                          )}
+                        >
+                          {item.icon && <item.icon />}
+                          <span className={navLabelClassName}>{item.label}</span>
+                        </SidebarMenuButton>
+                        {item.badge && (
+                          <SidebarMenuBadge>
+                            <Badge
+                              variant={item.badge.variant ?? 'secondary'}
+                              className="text-[10px]"
+                            >
+                              {item.badge.label}
+                            </Badge>
+                          </SidebarMenuBadge>
+                        )}
+                      </SidebarMenuItem>
                     ) : (
                       <SidebarMenuItem key={item.href}>
                         <SidebarMenuButton

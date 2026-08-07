@@ -21,6 +21,28 @@ function findChain(items: NavItem[], pathname: string): NavItem[] | null {
   return null;
 }
 
+const DASHBOARD_COURSE_DETAIL_PATTERN = /^\/dashboard\/browse-courses\/[^/]+$/;
+
+/**
+ * A couple of dashboard routes are deliberately absent from the nav tree
+ * (Checkout isn't a sidebar destination; the course-detail route is
+ * dynamic) so `findChain` can never match them - special-case their
+ * breadcrumb trail here instead of forcing them into the nav config.
+ */
+function specialCaseCrumbs(pathname: string, home: BreadcrumbCrumb): BreadcrumbCrumb[] | null {
+  if (pathname === ROUTES.dashboard.checkout) {
+    return [home, { label: 'My Courses', href: ROUTES.dashboard.courses }, { label: 'Checkout' }];
+  }
+  if (DASHBOARD_COURSE_DETAIL_PATTERN.test(pathname)) {
+    return [
+      home,
+      { label: 'Browse Courses', href: ROUTES.dashboard.browseCourses },
+      { label: 'Course Details' },
+    ];
+  }
+  return null;
+}
+
 /**
  * Derives a breadcrumb trail for the current route by walking a NavSection
  * tree - no per-page wiring required. Always starts with a real "Home"
@@ -39,6 +61,9 @@ export function useBreadcrumbTrail(
   return useMemo(() => {
     const home: BreadcrumbCrumb = { label: 'Home', href: ROUTES.home };
     if (!pathname || pathname === rootHref) return [home, { label: portalLabel }];
+
+    const special = specialCaseCrumbs(pathname, home);
+    if (special) return special;
 
     for (const section of sections) {
       const chain = findChain(section.items, pathname);

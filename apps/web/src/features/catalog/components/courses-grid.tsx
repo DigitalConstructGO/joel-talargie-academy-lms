@@ -10,7 +10,17 @@ import { useCourses } from '../hooks/use-courses';
 import { CourseCard } from './course-card';
 import { CoursesGridSkeleton } from './course-card-skeleton';
 
-export function CoursesGrid() {
+export interface CoursesGridProps {
+  /**
+   * Overrides `CourseCard`'s default public link target, e.g. for the
+   * dashboard's own course-detail route. A plain string prefix (not a
+   * function) - this can be passed down from a Server Component page, and
+   * functions aren't serializable across that boundary.
+   */
+  linkBase?: string;
+}
+
+export function CoursesGrid({ linkBase }: CoursesGridProps = {}) {
   const search = useFilterStore((state) => state.search);
   const categoryId = useFilterStore((state) => state.categoryId);
   const accessType = useFilterStore((state) => state.accessType);
@@ -69,7 +79,12 @@ export function CoursesGrid() {
         )}
       >
         {data.items.map((course) => (
-          <CourseCard key={course.id} course={course} view={view} />
+          <CourseCard
+            key={course.id}
+            course={course}
+            view={view}
+            href={linkBase ? `${linkBase}/${course.slug}` : undefined}
+          />
         ))}
       </div>
       <DynamicPagination page={page} totalPages={totalPages} onPageChange={setPage} />

@@ -1,39 +1,22 @@
 import { create } from 'zustand';
 
 /**
- * Placeholder only - Phase 1 establishes shape and UI wiring (the
- * notification bell reads from this store). Fetching real notifications
- * from the API, marking them read, etc. is business logic for a later
- * phase.
+ * Pure UI state for the notification bell dropdown - actual notification
+ * data (list, unread count, mark-as-read) lives in TanStack Query via
+ * `@/features/notifications/hooks/use-notifications`, not here. Server
+ * state doesn't belong in a Zustand store; this only tracks whether the
+ * dropdown panel is open.
  */
-export interface AppNotification {
-  id: string;
-  title: string;
-  body: string;
-  read: boolean;
-  createdAt: string;
-}
-
-interface NotificationState {
-  notifications: AppNotification[];
-  unreadCount: number;
+interface NotificationUiState {
   isPanelOpen: boolean;
   openPanel: () => void;
   closePanel: () => void;
   togglePanel: () => void;
-  markAllRead: () => void;
 }
 
-export const useNotificationStore = create<NotificationState>((set) => ({
-  notifications: [],
-  unreadCount: 0,
+export const useNotificationStore = create<NotificationUiState>((set) => ({
   isPanelOpen: false,
   openPanel: () => set({ isPanelOpen: true }),
   closePanel: () => set({ isPanelOpen: false }),
   togglePanel: () => set((state) => ({ isPanelOpen: !state.isPanelOpen })),
-  markAllRead: () =>
-    set((state) => ({
-      notifications: state.notifications.map((item) => ({ ...item, read: true })),
-      unreadCount: 0,
-    })),
 }));

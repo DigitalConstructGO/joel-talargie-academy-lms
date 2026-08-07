@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
-import { Bell } from 'lucide-react';
+import { Archive, Bell } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 export interface NotificationCardProps {
@@ -9,6 +10,7 @@ export interface NotificationCardProps {
   timestamp?: string;
   read?: boolean;
   onClick?: () => void;
+  onArchive?: () => void;
   className?: string;
 }
 
@@ -20,16 +22,13 @@ export function NotificationCard({
   timestamp,
   read = false,
   onClick,
+  onArchive,
   className,
 }: NotificationCardProps) {
-  const Wrapper = onClick ? 'button' : 'div';
-
   return (
-    <Wrapper
-      type={onClick ? 'button' : undefined}
-      onClick={onClick}
+    <div
       className={cn(
-        'flex w-full items-start gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-accent',
+        'group flex w-full items-start gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-accent',
         !read && 'bg-brand/5',
         className,
       )}
@@ -42,7 +41,12 @@ export function NotificationCard({
       >
         <Icon className="size-4" aria-hidden="true" />
       </span>
-      <div className="min-w-0 flex-1">
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={!onClick}
+        className={cn('min-w-0 flex-1 text-left', !onClick && 'cursor-default')}
+      >
         <p
           className={cn('text-sm', read ? 'text-muted-foreground' : 'font-medium text-foreground')}
         >
@@ -52,10 +56,22 @@ export function NotificationCard({
           <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{description}</p>
         )}
         {timestamp && <p className="mt-1 text-[11px] text-muted-foreground">{timestamp}</p>}
+      </button>
+      <div className="flex shrink-0 items-center gap-1.5">
+        {!read && <span className="size-2 rounded-full bg-brand" aria-hidden="true" />}
+        {onArchive && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-7 text-muted-foreground opacity-0 transition-opacity hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
+            onClick={onArchive}
+            aria-label={`Archive ${title}`}
+          >
+            <Archive className="size-3.5" />
+          </Button>
+        )}
       </div>
-      {!read && (
-        <span className="mt-1.5 size-2 shrink-0 rounded-full bg-brand" aria-hidden="true" />
-      )}
-    </Wrapper>
+    </div>
   );
 }

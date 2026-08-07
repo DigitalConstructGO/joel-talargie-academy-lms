@@ -9,11 +9,25 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { ROUTES } from '@/constants/routes';
 import { STUDENT_NAV } from '@/constants/nav';
 
+const FOCUS_MODE_PATTERN = /^\/dashboard\/courses\/[^/]+\/learn/;
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const crumbs = useBreadcrumbTrail(STUDENT_NAV, 'Dashboard', ROUTES.dashboard.root);
   const isRoot = pathname === ROUTES.dashboard.root;
   const { can } = usePermissions();
+
+  // The lesson player is a deliberate full-bleed "Focus Mode" - it builds its
+  // own header/sidebar rather than the standard dashboard chrome. Real
+  // protection (AuthorizationGate) still applies; only DashboardShell is
+  // skipped.
+  if (pathname && FOCUS_MODE_PATTERN.test(pathname)) {
+    return (
+      <AuthorizationGate sections={STUDENT_NAV} restrictTo="student">
+        {children}
+      </AuthorizationGate>
+    );
+  }
 
   return (
     <AuthorizationGate sections={STUDENT_NAV} restrictTo="student">

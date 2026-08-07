@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/stores';
 import { toast } from '@/lib/toast';
@@ -8,6 +9,7 @@ import { toast } from '@/lib/toast';
 /** Signs the current user out and redirects to `/`, with toast feedback. */
 export function useLogout() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const logout = useAuthStore((state) => state.logout);
 
   return async function handleLogout() {
@@ -25,6 +27,10 @@ export function useLogout() {
     router.replace(ROUTES.home);
     try {
       await logout();
+      // Drop every cached query (payments, sessions, profile, etc.) so a
+      // different account signing in on the same browser never briefly
+      // sees the previous user's data before queries refetch.
+      queryClient.clear();
       toast.success('Signed out');
     } catch {
       toast.error('Could not sign out', 'Please try again.');

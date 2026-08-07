@@ -1,31 +1,40 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { CheckCircle2, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { CourseThumbnail } from '@/features/catalog/components/course-thumbnail';
 import { cn } from '@/lib/utils';
 
 export interface CourseProgressCardProps {
   href: string;
-  thumbnailSrc: string;
-  category: string;
   title: string;
-  completedLessons: number;
-  totalLessons: number;
+  category: string;
+  categorySlug?: string;
+  /** Overall completion, 0-100 - real enrollment data only tracks this, not per-lesson state. */
+  progressPercent: number;
+  /**
+   * Optional "x/y Lessons" badge. Real enrollment data has no lesson-level
+   * completion, so when shown this is an estimate derived from
+   * `progressPercent` against the course's total lesson count, not an
+   * exact count - omit both to hide the badge entirely.
+   */
+  completedLessons?: number;
+  totalLessons?: number;
   className?: string;
 }
 
 /** A "my courses" list row - thumbnail, category, lesson count, and a progress bar (or a completed badge at 100%). */
 export function CourseProgressCard({
   href,
-  thumbnailSrc,
-  category,
   title,
+  category,
+  categorySlug,
+  progressPercent,
   completedLessons,
   totalLessons,
   className,
 }: CourseProgressCardProps) {
-  const percent = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+  const percent = Math.min(Math.max(Math.round(progressPercent), 0), 100);
   const isComplete = percent >= 100;
 
   return (
@@ -36,23 +45,22 @@ export function CourseProgressCard({
         className,
       )}
     >
-      <div className="size-20 shrink-0 overflow-hidden rounded-xl">
-        <Image
-          src={thumbnailSrc}
-          alt=""
-          width={80}
-          height={80}
-          className="size-full object-cover transition-transform duration-500 group-hover:scale-110"
-        />
-      </div>
+      <CourseThumbnail
+        title={title}
+        categoryName={category}
+        categorySlug={categorySlug}
+        className="size-20 shrink-0 rounded-xl transition-transform duration-500 group-hover:scale-110"
+      />
       <div className="min-w-0 flex-1">
         <div className="mb-1 flex items-center justify-between gap-2">
           <Badge variant="secondary" className="uppercase tracking-wide">
             {category}
           </Badge>
-          <span className="shrink-0 text-xs text-muted-foreground">
-            {completedLessons}/{totalLessons} Lessons
-          </span>
+          {completedLessons !== undefined && totalLessons !== undefined && (
+            <span className="shrink-0 text-xs text-muted-foreground">
+              {completedLessons}/{totalLessons} Lessons
+            </span>
+          )}
         </div>
         <h4 className="mb-3 truncate font-semibold text-foreground">{title}</h4>
         <Progress value={percent} />

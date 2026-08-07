@@ -1,4 +1,4 @@
-import { BarChart3, Bell, BookOpen, CreditCard, Inbox, SearchX } from 'lucide-react';
+import { Award, BarChart3, Bell, BookOpen, CreditCard, Heart, Inbox, SearchX } from 'lucide-react';
 import { EmptyState, type EmptyStateProps } from '@/components/common/empty-state';
 
 type PresetProps = Partial<Pick<EmptyStateProps, 'title' | 'description' | 'action' | 'className'>>;
@@ -47,12 +47,34 @@ export function NoCoursesEmptyState(props: PresetProps) {
   );
 }
 
+export function NoWishlistEmptyState(props: PresetProps) {
+  return (
+    <EmptyState
+      icon={Heart}
+      title="Your wishlist is empty"
+      description="Courses you save for later will show up here."
+      {...props}
+    />
+  );
+}
+
 export function NoPaymentsEmptyState(props: PresetProps) {
   return (
     <EmptyState
       icon={CreditCard}
       title="No payments yet"
       description="Your payment history will appear here."
+      {...props}
+    />
+  );
+}
+
+export function NoCertificatesEmptyState(props: PresetProps) {
+  return (
+    <EmptyState
+      icon={Award}
+      title="No certificates yet"
+      description="Complete a certificate-eligible course to earn your first certificate."
       {...props}
     />
   );

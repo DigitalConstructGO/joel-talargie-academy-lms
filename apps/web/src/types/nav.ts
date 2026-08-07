@@ -18,6 +18,8 @@ export interface NavItem {
    * its route via `@/lib/authorization/nav-permissions`.
    */
   permission?: string;
+  /** Renders as a non-interactive row instead of a link - the route itself may still be reachable directly. */
+  disabled?: boolean;
   items?: NavItem[];
 }
 

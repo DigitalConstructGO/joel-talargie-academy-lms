@@ -33,7 +33,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
       className={`${fontSans.variable} ${fontHeading.variable}`}
     >
-      <body>
+      {/* suppressHydrationWarning: browser extensions (e.g. ColorZilla's
+          cz-shortcut-listen attribute) inject attributes onto <body> before
+          React hydrates - a known false-positive class of mismatch, not an
+          app bug (see the "browser extension" case in React's own
+          hydration-mismatch warning). Same rationale as <html> above. */}
+      <body suppressHydrationWarning>
         <JsonLd data={[buildOrganizationJsonLd(), buildWebSiteJsonLd()]} />
         <AppProviders>{children}</AppProviders>
       </body>

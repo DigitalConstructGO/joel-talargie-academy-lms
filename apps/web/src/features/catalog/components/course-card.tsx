@@ -15,6 +15,8 @@ export interface CourseCardProps {
   course: CourseSummary;
   className?: string;
   view?: 'grid' | 'list';
+  /** Overrides the default public `/courses/[slug]` link target, e.g. for the dashboard's own course-detail route. */
+  href?: string;
 }
 
 function CourseRatingStat({ course }: { course: CourseSummary }) {
@@ -32,8 +34,13 @@ function CourseRatingStat({ course }: { course: CourseSummary }) {
   );
 }
 
-export function CourseCard({ course, className, view = 'grid' }: CourseCardProps) {
-  const href = ROUTES.courses.detail(course.slug);
+export function CourseCard({
+  course,
+  className,
+  view = 'grid',
+  href: hrefOverride,
+}: CourseCardProps) {
+  const href = hrefOverride ?? ROUTES.courses.detail(course.slug);
 
   if (view === 'list') {
     return (

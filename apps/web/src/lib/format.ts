@@ -1,3 +1,12 @@
+import { formatDistanceToNow } from 'date-fns';
+
+/** Formats an ISO timestamp as relative time (e.g. "2 hours ago"). */
+export function formatRelativeTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '—';
+  return formatDistanceToNow(date, { addSuffix: true });
+}
+
 /** Formats a number as currency. Defaults to ETB to match the academy's primary market. */
 export function formatCurrency(value: number | string, currency = 'ETB', locale = 'en-US'): string {
   const amount = typeof value === 'string' ? Number(value) : value;

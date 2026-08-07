@@ -15,7 +15,7 @@ import { GoogleLoginButton } from './google-login-button';
 import { authClient, unwrap } from '@/lib/api/auth-client';
 import { ROUTES } from '@/constants/routes';
 import { siteConfig } from '@/config/site.config';
-import { resolvePostLoginRedirect } from '@/lib/authorization/redirect';
+import { isSafeRedirectPath, resolvePostLoginRedirect } from '@/lib/authorization/redirect';
 const strong = z
   .string()
   .min(8)
@@ -79,6 +79,10 @@ export function AuthForm({ kind }: { kind: Kind }) {
   const search = useSearchParams();
   const store = useAuthStore();
   const [title, subtitle] = copy[kind];
+  const redirectParam = search.get('redirect');
+  const redirectQuery = isSafeRedirectPath(redirectParam)
+    ? `?redirect=${encodeURIComponent(redirectParam)}`
+    : '';
   const form = useForm<Values>({
     resolver: zodResolver(schemas[kind]) as unknown as Resolver<Values>,
     defaultValues: {
@@ -114,7 +118,10 @@ export function AuthForm({ kind }: { kind: Kind }) {
           password: String(values.password ?? ''),
           confirmPassword: String(values.confirmPassword ?? ''),
         });
-        router.push(ROUTES.auth.verifyEmail);
+        // Registration doesn't log the user in (email verification comes
+        // first) - carry the redirect target forward through verify-email
+        // so it survives to reach login, which already honors it.
+        router.push(`${ROUTES.auth.verifyEmail}${redirectQuery}`);
         return;
       }
       const endpoint =
@@ -214,12 +221,18 @@ export function AuthForm({ kind }: { kind: Kind }) {
         {kind === 'login' ? (
           <p className="text-muted-foreground">
             Don&apos;t have an account?{' '}
-            <Link href={ROUTES.auth.register} className="font-medium text-brand hover:underline">
+            <Link
+              href={`${ROUTES.auth.register}${redirectQuery}`}
+              className="font-medium text-brand hover:underline"
+            >
               Create an Account
             </Link>
           </p>
         ) : (
-          <Link href={ROUTES.auth.login} className="font-medium text-brand hover:underline">
+          <Link
+            href={`${ROUTES.auth.login}${redirectQuery}`}
+            className="font-medium text-brand hover:underline"
+          >
             Back to sign in
           </Link>
         )}

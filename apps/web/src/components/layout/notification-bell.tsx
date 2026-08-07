@@ -11,13 +11,22 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/common/empty-state';
+import { NotificationSkeleton } from '@/components/dashboard/skeletons/notification-skeleton';
 import { NotificationCard } from '@/components/dashboard/notification-card';
-import { useNotificationStore } from '@/stores';
+import {
+  useMarkAllNotificationsRead,
+  useMarkNotificationsRead,
+  useMyNotifications,
+  useUnreadNotificationsCount,
+} from '@/features/notifications/hooks/use-notifications';
+import { formatRelativeTime } from '@/lib/format';
 
 export function NotificationBell() {
-  const notifications = useNotificationStore((state) => state.notifications);
-  const unreadCount = useNotificationStore((state) => state.unreadCount);
-  const markAllRead = useNotificationStore((state) => state.markAllRead);
+  const { data: notifications, isLoading } = useMyNotifications({ pageSize: 6 });
+  const { data: unread } = useUnreadNotificationsCount();
+  const markRead = useMarkNotificationsRead();
+  const markAllRead = useMarkAllNotificationsRead();
+  const unreadCount = unread?.unreadCount ?? 0;
 
   return (
     <DropdownMenu>
@@ -40,15 +49,18 @@ export function NotificationBell() {
           {unreadCount > 0 && (
             <button
               type="button"
-              onClick={markAllRead}
-              className="text-xs font-medium text-brand hover:underline"
+              onClick={() => markAllRead.mutate()}
+              disabled={markAllRead.isPending}
+              className="text-xs font-medium text-brand hover:underline disabled:opacity-50"
             >
               Mark all read
             </button>
           )}
         </div>
         <DropdownMenuSeparator />
-        {notifications.length === 0 ? (
+        {isLoading ? (
+          <NotificationSkeleton count={4} className="p-1" />
+        ) : !notifications || notifications.length === 0 ? (
           <EmptyState
             icon={Bell}
             title="You're all caught up"
@@ -61,8 +73,14 @@ export function NotificationBell() {
               <li key={notification.id}>
                 <NotificationCard
                   title={notification.title}
-                  description={notification.body}
-                  read={notification.read}
+                  description={notification.message}
+                  timestamp={formatRelativeTime(notification.createdAt)}
+                  read={notification.readAt !== null}
+                  onClick={
+                    notification.readAt === null
+                      ? () => markRead.mutate([notification.id])
+                      : undefined
+                  }
                 />
               </li>
             ))}

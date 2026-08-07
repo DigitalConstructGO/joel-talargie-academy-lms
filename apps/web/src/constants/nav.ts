@@ -1,5 +1,6 @@
 import {
   Award,
+  BadgeCheck,
   BarChart3,
   Bell,
   BookOpen,
@@ -14,7 +15,6 @@ import {
   MessageSquare,
   Settings,
   ShieldCheck,
-  ShoppingCart,
   Tag,
   UserCircle,
   UserCog,
@@ -29,19 +29,25 @@ export const STUDENT_NAV: NavSection[] = [
     label: 'Main Menu',
     items: [
       { label: 'Dashboard', href: ROUTES.dashboard.root, icon: LayoutDashboard },
-      { label: 'Browse Courses', href: ROUTES.courses.list, icon: Compass },
+      { label: 'Browse Courses', href: ROUTES.dashboard.browseCourses, icon: Compass },
       { label: 'My Courses', href: ROUTES.dashboard.courses, icon: BookOpen },
       { label: 'Wishlist', href: ROUTES.dashboard.wishlist, icon: Heart },
       { label: 'Certificates', href: ROUTES.dashboard.certificates, icon: Award },
+      { label: 'Verify Certificate', href: ROUTES.dashboard.verifyCertificate, icon: BadgeCheck },
     ],
   },
   {
     label: 'Account',
     items: [
-      { label: 'Checkout', href: ROUTES.dashboard.checkout, icon: ShoppingCart },
       { label: 'Payments', href: ROUTES.dashboard.payments, icon: CreditCard },
       { label: 'Notifications', href: ROUTES.dashboard.notifications, icon: Bell },
-      { label: 'Support', href: ROUTES.dashboard.support, icon: LifeBuoy },
+      {
+        label: 'Support',
+        href: ROUTES.dashboard.support,
+        icon: LifeBuoy,
+        disabled: true,
+        badge: { label: 'Soon', variant: 'warning' },
+      },
     ],
   },
   {
@@ -118,6 +124,11 @@ export const ADMIN_NAV: NavSection[] = [
         href: ROUTES.admin.certificates,
         icon: Award,
         permission: 'certificates.read',
+      },
+      {
+        label: 'Verify Certificate',
+        href: ROUTES.admin.verifyCertificate,
+        icon: BadgeCheck,
       },
       {
         label: 'Communication',

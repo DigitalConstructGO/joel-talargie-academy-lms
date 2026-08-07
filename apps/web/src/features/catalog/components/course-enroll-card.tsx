@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { formatDurationMinutes } from '@/lib/format';
 import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/stores';
+import { useEnrollmentByCourse } from '@/features/enrollments/hooks/use-enrollments';
 import { PriceTag } from './price-tag';
 import { WishlistButton } from './wishlist-button';
 import { DIFFICULTY_LABELS } from '../constants/catalog.constants';
@@ -14,6 +15,24 @@ import type { CourseDetail } from '../types/catalog.types';
 
 export function CourseEnrollCard({ course }: { course: CourseDetail }) {
   const authenticated = useAuthStore((state) => state.authenticated);
+  const enrollmentQuery = useEnrollmentByCourse(authenticated ? course.id : '');
+  const enrollment = enrollmentQuery.data?.enrolled ? enrollmentQuery.data.enrollment : null;
+
+  const ctaHref = enrollment
+    ? ROUTES.dashboard.learn(enrollment.id)
+    : authenticated
+      ? `${ROUTES.dashboard.checkout}?course=${course.slug}`
+      : `${ROUTES.auth.register}?redirect=${encodeURIComponent(ROUTES.courses.detail(course.slug))}`;
+
+  const ctaLabel = enrollment
+    ? enrollment.status === 'COMPLETED'
+      ? 'Review Course'
+      : enrollment.progressPercentage > 0
+        ? 'Continue Learning'
+        : 'Start Learning'
+    : authenticated
+      ? 'Enroll Now'
+      : 'Sign Up to Enroll';
 
   return (
     <Card className="sticky top-24">
@@ -30,9 +49,7 @@ export function CourseEnrollCard({ course }: { course: CourseDetail }) {
         </div>
 
         <Button asChild size="lg" className="w-full">
-          <Link href={authenticated ? ROUTES.dashboard.root : ROUTES.auth.register}>
-            {authenticated ? 'Go to dashboard to enroll' : 'Sign up to enroll'}
-          </Link>
+          <Link href={ctaHref}>{ctaLabel}</Link>
         </Button>
 
         <ul className="flex flex-col gap-2.5 text-sm text-muted-foreground">

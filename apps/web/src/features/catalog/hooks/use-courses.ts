@@ -5,11 +5,12 @@ import { catalogApi } from '../api/catalog.api';
 import { catalogKeys } from '../api/query-keys';
 import type { CourseListParams } from '../types/catalog.types';
 
-export function useCourses(params: CourseListParams = {}) {
+export function useCourses(params: CourseListParams = {}, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: catalogKeys.courseList(params),
     queryFn: () => catalogApi.listCourses(params),
     placeholderData: keepPreviousData,
+    enabled: options.enabled,
   });
 }
 

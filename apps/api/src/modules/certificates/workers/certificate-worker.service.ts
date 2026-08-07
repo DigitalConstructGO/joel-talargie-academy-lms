@@ -125,8 +125,8 @@ export class CertificateWorkerService {
       completionDate: data.completionDate,
       certificateNumber: data.number,
       verificationUrl: `${base}/${data.token}`,
-      primaryColor: stringValue(configuration.primaryColor, '#15324A'),
-      accentColor: stringValue(configuration.accentColor, '#C9A227'),
+      primaryColor: stringValue(configuration.primaryColor, '#336B00'),
+      accentColor: stringValue(configuration.accentColor, '#69BE28'),
       footerText: stringValue(
         configuration.footerText,
         'Issued by Joel Talargie Academy',

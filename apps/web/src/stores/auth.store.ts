@@ -182,31 +182,74 @@ export const useAuthStore = create<AuthState>()(
     },
   ),
 );
-authClient.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken;
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
-let refreshing: Promise<boolean> | null = null;
-authClient.interceptors.response.use(undefined, async (error) => {
-  const request = error.config as { _retry?: boolean; url?: string };
-  const status = error.response?.status;
-  if (status === 401 && !request._retry && !request.url?.includes('/auth/')) {
-    request._retry = true;
-    refreshing ??= useAuthStore
-      .getState()
-      .refresh()
-      .finally(() => {
-        refreshing = null;
-      });
-    const refreshed = await refreshing;
-    if (refreshed) return authClient(error.config);
-    if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/auth')) {
-      window.location.assign(ROUTES.auth.login);
+/**
+ * `authClient` (from `@/lib/api/auth-client`) is a module-level singleton
+ * that survives Fast Refresh of *this* file - but `interceptors.use(...)`
+ * calls below are side effects, not exports, so HMR re-running this
+ * module's top level would otherwise register a whole new set of
+ * interceptors on top of the ones from every previous reload, each with
+ * its own independent `refreshing` dedup variable unaware of the others.
+ * A marker on the client itself (which does persist across this specific
+ * reload) makes registration idempotent for the instance's lifetime.
+ */
+const INTERCEPTORS_REGISTERED = Symbol.for('joel-academy.auth-interceptors-registered');
+type MarkedClient = typeof authClient & { [INTERCEPTORS_REGISTERED]?: boolean };
+const markedClient = authClient as MarkedClient;
+
+if (!markedClient[INTERCEPTORS_REGISTERED]) {
+  markedClient[INTERCEPTORS_REGISTERED] = true;
+
+  authClient.interceptors.request.use((config) => {
+    const token = useAuthStore.getState().accessToken;
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+  });
+
+  /**
+   * Token-flow endpoints only - a 401 from one of these means the credential
+   * itself was rejected (bad login, expired reset token, the refresh call
+   * itself failing), so retrying after another refresh() doesn't make sense
+   * and for `/auth/refresh` specifically would recurse. This must NOT match
+   * `/auth/profile` or `/auth/authorization` - those are regular authenticated
+   * "get my data" endpoints that happen to live under `/auth`, and a 401 from
+   * either (e.g. an expired access token) should get the same refresh-and-retry
+   * treatment as any other protected endpoint.
+   */
+  const AUTH_FLOW_PATHS = [
+    '/auth/login',
+    '/auth/register',
+    '/auth/refresh',
+    '/auth/logout',
+    '/auth/forgot-password',
+    '/auth/reset-password',
+    '/auth/verify-email',
+    '/auth/change-password',
+    '/auth/google',
+  ];
+  const isAuthFlowRequest = (url?: string) =>
+    Boolean(url) && AUTH_FLOW_PATHS.some((path) => url!.includes(path));
+
+  let refreshing: Promise<boolean> | null = null;
+  authClient.interceptors.response.use(undefined, async (error) => {
+    const request = error.config as { _retry?: boolean; url?: string };
+    const status = error.response?.status;
+    if (status === 401 && !request._retry && !isAuthFlowRequest(request.url)) {
+      request._retry = true;
+      refreshing ??= useAuthStore
+        .getState()
+        .refresh()
+        .finally(() => {
+          refreshing = null;
+        });
+      const refreshed = await refreshing;
+      if (refreshed) return authClient(error.config);
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/auth')) {
+        window.location.assign(ROUTES.auth.login);
+      }
     }
-  }
-  if (status === 403 && !request.url?.includes('/auth/')) {
-    toast.error('Access denied', "You don't have permission to do that.");
-  }
-  throw error;
-});
+    if (status === 403 && !isAuthFlowRequest(request.url)) {
+      toast.error('Access denied', "You don't have permission to do that.");
+    }
+    throw error;
+  });
+}
