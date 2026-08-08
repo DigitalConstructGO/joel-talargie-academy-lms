@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useMemo } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Eye, MoreHorizontal, Pencil, Plus, ShieldCheck, Trash2 } from 'lucide-react';
+import { Eye, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
 import { PageHeader } from '@/components/common/page-header';
 import { PageBreadcrumb } from '@/components/common/page-breadcrumb';

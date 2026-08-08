@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { Loader2, ShieldAlert } from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
 import { PageHeader } from '@/components/common/page-header';
 import { PageBreadcrumb } from '@/components/common/page-breadcrumb';
+import { StatusPage } from '@/components/common/status-page';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -16,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { PermissionPicker } from '@/features/roles/components/permission-picker';
 import { useCreateRole } from '@/features/roles/hooks/use-roles';
+import { usePermissions } from '@/hooks/use-permissions';
 import { ROUTES } from '@/constants/routes';
 import { toast } from '@/lib/toast';
 
@@ -37,6 +40,7 @@ export default function AdminRoleCreatePage() {
   const router = useRouter();
   const createRole = useCreateRole();
   const [permissionIds, setPermissionIds] = useState<string[]>([]);
+  const { can } = usePermissions();
 
   const {
     register,
@@ -63,6 +67,24 @@ export default function AdminRoleCreatePage() {
         'Check the role code is unique and you hold every permission you selected.',
       );
     }
+  }
+
+  if (!can('roles.create')) {
+    return (
+      <ContentContainer>
+        <StatusPage
+          icon={ShieldAlert}
+          code="403"
+          title="Access restricted"
+          description="You don't have permission to create roles."
+          action={
+            <Button asChild>
+              <Link href={ROUTES.admin.systemRoles}>Back to roles</Link>
+            </Button>
+          }
+        />
+      </ContentContainer>
+    );
   }
 
   return (

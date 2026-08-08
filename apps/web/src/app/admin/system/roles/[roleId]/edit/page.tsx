@@ -5,11 +5,13 @@ import { useParams, useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { Loader2, ShieldAlert } from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
 import { PageHeader } from '@/components/common/page-header';
 import { PageBreadcrumb } from '@/components/common/page-breadcrumb';
 import { ErrorState } from '@/components/common/error-state';
+import { StatusPage } from '@/components/common/status-page';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -22,6 +24,7 @@ import {
   useRole,
   useUpdateRole,
 } from '@/features/roles/hooks/use-roles';
+import { usePermissions } from '@/hooks/use-permissions';
 import { ROUTES } from '@/constants/routes';
 import { toast } from '@/lib/toast';
 
@@ -40,6 +43,7 @@ export default function AdminRoleEditPage() {
   const replacePermissions = useReplaceRolePermissions();
   const role = roleQuery.data;
   const [permissionIds, setPermissionIds] = useState<string[]>([]);
+  const { can } = usePermissions();
 
   const {
     register,
@@ -76,6 +80,24 @@ export default function AdminRoleEditPage() {
     } catch {
       toast.error('Could not update this role', 'Check you hold every permission you selected.');
     }
+  }
+
+  if (!can('roles.update')) {
+    return (
+      <ContentContainer>
+        <StatusPage
+          icon={ShieldAlert}
+          code="403"
+          title="Access restricted"
+          description="You don't have permission to edit roles."
+          action={
+            <Button asChild>
+              <Link href={ROUTES.admin.systemRoles}>Back to roles</Link>
+            </Button>
+          }
+        />
+      </ContentContainer>
+    );
   }
 
   if (roleQuery.isError) {

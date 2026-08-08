@@ -1,4 +1,11 @@
-import type { DashboardOverview } from '../types/dashboard.types';
+import type {
+  DashboardDistribution,
+  DashboardOverview,
+  DashboardTrendKind,
+  DashboardTrendResult,
+  LowCompletionCourse,
+  TrendPoint,
+} from '../types/dashboard.types';
 
 function last14Days(seed: number): { period: string; count: number }[] {
   return Array.from({ length: 14 }, (_, index) => {
@@ -9,6 +16,14 @@ function last14Days(seed: number): { period: string; count: number }[] {
       count: Math.max(0, seed - index + (index % 3)),
     };
   });
+}
+
+function last14DaysWithAmount(seed: number): TrendPoint[] {
+  return last14Days(seed).map((point) => ({
+    ...point,
+    currency: 'USD',
+    amount: (point.count * 19.99).toFixed(2),
+  }));
 }
 
 export const MOCK_DASHBOARD_OVERVIEW: DashboardOverview = {
@@ -119,3 +134,33 @@ export const MOCK_DASHBOARD_OVERVIEW: DashboardOverview = {
   ],
   operationalAlerts: [],
 };
+
+const MOCK_TREND_RANGE = MOCK_DASHBOARD_OVERVIEW.range;
+
+export const MOCK_DASHBOARD_TRENDS: Record<DashboardTrendKind, DashboardTrendResult> = {
+  registrations: { range: MOCK_TREND_RANGE, granularity: 'DAY', points: last14Days(6) },
+  enrollments: { range: MOCK_TREND_RANGE, granularity: 'DAY', points: last14Days(5) },
+  payments: { range: MOCK_TREND_RANGE, granularity: 'DAY', points: last14Days(4) },
+  revenue: { range: MOCK_TREND_RANGE, granularity: 'DAY', points: last14DaysWithAmount(3) },
+  completions: { range: MOCK_TREND_RANGE, granularity: 'DAY', points: last14Days(2) },
+  certificates: { range: MOCK_TREND_RANGE, granularity: 'DAY', points: last14Days(1) },
+};
+
+export const MOCK_DISTRIBUTION: DashboardDistribution = {
+  range: MOCK_TREND_RANGE,
+  freeCount: 1,
+  paidCount: 2,
+  freePercentage: '33.33',
+  paidPercentage: '66.67',
+};
+
+export const MOCK_LOW_COMPLETION_COURSES: LowCompletionCourse[] = [
+  {
+    id: 'course-2',
+    title: 'Introduction to Data Science',
+    relevant_enrollments: 6,
+    completed_enrollments: 1,
+    completion_rate: '16.67',
+    average_progress: '22.00',
+  },
+];

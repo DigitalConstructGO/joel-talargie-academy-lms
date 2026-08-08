@@ -6,6 +6,8 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Camera, Loader2, Trash2, UserCircle } from 'lucide-react';
 import { PageHeader } from '@/components/common/page-header';
+import { PageBreadcrumb } from '@/components/common/page-breadcrumb';
+import { ErrorState } from '@/components/common/error-state';
 import { ContentContainer } from '@/components/layout/content-container';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -15,12 +17,19 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { Can } from '@/components/auth/can';
 import { useProfile, useUpdateProfile } from '@/features/account/hooks/use-account';
 import {
   useAvatarImage,
   useDeleteAvatar,
   useUploadAvatar,
 } from '@/features/account/hooks/use-avatar';
+import { useUserActivity } from '@/features/users/hooks/use-users';
+import { usePermissions } from '@/hooks/use-permissions';
+import { useAuthStore } from '@/stores';
+import { ROUTES } from '@/constants/routes';
+import { formatDateTime } from '@/lib/date';
 import { toast } from '@/lib/toast';
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
@@ -42,6 +51,15 @@ export default function AdminProfilePage() {
   const uploadAvatar = useUploadAvatar();
   const deleteAvatar = useDeleteAvatar();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { permissions, isAdministrator } = usePermissions();
+  const currentUserId = useAuthStore((state) => state.user?.id);
+  const activityQuery = useUserActivity(currentUserId ?? '');
+
+  const permissionsByModule = permissions.reduce<Record<string, string[]>>((acc, code) => {
+    const domain = code.split('.')[0] ?? code;
+    (acc[domain] ??= []).push(code);
+    return acc;
+  }, {});
 
   const {
     register,
@@ -98,8 +116,34 @@ export default function AdminProfilePage() {
 
   const isLoading = profileQuery.isLoading;
 
+  if (profileQuery.isError) {
+    return (
+      <ContentContainer>
+        <PageBreadcrumb
+          items={[
+            { label: 'Dashboard', href: ROUTES.admin.root },
+            { label: 'System', href: ROUTES.admin.system },
+            { label: 'Profile' },
+          ]}
+        />
+        <PageHeader title="Profile" description="Your administrator account." />
+        <ErrorState
+          onRetry={() => profileQuery.refetch()}
+          description="Unable to load your profile."
+        />
+      </ContentContainer>
+    );
+  }
+
   return (
     <ContentContainer>
+      <PageBreadcrumb
+        items={[
+          { label: 'Dashboard', href: ROUTES.admin.root },
+          { label: 'System', href: ROUTES.admin.system },
+          { label: 'Profile' },
+        ]}
+      />
       <PageHeader title="Profile" description="Your administrator account." />
 
       <Card>
@@ -145,17 +189,25 @@ export default function AdminProfilePage() {
                 Change photo
               </Button>
               {avatar.url && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="gap-2 text-muted-foreground hover:text-destructive"
-                  onClick={handleAvatarRemove}
-                  disabled={deleteAvatar.isPending}
-                >
-                  <Trash2 className="size-3.5" />
-                  Remove
-                </Button>
+                <ConfirmDialog
+                  trigger={
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="gap-2 text-muted-foreground hover:text-destructive"
+                      disabled={deleteAvatar.isPending}
+                    >
+                      <Trash2 className="size-3.5" />
+                      Remove
+                    </Button>
+                  }
+                  title="Remove profile photo?"
+                  description="You can upload a new photo at any time."
+                  confirmLabel="Remove photo"
+                  variant="destructive"
+                  onConfirm={handleAvatarRemove}
+                />
               )}
             </div>
           </div>
@@ -200,6 +252,68 @@ export default function AdminProfilePage() {
           )}
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Permissions summary</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isAdministrator ? (
+            <p className="text-sm text-muted-foreground">
+              You have full administrator access to every area of the platform.
+            </p>
+          ) : Object.keys(permissionsByModule).length === 0 ? (
+            <p className="text-sm text-muted-foreground">No permissions assigned yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {Object.entries(permissionsByModule).map(([module, codes]) => (
+                <div key={module}>
+                  <p className="mb-1 text-xs font-semibold capitalize text-muted-foreground">
+                    {module} ({codes.length})
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {codes.map((code) => (
+                      <Badge key={code} variant="secondary">
+                        {code}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Can permission="users.view_activity">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Recent activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {activityQuery.isLoading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <Skeleton key={index} className="h-8 w-full" />
+                ))}
+              </div>
+            ) : activityQuery.data?.length ? (
+              <ul className="space-y-2 text-sm">
+                {activityQuery.data.map((entry) => (
+                  <li key={entry.id} className="flex items-center justify-between gap-3">
+                    <span className="text-foreground">{entry.action}</span>
+                    <span className="whitespace-nowrap text-xs text-muted-foreground">
+                      {formatDateTime(entry.createdAt)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">No recent activity.</p>
+            )}
+          </CardContent>
+        </Card>
+      </Can>
     </ContentContainer>
   );
 }

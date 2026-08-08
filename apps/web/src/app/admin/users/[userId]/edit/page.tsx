@@ -1,15 +1,17 @@
 'use client';
 
 import { useEffect } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ShieldAlert } from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
 import { PageHeader } from '@/components/common/page-header';
 import { PageBreadcrumb } from '@/components/common/page-breadcrumb';
 import { ErrorState } from '@/components/common/error-state';
+import { StatusPage } from '@/components/common/status-page';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { useUpdateUserProfile, useUser } from '@/features/users/hooks/use-users';
+import { usePermissions } from '@/hooks/use-permissions';
 import { ROUTES } from '@/constants/routes';
 import { toast } from '@/lib/toast';
 
@@ -34,6 +37,7 @@ export default function AdminUserEditPage() {
   const userQuery = useUser(userId);
   const updateProfile = useUpdateUserProfile();
   const user = userQuery.data;
+  const { can } = usePermissions();
 
   const {
     register,
@@ -64,6 +68,24 @@ export default function AdminUserEditPage() {
     } catch {
       toast.error('Could not update this profile', 'Please try again.');
     }
+  }
+
+  if (!can('users.update')) {
+    return (
+      <ContentContainer>
+        <StatusPage
+          icon={ShieldAlert}
+          code="403"
+          title="Access restricted"
+          description="You don't have permission to edit user profiles."
+          action={
+            <Button asChild>
+              <Link href={ROUTES.admin.userDetail(userId)}>Back to user</Link>
+            </Button>
+          }
+        />
+      </ContentContainer>
+    );
   }
 
   if (userQuery.isError) {

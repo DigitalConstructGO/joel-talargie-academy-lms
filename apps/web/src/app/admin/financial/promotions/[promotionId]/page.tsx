@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { Pencil, Ticket, Trash2 } from 'lucide-react';
+import { BarChart3, Pencil, Ticket, Trash2 } from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
 import { PageHeader } from '@/components/common/page-header';
 import { PageBreadcrumb } from '@/components/common/page-breadcrumb';
@@ -79,6 +79,11 @@ export default function AdminCampaignDetailPage() {
               <Button asChild variant="outline" className="gap-2">
                 <Link href={`${ROUTES.admin.financialPromoCodes}?campaignId=${campaign.id}`}>
                   <Ticket className="size-4" /> View promo codes
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="gap-2">
+                <Link href={ROUTES.admin.financialPromotionUsage(promotionId)}>
+                  <BarChart3 className="size-4" /> View usage
                 </Link>
               </Button>
               <Can permission="promotions.update">

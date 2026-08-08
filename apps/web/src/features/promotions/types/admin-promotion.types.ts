@@ -152,3 +152,24 @@ export interface UpdateCouponInput {
   validFrom?: string | null;
   validUntil?: string | null;
 }
+
+export interface PromotionAnalyticsQueryParams {
+  limit?: number;
+}
+
+export interface TopCampaignPerformance {
+  campaignId: string;
+  campaignName: string;
+  redemptions: number;
+  revenue: string;
+}
+
+export interface PromotionAnalyticsOverview {
+  campaigns: { active: number; expired: number; total: number };
+  coupons: { total: number; redeemed: number; unused: number };
+  revenueGenerated: string;
+  discountGiven: string;
+  totalRedemptions: number;
+  conversionRate: number;
+  topCampaigns: TopCampaignPerformance[];
+}

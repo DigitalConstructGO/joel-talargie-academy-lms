@@ -47,7 +47,11 @@ import {
   useCreateCoupon,
   useGenerateCoupons,
 } from '@/features/promotions/hooks/use-admin-coupons';
-import type { Coupon, PromoCodeStatus } from '@/features/promotions/types/admin-promotion.types';
+import type {
+  Coupon,
+  PromoCodeStatus,
+  PromoCodeType,
+} from '@/features/promotions/types/admin-promotion.types';
 import { ROUTES } from '@/constants/routes';
 import { formatDate } from '@/lib/date';
 import { toast } from '@/lib/toast';
@@ -57,16 +61,26 @@ const PAGE_SIZE = 20;
 interface CouponsFilters {
   [key: string]: string | undefined;
   status: 'ALL' | PromoCodeStatus;
+  codeType: 'ALL' | PromoCodeType;
   search: string | undefined;
 }
 
-const DEFAULT_FILTERS: CouponsFilters = { status: 'ALL', search: undefined };
+const DEFAULT_FILTERS: CouponsFilters = { status: 'ALL', codeType: 'ALL', search: undefined };
 
 const STATUS_OPTIONS = [
   { label: 'Active', value: 'ACTIVE' },
   { label: 'Paused', value: 'PAUSED' },
   { label: 'Expired', value: 'EXPIRED' },
   { label: 'Revoked', value: 'REVOKED' },
+];
+
+const CODE_TYPE_OPTIONS = [
+  { label: 'Manual', value: 'MANUAL' },
+  { label: 'Referral', value: 'REFERRAL' },
+  { label: 'Affiliate', value: 'AFFILIATE' },
+  { label: 'Corporate', value: 'CORPORATE' },
+  { label: 'University partner', value: 'UNIVERSITY_PARTNER' },
+  { label: 'System generated', value: 'SYSTEM_GENERATED' },
 ];
 
 const STATUS_VARIANT: Record<PromoCodeStatus, 'success' | 'warning' | 'outline' | 'destructive'> = {
@@ -213,7 +227,7 @@ export default function AdminPromoCodesPage() {
     defaults: DEFAULT_FILTERS,
     pageSize: PAGE_SIZE,
   });
-  const { status, search } = filters;
+  const { status, codeType, search } = filters;
   const archiveCoupon = useArchiveCoupon();
 
   const couponsQuery = useAdminCoupons({
@@ -221,6 +235,7 @@ export default function AdminPromoCodesPage() {
     pageSize,
     search: search || undefined,
     status: status === 'ALL' ? undefined : status,
+    codeType: codeType === 'ALL' ? undefined : codeType,
     campaignId: campaignIdFilter,
   });
 
@@ -323,6 +338,14 @@ export default function AdminPromoCodesPage() {
           value={status === 'ALL' ? undefined : status}
           onChange={(value) => setFilter('status', (value ?? 'ALL') as CouponsFilters['status'])}
           options={STATUS_OPTIONS}
+        />
+        <SelectFilter
+          label="Type"
+          value={codeType === 'ALL' ? undefined : codeType}
+          onChange={(value) =>
+            setFilter('codeType', (value ?? 'ALL') as CouponsFilters['codeType'])
+          }
+          options={CODE_TYPE_OPTIONS}
         />
       </FilterBar>
 

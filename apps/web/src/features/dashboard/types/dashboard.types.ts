@@ -135,3 +135,45 @@ export interface DashboardOverviewParams {
   range?: DashboardRangePreset;
   previewLimit?: number;
 }
+
+export type DashboardTrendKind =
+  'registrations' | 'enrollments' | 'payments' | 'revenue' | 'completions' | 'certificates';
+
+export type DashboardGranularity = 'DAY' | 'WEEK' | 'MONTH';
+
+export interface DashboardTrendParams {
+  range?: DashboardRangePreset;
+  granularity?: DashboardGranularity;
+}
+
+export interface DashboardTrendResult {
+  range: DashboardRange;
+  granularity: string;
+  points: TrendPoint[];
+}
+
+export interface DashboardDistribution {
+  range: DashboardRange;
+  freeCount: number;
+  paidCount: number;
+  freePercentage: string | null;
+  paidPercentage: string | null;
+}
+
+export type CoursePerformanceSort =
+  'ENROLLMENTS' | 'COMPLETIONS' | 'COMPLETION_RATE' | 'AVERAGE_PROGRESS' | 'REVENUE';
+
+export interface CoursePerformanceParams {
+  range?: DashboardRangePreset;
+  limit?: number;
+  sort?: CoursePerformanceSort;
+}
+
+export interface LowCompletionCourse {
+  id: string;
+  title: string;
+  relevant_enrollments: number;
+  completed_enrollments: number;
+  completion_rate: string | null;
+  average_progress: string | null;
+}

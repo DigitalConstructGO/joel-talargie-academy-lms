@@ -23,8 +23,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Can } from '@/components/auth/can';
 import { useQueryFilters } from '@/hooks/use-query-filters';
 import { useUsers } from '@/features/users/hooks/use-users';
+import { useRoles } from '@/features/roles/hooks/use-roles';
 import type { ManagedUser, ManagedUserStatus } from '@/features/users/types/user.types';
 import { ROUTES } from '@/constants/routes';
 import { formatDate } from '@/lib/date';
@@ -35,10 +37,16 @@ interface UsersFilters {
   [key: string]: string | undefined;
   status: 'ALL' | ManagedUserStatus;
   provider: 'ALL' | 'LOCAL' | 'GOOGLE';
+  role: string | undefined;
   search: string | undefined;
 }
 
-const DEFAULT_FILTERS: UsersFilters = { status: 'ALL', provider: 'ALL', search: undefined };
+const DEFAULT_FILTERS: UsersFilters = {
+  status: 'ALL',
+  provider: 'ALL',
+  role: undefined,
+  search: undefined,
+};
 
 const STATUS_OPTIONS = [
   { label: 'Pending verification', value: 'PENDING_VERIFICATION' },
@@ -67,20 +75,28 @@ const STATUS_LABEL: Record<ManagedUserStatus, string> = {
 };
 
 export default function AdminUsersPage() {
-  const { filters, page, pageSize, setFilter, setFilters, setPage, resetFilters } =
+  const { filters, page, pageSize, setFilter, setPage, resetFilters } =
     useQueryFilters<UsersFilters>({ defaults: DEFAULT_FILTERS, pageSize: PAGE_SIZE });
-  const { status, provider, search } = filters;
+  const { status, provider, role, search } = filters;
+
+  const rolesQuery = useRoles({ pageSize: 100 });
+  const roleOptions = (rolesQuery.data?.items ?? []).map((r) => ({
+    label: r.name,
+    value: r.code,
+  }));
 
   const usersQuery = useUsers({
     page,
     pageSize,
     status: status === 'ALL' ? undefined : status,
     provider: provider === 'ALL' ? undefined : provider,
+    role: role || undefined,
     search: search || undefined,
     includeArchived: status === 'ARCHIVED' || undefined,
   });
 
-  const hasActiveFilters = status !== 'ALL' || provider !== 'ALL' || Boolean(search);
+  const hasActiveFilters =
+    status !== 'ALL' || provider !== 'ALL' || Boolean(role) || Boolean(search);
   const totalPages = Math.max(1, Math.ceil((usersQuery.data?.total ?? 0) / pageSize));
 
   const columns = useMemo<ColumnDef<ManagedUser, unknown>[]>(
@@ -153,16 +169,20 @@ export default function AdminUsersPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <Link href={ROUTES.admin.userDetail(row.original.id)} className="gap-2">
-                  <Eye className="size-4" /> View
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href={ROUTES.admin.userEdit(row.original.id)} className="gap-2">
-                  <Pencil className="size-4" /> Edit profile
-                </Link>
-              </DropdownMenuItem>
+              <Can permission="users.read">
+                <DropdownMenuItem asChild>
+                  <Link href={ROUTES.admin.userDetail(row.original.id)} className="gap-2">
+                    <Eye className="size-4" /> View
+                  </Link>
+                </DropdownMenuItem>
+              </Can>
+              <Can permission="users.update">
+                <DropdownMenuItem asChild>
+                  <Link href={ROUTES.admin.userEdit(row.original.id)} className="gap-2">
+                    <Pencil className="size-4" /> Edit profile
+                  </Link>
+                </DropdownMenuItem>
+              </Can>
             </DropdownMenuContent>
           </DropdownMenu>
         ),
@@ -188,11 +208,20 @@ export default function AdminUsersPage() {
               chips={[
                 ...(status !== 'ALL' ? [{ key: 'status', label: STATUS_LABEL[status] }] : []),
                 ...(provider !== 'ALL' ? [{ key: 'provider', label: provider }] : []),
+                ...(role
+                  ? [
+                      {
+                        key: 'role',
+                        label: roleOptions.find((option) => option.value === role)?.label ?? role,
+                      },
+                    ]
+                  : []),
                 ...(search ? [{ key: 'search', label: `"${search}"` }] : []),
               ]}
               onRemove={(key) => {
                 if (key === 'status') setFilter('status', 'ALL');
                 if (key === 'provider') setFilter('provider', 'ALL');
+                if (key === 'role') setFilter('role', undefined);
                 if (key === 'search') setFilter('search', undefined);
               }}
               onResetAll={resetFilters}
@@ -217,6 +246,12 @@ export default function AdminUsersPage() {
           value={provider === 'ALL' ? undefined : provider}
           onChange={(value) => setFilter('provider', (value ?? 'ALL') as UsersFilters['provider'])}
           options={PROVIDER_OPTIONS}
+        />
+        <SelectFilter
+          label="Role"
+          value={role}
+          onChange={(value) => setFilter('role', value)}
+          options={roleOptions}
         />
       </FilterBar>
 

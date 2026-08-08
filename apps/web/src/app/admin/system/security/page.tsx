@@ -5,7 +5,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { KeyRound, Laptop } from 'lucide-react';
 import { PageHeader } from '@/components/common/page-header';
+import { PageBreadcrumb } from '@/components/common/page-breadcrumb';
 import { ContentContainer } from '@/components/layout/content-container';
+import { ROUTES } from '@/constants/routes';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DashboardApiErrorState } from '@/components/dashboard/error-states';
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { useLogout } from '@/hooks/use-logout';
 import { useRevokeSession, useSessions } from '@/features/account/hooks/use-account';
 import { authClient } from '@/lib/api/auth-client';
@@ -64,19 +67,25 @@ export default function AdminSecurityPage() {
     }
   });
 
-  async function handleRevoke(sessionId: string, isCurrent: boolean) {
-    if (isCurrent) {
-      await handleLogout();
-      return;
+  async function handleRevokeOther(sessionId: string) {
+    try {
+      await revokeSession.mutateAsync(sessionId);
+      toast.success('Session revoked');
+    } catch {
+      toast.error('Could not revoke that session', 'Please try again.');
+      throw new Error('revoke failed');
     }
-    revokeSession.mutate(sessionId, {
-      onSuccess: () => toast.success('Session revoked'),
-      onError: () => toast.error('Could not revoke that session', 'Please try again.'),
-    });
   }
 
   return (
     <ContentContainer>
+      <PageBreadcrumb
+        items={[
+          { label: 'Dashboard', href: ROUTES.admin.root },
+          { label: 'System', href: ROUTES.admin.system },
+          { label: 'Security' },
+        ]}
+      />
       <PageHeader
         title="Security"
         description="Manage your password and account security."
@@ -168,15 +177,34 @@ export default function AdminSecurityPage() {
                       Last active {formatRelativeTime(session.lastUsedAt)}
                     </p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-fit"
-                    onClick={() => handleRevoke(session.id, session.currentSession)}
-                    disabled={revokeSession.isPending}
-                  >
-                    {session.currentSession ? 'Sign out' : 'Revoke'}
-                  </Button>
+                  {session.currentSession ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-fit"
+                      onClick={() => handleLogout()}
+                    >
+                      Sign out
+                    </Button>
+                  ) : (
+                    <ConfirmDialog
+                      trigger={
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-fit"
+                          disabled={revokeSession.isPending}
+                        >
+                          Revoke
+                        </Button>
+                      }
+                      title="Revoke this session?"
+                      description={`"${session.deviceName}" will be signed out immediately.`}
+                      confirmLabel="Revoke session"
+                      variant="destructive"
+                      onConfirm={() => handleRevokeOther(session.id)}
+                    />
+                  )}
                 </div>
               ))}
             </div>

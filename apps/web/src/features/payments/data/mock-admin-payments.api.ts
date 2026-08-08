@@ -29,6 +29,8 @@ export const mockAdminPaymentsApi = {
       if (params.amountMismatch !== undefined && payment.amountMismatch !== params.amountMismatch)
         return false;
       if (params.duplicateOnly && payment.duplicateTransactionCount === 0) return false;
+      if (params.submittedFrom && payment.submittedAt < params.submittedFrom) return false;
+      if (params.submittedTo && payment.submittedAt > params.submittedTo) return false;
       if (params.search) {
         const needle = params.search.toLowerCase();
         if (

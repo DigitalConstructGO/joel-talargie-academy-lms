@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import type { DateRange } from 'react-day-picker';
 import { AlertTriangle, Check, Copy, Download, FileText, Loader2, X } from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
 import { PageHeader } from '@/components/common/page-header';
@@ -10,6 +11,7 @@ import { ErrorState } from '@/components/common/error-state';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -29,7 +31,9 @@ import {
 } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import { FilterBar } from '@/components/dashboard/filters/filter-bar';
+import { FilterChips } from '@/components/dashboard/filters/filter-chips';
 import { SelectFilter } from '@/components/dashboard/filters/select-filter';
+import { DateRangeFilter } from '@/components/dashboard/filters/date-range-filter';
 import { TableSkeleton } from '@/components/dashboard/skeletons/table-skeleton';
 import { EmptyState } from '@/components/common/empty-state';
 import { Can } from '@/components/auth/can';
@@ -41,9 +45,10 @@ import {
   useApprovePayment,
   useDeclinePayment,
 } from '@/features/payments/hooks/use-admin-payments';
+import { useAdminCourses } from '@/features/catalog/hooks/use-admin-courses';
 import type { PaymentStatus } from '@/features/payments/types/payment.types';
 import { formatCurrency } from '@/lib/format';
-import { formatDateTime } from '@/lib/date';
+import { formatDateTime, formatDate } from '@/lib/date';
 import { toast } from '@/lib/toast';
 import { ROUTES } from '@/constants/routes';
 
@@ -52,10 +57,23 @@ const PAGE_SIZE = 20;
 interface PaymentsFilters {
   [key: string]: string | undefined;
   status: 'ALL' | PaymentStatus;
+  courseId: string | undefined;
+  submittedFrom: string | undefined;
+  submittedTo: string | undefined;
+  amountMismatch: 'true' | undefined;
+  duplicateOnly: 'true' | undefined;
   search: string | undefined;
 }
 
-const DEFAULT_FILTERS: PaymentsFilters = { status: 'ALL', search: undefined };
+const DEFAULT_FILTERS: PaymentsFilters = {
+  status: 'ALL',
+  courseId: undefined,
+  submittedFrom: undefined,
+  submittedTo: undefined,
+  amountMismatch: undefined,
+  duplicateOnly: undefined,
+  search: undefined,
+};
 
 const STATUS_OPTIONS = [
   { label: 'Pending', value: 'PENDING' },
@@ -261,24 +279,51 @@ function PaymentDetailSheet({
 }
 
 export default function AdminPaymentsPage() {
-  const { filters, pageSize, setFilter, setPageSize, resetFilters } =
+  const { filters, pageSize, setFilter, setFilters, setPageSize, resetFilters } =
     useQueryFilters<PaymentsFilters>({
       defaults: DEFAULT_FILTERS,
       pageSize: PAGE_SIZE,
     });
-  const { status, search } = filters;
+  const { status, courseId, submittedFrom, submittedTo, amountMismatch, duplicateOnly, search } =
+    filters;
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const coursesQuery = useAdminCourses({ pageSize: 100 });
+  const courseOptions = (coursesQuery.data?.items ?? []).map((course) => ({
+    label: course.title,
+    value: course.id,
+  }));
 
   const paymentsQuery = useAdminPayments({
     page: 1,
     pageSize,
     status: status === 'ALL' ? undefined : status,
+    courseId: courseId || undefined,
+    submittedFrom: submittedFrom || undefined,
+    submittedTo: submittedTo || undefined,
+    amountMismatch: amountMismatch === 'true' || undefined,
+    duplicateOnly: duplicateOnly === 'true' || undefined,
     search: search || undefined,
   });
 
+  const dateRange: DateRange | undefined =
+    submittedFrom || submittedTo
+      ? {
+          from: submittedFrom ? new Date(submittedFrom) : undefined,
+          to: submittedTo ? new Date(submittedTo) : undefined,
+        }
+      : undefined;
+
   const payments = paymentsQuery.data ?? [];
   const hasMore = payments.length === pageSize;
-  const hasActiveFilters = status !== 'ALL' || Boolean(search);
+  const hasActiveFilters =
+    status !== 'ALL' ||
+    Boolean(courseId) ||
+    Boolean(submittedFrom) ||
+    Boolean(submittedTo) ||
+    Boolean(amountMismatch) ||
+    Boolean(duplicateOnly) ||
+    Boolean(search);
 
   return (
     <ContentContainer>
@@ -291,7 +336,50 @@ export default function AdminPaymentsPage() {
       />
       <PageHeader title="Payments" description="Review and manage student payments." />
 
-      <FilterBar>
+      <FilterBar
+        chips={
+          hasActiveFilters ? (
+            <FilterChips
+              chips={[
+                ...(status !== 'ALL' ? [{ key: 'status', label: status }] : []),
+                ...(courseId
+                  ? [
+                      {
+                        key: 'courseId',
+                        label:
+                          courseOptions.find((option) => option.value === courseId)?.label ??
+                          'Course',
+                      },
+                    ]
+                  : []),
+                ...(submittedFrom || submittedTo
+                  ? [
+                      {
+                        key: 'dateRange',
+                        label: `${submittedFrom ? formatDate(submittedFrom) : '…'} – ${submittedTo ? formatDate(submittedTo) : '…'}`,
+                      },
+                    ]
+                  : []),
+                ...(amountMismatch ? [{ key: 'amountMismatch', label: 'Amount mismatch' }] : []),
+                ...(duplicateOnly
+                  ? [{ key: 'duplicateOnly', label: 'Duplicate transaction' }]
+                  : []),
+                ...(search ? [{ key: 'search', label: `"${search}"` }] : []),
+              ]}
+              onRemove={(key) => {
+                if (key === 'status') setFilter('status', 'ALL');
+                if (key === 'courseId') setFilter('courseId', undefined);
+                if (key === 'dateRange')
+                  setFilters({ submittedFrom: undefined, submittedTo: undefined });
+                if (key === 'amountMismatch') setFilter('amountMismatch', undefined);
+                if (key === 'duplicateOnly') setFilter('duplicateOnly', undefined);
+                if (key === 'search') setFilter('search', undefined);
+              }}
+              onResetAll={resetFilters}
+            />
+          ) : undefined
+        }
+      >
         <SearchBar
           placeholder="Search by transaction ID, student, or course..."
           defaultValue={search ?? ''}
@@ -304,6 +392,36 @@ export default function AdminPaymentsPage() {
           onChange={(value) => setFilter('status', (value ?? 'ALL') as PaymentsFilters['status'])}
           options={STATUS_OPTIONS}
         />
+        <SelectFilter
+          label="Course"
+          value={courseId}
+          onChange={(value) => setFilter('courseId', value)}
+          options={courseOptions}
+        />
+        <DateRangeFilter
+          value={dateRange}
+          onChange={(range) =>
+            setFilters({
+              submittedFrom: range?.from ? range.from.toISOString().slice(0, 10) : undefined,
+              submittedTo: range?.to ? range.to.toISOString().slice(0, 10) : undefined,
+            })
+          }
+          placeholder="Submitted date"
+        />
+        <label className="flex items-center gap-2 text-sm text-foreground">
+          <Checkbox
+            checked={amountMismatch === 'true'}
+            onCheckedChange={(checked) => setFilter('amountMismatch', checked ? 'true' : undefined)}
+          />
+          Amount mismatch
+        </label>
+        <label className="flex items-center gap-2 text-sm text-foreground">
+          <Checkbox
+            checked={duplicateOnly === 'true'}
+            onCheckedChange={(checked) => setFilter('duplicateOnly', checked ? 'true' : undefined)}
+          />
+          Duplicate transaction
+        </label>
       </FilterBar>
 
       {paymentsQuery.isLoading ? (

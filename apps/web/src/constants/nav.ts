@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   Layers,
   LifeBuoy,
+  LineChart,
   Mail,
   MessageSquare,
   Settings,
@@ -185,7 +186,7 @@ export const ADMIN_NAV: NavSection[] = [
             label: 'Email Templates',
             href: ROUTES.admin.communicationEmailTemplates,
             icon: Mail,
-            permission: 'notifications.read',
+            permission: 'notifications.manage_templates',
           },
           {
             label: 'Support',
@@ -206,6 +207,20 @@ export const ADMIN_NAV: NavSection[] = [
         href: ROUTES.admin.reports,
         icon: BarChart3,
         permission: 'reports.read',
+        items: [
+          {
+            label: 'Reports',
+            href: ROUTES.admin.reports,
+            icon: BarChart3,
+            permission: 'reports.read',
+          },
+          {
+            label: 'Analytics',
+            href: ROUTES.admin.analytics,
+            icon: LineChart,
+            permission: 'dashboard.read',
+          },
+        ],
       },
     ],
   },

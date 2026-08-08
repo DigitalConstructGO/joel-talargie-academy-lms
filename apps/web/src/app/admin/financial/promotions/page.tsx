@@ -13,9 +13,11 @@ import { SearchBar } from '@/components/common/search-bar';
 import { ErrorState } from '@/components/common/error-state';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { FilterBar } from '@/components/dashboard/filters/filter-bar';
+import { FilterChips } from '@/components/dashboard/filters/filter-chips';
 import { SelectFilter } from '@/components/dashboard/filters/select-filter';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +33,7 @@ import {
 import type {
   Campaign,
   PromoCampaignStatus,
+  PromoCampaignType,
 } from '@/features/promotions/types/admin-promotion.types';
 import { ROUTES } from '@/constants/routes';
 import { formatDate } from '@/lib/date';
@@ -41,10 +44,17 @@ const PAGE_SIZE = 20;
 interface CampaignsFilters {
   [key: string]: string | undefined;
   status: 'ALL' | PromoCampaignStatus;
+  type: 'ALL' | PromoCampaignType;
+  isAutomatic: 'true' | undefined;
   search: string | undefined;
 }
 
-const DEFAULT_FILTERS: CampaignsFilters = { status: 'ALL', search: undefined };
+const DEFAULT_FILTERS: CampaignsFilters = {
+  status: 'ALL',
+  type: 'ALL',
+  isAutomatic: undefined,
+  search: undefined,
+};
 
 const STATUS_OPTIONS = [
   { label: 'Draft', value: 'DRAFT' },
@@ -52,6 +62,25 @@ const STATUS_OPTIONS = [
   { label: 'Paused', value: 'PAUSED' },
   { label: 'Expired', value: 'EXPIRED' },
   { label: 'Archived', value: 'ARCHIVED' },
+];
+
+const TYPE_OPTIONS = [
+  { label: 'Percentage discount', value: 'PERCENTAGE_DISCOUNT' },
+  { label: 'Fixed discount', value: 'FIXED_DISCOUNT' },
+  { label: 'Free course', value: 'FREE_COURSE' },
+  { label: 'Scholarship', value: 'SCHOLARSHIP' },
+  { label: 'Bundle discount', value: 'BUNDLE_DISCOUNT' },
+  { label: 'Referral reward', value: 'REFERRAL_REWARD' },
+  { label: 'Affiliate discount', value: 'AFFILIATE_DISCOUNT' },
+  { label: 'Corporate discount', value: 'CORPORATE_DISCOUNT' },
+  { label: 'Partner discount', value: 'PARTNER_DISCOUNT' },
+  { label: 'Event promotion', value: 'EVENT_PROMOTION' },
+  { label: 'Flash sale', value: 'FLASH_SALE' },
+  { label: 'Seasonal promotion', value: 'SEASONAL_PROMOTION' },
+  { label: 'First student discount', value: 'FIRST_STUDENT_DISCOUNT' },
+  { label: 'Birthday coupon', value: 'BIRTHDAY_COUPON' },
+  { label: 'Manual coupon', value: 'MANUAL_COUPON' },
+  { label: 'Automatic promotion', value: 'AUTOMATIC_PROMOTION' },
 ];
 
 const STATUS_VARIANT: Record<PromoCampaignStatus, 'secondary' | 'success' | 'warning' | 'outline'> =
@@ -64,18 +93,23 @@ const STATUS_VARIANT: Record<PromoCampaignStatus, 'secondary' | 'success' | 'war
   };
 
 export default function AdminCampaignsPage() {
-  const { filters, page, pageSize, setFilter, setPage } = useQueryFilters<CampaignsFilters>({
-    defaults: DEFAULT_FILTERS,
-    pageSize: PAGE_SIZE,
-  });
-  const { status, search } = filters;
+  const { filters, page, pageSize, setFilter, resetFilters, setPage } =
+    useQueryFilters<CampaignsFilters>({
+      defaults: DEFAULT_FILTERS,
+      pageSize: PAGE_SIZE,
+    });
+  const { status, type, isAutomatic, search } = filters;
   const archiveCampaign = useArchiveCampaign();
+  const hasActiveFilters =
+    status !== 'ALL' || type !== 'ALL' || Boolean(isAutomatic) || Boolean(search);
 
   const campaignsQuery = useAdminCampaigns({
     page,
     pageSize,
     search: search || undefined,
     status: status === 'ALL' ? undefined : status,
+    type: type === 'ALL' ? undefined : type,
+    isAutomatic: isAutomatic === 'true' || undefined,
   });
 
   const totalPages = Math.max(1, Math.ceil((campaignsQuery.data?.total ?? 0) / pageSize));
@@ -207,7 +241,34 @@ export default function AdminCampaignsPage() {
         }
       />
 
-      <FilterBar>
+      <FilterBar
+        chips={
+          hasActiveFilters ? (
+            <FilterChips
+              chips={[
+                ...(status !== 'ALL' ? [{ key: 'status', label: status }] : []),
+                ...(type !== 'ALL'
+                  ? [
+                      {
+                        key: 'type',
+                        label: TYPE_OPTIONS.find((option) => option.value === type)?.label ?? type,
+                      },
+                    ]
+                  : []),
+                ...(isAutomatic ? [{ key: 'isAutomatic', label: 'Automatic only' }] : []),
+                ...(search ? [{ key: 'search', label: `"${search}"` }] : []),
+              ]}
+              onRemove={(key) => {
+                if (key === 'status') setFilter('status', 'ALL');
+                if (key === 'type') setFilter('type', 'ALL');
+                if (key === 'isAutomatic') setFilter('isAutomatic', undefined);
+                if (key === 'search') setFilter('search', undefined);
+              }}
+              onResetAll={resetFilters}
+            />
+          ) : undefined
+        }
+      >
         <SearchBar
           placeholder="Search campaigns..."
           defaultValue={search ?? ''}
@@ -220,6 +281,19 @@ export default function AdminCampaignsPage() {
           onChange={(value) => setFilter('status', (value ?? 'ALL') as CampaignsFilters['status'])}
           options={STATUS_OPTIONS}
         />
+        <SelectFilter
+          label="Type"
+          value={type === 'ALL' ? undefined : type}
+          onChange={(value) => setFilter('type', (value ?? 'ALL') as CampaignsFilters['type'])}
+          options={TYPE_OPTIONS}
+        />
+        <label className="flex items-center gap-2 text-sm text-foreground">
+          <Checkbox
+            checked={isAutomatic === 'true'}
+            onCheckedChange={(checked) => setFilter('isAutomatic', checked ? 'true' : undefined)}
+          />
+          Automatic only
+        </label>
       </FilterBar>
 
       {campaignsQuery.isError ? (

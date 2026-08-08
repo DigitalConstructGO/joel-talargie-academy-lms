@@ -23,6 +23,7 @@ import {
 import { TableSkeleton } from '@/components/dashboard/skeletons/table-skeleton';
 import { useQueryFilters } from '@/hooks/use-query-filters';
 import { useAdminCertificates } from '@/features/certificates/hooks/use-admin-certificates';
+import { useAdminCourses } from '@/features/catalog/hooks/use-admin-courses';
 import type { CertificateStatus } from '@/features/certificates/types/certificate.types';
 import { ROUTES } from '@/constants/routes';
 import { formatDate } from '@/lib/date';
@@ -32,10 +33,15 @@ const PAGE_SIZE = 20;
 interface CertificatesFilters {
   [key: string]: string | undefined;
   status: 'ALL' | CertificateStatus;
+  courseId: string | undefined;
   search: string | undefined;
 }
 
-const DEFAULT_FILTERS: CertificatesFilters = { status: 'ALL', search: undefined };
+const DEFAULT_FILTERS: CertificatesFilters = {
+  status: 'ALL',
+  courseId: undefined,
+  search: undefined,
+};
 
 const STATUS_OPTIONS = [
   { label: 'Pending', value: 'PENDING' },
@@ -54,18 +60,25 @@ const STATUS_VARIANT: Record<CertificateStatus, NonNullable<BadgeProps['variant'
 export default function AdminCertificatesPage() {
   const { filters, pageSize, setFilter, setPageSize, resetFilters } =
     useQueryFilters<CertificatesFilters>({ defaults: DEFAULT_FILTERS, pageSize: PAGE_SIZE });
-  const { status, search } = filters;
+  const { status, courseId, search } = filters;
+
+  const coursesQuery = useAdminCourses({ pageSize: 100 });
+  const courseOptions = (coursesQuery.data?.items ?? []).map((course) => ({
+    label: course.title,
+    value: course.id,
+  }));
 
   const certificatesQuery = useAdminCertificates({
     page: 1,
     pageSize,
     status: status === 'ALL' ? undefined : status,
+    courseId: courseId || undefined,
     search: search || undefined,
   });
 
   const certificates = certificatesQuery.data ?? [];
   const hasMore = certificates.length === pageSize;
-  const hasActiveFilters = status !== 'ALL' || Boolean(search);
+  const hasActiveFilters = status !== 'ALL' || Boolean(courseId) || Boolean(search);
 
   return (
     <ContentContainer>
@@ -91,6 +104,12 @@ export default function AdminCertificatesPage() {
             setFilter('status', (value ?? 'ALL') as CertificatesFilters['status'])
           }
           options={STATUS_OPTIONS}
+        />
+        <SelectFilter
+          label="Course"
+          value={courseId}
+          onChange={(value) => setFilter('courseId', value)}
+          options={courseOptions}
         />
       </FilterBar>
 

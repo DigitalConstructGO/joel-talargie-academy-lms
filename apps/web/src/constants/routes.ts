@@ -99,6 +99,7 @@ export const ROUTES = {
       `/admin/communication/email-templates/${templateId}`,
     communicationSupport: '/admin/communication/support',
     reports: '/admin/reports',
+    analytics: '/admin/reports/analytics',
     system: '/admin/system',
     systemRoles: '/admin/system/roles',
     systemRoleCreate: '/admin/system/roles/create',

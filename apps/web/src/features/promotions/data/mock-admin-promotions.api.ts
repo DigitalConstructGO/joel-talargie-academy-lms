@@ -37,6 +37,8 @@ export const mockAdminCampaignsApi = {
     const filtered = campaignStore.filter((campaign) => {
       if (params.status && campaign.status !== params.status) return false;
       if (params.type && campaign.type !== params.type) return false;
+      if (params.isAutomatic !== undefined && campaign.isAutomatic !== params.isAutomatic)
+        return false;
       if (params.search && !campaign.name.toLowerCase().includes(params.search.toLowerCase()))
         return false;
       return true;
