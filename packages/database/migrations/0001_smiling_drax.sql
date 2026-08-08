@@ -1,0 +1,2 @@
+CREATE INDEX "lesson_progress_lesson_idx" ON "lesson_progress" USING btree ("lesson_id");--> statement-breakpoint
+CREATE INDEX "platform_settings_updated_by_idx" ON "platform_settings" USING btree ("updated_by");

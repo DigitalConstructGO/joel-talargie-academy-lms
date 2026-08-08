@@ -1,0 +1,65 @@
+import { authClient, unwrap } from '@/lib/api/auth-client';
+import { CATALOG_DATA_SOURCE } from '@/config/data-source.config';
+import { mockUsersApi } from '../data/mock-users.api';
+import type {
+  ManagedUser,
+  ManagedUserDetail,
+  UpdateManagedUserProfileInput,
+  UserActivityEntry,
+  UserActivityParams,
+  UserListParams,
+  UserListResult,
+} from '../types/user.types';
+
+const cleanParams = <T extends object>(params: T) =>
+  Object.fromEntries(
+    Object.entries(params).filter(([, value]) => value !== undefined && value !== ''),
+  );
+
+const liveUsersApi = {
+  list: async (params: UserListParams = {}) =>
+    unwrap<UserListResult>(await authClient.get('/admin/users', { params: cleanParams(params) })),
+
+  detail: async (userId: string) =>
+    unwrap<ManagedUserDetail>(await authClient.get(`/admin/users/${encodeURIComponent(userId)}`)),
+
+  updateProfile: async (userId: string, input: UpdateManagedUserProfileInput) =>
+    unwrap<ManagedUser>(
+      await authClient.patch(`/admin/users/${encodeURIComponent(userId)}/profile`, input),
+    ),
+
+  activate: async (userId: string) =>
+    unwrap<ManagedUser>(
+      await authClient.post(`/admin/users/${encodeURIComponent(userId)}/activate`),
+    ),
+
+  suspend: async (userId: string, reason: string) =>
+    unwrap<ManagedUser>(
+      await authClient.post(`/admin/users/${encodeURIComponent(userId)}/suspend`, { reason }),
+    ),
+
+  archive: async (userId: string, reason: string) =>
+    unwrap<ManagedUser>(
+      await authClient.delete(`/admin/users/${encodeURIComponent(userId)}`, { data: { reason } }),
+    ),
+
+  restore: async (userId: string) =>
+    unwrap<ManagedUser>(
+      await authClient.post(`/admin/users/${encodeURIComponent(userId)}/restore`),
+    ),
+
+  triggerPasswordReset: async (userId: string) =>
+    unwrap<{ sent: boolean }>(
+      await authClient.post(`/admin/users/${encodeURIComponent(userId)}/send-password-reset`),
+    ),
+
+  activity: async (userId: string, params: UserActivityParams = {}) =>
+    unwrap<UserActivityEntry[]>(
+      await authClient.get(`/admin/users/${encodeURIComponent(userId)}/activity`, {
+        params: cleanParams(params),
+      }),
+    ),
+};
+
+/** Same mock/live switch as `catalogApi` - flips with `NEXT_PUBLIC_CATALOG_DATA_SOURCE`. */
+export const usersApi = CATALOG_DATA_SOURCE === 'live' ? liveUsersApi : mockUsersApi;

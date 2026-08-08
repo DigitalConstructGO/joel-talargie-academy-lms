@@ -1,0 +1,4 @@
+export const SYSTEM_ROLES = {
+  ADMINISTRATOR: 'ADMINISTRATOR',
+  STUDENT: 'STUDENT',
+} as const;

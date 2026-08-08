@@ -1,0 +1,77 @@
+import type { Notification } from '../types/notification.types';
+
+const hoursAgo = (hours: number) => new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+
+export const MOCK_NOTIFICATIONS: Notification[] = [
+  {
+    id: 'notif-001',
+    type: 'learning',
+    title: 'You completed a lesson',
+    message: 'Great progress on "Full Stack Web Development Bootcamp" - keep it going!',
+    actionUrl: '/dashboard/courses',
+    priority: 'NORMAL',
+    readAt: null,
+    createdAt: hoursAgo(2),
+  },
+  {
+    id: 'notif-002',
+    type: 'security',
+    title: 'New sign-in detected',
+    message: 'Your account was signed into from a new device.',
+    actionUrl: '/dashboard/security',
+    priority: 'HIGH',
+    readAt: null,
+    createdAt: hoursAgo(9),
+  },
+  {
+    id: 'notif-003',
+    type: 'learning',
+    title: 'Enrollment confirmed',
+    message: 'You now have access to "TypeScript for JavaScript Developers".',
+    actionUrl: '/dashboard/courses',
+    priority: 'NORMAL',
+    readAt: null,
+    createdAt: hoursAgo(30),
+  },
+  {
+    id: 'notif-004',
+    type: 'announcement',
+    title: 'Platform maintenance scheduled',
+    message: 'Brief maintenance window this weekend - your progress is always saved.',
+    actionUrl: null,
+    priority: 'LOW',
+    readAt: hoursAgo(20),
+    createdAt: hoursAgo(48),
+  },
+  {
+    id: 'notif-005',
+    type: 'learning',
+    title: 'Certificate ready',
+    message:
+      'Your certificate for "NestJS Masterclass: Building Enterprise APIs" is ready to view.',
+    actionUrl: '/dashboard/certificates',
+    priority: 'NORMAL',
+    readAt: hoursAgo(60),
+    createdAt: hoursAgo(72),
+  },
+  {
+    id: 'notif-006',
+    type: 'payments',
+    title: 'Payment received',
+    message: 'We received your payment - thanks for enrolling!',
+    actionUrl: '/dashboard/payments',
+    priority: 'NORMAL',
+    readAt: hoursAgo(90),
+    createdAt: hoursAgo(96),
+  },
+  {
+    id: 'notif-007',
+    type: 'announcement',
+    title: 'New courses added this week',
+    message: 'Check out the newest additions to the catalog in Cloud Computing and Design.',
+    actionUrl: '/courses',
+    priority: 'LOW',
+    readAt: hoursAgo(150),
+    createdAt: hoursAgo(160),
+  },
+];

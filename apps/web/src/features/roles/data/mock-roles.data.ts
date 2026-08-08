@@ -1,0 +1,61 @@
+import { MOCK_PERMISSIONS } from '@/features/permissions/data/mock-permissions.data';
+import type { RoleDetail } from '../types/role.types';
+
+export const MOCK_ROLES: RoleDetail[] = [
+  {
+    id: 'role-1',
+    code: 'ADMINISTRATOR',
+    name: 'Administrator',
+    description: 'Full platform access.',
+    isSystem: true,
+    archivedAt: null,
+    createdAt: '2025-01-01T00:00:00.000Z',
+    updatedAt: '2025-01-01T00:00:00.000Z',
+    permissionCount: MOCK_PERMISSIONS.length,
+    userCount: 1,
+    permissions: MOCK_PERMISSIONS,
+  },
+  {
+    id: 'role-2',
+    code: 'STUDENT',
+    name: 'Student',
+    description: 'Default role for every registered account.',
+    isSystem: true,
+    archivedAt: null,
+    createdAt: '2025-01-01T00:00:00.000Z',
+    updatedAt: '2025-01-01T00:00:00.000Z',
+    permissionCount: 0,
+    userCount: 5,
+    permissions: [],
+  },
+  {
+    id: 'role-3',
+    code: 'CONTENT_MANAGER',
+    name: 'Content Manager',
+    description: 'Manages courses, categories, and curriculum.',
+    isSystem: false,
+    archivedAt: null,
+    createdAt: '2026-02-10T09:00:00.000Z',
+    updatedAt: '2026-06-15T09:00:00.000Z',
+    permissionCount: 8,
+    userCount: 1,
+    permissions: MOCK_PERMISSIONS.filter((permission) =>
+      ['courses', 'categories', 'sections', 'lessons'].includes(permission.module),
+    ),
+  },
+  {
+    id: 'role-4',
+    code: 'FINANCE_REVIEWER',
+    name: 'Finance Reviewer',
+    description: 'Reviews payments and promotions.',
+    isSystem: false,
+    archivedAt: null,
+    createdAt: '2026-03-05T09:00:00.000Z',
+    updatedAt: '2026-03-05T09:00:00.000Z',
+    permissionCount: 4,
+    userCount: 0,
+    permissions: MOCK_PERMISSIONS.filter((permission) =>
+      ['payments', 'promotions'].includes(permission.module),
+    ),
+  },
+];

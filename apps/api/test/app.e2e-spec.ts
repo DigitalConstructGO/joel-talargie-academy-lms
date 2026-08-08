@@ -26,6 +26,33 @@ describe('API (e2e)', () => {
     expect(result.body.data.status).toBe('ok');
     expect(result.body.error).toBeNull();
   });
+  it('GET /api/v1/health/database returns a sanitized status', async () => {
+    const result = await request(app.getHttpServer())
+      .get('/api/v1/health/database')
+      .expect(200);
+    expect(result.body.data.status).toBe('not-configured');
+    expect(JSON.stringify(result.body)).not.toContain('DATABASE_URL');
+  });
+  it('GET /api/v1/health/storage reports the local storage backend', async () => {
+    const result = await request(app.getHttpServer())
+      .get('/api/v1/health/storage')
+      .expect(200);
+    expect(result.body.data.status).toBe('available');
+  });
+  it('GET /api/v1/health/live answers without checking any dependency', async () => {
+    const result = await request(app.getHttpServer())
+      .get('/api/v1/health/live')
+      .expect(200);
+    expect(result.body.data.status).toBe('alive');
+  });
+  it('GET /api/v1/health/ready returns 503 when the database is not configured', async () => {
+    const result = await request(app.getHttpServer())
+      .get('/api/v1/health/ready')
+      .expect(503);
+    expect(result.body.error).toEqual(
+      expect.objectContaining({ code: 'SERVICE_NOT_READY' }),
+    );
+  });
   it('formats global errors', async () => {
     const result = await request(app.getHttpServer())
       .get('/api/v1/missing')
