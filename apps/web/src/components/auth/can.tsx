@@ -55,3 +55,12 @@ export function Can({
   const allowed = checks.length === 0 || checks.every(Boolean);
   return <>{allowed ? children : fallback}</>;
 }
+
+/**
+ * Same component, under the names the wider spec/vocabulary uses - not a
+ * second implementation. `<PermissionGate permission="courses.create">` and
+ * `<RoleGate role="ADMINISTRATOR">` are `<Can>` calls with a narrower prop
+ * surface for readability at the call site.
+ */
+export const PermissionGate = Can;
+export const RoleGate = Can;
