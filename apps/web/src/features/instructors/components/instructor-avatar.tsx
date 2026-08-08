@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import type { InstructorProfile } from '../types/instructor.types';
@@ -9,13 +12,14 @@ export interface InstructorAvatarProps {
 }
 
 export function InstructorAvatar({ instructor, size = 64, className }: InstructorAvatarProps) {
+  const [imageFailed, setImageFailed] = useState(false);
   const initials = instructor.name
     .split(' ')
     .map((part) => part[0])
     .slice(0, 2)
     .join('');
 
-  if (instructor.photoUrl) {
+  if (instructor.photoUrl && !imageFailed) {
     return (
       <span
         className={cn('relative block shrink-0 overflow-hidden rounded-full', className)}
@@ -27,6 +31,7 @@ export function InstructorAvatar({ instructor, size = 64, className }: Instructo
           fill
           sizes={`${size}px`}
           className="object-cover"
+          onError={() => setImageFailed(true)}
         />
       </span>
     );

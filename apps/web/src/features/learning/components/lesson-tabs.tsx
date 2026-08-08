@@ -1,6 +1,8 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Download, ExternalLink, FileText, NotebookPen } from 'lucide-react';
+import DOMPurify from 'isomorphic-dompurify';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { formatFileSize, formatRelativeTime } from '@/lib/format';
@@ -9,6 +11,10 @@ import type { LessonContent } from '../types/learning.types';
 
 export function LessonTabs({ lesson }: { lesson: LessonContent }) {
   const { text, savedAt, updateText } = useLessonNotes(lesson.id);
+  const sanitizedContent = useMemo(
+    () => (lesson.content ? DOMPurify.sanitize(lesson.content) : ''),
+    [lesson.content],
+  );
 
   return (
     <Tabs defaultValue="description" className="mt-6">
@@ -42,7 +48,7 @@ export function LessonTabs({ lesson }: { lesson: LessonContent }) {
         {lesson.content ? (
           <div
             className="prose prose-sm prose-invert max-w-none text-sidebar-foreground/80"
-            dangerouslySetInnerHTML={{ __html: lesson.content }}
+            dangerouslySetInnerHTML={{ __html: sanitizedContent }}
           />
         ) : lesson.lessonType === 'EXTERNAL_LINK' && lesson.externalUrl ? (
           <a

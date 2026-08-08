@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
-import { Bell, CheckCheck } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Bell, CheckCheck, Loader2 } from 'lucide-react';
 import { PageHeader } from '@/components/common/page-header';
 import { SearchBar } from '@/components/common/search-bar';
 import { ContentContainer } from '@/components/layout/content-container';
@@ -47,6 +47,8 @@ const DEFAULT_FILTERS: NotificationsFilters = {
   sort: 'newest',
 };
 
+const PAGE_SIZE = 50;
+
 export default function StudentNotificationsPage() {
   const { filters, setFilter, setFilters, resetFilters } = useQueryFilters<NotificationsFilters>({
     defaults: DEFAULT_FILTERS,
@@ -54,9 +56,10 @@ export default function StudentNotificationsPage() {
   const { readState, search, sort } = filters;
   const { presets, savePreset, removePreset } =
     useSavedFilters<NotificationsFilters>('notifications');
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
 
   const notificationsQuery = useMyNotifications({
-    pageSize: 50,
+    pageSize,
     unread: readState === 'ALL' ? undefined : readState === 'UNREAD',
   });
   const markRead = useMarkNotificationsRead();
@@ -179,25 +182,39 @@ export default function StudentNotificationsPage() {
           <NoNotificationsEmptyState />
         )
       ) : (
-        <ul className="flex flex-col gap-1 rounded-xl border border-border bg-card p-2">
-          {filtered.map((notification) => (
-            <li key={notification.id}>
-              <NotificationCard
-                icon={Bell}
-                title={notification.title}
-                description={notification.message}
-                timestamp={formatRelativeTime(notification.createdAt)}
-                read={notification.readAt !== null}
-                onClick={
-                  notification.readAt === null
-                    ? () => markRead.mutate([notification.id])
-                    : undefined
-                }
-                onArchive={() => handleArchive(notification.id)}
-              />
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className="flex flex-col gap-1 rounded-xl border border-border bg-card p-2">
+            {filtered.map((notification) => (
+              <li key={notification.id}>
+                <NotificationCard
+                  icon={Bell}
+                  title={notification.title}
+                  description={notification.message}
+                  timestamp={formatRelativeTime(notification.createdAt)}
+                  read={notification.readAt !== null}
+                  onClick={
+                    notification.readAt === null
+                      ? () => markRead.mutate([notification.id])
+                      : undefined
+                  }
+                  onArchive={() => handleArchive(notification.id)}
+                />
+              </li>
+            ))}
+          </ul>
+          {(notificationsData?.length ?? 0) === pageSize && (
+            <div className="flex justify-center">
+              <Button
+                variant="outline"
+                onClick={() => setPageSize((size) => size + PAGE_SIZE)}
+                disabled={notificationsQuery.isFetching}
+              >
+                {notificationsQuery.isFetching && <Loader2 className="mr-2 size-4 animate-spin" />}
+                Load more
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </ContentContainer>
   );

@@ -2,7 +2,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authClient, unwrap } from '@/lib/api/auth-client';
-import { ROUTES } from '@/constants/routes';
+import { extractErrorMessage } from '@/lib/api/api-error';
+import { buildLoginRedirect } from '@/lib/authorization/redirect';
 import { toast } from '@/lib/toast';
 export type AuthUser = {
   id: string;
@@ -53,15 +54,7 @@ type AuthState = {
   setHasHydrated(value: boolean): void;
   setSessionChecked(value: boolean): void;
 };
-const message = (error: unknown) => {
-  if (typeof error === 'object' && error && 'response' in error) {
-    const body = (
-      error as { response?: { data?: { error?: { message?: string }; message?: string } } }
-    ).response?.data;
-    return body?.error?.message ?? body?.message ?? 'Authentication failed';
-  }
-  return 'Authentication failed';
-};
+const message = (error: unknown) => extractErrorMessage(error, 'Authentication failed');
 const unauthorized = {
   roles: [] as string[],
   permissions: [] as string[],
@@ -244,7 +237,9 @@ if (!markedClient[INTERCEPTORS_REGISTERED]) {
       const refreshed = await refreshing;
       if (refreshed) return authClient(error.config);
       if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/auth')) {
-        window.location.assign(ROUTES.auth.login);
+        window.location.assign(
+          buildLoginRedirect(`${window.location.pathname}${window.location.search}`),
+        );
       }
     }
     if (status === 403 && !isAuthFlowRequest(request.url)) {

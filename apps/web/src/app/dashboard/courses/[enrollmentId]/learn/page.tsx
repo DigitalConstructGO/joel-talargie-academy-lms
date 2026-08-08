@@ -16,6 +16,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/common/error-state';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 import { ROUTES } from '@/constants/routes';
 import {
   useCompleteLesson,
@@ -34,7 +36,15 @@ export default function LessonPlayerPage() {
   const enrollmentId = params.enrollmentId;
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Default to a collapsed, overlay-style sidebar on small screens so it
+  // doesn't permanently squeeze the video/content column down to a sliver -
+  // runs once `isMobile` resolves after mount, not during SSR.
+  useEffect(() => {
+    if (isMobile) setSidebarOpen(false);
+  }, [isMobile]);
 
   const overviewQuery = useCourseOverview(enrollmentId);
   const overview = overviewQuery.data;
@@ -94,8 +104,25 @@ export default function LessonPlayerPage() {
 
   if (overviewQuery.isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-sidebar">
-        <Loader2 className="size-8 animate-spin text-sidebar-primary" />
+      <div className="flex h-screen flex-col overflow-hidden bg-sidebar text-sidebar-foreground">
+        <div className="flex h-16 flex-none items-center gap-4 border-b border-sidebar-border px-4 sm:px-6">
+          <Skeleton className="size-5 bg-white/10" />
+          <Skeleton className="h-4 w-48 bg-white/10" />
+        </div>
+        <div className="flex flex-1 overflow-hidden">
+          <aside className="hidden w-[300px] flex-none flex-col gap-3 border-r border-sidebar-border p-4 md:flex">
+            {Array.from({ length: 6 }, (_, index) => (
+              <Skeleton key={index} className="h-10 w-full bg-white/10" />
+            ))}
+          </aside>
+          <main className="flex-1 overflow-y-auto">
+            <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
+              <Skeleton className="aspect-video w-full rounded-xl bg-white/10" />
+              <Skeleton className="mt-6 h-8 w-2/3 bg-white/10" />
+              <Skeleton className="mt-4 h-32 w-full bg-white/10" />
+            </div>
+          </main>
+        </div>
       </div>
     );
   }
@@ -175,14 +202,31 @@ export default function LessonPlayerPage() {
         </Button>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="relative flex flex-1 overflow-hidden">
+        {sidebarOpen && isMobile && (
+          <div
+            className="fixed inset-0 top-16 z-30 bg-black/50"
+            onClick={() => setSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
         {sidebarOpen && (
-          <aside className="w-[300px] flex-none overflow-hidden border-r border-sidebar-border">
+          <aside
+            className={cn(
+              'flex-none overflow-hidden border-r border-sidebar-border bg-sidebar',
+              isMobile
+                ? 'fixed inset-y-16 left-0 z-40 w-[85vw] max-w-[300px] shadow-xl'
+                : 'w-[300px]',
+            )}
+          >
             <LessonSidebar
               curriculum={overview.curriculum}
               currentLessonId={activeLessonId}
               overallProgress={overview.progressPercentage}
-              onSelectLesson={goToLesson}
+              onSelectLesson={(lessonId) => {
+                goToLesson(lessonId);
+                if (isMobile) setSidebarOpen(false);
+              }}
             />
           </aside>
         )}

@@ -2,7 +2,10 @@ import type { Metadata } from 'next';
 import { LegalPage } from '@/components/common/legal-page';
 import { siteConfig } from '@/config/site.config';
 
-export const metadata: Metadata = { title: 'Cookie Policy' };
+export const metadata: Metadata = {
+  title: 'Cookie Policy',
+  description: `How ${siteConfig.name} uses cookies and similar technologies.`,
+};
 
 export default function CookiePolicyPage() {
   return (

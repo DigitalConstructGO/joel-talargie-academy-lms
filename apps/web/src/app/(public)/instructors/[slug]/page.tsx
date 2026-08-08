@@ -19,8 +19,12 @@ interface InstructorPageProps {
 }
 
 async function loadLiveInstructorCourses(name: string) {
-  const result = await catalogApi.listCourses({ search: name, pageSize: 100 });
-  return result.items.filter((course) => course.presenterName === name);
+  try {
+    const result = await catalogApi.listCourses({ search: name, pageSize: 100 });
+    return result.items.filter((course) => course.presenterName === name);
+  } catch {
+    return [];
+  }
 }
 
 export async function generateMetadata({ params }: InstructorPageProps): Promise<Metadata> {

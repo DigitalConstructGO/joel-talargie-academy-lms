@@ -49,6 +49,7 @@ import { toast } from '@/lib/toast';
 import { ROUTES } from '@/constants/routes';
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 const profileFormSchema = z.object({
   fullName: z.string().trim().min(2, 'Enter your full name.').max(160),
@@ -117,6 +118,10 @@ export default function ProfilePage() {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
+    if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+      toast.error('Unsupported file type', 'Please choose a JPEG, PNG, or WebP image.');
+      return;
+    }
     if (file.size > MAX_AVATAR_BYTES) {
       toast.error('Image is too large', 'Please choose an image under 5 MB.');
       return;

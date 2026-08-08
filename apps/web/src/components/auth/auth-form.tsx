@@ -13,9 +13,11 @@ import { Label } from '@/components/ui/label';
 import { useAuthStore } from '@/stores/auth.store';
 import { GoogleLoginButton } from './google-login-button';
 import { authClient, unwrap } from '@/lib/api/auth-client';
+import { extractErrorMessage } from '@/lib/api/api-error';
 import { ROUTES } from '@/constants/routes';
 import { siteConfig } from '@/config/site.config';
 import { isSafeRedirectPath, resolvePostLoginRedirect } from '@/lib/authorization/redirect';
+import { toast } from '@/lib/toast';
 const strong = z
   .string()
   .min(8)
@@ -79,6 +81,7 @@ export function AuthForm({ kind }: { kind: Kind }) {
   const search = useSearchParams();
   const store = useAuthStore();
   const [title, subtitle] = copy[kind];
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const redirectParam = search.get('redirect');
   const redirectQuery = isSafeRedirectPath(redirectParam)
     ? `?redirect=${encodeURIComponent(redirectParam)}`
@@ -96,6 +99,8 @@ export function AuthForm({ kind }: { kind: Kind }) {
     },
   });
   const submit = form.handleSubmit(async (values) => {
+    setSuccessMessage(null);
+    form.clearErrors('root');
     try {
       if (kind === 'login') {
         await store.login({
@@ -133,9 +138,19 @@ export function AuthForm({ kind }: { kind: Kind }) {
       const result = unwrap<{ message: string }>(
         await authClient.post(`/auth/${endpoint}`, values),
       );
-      form.setError('root', { message: result.message });
-    } catch {
-      form.setError('root', { message: store.error ?? 'Request failed' });
+      if (kind === 'reset' || kind === 'verify') {
+        // Password reset / email verification both leave the account ready
+        // to sign in - send them straight to login rather than stranding
+        // them on a form with no more fields to submit. The success
+        // message is surfaced as a toast (not the inline box below) since
+        // this page is about to be replaced.
+        toast.success(result.message);
+        router.push(`${ROUTES.auth.login}${redirectQuery}`);
+        return;
+      }
+      setSuccessMessage(result.message);
+    } catch (error) {
+      form.setError('root', { message: extractErrorMessage(error, 'Request failed') });
     }
   });
   const has = (name: string) => fields[kind].includes(name);
@@ -203,6 +218,9 @@ export function AuthForm({ kind }: { kind: Kind }) {
               Remember me for 30 days
             </Label>
           </div>
+        )}
+        {successMessage && (
+          <p className="rounded-lg bg-success/10 p-3 text-sm text-success">{successMessage}</p>
         )}
         {form.formState.errors.root?.message && (
           <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">

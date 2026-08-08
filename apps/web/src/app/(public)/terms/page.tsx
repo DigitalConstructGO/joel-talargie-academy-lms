@@ -2,7 +2,10 @@ import type { Metadata } from 'next';
 import { LegalPage } from '@/components/common/legal-page';
 import { siteConfig } from '@/config/site.config';
 
-export const metadata: Metadata = { title: 'Terms of Service' };
+export const metadata: Metadata = {
+  title: 'Terms of Service',
+  description: `The terms and conditions for using ${siteConfig.name}.`,
+};
 
 export default function TermsPage() {
   return (

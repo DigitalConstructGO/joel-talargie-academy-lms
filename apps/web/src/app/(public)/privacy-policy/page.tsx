@@ -2,7 +2,10 @@ import type { Metadata } from 'next';
 import { LegalPage } from '@/components/common/legal-page';
 import { siteConfig } from '@/config/site.config';
 
-export const metadata: Metadata = { title: 'Privacy Policy' };
+export const metadata: Metadata = {
+  title: 'Privacy Policy',
+  description: `How ${siteConfig.name} collects, uses, and protects your personal data.`,
+};
 
 export default function PrivacyPolicyPage() {
   return (

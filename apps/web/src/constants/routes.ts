@@ -38,7 +38,6 @@ export const ROUTES = {
     resetPassword: '/auth/reset-password',
     verifyEmail: '/auth/verify-email',
     googleCallback: '/auth/google/callback',
-    unauthorized: '/unauthorized',
   },
   dashboard: {
     root: '/dashboard',

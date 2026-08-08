@@ -23,7 +23,10 @@ export default function WishlistPage() {
 
   return (
     <ContentContainer>
-      <PageHeader title="Wishlist" description="Courses you've saved for later." />
+      <PageHeader
+        title="Wishlist"
+        description="Courses you've saved for later - stored on this device only, not synced across browsers."
+      />
 
       {courseIds.length === 0 ? (
         <NoWishlistEmptyState
