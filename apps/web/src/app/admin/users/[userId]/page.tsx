@@ -21,6 +21,7 @@ import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { LoadingButton } from '@/components/ui/loading-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
@@ -179,9 +180,14 @@ export default function AdminUserDetailPage() {
               </Can>
               {user.status !== 'ACTIVE' && user.status !== 'ARCHIVED' && (
                 <Can permission="users.activate">
-                  <Button variant="outline" className="gap-2" onClick={handleActivate}>
+                  <LoadingButton
+                    variant="outline"
+                    className="gap-2"
+                    onClick={handleActivate}
+                    loading={activate.isPending}
+                  >
                     <ShieldCheck className="size-4" /> Activate
-                  </Button>
+                  </LoadingButton>
                 </Can>
               )}
               {user.status === 'ACTIVE' && (
@@ -205,9 +211,14 @@ export default function AdminUserDetailPage() {
               )}
               {user.status === 'ARCHIVED' ? (
                 <Can permission="users.restore">
-                  <Button variant="outline" className="gap-2" onClick={handleRestore}>
+                  <LoadingButton
+                    variant="outline"
+                    className="gap-2"
+                    onClick={handleRestore}
+                    loading={restore.isPending}
+                  >
                     <RotateCcw className="size-4" /> Restore
-                  </Button>
+                  </LoadingButton>
                 </Can>
               ) : (
                 <Can permission="users.archive">

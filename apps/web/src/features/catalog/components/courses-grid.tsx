@@ -32,7 +32,7 @@ export function CoursesGrid({ linkBase }: CoursesGridProps = {}) {
   const setPage = useFilterStore((state) => state.setPage);
   const resetFilters = useFilterStore((state) => state.resetFilters);
 
-  const { data, isLoading, isError, refetch } = useCourses({
+  const { data, isLoading, isFetching, isError, refetch } = useCourses({
     search: search || undefined,
     categoryId,
     accessType,
@@ -87,7 +87,12 @@ export function CoursesGrid({ linkBase }: CoursesGridProps = {}) {
           />
         ))}
       </div>
-      <DynamicPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+      <DynamicPagination
+        page={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        isLoading={isFetching}
+      />
     </div>
   );
 }

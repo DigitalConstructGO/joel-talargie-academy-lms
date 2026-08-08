@@ -277,6 +277,7 @@ export default function AdminUsersPage() {
               totalPages={totalPages}
               onPageChange={setPage}
               showFirstLast
+              isLoading={usersQuery.isFetching}
             />
           )}
         </>

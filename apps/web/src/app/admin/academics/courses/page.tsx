@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useMemo } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Copy, Eye, MoreHorizontal, Pencil, Plus, Rocket, Trash2 } from 'lucide-react';
+import { Copy, Eye, Loader2, MoreHorizontal, Pencil, Plus, Rocket, Trash2 } from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
 import { PageHeader } from '@/components/common/page-header';
 import { PageBreadcrumb } from '@/components/common/page-breadcrumb';
@@ -165,24 +165,44 @@ export default function AdminCoursesPage() {
                 <Can permission="courses.publish">
                   <DropdownMenuItem
                     className="gap-2"
+                    disabled={
+                      publishCourse.isPending &&
+                      publishCourse.variables?.courseId === row.original.id
+                    }
                     onSelect={(event) => {
                       event.preventDefault();
                       handlePublish(row.original.id);
                     }}
                   >
-                    <Rocket className="size-4" /> Publish
+                    {publishCourse.isPending &&
+                    publishCourse.variables?.courseId === row.original.id ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Rocket className="size-4" />
+                    )}
+                    Publish
                   </DropdownMenuItem>
                 </Can>
               )}
               <Can permission="courses.duplicate">
                 <DropdownMenuItem
                   className="gap-2"
+                  disabled={
+                    duplicateCourse.isPending &&
+                    duplicateCourse.variables?.courseId === row.original.id
+                  }
                   onSelect={(event) => {
                     event.preventDefault();
                     handleDuplicate(row.original.id);
                   }}
                 >
-                  <Copy className="size-4" /> Duplicate
+                  {duplicateCourse.isPending &&
+                  duplicateCourse.variables?.courseId === row.original.id ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Copy className="size-4" />
+                  )}
+                  Duplicate
                 </DropdownMenuItem>
               </Can>
               <Can permission="courses.archive">
@@ -207,8 +227,15 @@ export default function AdminCoursesPage() {
         ),
       },
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- action handlers are stable per render via mutation identity
-    [],
+    // Re-derive columns whenever publish/duplicate pending state changes, so
+    // the row-specific spinner reflects live mutation state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleArchive/handlePublish/handleDuplicate are stable per render via mutation identity
+    [
+      publishCourse.isPending,
+      publishCourse.variables,
+      duplicateCourse.isPending,
+      duplicateCourse.variables,
+    ],
   );
 
   return (
@@ -268,6 +295,7 @@ export default function AdminCoursesPage() {
               totalPages={totalPages}
               onPageChange={setPage}
               showFirstLast
+              isLoading={coursesQuery.isFetching}
             />
           )}
         </>

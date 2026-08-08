@@ -251,6 +251,7 @@ export default function AdminReportsPage() {
       <ReportTable
         result={reportQuery.data}
         isLoading={reportQuery.isLoading}
+        isFetching={reportQuery.isFetching}
         isError={reportQuery.isError}
         onRetry={() => reportQuery.refetch()}
         page={page}

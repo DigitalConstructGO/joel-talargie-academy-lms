@@ -370,6 +370,7 @@ export default function AdminPromoCodesPage() {
               totalPages={totalPages}
               onPageChange={setPage}
               showFirstLast
+              isLoading={couponsQuery.isFetching}
             />
           )}
         </>

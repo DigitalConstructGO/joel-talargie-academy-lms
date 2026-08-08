@@ -314,7 +314,7 @@ function SectionCard({
               variant="ghost"
               size="icon"
               className="size-8"
-              disabled={index === 0}
+              disabled={index === 0 || reorderSections.isPending}
               onClick={() => handleMoveSection(-1)}
               aria-label="Move section up"
             >
@@ -324,7 +324,7 @@ function SectionCard({
               variant="ghost"
               size="icon"
               className="size-8"
-              disabled={index === sections.length - 1}
+              disabled={index === sections.length - 1 || reorderSections.isPending}
               onClick={() => handleMoveSection(1)}
               aria-label="Move section down"
             >
@@ -380,7 +380,7 @@ function SectionCard({
                     variant="ghost"
                     size="icon"
                     className="size-7"
-                    disabled={lessonIndex === 0}
+                    disabled={lessonIndex === 0 || reorderLessons.isPending}
                     onClick={() => handleMoveLesson(lessonIndex, -1)}
                     aria-label="Move lesson up"
                   >
@@ -390,7 +390,9 @@ function SectionCard({
                     variant="ghost"
                     size="icon"
                     className="size-7"
-                    disabled={lessonIndex === section.lessons.length - 1}
+                    disabled={
+                      lessonIndex === section.lessons.length - 1 || reorderLessons.isPending
+                    }
                     onClick={() => handleMoveLesson(lessonIndex, 1)}
                     aria-label="Move lesson down"
                   >
@@ -402,6 +404,7 @@ function SectionCard({
                     <Select
                       value=""
                       onValueChange={(value) => handleMoveLessonToSection(lesson.id, value)}
+                      disabled={moveLesson.isPending && moveLesson.variables?.args[0] === lesson.id}
                     >
                       <SelectTrigger className="h-7 w-28 text-xs" aria-label="Move to section">
                         <SelectValue placeholder="Move to..." />
@@ -424,10 +427,19 @@ function SectionCard({
                       variant="ghost"
                       size="icon"
                       className="size-7"
+                      disabled={
+                        unpublishLesson.isPending &&
+                        unpublishLesson.variables?.args[0] === lesson.id
+                      }
                       onClick={() => handleTogglePublish(lesson.id, true)}
                       aria-label="Unpublish"
                     >
-                      <EyeOff className="size-3.5" />
+                      {unpublishLesson.isPending &&
+                      unpublishLesson.variables?.args[0] === lesson.id ? (
+                        <Loader2 className="size-3.5 animate-spin" />
+                      ) : (
+                        <EyeOff className="size-3.5" />
+                      )}
                     </Button>
                   </Can>
                 ) : (
@@ -436,10 +448,17 @@ function SectionCard({
                       variant="ghost"
                       size="icon"
                       className="size-7"
+                      disabled={
+                        publishLesson.isPending && publishLesson.variables?.args[0] === lesson.id
+                      }
                       onClick={() => handleTogglePublish(lesson.id, false)}
                       aria-label="Publish"
                     >
-                      <Eye className="size-3.5" />
+                      {publishLesson.isPending && publishLesson.variables?.args[0] === lesson.id ? (
+                        <Loader2 className="size-3.5 animate-spin" />
+                      ) : (
+                        <Eye className="size-3.5" />
+                      )}
                     </Button>
                   </Can>
                 )}

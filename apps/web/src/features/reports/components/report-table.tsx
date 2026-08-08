@@ -12,6 +12,8 @@ import type { ReportResult } from '../types/report.types';
 export interface ReportTableProps {
   result: ReportResult | undefined;
   isLoading: boolean;
+  /** Covers refetches too (filter/page changes), not just the initial load - defaults to `isLoading` when omitted. */
+  isFetching?: boolean;
   isError: boolean;
   onRetry: () => void;
   page: number;
@@ -29,6 +31,7 @@ export interface ReportTableProps {
 export function ReportTable({
   result,
   isLoading,
+  isFetching = isLoading,
   isError,
   onRetry,
   page,
@@ -88,6 +91,7 @@ export function ReportTable({
           totalPages={totalPages}
           onPageChange={onPageChange}
           showFirstLast
+          isLoading={isFetching}
         />
       )}
     </div>

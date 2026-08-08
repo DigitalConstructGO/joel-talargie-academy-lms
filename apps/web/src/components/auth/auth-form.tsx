@@ -6,7 +6,7 @@ import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Eye, EyeOff, KeyRound, Lock, Mail, User } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { LoadingButton } from '@/components/ui/loading-button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -75,6 +75,13 @@ const copy: Record<Kind, [string, string]> = {
   forgot: ['Forgot password?', 'Request secure reset instructions'],
   reset: ['Reset password', 'Choose a new secure password'],
   verify: ['Verify your email', 'Activate your academy account'],
+};
+const submitLoadingText: Record<Kind, string> = {
+  login: 'Signing in...',
+  register: 'Creating account...',
+  forgot: 'Sending...',
+  reset: 'Resetting...',
+  verify: 'Verifying...',
 };
 export function AuthForm({ kind }: { kind: Kind }) {
   const router = useRouter();
@@ -227,13 +234,14 @@ export function AuthForm({ kind }: { kind: Kind }) {
             {form.formState.errors.root.message}
           </p>
         )}
-        <Button className="w-full" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting
-            ? 'Please wait...'
-            : title === 'Welcome Back'
-              ? 'Sign In'
-              : title}
-        </Button>
+        <LoadingButton
+          type="submit"
+          className="w-full"
+          loading={form.formState.isSubmitting}
+          loadingText={submitLoadingText[kind]}
+        >
+          {title === 'Welcome Back' ? 'Sign In' : title}
+        </LoadingButton>
       </form>
       <div className="mt-6 text-center text-sm">
         {kind === 'login' ? (

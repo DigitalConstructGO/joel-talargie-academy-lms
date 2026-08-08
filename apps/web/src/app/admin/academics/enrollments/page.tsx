@@ -367,6 +367,7 @@ export default function AdminEnrollmentsPage() {
               totalPages={totalPages}
               onPageChange={setPage}
               showFirstLast
+              isLoading={enrollmentsQuery.isFetching}
             />
           )}
         </>

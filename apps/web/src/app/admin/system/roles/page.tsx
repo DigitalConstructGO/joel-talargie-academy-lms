@@ -211,6 +211,7 @@ export default function AdminRolesPage() {
               totalPages={totalPages}
               onPageChange={setPage}
               showFirstLast
+              isLoading={rolesQuery.isFetching}
             />
           )}
         </>

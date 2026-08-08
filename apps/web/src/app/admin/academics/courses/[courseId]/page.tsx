@@ -19,6 +19,7 @@ import { ErrorState } from '@/components/common/error-state';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { LoadingButton } from '@/components/ui/loading-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Can } from '@/components/auth/can';
@@ -145,29 +146,53 @@ export default function AdminCourseDetailPage() {
               </Button>
               {course.status === 'PUBLISHED' ? (
                 <Can permission="courses.unpublish">
-                  <Button variant="outline" className="gap-2" onClick={handleUnpublish}>
+                  <LoadingButton
+                    variant="outline"
+                    className="gap-2"
+                    onClick={handleUnpublish}
+                    loading={unpublishCourse.isPending}
+                    loadingText="Unpublishing..."
+                  >
                     Unpublish
-                  </Button>
+                  </LoadingButton>
                 </Can>
               ) : (
                 course.status !== 'ARCHIVED' && (
                   <Can permission="courses.publish">
-                    <Button variant="outline" className="gap-2" onClick={handlePublish}>
+                    <LoadingButton
+                      variant="outline"
+                      className="gap-2"
+                      onClick={handlePublish}
+                      loading={publishCourse.isPending}
+                      loadingText="Publishing..."
+                    >
                       <Rocket className="size-4" /> Publish
-                    </Button>
+                    </LoadingButton>
                   </Can>
                 )
               )}
               <Can permission="courses.duplicate">
-                <Button variant="outline" className="gap-2" onClick={handleDuplicate}>
+                <LoadingButton
+                  variant="outline"
+                  className="gap-2"
+                  onClick={handleDuplicate}
+                  loading={duplicateCourse.isPending}
+                  loadingText="Duplicating..."
+                >
                   <Copy className="size-4" /> Duplicate
-                </Button>
+                </LoadingButton>
               </Can>
               {course.status === 'ARCHIVED' ? (
                 <Can permission="courses.restore">
-                  <Button variant="outline" className="gap-2" onClick={handleRestore}>
+                  <LoadingButton
+                    variant="outline"
+                    className="gap-2"
+                    onClick={handleRestore}
+                    loading={restoreCourse.isPending}
+                    loadingText="Restoring..."
+                  >
                     <RotateCcw className="size-4" /> Restore
-                  </Button>
+                  </LoadingButton>
                 </Can>
               ) : (
                 <Can permission="courses.archive">

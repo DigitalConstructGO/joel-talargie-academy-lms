@@ -317,6 +317,7 @@ export default function AdminCampaignsPage() {
               totalPages={totalPages}
               onPageChange={setPage}
               showFirstLast
+              isLoading={campaignsQuery.isFetching}
             />
           )}
         </>

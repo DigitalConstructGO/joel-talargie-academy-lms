@@ -39,6 +39,9 @@ export interface DynamicPaginationProps {
 
   /** Adds a "Go to page" number input. */
   showGoToPage?: boolean;
+
+  /** Pass the list query's `isFetching` - disables every page control while a page request is in flight, so rapid clicks can't queue up multiple simultaneous requests. */
+  isLoading?: boolean;
 }
 
 function buildPageRange(
@@ -73,14 +76,17 @@ function buildPageRange(
 function GoToPageInput({
   totalPages,
   onPageChange,
+  disabled = false,
 }: {
   totalPages: number;
   onPageChange: (page: number) => void;
+  disabled?: boolean;
 }) {
   const [value, setValue] = useState('');
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
+    if (disabled) return;
     const parsed = Number(value);
     if (Number.isInteger(parsed) && parsed >= 1 && parsed <= totalPages) {
       onPageChange(parsed);
@@ -100,6 +106,7 @@ function GoToPageInput({
         max={totalPages}
         value={value}
         onChange={(event) => setValue(event.target.value)}
+        disabled={disabled}
         className="h-8 w-16"
       />
     </form>
@@ -117,6 +124,7 @@ export function DynamicPagination({
   onPageSizeChange,
   showFirstLast = false,
   showGoToPage = false,
+  isLoading = false,
 }: DynamicPaginationProps) {
   if (totalPages <= 1 && !pageSize) return null;
   const pages = buildPageRange(page, totalPages, siblingCount);
@@ -154,22 +162,22 @@ export function DynamicPagination({
               size="icon"
               className="size-9"
               aria-label="First page"
-              disabled={page <= 1}
+              disabled={page <= 1 || isLoading}
               onClick={() => onPageChange(1)}
             >
               <ChevronsLeft className="size-4" />
             </Button>
           )}
-          <Pagination className="mx-0 w-fit">
+          <Pagination className="mx-0 w-fit" aria-busy={isLoading}>
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
                   href="#"
-                  aria-disabled={page <= 1}
-                  className={page <= 1 ? 'pointer-events-none opacity-50' : undefined}
+                  aria-disabled={page <= 1 || isLoading}
+                  className={page <= 1 || isLoading ? 'pointer-events-none opacity-50' : undefined}
                   onClick={(event) => {
                     event.preventDefault();
-                    if (page > 1) onPageChange(page - 1);
+                    if (page > 1 && !isLoading) onPageChange(page - 1);
                   }}
                 />
               </PaginationItem>
@@ -183,9 +191,11 @@ export function DynamicPagination({
                     <PaginationLink
                       href="#"
                       isActive={entry === page}
+                      aria-disabled={isLoading}
+                      className={isLoading ? 'pointer-events-none opacity-50' : undefined}
                       onClick={(event) => {
                         event.preventDefault();
-                        onPageChange(entry);
+                        if (!isLoading) onPageChange(entry);
                       }}
                     >
                       {entry}
@@ -196,11 +206,13 @@ export function DynamicPagination({
               <PaginationItem>
                 <PaginationNext
                   href="#"
-                  aria-disabled={page >= totalPages}
-                  className={page >= totalPages ? 'pointer-events-none opacity-50' : undefined}
+                  aria-disabled={page >= totalPages || isLoading}
+                  className={
+                    page >= totalPages || isLoading ? 'pointer-events-none opacity-50' : undefined
+                  }
                   onClick={(event) => {
                     event.preventDefault();
-                    if (page < totalPages) onPageChange(page + 1);
+                    if (page < totalPages && !isLoading) onPageChange(page + 1);
                   }}
                 />
               </PaginationItem>
@@ -212,13 +224,19 @@ export function DynamicPagination({
               size="icon"
               className="size-9"
               aria-label="Last page"
-              disabled={page >= totalPages}
+              disabled={page >= totalPages || isLoading}
               onClick={() => onPageChange(totalPages)}
             >
               <ChevronsRight className="size-4" />
             </Button>
           )}
-          {showGoToPage && <GoToPageInput totalPages={totalPages} onPageChange={onPageChange} />}
+          {showGoToPage && (
+            <GoToPageInput
+              totalPages={totalPages}
+              onPageChange={onPageChange}
+              disabled={isLoading}
+            />
+          )}
         </div>
       )}
     </div>

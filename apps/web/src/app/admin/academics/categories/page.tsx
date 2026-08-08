@@ -283,6 +283,7 @@ export default function AdminCategoriesPage() {
               totalPages={totalPages}
               onPageChange={setPage}
               showFirstLast
+              isLoading={categoriesQuery.isFetching}
             />
           )}
         </>

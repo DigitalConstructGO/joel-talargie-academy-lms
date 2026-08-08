@@ -206,7 +206,12 @@ export default function CoursesPage() {
         </div>
       )}
 
-      <DynamicPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+      <DynamicPagination
+        page={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        isLoading={enrollmentsQuery.isFetching}
+      />
     </ContentContainer>
   );
 }
