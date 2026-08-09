@@ -5,7 +5,7 @@ export const environmentSchema = z
       .enum(['development', 'test', 'production'])
       .default('development'),
     API_PORT: z.coerce.number().int().min(1).max(65535).default(4000),
-    WEB_URL: z.string().url().default('http://localhost:3000'),
+    WEB_URL: z.string().url().default(''),
     TRUST_PROXY: z.stringbool().default(false),
     BODY_LIMIT: z
       .string()
@@ -25,10 +25,7 @@ export const environmentSchema = z
     AUTH_COOKIE_SECURE: z.stringbool().default(false),
     GOOGLE_CLIENT_ID: z.string().default(''),
     GOOGLE_CLIENT_SECRET: z.string().default(''),
-    GOOGLE_CALLBACK_URL: z
-      .string()
-      .url()
-      .default('http://localhost:4000/api/v1/auth/google/callback'),
+    GOOGLE_CALLBACK_URL: z.string().url().default(''),
     DATABASE_URL: z.string().default(''),
     DATABASE_DIRECT_URL: z.string().default(''),
     DATABASE_TEST_URL: z.string().default(''),
@@ -120,7 +117,7 @@ export const environmentSchema = z
       .int()
       .min(60)
       .default(21_600),
-    EMAIL_PUBLIC_APP_URL: z.string().url().default('http://localhost:3000'),
+    EMAIL_PUBLIC_APP_URL: z.string().url().default(''),
     EMAIL_SUPPORT_ADDRESS: z
       .union([z.literal(''), z.string().email()])
       .default(''),
@@ -144,10 +141,7 @@ export const environmentSchema = z
     STORAGE_ACCESS_KEY: z.string().default(''),
     STORAGE_SECRET_KEY: z.string().default(''),
     STORAGE_FORCE_PATH_STYLE: z.stringbool().default(false),
-    CERTIFICATE_PUBLIC_BASE_URL: z
-      .string()
-      .url()
-      .default('http://localhost:3000/certificates/verify'),
+    CERTIFICATE_PUBLIC_BASE_URL: z.string().url().default(''),
     CERTIFICATE_WORKER_ENABLED: z.stringbool().default(false),
     CERTIFICATE_WORKER_POLL_MS: z.coerce
       .number()
@@ -182,6 +176,13 @@ export const environmentSchema = z
         code: 'custom',
         path: ['GOOGLE_CLIENT_ID'],
         message: 'Google client ID and secret must be configured together',
+      });
+    }
+    if (!environment.WEB_URL) {
+      context.addIssue({
+        code: 'custom',
+        path: ['WEB_URL'],
+        message: 'is required',
       });
     }
     if (

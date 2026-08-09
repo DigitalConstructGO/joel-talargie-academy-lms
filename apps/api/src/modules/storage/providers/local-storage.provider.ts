@@ -59,7 +59,12 @@ export class LocalStorageProvider implements StorageService, OnModuleInit {
     this.defaultTtlSeconds =
       config.get<number>('STORAGE_SIGNED_URL_TTL_SECONDS') ??
       DEFAULT_SIGNED_URL_TTL_SECONDS;
-    this.publicApiBaseUrl = `${(config.get<string>('API_URL') ?? 'http://localhost:4000').replace(/\/$/, '')}/${API_PREFIX}/v${API_VERSION}`;
+    const apiBaseUrl = config.get<string>('API_URL')?.trim();
+    const webBaseUrl = config.get<string>('WEB_URL')?.trim();
+    const baseUrl = apiBaseUrl || webBaseUrl || '';
+    this.publicApiBaseUrl = baseUrl
+      ? `${baseUrl.replace(/\/$/, '')}/${API_PREFIX}/v${API_VERSION}`
+      : `/${API_PREFIX}/v${API_VERSION}`;
   }
 
   onModuleInit(): void {

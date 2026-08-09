@@ -6,11 +6,12 @@ import { LocalStorageProvider } from '../providers/local-storage.provider';
 import { UnsafeStorageKeyError } from '../utils/safe-path.util';
 
 function createProvider(root: string) {
+  const apiUrl = process.env.API_URL?.trim() || 'http://localhost:4000';
   const values: Record<string, unknown> = {
     STORAGE_ROOT: root,
     STORAGE_SIGNING_SECRET: 'test-signing-secret-at-least-32-chars',
     STORAGE_SIGNED_URL_TTL_SECONDS: 900,
-    API_URL: 'http://localhost:4000',
+    API_URL: apiUrl,
   };
   const config = {
     get: (key: string) => values[key],
@@ -82,7 +83,8 @@ describe('LocalStorageProvider', () => {
 
   it('mints a signed URL whose token this provider can verify', async () => {
     const url = await provider.getSignedUrl('certificates/one.pdf', 300);
-    expect(url).toContain('http://localhost:4000/api/v1/storage/files/');
+    const expectedBase = `${process.env.API_URL?.trim() || 'http://localhost:4000'}/api/v1`;
+    expect(url).toContain(`${expectedBase}/storage/files/`);
     const token = url.split('/files/')[1];
     const verification = provider.verifyToken(token);
     expect(verification).toMatchObject({

@@ -1,7 +1,7 @@
 'use client';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { authClient, unwrap } from '@/lib/api/auth-client';
+import { authClient, getApiBaseUrl, unwrap } from '@/lib/api/auth-client';
 import { extractErrorMessage } from '@/lib/api/api-error';
 import { buildLoginRedirect } from '@/lib/authorization/redirect';
 import { toast } from '@/lib/toast';
@@ -79,8 +79,8 @@ export const useAuthStore = create<AuthState>()(
       setHasHydrated: (value) => set({ hasHydrated: value }),
       setSessionChecked: (value) => set({ sessionChecked: value }),
       loginWithGoogle: () => {
-        const base = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
-        window.location.assign(`${base}/auth/google`);
+        const base = getApiBaseUrl();
+        window.location.assign(base ? `${base}/auth/google` : '/auth/google');
       },
       handleGoogleCallback: async (accessToken) => {
         set({ accessToken, authenticated: true, loading: true, error: null, authzStatus: 'idle' });
