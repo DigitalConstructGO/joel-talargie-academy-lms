@@ -41,6 +41,8 @@ export function LessonPlayer(props: LessonPlayerProps) {
 interface YouTubePlayerInstance {
   getCurrentTime(): number;
   destroy(): void;
+  unMute(): void;
+  setVolume(volume: number): void;
 }
 
 interface YouTubePlayerEvent {
@@ -138,7 +140,16 @@ function YouTubeLessonPlayer({
           ...(initialPositionSeconds > 0 ? { start: Math.floor(initialPositionSeconds) } : {}),
         },
         events: {
-          onReady: () => setReady(true),
+          onReady: (event) => {
+            // YouTube's embedded player persists a mute/volume preference
+            // per *origin*, not per video - once anything on this origin
+            // is muted, every later YT.Player here inherits that regardless
+            // of the video's own audio. Force an audible starting state
+            // explicitly rather than trusting the saved preference.
+            event.target.unMute();
+            event.target.setVolume(100);
+            setReady(true);
+          },
           onError: () => setPlaybackError(true),
           onStateChange: (event) => {
             if (event.data === YT.PlayerState.PLAYING) setIsPlaying(true);
