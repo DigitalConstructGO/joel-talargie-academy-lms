@@ -8,6 +8,7 @@ import { getDirectDatabaseUrl } from '../src/config.ts';
 import { schema } from '../src/schema/index.ts';
 import { permissionSeed } from '../src/permission-catalog.ts';
 import { eq } from 'drizzle-orm';
+import { demoDataAlreadySeeded, seedDemoData } from '../src/seed/demo-seed.ts';
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 loadEnvironment({ path: resolve(scriptDirectory, '../../../.env'), quiet: true });
@@ -164,7 +165,18 @@ async function run(): Promise<void> {
           )
           .onConflictDoNothing();
       });
+
+      const alreadySeeded = await demoDataAlreadySeeded(database);
+      if (alreadySeeded) {
+        process.stdout.write(
+          'RBAC roles and permission catalog seeded idempotently. Demo dataset already present - skipped.\n',
+        );
+        return;
+      }
+
+      const demoCounts = await seedDemoData(database);
       process.stdout.write('RBAC roles and permission catalog seeded idempotently.\n');
+      process.stdout.write(`Demo dataset seeded: ${JSON.stringify(demoCounts)}\n`);
       return;
     }
     await pool.query('select 1');

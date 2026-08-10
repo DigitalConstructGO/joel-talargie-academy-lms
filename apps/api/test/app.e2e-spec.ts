@@ -6,10 +6,6 @@ import { ApiExceptionFilter } from '../src/common/filters/api-exception.filter';
 describe('API (e2e)', () => {
   let app: INestApplication;
   beforeAll(async () => {
-    process.env.NODE_ENV = 'test';
-    process.env.API_PORT = '4000';
-    process.env.WEB_URL = 'http://localhost:3000';
-    process.env.BCRYPT_SALT_ROUNDS = '10';
     const module = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();

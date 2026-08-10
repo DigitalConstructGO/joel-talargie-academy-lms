@@ -2,7 +2,12 @@ import { validateEnvironment } from './environment';
 
 describe('database environment validation', () => {
   it('allows missing database configuration outside production', () => {
-    expect(validateEnvironment({ NODE_ENV: 'test' }).DATABASE_URL).toBe('');
+    expect(
+      validateEnvironment({
+        NODE_ENV: 'test',
+        WEB_URL: 'http://localhost:3000',
+      }).DATABASE_URL,
+    ).toBe('');
   });
 
   it('requires the runtime URL in production without leaking supplied details', () => {

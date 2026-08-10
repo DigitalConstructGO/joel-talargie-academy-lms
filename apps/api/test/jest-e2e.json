@@ -3,6 +3,7 @@
   "rootDir": ".",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
+  "setupFiles": ["<rootDir>/jest-e2e.setup.ts"],
   "moduleNameMapper": {
     "^@joel-academy/database$": "<rootDir>/database.mock.ts",
     "^sanitize-html$": "<rootDir>/sanitize-html.mock.ts"

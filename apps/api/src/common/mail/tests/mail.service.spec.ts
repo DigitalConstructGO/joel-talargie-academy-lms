@@ -4,10 +4,16 @@ import type { SentMessageInfo, Transporter } from 'nodemailer';
 import type { Environment } from '../../../config/environment';
 import { MailService } from '../mail.service';
 
+const webUrl = process.env.WEB_URL?.trim() || 'http://localhost:3000';
+const apiUrl = process.env.API_URL?.trim() || 'http://localhost:4000';
+const googleCallbackUrl =
+  process.env.GOOGLE_CALLBACK_URL?.trim() ||
+  `${apiUrl}/api/v1/auth/google/callback`;
+
 const enabledEnvironment: Environment = {
   NODE_ENV: 'test',
   API_PORT: 4000,
-  WEB_URL: 'http://localhost:3000',
+  WEB_URL: webUrl,
   TRUST_PROXY: false,
   BODY_LIMIT: '1mb',
   BCRYPT_SALT_ROUNDS: 12,
@@ -18,7 +24,7 @@ const enabledEnvironment: Environment = {
   AUTH_COOKIE_SECURE: false,
   GOOGLE_CLIENT_ID: '',
   GOOGLE_CLIENT_SECRET: '',
-  GOOGLE_CALLBACK_URL: 'http://localhost:4000/api/v1/auth/google/callback',
+  GOOGLE_CALLBACK_URL: googleCallbackUrl,
   DATABASE_URL: '',
   DATABASE_DIRECT_URL: '',
   DATABASE_TEST_URL: '',
@@ -51,7 +57,7 @@ const enabledEnvironment: Environment = {
   EMAIL_MAX_RETRY_ATTEMPTS: 5,
   EMAIL_INITIAL_RETRY_DELAY_SECONDS: 60,
   EMAIL_MAX_RETRY_DELAY_SECONDS: 21_600,
-  EMAIL_PUBLIC_APP_URL: 'http://localhost:3000',
+  EMAIL_PUBLIC_APP_URL: webUrl,
   EMAIL_SUPPORT_ADDRESS: '',
   EMAIL_DEFAULT_LOCALE: 'en',
   MAIL_ENABLED: true,
@@ -65,7 +71,7 @@ const enabledEnvironment: Environment = {
   STORAGE_ACCESS_KEY: '',
   STORAGE_SECRET_KEY: '',
   STORAGE_FORCE_PATH_STYLE: false,
-  CERTIFICATE_PUBLIC_BASE_URL: 'http://localhost:3000/certificates/verify',
+  CERTIFICATE_PUBLIC_BASE_URL: `${webUrl}/certificates/verify`,
   CERTIFICATE_WORKER_ENABLED: false,
   CERTIFICATE_WORKER_POLL_MS: 5000,
   CERTIFICATE_WORKER_BATCH_SIZE: 2,
