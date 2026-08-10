@@ -71,3 +71,35 @@ export function useRestoreUser() {
 export function useTriggerPasswordReset() {
   return useUserMutation<void>((userId) => usersApi.triggerPasswordReset(userId));
 }
+
+export function useUserRoles(userId: string) {
+  return useQuery({
+    queryKey: userKeys.roles(userId),
+    queryFn: () => usersApi.listRoles(userId),
+    enabled: Boolean(userId),
+  });
+}
+
+export function useAssignUserRole() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, roleId }: { userId: string; roleId: string }) =>
+      usersApi.assignRole(userId, roleId),
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: userKeys.roles(variables.userId) });
+      void queryClient.invalidateQueries({ queryKey: userKeys.detail(variables.userId) });
+    },
+  });
+}
+
+export function useRemoveUserRole() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, roleId }: { userId: string; roleId: string }) =>
+      usersApi.removeRole(userId, roleId),
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: userKeys.roles(variables.userId) });
+      void queryClient.invalidateQueries({ queryKey: userKeys.detail(variables.userId) });
+    },
+  });
+}

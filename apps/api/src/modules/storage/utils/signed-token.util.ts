@@ -1,8 +1,11 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
+export type StorageDisposition = 'inline' | 'attachment';
+
 export interface StorageTokenPayload {
   key: string;
   exp: number;
+  disposition: StorageDisposition;
 }
 
 function sign(data: string, secret: string): string {
@@ -13,10 +16,12 @@ export function signStorageToken(
   key: string,
   secret: string,
   ttlSeconds: number,
+  disposition: StorageDisposition,
 ): string {
   const payload: StorageTokenPayload = {
     key,
     exp: Date.now() + ttlSeconds * 1000,
+    disposition,
   };
   const encodedPayload = Buffer.from(JSON.stringify(payload)).toString(
     'base64url',
@@ -54,7 +59,8 @@ export function verifyStorageToken(
   if (
     typeof payload.key !== 'string' ||
     !payload.key ||
-    typeof payload.exp !== 'number'
+    typeof payload.exp !== 'number' ||
+    (payload.disposition !== 'inline' && payload.disposition !== 'attachment')
   )
     return { valid: false, reason: 'MALFORMED' };
   if (payload.exp < Date.now()) return { valid: false, reason: 'EXPIRED' };

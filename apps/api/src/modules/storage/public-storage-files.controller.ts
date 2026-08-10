@@ -30,6 +30,6 @@ export class PublicStorageFilesController {
     @Res() response: Response,
   ) {
     const descriptor = await this.storage.streamByToken(token);
-    writeFileResponse(response, descriptor, 'attachment');
+    writeFileResponse(response, descriptor, descriptor.disposition);
   }
 }

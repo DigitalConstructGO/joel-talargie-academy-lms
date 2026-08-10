@@ -26,6 +26,7 @@ import { resolveSafeStoragePath } from '../utils/safe-path.util';
 import {
   signStorageToken,
   verifyStorageToken,
+  type StorageDisposition,
   type StorageTokenVerification,
 } from '../utils/signed-token.util';
 import {
@@ -93,7 +94,11 @@ export class LocalStorageProvider implements StorageService, OnModuleInit {
     await fs.rm(path, { force: true });
   }
 
-  async getSignedUrl(key: string, expiresInSeconds?: number): Promise<string> {
+  async getSignedUrl(
+    key: string,
+    expiresInSeconds?: number,
+    disposition: StorageDisposition = 'attachment',
+  ): Promise<string> {
     // Touch the path resolver so an unsafe key fails loudly before a token is ever minted.
     resolveSafeStoragePath(this.root, key);
     const ttl = Math.min(
@@ -103,7 +108,7 @@ export class LocalStorageProvider implements StorageService, OnModuleInit {
       ),
       MAX_SIGNED_URL_TTL_SECONDS,
     );
-    const token = signStorageToken(key, this.signingSecret, ttl);
+    const token = signStorageToken(key, this.signingSecret, ttl, disposition);
     return `${this.publicApiBaseUrl}/storage/files/${token}`;
   }
 

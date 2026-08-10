@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Loader2, MoreHorizontal, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { Loader2, MoreHorizontal, Pencil, Plus, Sparkles, Trash2 } from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
 import { PageHeader } from '@/components/common/page-header';
 import { PageBreadcrumb } from '@/components/common/page-breadcrumb';
@@ -46,6 +46,7 @@ import {
   useArchiveCoupon,
   useCreateCoupon,
   useGenerateCoupons,
+  useUpdateCoupon,
 } from '@/features/promotions/hooks/use-admin-coupons';
 import type {
   Coupon,
@@ -220,6 +221,141 @@ function CreateCouponDialog({ campaignId }: { campaignId: string | undefined }) 
   );
 }
 
+/**
+ * The backend has no single-coupon detail endpoint (`GET /promotions/coupons/:id`
+ * doesn't exist - confirmed against the real controller), so this edits the
+ * row data already fetched by the list query rather than a separate `/edit`
+ * route that would have nothing to fetch on direct navigation/refresh.
+ */
+function EditCouponDialog({
+  coupon,
+  open,
+  onOpenChange,
+}: {
+  coupon: Coupon;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [status, setStatus] = useState<PromoCodeStatus>(coupon.status);
+  const [maxRedemptions, setMaxRedemptions] = useState(coupon.maxRedemptions?.toString() ?? '');
+  const [maxRedemptionsPerUser, setMaxRedemptionsPerUser] = useState(
+    coupon.maxRedemptionsPerUser?.toString() ?? '',
+  );
+  const [validFrom, setValidFrom] = useState(coupon.validFrom?.slice(0, 10) ?? '');
+  const [validUntil, setValidUntil] = useState(coupon.validUntil?.slice(0, 10) ?? '');
+  const updateCoupon = useUpdateCoupon();
+
+  // Re-seed local state whenever a different coupon is opened for editing -
+  // this dialog is remounted per-row (see `key={coupon.id}` at the call
+  // site) so this only guards against the same row being reopened.
+  useEffect(() => {
+    setStatus(coupon.status);
+    setMaxRedemptions(coupon.maxRedemptions?.toString() ?? '');
+    setMaxRedemptionsPerUser(coupon.maxRedemptionsPerUser?.toString() ?? '');
+    setValidFrom(coupon.validFrom?.slice(0, 10) ?? '');
+    setValidUntil(coupon.validUntil?.slice(0, 10) ?? '');
+  }, [coupon]);
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    try {
+      await updateCoupon.mutateAsync({
+        couponId: coupon.id,
+        input: {
+          status,
+          maxRedemptions: maxRedemptions.trim() ? Number(maxRedemptions) : null,
+          maxRedemptionsPerUser: maxRedemptionsPerUser.trim()
+            ? Number(maxRedemptionsPerUser)
+            : null,
+          validFrom: validFrom ? new Date(validFrom).toISOString() : null,
+          validUntil: validUntil ? new Date(validUntil).toISOString() : null,
+        },
+      });
+      toast.success('Promo code updated');
+      onOpenChange(false);
+    } catch {
+      toast.error('Could not update this promo code');
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            Edit <code>{coupon.code}</code>
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="edit-status">Status</Label>
+            <Select value={status} onValueChange={(value) => setStatus(value as PromoCodeStatus)}>
+              <SelectTrigger id="edit-status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="edit-max-redemptions">Max redemptions (blank = unlimited)</Label>
+              <Input
+                id="edit-max-redemptions"
+                type="number"
+                min="0"
+                value={maxRedemptions}
+                onChange={(e) => setMaxRedemptions(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-max-per-user">Max per user (blank = unlimited)</Label>
+              <Input
+                id="edit-max-per-user"
+                type="number"
+                min="0"
+                value={maxRedemptionsPerUser}
+                onChange={(e) => setMaxRedemptionsPerUser(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="edit-valid-from">Valid from (blank = immediately)</Label>
+              <Input
+                id="edit-valid-from"
+                type="date"
+                value={validFrom}
+                onChange={(e) => setValidFrom(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-valid-until">Valid until (blank = never)</Label>
+              <Input
+                id="edit-valid-until"
+                type="date"
+                value={validUntil}
+                onChange={(e) => setValidUntil(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit" disabled={updateCoupon.isPending}>
+              {updateCoupon.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+              Save changes
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function AdminPromoCodesPage() {
   const searchParams = useSearchParams();
   const campaignIdFilter = searchParams.get('campaignId') ?? undefined;
@@ -229,6 +365,7 @@ export default function AdminPromoCodesPage() {
   });
   const { status, codeType, search } = filters;
   const archiveCoupon = useArchiveCoupon();
+  const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
 
   const couponsQuery = useAdminCoupons({
     page,
@@ -286,6 +423,15 @@ export default function AdminPromoCodesPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <Can permission="promotions.manage_coupons">
+                <DropdownMenuItem
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    setEditingCoupon(row.original);
+                  }}
+                  className="gap-2"
+                >
+                  <Pencil className="size-4" /> Edit
+                </DropdownMenuItem>
                 <ConfirmDialog
                   trigger={
                     <DropdownMenuItem
@@ -374,6 +520,15 @@ export default function AdminPromoCodesPage() {
             />
           )}
         </>
+      )}
+
+      {editingCoupon && (
+        <EditCouponDialog
+          key={editingCoupon.id}
+          coupon={editingCoupon}
+          open={Boolean(editingCoupon)}
+          onOpenChange={(open) => !open && setEditingCoupon(null)}
+        />
       )}
     </ContentContainer>
   );

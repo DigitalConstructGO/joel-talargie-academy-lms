@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Can } from '@/components/auth/can';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useQueryFilters } from '@/hooks/use-query-filters';
 import {
   useAdminCourses,
@@ -30,7 +31,13 @@ import {
   useDuplicateCourse,
   usePublishCourse,
 } from '@/features/catalog/hooks/use-admin-courses';
+import { useAdminCategories } from '@/features/catalog/hooks/use-admin-categories';
 import type { AdminCourseSummary, CourseStatus } from '@/features/catalog/types/admin-course.types';
+import type {
+  CourseAccessType,
+  CourseDifficulty,
+  CourseSort,
+} from '@/features/catalog/types/catalog.types';
 import { ROUTES } from '@/constants/routes';
 import { formatCurrency } from '@/lib/format';
 import { toast } from '@/lib/toast';
@@ -40,15 +47,50 @@ const PAGE_SIZE = 20;
 interface CoursesFilters {
   [key: string]: string | undefined;
   status: 'ALL' | CourseStatus;
+  categoryId: string | undefined;
+  difficulty: 'ALL' | CourseDifficulty;
+  accessType: 'ALL' | CourseAccessType;
+  sort: CourseSort;
+  featured: 'true' | undefined;
   search: string | undefined;
 }
 
-const DEFAULT_FILTERS: CoursesFilters = { status: 'ALL', search: undefined };
+const DEFAULT_FILTERS: CoursesFilters = {
+  status: 'ALL',
+  categoryId: undefined,
+  difficulty: 'ALL',
+  accessType: 'ALL',
+  sort: 'newest',
+  featured: undefined,
+  search: undefined,
+};
 
 const STATUS_OPTIONS = [
   { label: 'Draft', value: 'DRAFT' },
   { label: 'Published', value: 'PUBLISHED' },
   { label: 'Archived', value: 'ARCHIVED' },
+];
+
+const DIFFICULTY_OPTIONS = [
+  { label: 'Beginner', value: 'BEGINNER' },
+  { label: 'Intermediate', value: 'INTERMEDIATE' },
+  { label: 'Advanced', value: 'ADVANCED' },
+  { label: 'All levels', value: 'ALL_LEVELS' },
+];
+
+const ACCESS_TYPE_OPTIONS = [
+  { label: 'Free', value: 'FREE' },
+  { label: 'Paid', value: 'PAID' },
+];
+
+const SORT_OPTIONS: { label: string; value: CourseSort }[] = [
+  { label: 'Newest', value: 'newest' },
+  { label: 'Oldest', value: 'oldest' },
+  { label: 'Title (A-Z)', value: 'title_asc' },
+  { label: 'Title (Z-A)', value: 'title_desc' },
+  { label: 'Price: Low to High', value: 'price_asc' },
+  { label: 'Price: High to Low', value: 'price_desc' },
+  { label: 'Featured', value: 'featured' },
 ];
 
 const STATUS_VARIANT: Record<CourseStatus, 'secondary' | 'success' | 'outline'> = {
@@ -62,16 +104,22 @@ export default function AdminCoursesPage() {
     defaults: DEFAULT_FILTERS,
     pageSize: PAGE_SIZE,
   });
-  const { status, search } = filters;
+  const { status, categoryId, difficulty, accessType, sort, featured, search } = filters;
   const archiveCourse = useArchiveCourse();
   const publishCourse = usePublishCourse();
   const duplicateCourse = useDuplicateCourse();
+  const categoriesQuery = useAdminCategories({ pageSize: 100, isActive: true });
 
   const coursesQuery = useAdminCourses({
     page,
     pageSize,
     search: search || undefined,
     status: status === 'ALL' ? undefined : status,
+    categoryId,
+    difficulty: difficulty === 'ALL' ? undefined : difficulty,
+    accessType: accessType === 'ALL' ? undefined : accessType,
+    sort,
+    featured: featured === 'true' ? true : undefined,
   });
 
   const totalPages = Math.max(1, Math.ceil((coursesQuery.data?.total ?? 0) / pageSize));
@@ -275,6 +323,44 @@ export default function AdminCoursesPage() {
           onChange={(value) => setFilter('status', (value ?? 'ALL') as CoursesFilters['status'])}
           options={STATUS_OPTIONS}
         />
+        <SelectFilter
+          label="Category"
+          value={categoryId}
+          onChange={(value) => setFilter('categoryId', value)}
+          options={(categoriesQuery.data?.items ?? []).map((category) => ({
+            label: category.name,
+            value: category.id,
+          }))}
+        />
+        <SelectFilter
+          label="Level"
+          value={difficulty === 'ALL' ? undefined : difficulty}
+          onChange={(value) =>
+            setFilter('difficulty', (value ?? 'ALL') as CoursesFilters['difficulty'])
+          }
+          options={DIFFICULTY_OPTIONS}
+        />
+        <SelectFilter
+          label="Access"
+          value={accessType === 'ALL' ? undefined : accessType}
+          onChange={(value) =>
+            setFilter('accessType', (value ?? 'ALL') as CoursesFilters['accessType'])
+          }
+          options={ACCESS_TYPE_OPTIONS}
+        />
+        <SelectFilter
+          label="Sort"
+          value={sort}
+          onChange={(value) => setFilter('sort', (value ?? 'newest') as CourseSort)}
+          options={SORT_OPTIONS}
+        />
+        <label className="flex items-center gap-2 text-sm text-foreground">
+          <Checkbox
+            checked={featured === 'true'}
+            onCheckedChange={(checked) => setFilter('featured', checked ? 'true' : undefined)}
+          />
+          Featured only
+        </label>
       </FilterBar>
 
       {coursesQuery.isError ? (

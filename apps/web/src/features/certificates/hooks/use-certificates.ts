@@ -20,11 +20,17 @@ export function useCertificate(certificateId: string) {
   });
 }
 
-/** Query form, used to render the inline preview/download link - `useCertificateDownload` below is for the explicit Download button click, which wants a fresh (not potentially stale) signed URL. */
+/**
+ * Query form, used to render the inline preview (iframe) and the Print
+ * button - requests the `inline` disposition so the browser renders the PDF
+ * instead of trying to save it. `useCertificateDownload` below is for the
+ * explicit Download button click, which wants the `attachment` disposition
+ * (forces a save) via a fresh, not potentially stale, signed URL.
+ */
 export function useCertificateFile(certificateId: string | undefined) {
   return useQuery({
-    queryKey: [...certificateKeys.detail(certificateId ?? ''), 'download'],
-    queryFn: () => certificatesApi.download(certificateId!),
+    queryKey: [...certificateKeys.detail(certificateId ?? ''), 'preview'],
+    queryFn: () => certificatesApi.download(certificateId!, true),
     enabled: Boolean(certificateId),
   });
 }

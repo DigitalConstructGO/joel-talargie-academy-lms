@@ -5,10 +5,17 @@ import { EmptyState } from '@/components/common/empty-state';
 import { ErrorState } from '@/components/common/error-state';
 import { DynamicPagination } from '@/components/common/dynamic-pagination';
 import { useFilterStore } from '@/stores';
+import { useQueryFilters } from '@/hooks/use-query-filters';
 import { cn } from '@/lib/utils';
 import { useCourses } from '../hooks/use-courses';
 import { CourseCard } from './course-card';
 import { CoursesGridSkeleton } from './course-card-skeleton';
+import {
+  DEFAULT_CATALOG_FILTERS,
+  DEFAULT_PAGE_SIZE,
+  type CatalogFilters,
+} from '../constants/catalog.constants';
+import type { CourseAccessType, CourseDifficulty, CourseSort } from '../types/catalog.types';
 
 export interface CoursesGridProps {
   /**
@@ -21,23 +28,18 @@ export interface CoursesGridProps {
 }
 
 export function CoursesGrid({ linkBase }: CoursesGridProps = {}) {
-  const search = useFilterStore((state) => state.search);
-  const categoryId = useFilterStore((state) => state.categoryId);
-  const accessType = useFilterStore((state) => state.accessType);
-  const difficulty = useFilterStore((state) => state.difficulty);
-  const sort = useFilterStore((state) => state.sort);
-  const page = useFilterStore((state) => state.page);
-  const pageSize = useFilterStore((state) => state.pageSize);
+  const { filters, page, pageSize, setPage, resetFilters } = useQueryFilters<CatalogFilters>({
+    defaults: DEFAULT_CATALOG_FILTERS,
+    pageSize: DEFAULT_PAGE_SIZE,
+  });
   const view = useFilterStore((state) => state.view);
-  const setPage = useFilterStore((state) => state.setPage);
-  const resetFilters = useFilterStore((state) => state.resetFilters);
 
   const { data, isLoading, isFetching, isError, refetch } = useCourses({
-    search: search || undefined,
-    categoryId,
-    accessType,
-    difficulty,
-    sort,
+    search: filters.search || undefined,
+    categoryId: filters.categoryId,
+    accessType: filters.accessType as CourseAccessType | undefined,
+    difficulty: filters.difficulty as CourseDifficulty | undefined,
+    sort: (filters.sort as CourseSort) || 'newest',
     page,
     pageSize,
   });

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuthStore } from '@/stores';
 import { accountApi } from '../api/account.api';
 import { accountKeys } from '../api/query-keys';
 
@@ -35,20 +36,27 @@ export function useAvatarImage(userId: string | undefined) {
 
 export function useUploadAvatar() {
   const queryClient = useQueryClient();
+  const fetchProfile = useAuthStore((state) => state.fetchProfile);
   return useMutation({
     mutationFn: (file: File) => accountApi.uploadAvatar(file),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: accountKeys.all });
+      // Header/sidebar read the avatar from useAuthStore, not this feature's
+      // query cache - without this they'd keep showing the old image until
+      // the next unrelated session refresh.
+      void fetchProfile();
     },
   });
 }
 
 export function useDeleteAvatar() {
   const queryClient = useQueryClient();
+  const fetchProfile = useAuthStore((state) => state.fetchProfile);
   return useMutation({
     mutationFn: () => accountApi.deleteAvatar(),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: accountKeys.all });
+      void fetchProfile();
     },
   });
 }

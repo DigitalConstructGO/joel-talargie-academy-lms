@@ -56,7 +56,7 @@ export const mockCertificatesApi = {
     return delay(entry.certificate);
   },
 
-  download: async (certificateId: string): Promise<CertificateDownload> => {
+  download: async (certificateId: string, _inline = false): Promise<CertificateDownload> => {
     const entry = store.find((item) => item.certificate.id === certificateId);
     if (!entry) notFound('Certificate not found');
     if (entry.certificate.status !== 'GENERATED') forbidden('Certificate download is unavailable');

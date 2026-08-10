@@ -62,7 +62,11 @@ export class CertificatesService {
     return this.presentStudent(certificate);
   }
 
-  async studentDownload(studentId: string, certificateId: string) {
+  async studentDownload(
+    studentId: string,
+    certificateId: string,
+    inline = false,
+  ) {
     const certificate = await this.repository.mine(studentId, certificateId);
     if (!certificate) throw this.notFound();
     if (certificate.status !== 'GENERATED')
@@ -70,7 +74,7 @@ export class CertificatesService {
         code: 'CERTIFICATE_DOWNLOAD_NOT_AVAILABLE',
         message: 'Certificate download is unavailable',
       });
-    return this.download(certificateId);
+    return this.download(certificateId, inline);
   }
 
   async verify(token: string) {
@@ -166,7 +170,7 @@ export class CertificatesService {
 
   async adminDownload(certificateId: string) {
     await this.admin(certificateId);
-    return this.download(certificateId);
+    return this.download(certificateId, false);
   }
 
   files(certificateId: string) {
@@ -180,7 +184,7 @@ export class CertificatesService {
         code: 'CERTIFICATE_FILE_NOT_FOUND',
         message: 'Certificate file not found',
       });
-    return this.signed(file.storageKey, file.originalFileName);
+    return this.signed(file.storageKey, file.originalFileName, false);
   }
 
   events(certificateId: string) {
@@ -305,20 +309,24 @@ export class CertificatesService {
     };
   }
 
-  private async download(certificateId: string) {
+  private async download(certificateId: string, inline: boolean) {
     const file = await this.repository.currentFile(certificateId);
     if (!file)
       throw new NotFoundException({
         code: 'CERTIFICATE_FILE_NOT_FOUND',
         message: 'Certificate file not found',
       });
-    return this.signed(file.storageKey, file.originalFileName);
+    return this.signed(file.storageKey, file.originalFileName, inline);
   }
 
-  private async signed(key: string, fileName: string) {
+  private async signed(key: string, fileName: string, inline: boolean) {
     try {
       return {
-        url: await this.storage.getSignedUrl(key, 300),
+        url: await this.storage.getSignedUrl(
+          key,
+          300,
+          inline ? 'inline' : 'attachment',
+        ),
         expiresInSeconds: 300,
         fileName,
       };

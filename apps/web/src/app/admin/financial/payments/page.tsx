@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { AlertTriangle, Check, Copy, Download, FileText, Loader2, X } from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
@@ -37,6 +37,7 @@ import { DateRangeFilter } from '@/components/dashboard/filters/date-range-filte
 import { TableSkeleton } from '@/components/dashboard/skeletons/table-skeleton';
 import { EmptyState } from '@/components/common/empty-state';
 import { Can } from '@/components/auth/can';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useQueryFilters } from '@/hooks/use-query-filters';
 import {
   useAdminPayment,
@@ -98,13 +99,34 @@ function PaymentDetailSheet({
   const receiptQuery = useAdminPaymentReceipt(paymentId ?? undefined);
   const approvePayment = useApprovePayment();
   const declinePayment = useDeclinePayment();
+  const { can } = usePermissions();
   const [declineReason, setDeclineReason] = useState('');
+  const [mismatchReason, setMismatchReason] = useState('');
+  const [acknowledgedDuplicate, setAcknowledgedDuplicate] = useState(false);
   const payment = paymentQuery.data;
 
+  // Reset the acknowledgment fields whenever a different payment is opened -
+  // this component instance is reused across selections (the Sheet doesn't
+  // unmount), so stale input from a previous review must not carry over.
+  useEffect(() => {
+    setMismatchReason('');
+    setAcknowledgedDuplicate(false);
+  }, [paymentId]);
+
+  const canApproveMismatch = !payment?.amountMismatch || can('payments.approve_amount_mismatch');
+  const needsMismatchReason = Boolean(payment?.amountMismatch) && !mismatchReason.trim();
+  const needsDuplicateAck = Boolean(payment?.duplicateTransactionCount) && !acknowledgedDuplicate;
+
   async function handleApprove() {
-    if (!paymentId) return;
+    if (!paymentId || !payment) return;
     try {
-      await approvePayment.mutateAsync({ paymentId, input: {} });
+      await approvePayment.mutateAsync({
+        paymentId,
+        input: {
+          mismatchApprovalReason: payment.amountMismatch ? mismatchReason.trim() : undefined,
+          acknowledgeDuplicate: payment.duplicateTransactionCount > 0 ? true : undefined,
+        },
+      });
       toast.success('Payment approved');
     } catch {
       toast.error('Could not approve this payment');
@@ -224,13 +246,46 @@ function PaymentDetailSheet({
 
             {payment.status === 'PENDING' && (
               <>
+                {payment.amountMismatch && !canApproveMismatch && (
+                  <p className="rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                    You don&apos;t have permission to approve a payment with a mismatched amount.
+                    Ask an admin with the enhanced mismatch-approval permission to review it.
+                  </p>
+                )}
+                {payment.amountMismatch && canApproveMismatch && (
+                  <div className="space-y-2">
+                    <Label htmlFor="mismatch-reason">
+                      Reason for approving despite the mismatch
+                    </Label>
+                    <Textarea
+                      id="mismatch-reason"
+                      value={mismatchReason}
+                      onChange={(e) => setMismatchReason(e.target.value)}
+                      rows={2}
+                    />
+                  </div>
+                )}
+                {payment.duplicateTransactionCount > 0 && (
+                  <label className="flex items-start gap-2 text-sm text-foreground">
+                    <Checkbox
+                      checked={acknowledgedDuplicate}
+                      onCheckedChange={(checked) => setAcknowledgedDuplicate(checked === true)}
+                    />
+                    I&apos;ve reviewed the duplicate transaction(s) and confirm this is legitimate.
+                  </label>
+                )}
                 <Separator />
                 <div className="flex flex-wrap gap-2">
                   <Can permission="payments.approve">
                     <Button
                       className="gap-2"
                       onClick={handleApprove}
-                      disabled={approvePayment.isPending}
+                      disabled={
+                        approvePayment.isPending ||
+                        !canApproveMismatch ||
+                        needsMismatchReason ||
+                        needsDuplicateAck
+                      }
                     >
                       {approvePayment.isPending ? (
                         <Loader2 className="size-4 animate-spin" />

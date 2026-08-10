@@ -134,6 +134,32 @@ describe('UsersService', () => {
     });
   });
 
+  it('revoke() maps SESSION_NOT_FOUND to NotFoundException', async () => {
+    const actor = { id: 'user-1' } as never;
+    repository.revoke.mockRejectedValueOnce(new Error('SESSION_NOT_FOUND'));
+    await expect(
+      service.revoke(actor, 'user-1', 'session-1'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('revoke() maps SESSION_ALREADY_REVOKED to ConflictException', async () => {
+    const actor = { id: 'user-1' } as never;
+    repository.revoke.mockRejectedValueOnce(
+      new Error('SESSION_ALREADY_REVOKED'),
+    );
+    await expect(
+      service.revoke(actor, 'user-1', 'session-1'),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('revoke() rethrows an unrecognized error', async () => {
+    const actor = { id: 'user-1' } as never;
+    repository.revoke.mockRejectedValueOnce(new Error('boom'));
+    await expect(service.revoke(actor, 'user-1', 'session-1')).rejects.toThrow(
+      'boom',
+    );
+  });
+
   it('list() maps query params to repository pagination', () => {
     service.list({
       page: 2,

@@ -72,3 +72,11 @@ export interface UserActivityParams {
   page?: number;
   pageSize?: number;
 }
+
+export interface UserRoleAssignment {
+  id: string;
+  code: string;
+  name: string;
+  isSystem: boolean;
+  assignedAt: string;
+}

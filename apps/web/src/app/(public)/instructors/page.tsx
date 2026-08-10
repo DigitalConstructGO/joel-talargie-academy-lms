@@ -17,12 +17,19 @@ export const metadata: Metadata = {
   description: 'Meet the instructors teaching on the platform.',
 };
 
+async function loadLiveInstructors() {
+  try {
+    const { items } = await catalogApi.listCourses({ pageSize: 100, sort: 'newest' });
+    return deriveInstructors(items);
+  } catch {
+    return [];
+  }
+}
+
 export default async function InstructorsPage() {
   const isMock = CATALOG_DATA_SOURCE === 'mock';
   const instructors = isMock ? MOCK_INSTRUCTORS : null;
-  const derivedInstructors = isMock
-    ? []
-    : deriveInstructors((await catalogApi.listCourses({ pageSize: 100, sort: 'newest' })).items);
+  const derivedInstructors = isMock ? [] : await loadLiveInstructors();
 
   const isEmpty = isMock ? instructors!.length === 0 : derivedInstructors.length === 0;
   const itemListEntries = isMock

@@ -1,3 +1,4 @@
+import { MOCK_ROLES } from '@/features/roles/data/mock-roles.data';
 import { MOCK_USER_SUMMARIES, MOCK_USERS } from './mock-users.data';
 import type {
   ManagedUser,
@@ -8,6 +9,7 @@ import type {
   UserActivityParams,
   UserListParams,
   UserListResult,
+  UserRoleAssignment,
 } from '../types/user.types';
 
 function delay<T>(value: T, ms = 150): Promise<T> {
@@ -104,4 +106,49 @@ export const mockUsersApi = {
 
   activity: async (_userId: string, _params: UserActivityParams): Promise<UserActivityEntry[]> =>
     delay([]),
+
+  listRoles: async (userId: string): Promise<UserRoleAssignment[]> => {
+    const user = store.find((entry) => entry.id === userId);
+    if (!user) notFound('User not found');
+    return delay(
+      user.roles.flatMap((code) => {
+        const role = MOCK_ROLES.find((entry) => entry.code === code);
+        return role
+          ? [
+              {
+                id: role.id,
+                code: role.code,
+                name: role.name,
+                isSystem: role.isSystem,
+                assignedAt: user.createdAt,
+              },
+            ]
+          : [];
+      }),
+    );
+  },
+
+  assignRole: async (userId: string, roleId: string): Promise<UserRoleAssignment> => {
+    const user = store.find((entry) => entry.id === userId);
+    if (!user) notFound('User not found');
+    const role = MOCK_ROLES.find((entry) => entry.id === roleId);
+    if (!role) notFound('Role not found');
+    if (!user.roles.includes(role.code)) user.roles = [...user.roles, role.code];
+    return delay({
+      id: role.id,
+      code: role.code,
+      name: role.name,
+      isSystem: role.isSystem,
+      assignedAt: new Date().toISOString(),
+    });
+  },
+
+  removeRole: async (userId: string, roleId: string): Promise<{ message: string }> => {
+    const user = store.find((entry) => entry.id === userId);
+    if (!user) notFound('User not found');
+    const role = MOCK_ROLES.find((entry) => entry.id === roleId);
+    if (!role) notFound('Role not found');
+    user.roles = user.roles.filter((code) => code !== role.code);
+    return delay({ message: 'Role removed' });
+  },
 };

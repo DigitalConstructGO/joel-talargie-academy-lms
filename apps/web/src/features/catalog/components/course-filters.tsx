@@ -11,27 +11,27 @@ import {
 } from '@/components/ui/select';
 import { SearchBar } from '@/components/common/search-bar';
 import { useFilterStore } from '@/stores';
+import { useQueryFilters } from '@/hooks/use-query-filters';
 import { useCategories } from '../hooks/use-categories';
-import { DIFFICULTY_LABELS, SORT_LABELS } from '../constants/catalog.constants';
-import type { CourseAccessType, CourseDifficulty, CourseSort } from '../types/catalog.types';
+import {
+  DEFAULT_CATALOG_FILTERS,
+  DEFAULT_PAGE_SIZE,
+  DIFFICULTY_LABELS,
+  SORT_LABELS,
+  type CatalogFilters,
+} from '../constants/catalog.constants';
 
 const ALL_VALUE = 'all';
 
 export function CourseFilters() {
   const { data } = useCategories({ pageSize: 100 });
-  const search = useFilterStore((state) => state.search);
-  const categoryId = useFilterStore((state) => state.categoryId);
-  const accessType = useFilterStore((state) => state.accessType);
-  const difficulty = useFilterStore((state) => state.difficulty);
-  const sort = useFilterStore((state) => state.sort);
+  const { filters, setFilter, resetFilters } = useQueryFilters<CatalogFilters>({
+    defaults: DEFAULT_CATALOG_FILTERS,
+    pageSize: DEFAULT_PAGE_SIZE,
+  });
+  const { search, categoryId, accessType, difficulty, sort } = filters;
   const view = useFilterStore((state) => state.view);
-  const setSearch = useFilterStore((state) => state.setSearch);
-  const setCategoryId = useFilterStore((state) => state.setCategoryId);
-  const setAccessType = useFilterStore((state) => state.setAccessType);
-  const setDifficulty = useFilterStore((state) => state.setDifficulty);
-  const setSort = useFilterStore((state) => state.setSort);
   const setView = useFilterStore((state) => state.setView);
-  const resetFilters = useFilterStore((state) => state.resetFilters);
 
   const hasActiveFilters = Boolean(
     search || categoryId || accessType || difficulty || sort !== 'newest',
@@ -41,15 +41,17 @@ export function CourseFilters() {
     <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4">
       <SearchBar
         placeholder="Search courses…"
-        defaultValue={search}
-        onSearch={setSearch}
+        defaultValue={search ?? ''}
+        onSearch={(value) => setFilter('search', value || undefined)}
         aria-label="Search courses"
       />
 
       <div className="flex flex-wrap items-center gap-3">
         <Select
           value={categoryId ?? ALL_VALUE}
-          onValueChange={(value) => setCategoryId(value === ALL_VALUE ? undefined : value)}
+          onValueChange={(value) =>
+            setFilter('categoryId', value === ALL_VALUE ? undefined : value)
+          }
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Category" />
@@ -67,7 +69,7 @@ export function CourseFilters() {
         <Select
           value={accessType ?? ALL_VALUE}
           onValueChange={(value) =>
-            setAccessType(value === ALL_VALUE ? undefined : (value as CourseAccessType))
+            setFilter('accessType', value === ALL_VALUE ? undefined : value)
           }
         >
           <SelectTrigger className="w-[140px]">
@@ -83,7 +85,7 @@ export function CourseFilters() {
         <Select
           value={difficulty ?? ALL_VALUE}
           onValueChange={(value) =>
-            setDifficulty(value === ALL_VALUE ? undefined : (value as CourseDifficulty))
+            setFilter('difficulty', value === ALL_VALUE ? undefined : value)
           }
         >
           <SelectTrigger className="w-[160px]">
@@ -99,7 +101,7 @@ export function CourseFilters() {
           </SelectContent>
         </Select>
 
-        <Select value={sort} onValueChange={(value) => setSort(value as CourseSort)}>
+        <Select value={sort ?? 'newest'} onValueChange={(value) => setFilter('sort', value)}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>

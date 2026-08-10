@@ -49,10 +49,14 @@ function PreviewPanel({
   status,
   fileUrl,
   isLoading,
+  isError,
+  onRetry,
 }: {
   status: CertificateStatus;
   fileUrl?: string;
   isLoading: boolean;
+  isError: boolean;
+  onRetry: () => void;
 }) {
   if (status === 'PENDING') {
     return (
@@ -78,6 +82,16 @@ function PreviewPanel({
         <Ban className="size-8 text-muted-foreground" />
         <p className="text-sm text-muted-foreground">This certificate has been revoked.</p>
       </div>
+    );
+  }
+  if (isError) {
+    return (
+      <ErrorState
+        className="aspect-[297/210] w-full rounded-xl"
+        title="Couldn't load the preview"
+        description="The certificate file link may have expired. Try again."
+        onRetry={onRetry}
+      />
     );
   }
   if (isLoading || !fileUrl) {
@@ -209,6 +223,8 @@ export default function CertificateDetailPage() {
           status={certificate.status}
           fileUrl={fileQuery.data?.url}
           isLoading={fileQuery.isLoading}
+          isError={fileQuery.isError}
+          onRetry={() => fileQuery.refetch()}
         />
 
         <div className="space-y-4">

@@ -27,9 +27,11 @@ const liveCertificatesApi = {
       await authClient.get(`/me/certificates/${encodeURIComponent(certificateId)}`),
     ),
 
-  download: async (certificateId: string) =>
+  download: async (certificateId: string, inline = false) =>
     unwrap<CertificateDownload>(
-      await authClient.get(`/me/certificates/${encodeURIComponent(certificateId)}/download`),
+      await authClient.get(`/me/certificates/${encodeURIComponent(certificateId)}/download`, {
+        params: inline ? { inline: 'true' } : undefined,
+      }),
     ),
 
   request: async (enrollmentId: string) =>

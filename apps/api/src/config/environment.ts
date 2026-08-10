@@ -5,6 +5,13 @@ export const environmentSchema = z
       .enum(['development', 'test', 'production'])
       .default('development'),
     API_PORT: z.coerce.number().int().min(1).max(65535).default(4000),
+    // Public origin the API itself is reachable at - used to build absolute
+    // links back into the API (e.g. local-storage signed download URLs in
+    // `LocalStorageProvider`). Left empty in same-origin-proxy deployments
+    // (API and web served under one public domain), where those callers
+    // fall back to WEB_URL; must be set whenever the API has its own origin,
+    // e.g. local dev (API on :4000, web on :3000).
+    API_URL: z.string().url().default(''),
     WEB_URL: z.string().url().default(''),
     TRUST_PROXY: z.stringbool().default(false),
     BODY_LIMIT: z

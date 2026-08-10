@@ -49,11 +49,17 @@ export class StudentCertificatesController {
   }
 
   @Get('me/certificates/:certificateId/download')
+  @ApiOperation({
+    summary: 'Get a signed certificate download URL',
+    description:
+      'Pass ?inline=true for a browser-renderable preview URL (e.g. embedding in an iframe); omit it for a URL that forces a download, matching an explicit "Download" click.',
+  })
   download(
     @CurrentUser() user: AuthUser,
     @Param('certificateId', ParseUUIDPipe) id: string,
+    @Query('inline') inline?: string,
   ) {
-    return this.certificates.studentDownload(user.id, id);
+    return this.certificates.studentDownload(user.id, id, inline === 'true');
   }
 
   @Get('me/certificates/:certificateId')
