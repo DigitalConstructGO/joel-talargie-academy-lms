@@ -8,10 +8,12 @@ import {
   KeyRound,
   Loader2,
   Pencil,
+  Plus,
   RotateCcw,
   ShieldCheck,
   Trash2,
   UserCircle,
+  X,
 } from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
 import { PageHeader } from '@/components/common/page-header';
@@ -24,6 +26,13 @@ import { Button } from '@/components/ui/button';
 import { LoadingButton } from '@/components/ui/loading-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,15 +40,20 @@ import { Can } from '@/components/auth/can';
 import {
   useActivateUser,
   useArchiveUser,
+  useAssignUserRole,
+  useRemoveUserRole,
   useRestoreUser,
   useSuspendUser,
   useTriggerPasswordReset,
   useUser,
   useUserActivity,
+  useUserRoles,
 } from '@/features/users/hooks/use-users';
+import { useRoles } from '@/features/roles/hooks/use-roles';
 import type { ManagedUserStatus } from '@/features/users/types/user.types';
 import { ROUTES } from '@/constants/routes';
 import { formatDate, formatDateTime } from '@/lib/date';
+import { extractErrorMessage } from '@/lib/api/api-error';
 import { toast } from '@/lib/toast';
 
 const STATUS_VARIANT: Record<ManagedUserStatus, NonNullable<BadgeProps['variant']>> = {
@@ -75,13 +89,18 @@ export default function AdminUserDetailPage() {
   const { userId } = useParams<{ userId: string }>();
   const userQuery = useUser(userId);
   const activityQuery = useUserActivity(userId);
+  const userRolesQuery = useUserRoles(userId);
+  const rolesQuery = useRoles({ pageSize: 100 });
   const activate = useActivateUser();
   const suspend = useSuspendUser();
   const archive = useArchiveUser();
   const restore = useRestoreUser();
   const triggerReset = useTriggerPasswordReset();
+  const assignRole = useAssignUserRole();
+  const removeRole = useRemoveUserRole();
   const [suspendReason, setSuspendReason] = useState('');
   const [archiveReason, setArchiveReason] = useState('');
+  const [selectedRoleId, setSelectedRoleId] = useState('');
 
   if (userQuery.isError) {
     return (
@@ -138,6 +157,30 @@ export default function AdminUserDetailPage() {
       toast.success('Password reset email sent');
     } catch {
       toast.error('Could not send the password reset email');
+    }
+  }
+
+  async function handleAssignRole() {
+    if (!selectedRoleId) return;
+    try {
+      await assignRole.mutateAsync({ userId, roleId: selectedRoleId });
+      toast.success('Role assigned');
+      setSelectedRoleId('');
+    } catch (error) {
+      // Surface the backend's actual reason (privilege-escalation block, role
+      // already assigned, archived role, etc.) rather than a generic message -
+      // these are meaningful, specific rules the admin needs to see.
+      toast.error('Could not assign this role', extractErrorMessage(error));
+    }
+  }
+
+  async function handleRemoveRole(roleId: string) {
+    try {
+      await removeRole.mutateAsync({ userId, roleId });
+      toast.success('Role removed');
+    } catch (error) {
+      // e.g. "last Administrator cannot be removed" / "Student role is required"
+      toast.error('Could not remove this role', extractErrorMessage(error));
     }
   }
 
@@ -378,6 +421,100 @@ export default function AdminUserDetailPage() {
                   <dd className="font-medium text-foreground">{user.activeSessionCount}</dd>
                 </div>
               </dl>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Roles</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {userRolesQuery.isLoading ? (
+                <div className="space-y-2">
+                  {Array.from({ length: 2 }).map((_, index) => (
+                    <Skeleton key={index} className="h-8 w-full" />
+                  ))}
+                </div>
+              ) : userRolesQuery.isError ? (
+                <ErrorState
+                  onRetry={() => userRolesQuery.refetch()}
+                  description="Unable to load roles."
+                />
+              ) : (
+                <ul className="space-y-2">
+                  {(userRolesQuery.data ?? []).map((role) => (
+                    <li
+                      key={role.id}
+                      className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary">{role.name}</Badge>
+                        {role.isSystem && (
+                          <span className="text-xs text-muted-foreground">System</span>
+                        )}
+                      </div>
+                      <Can permission="users.assign_roles">
+                        <ConfirmDialog
+                          trigger={
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7 text-muted-foreground hover:text-destructive"
+                              disabled={removeRole.isPending}
+                              aria-label={`Remove ${role.name} role`}
+                            >
+                              <X className="size-3.5" />
+                            </Button>
+                          }
+                          title={`Remove the ${role.name} role?`}
+                          description="The user immediately loses any access this role grants."
+                          confirmLabel="Remove role"
+                          variant="destructive"
+                          onConfirm={() => handleRemoveRole(role.id)}
+                        />
+                      </Can>
+                    </li>
+                  ))}
+                  {userRolesQuery.data?.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No roles assigned.</p>
+                  )}
+                </ul>
+              )}
+
+              <Can permission="users.assign_roles">
+                <Separator />
+                <div className="space-y-2">
+                  <Label htmlFor="assign-role">Assign a role</Label>
+                  <div className="flex gap-2">
+                    <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
+                      <SelectTrigger id="assign-role" className="flex-1">
+                        <SelectValue placeholder="Select a role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(rolesQuery.data?.items ?? [])
+                          .filter(
+                            (role) =>
+                              !userRolesQuery.data?.some((assigned) => assigned.id === role.id),
+                          )
+                          .map((role) => (
+                            <SelectItem key={role.id} value={role.id}>
+                              {role.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    <LoadingButton
+                      size="icon"
+                      onClick={handleAssignRole}
+                      loading={assignRole.isPending}
+                      disabled={!selectedRoleId}
+                      aria-label="Assign role"
+                    >
+                      <Plus className="size-4" />
+                    </LoadingButton>
+                  </div>
+                </div>
+              </Can>
             </CardContent>
           </Card>
         </div>

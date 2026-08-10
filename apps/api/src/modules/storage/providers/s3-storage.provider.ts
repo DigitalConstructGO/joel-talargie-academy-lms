@@ -8,6 +8,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { StorageService, UploadInput } from '../storage.interface';
+import type { StorageDisposition } from '../utils/signed-token.util';
 
 /**
  * Future S3-compatible provider. Kept behind the same `StorageService`
@@ -56,7 +57,11 @@ export class S3StorageProvider implements StorageService {
     );
   }
 
-  async getSignedUrl(key: string, expiresInSeconds = 300) {
+  async getSignedUrl(
+    key: string,
+    expiresInSeconds = 300,
+    disposition: StorageDisposition = 'attachment',
+  ) {
     this.assertConfigured();
     return getSignedUrl(
       this.client,
@@ -64,6 +69,7 @@ export class S3StorageProvider implements StorageService {
         Bucket: this.bucket,
         Key: key,
         ResponseCacheControl: 'private, no-store',
+        ResponseContentDisposition: disposition,
       }),
       { expiresIn: Math.min(Math.max(expiresInSeconds, 30), 300) },
     );

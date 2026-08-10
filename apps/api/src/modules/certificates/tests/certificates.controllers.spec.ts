@@ -47,6 +47,13 @@ describe('StudentCertificatesController', () => {
     expect(certificates.studentDownload).toHaveBeenCalledWith(
       'student-1',
       'certificate-1',
+      false,
+    );
+    controller.download(user, 'certificate-1', 'true');
+    expect(certificates.studentDownload).toHaveBeenLastCalledWith(
+      'student-1',
+      'certificate-1',
+      true,
     );
     controller.detail(user, 'certificate-1');
     expect(certificates.mine).toHaveBeenCalledWith(

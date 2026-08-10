@@ -9,6 +9,7 @@ import type {
   UserActivityParams,
   UserListParams,
   UserListResult,
+  UserRoleAssignment,
 } from '../types/user.types';
 
 const cleanParams = <T extends object>(params: T) =>
@@ -58,6 +59,23 @@ const liveUsersApi = {
       await authClient.get(`/admin/users/${encodeURIComponent(userId)}/activity`, {
         params: cleanParams(params),
       }),
+    ),
+
+  listRoles: async (userId: string) =>
+    unwrap<UserRoleAssignment[]>(
+      await authClient.get(`/admin/users/${encodeURIComponent(userId)}/roles`),
+    ),
+
+  assignRole: async (userId: string, roleId: string) =>
+    unwrap<UserRoleAssignment>(
+      await authClient.post(`/admin/users/${encodeURIComponent(userId)}/roles`, { roleId }),
+    ),
+
+  removeRole: async (userId: string, roleId: string) =>
+    unwrap<{ message: string }>(
+      await authClient.delete(
+        `/admin/users/${encodeURIComponent(userId)}/roles/${encodeURIComponent(roleId)}`,
+      ),
     ),
 };
 

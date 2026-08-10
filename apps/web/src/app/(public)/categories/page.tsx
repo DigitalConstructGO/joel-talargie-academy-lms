@@ -13,8 +13,16 @@ export const metadata: Metadata = {
   description: 'Browse courses by category.',
 };
 
+async function loadCategories() {
+  try {
+    return await listCategoriesServer();
+  } catch {
+    return { items: [], total: 0 };
+  }
+}
+
 export default async function CategoriesPage() {
-  const categories = await listCategoriesServer();
+  const categories = await loadCategories();
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-10 sm:px-6">

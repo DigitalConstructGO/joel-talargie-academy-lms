@@ -64,13 +64,36 @@ export class UsersService {
       currentSession: session.id === current,
     }));
   }
-  revoke(actor: AuthUser, target: string, sessionId: string, admin = false) {
-    return this.repository.revoke({
-      actorId: actor.id,
-      userId: target,
-      sessionId,
-      admin,
-    });
+  async revoke(
+    actor: AuthUser,
+    target: string,
+    sessionId: string,
+    admin = false,
+  ) {
+    try {
+      return await this.repository.revoke({
+        actorId: actor.id,
+        userId: target,
+        sessionId,
+        admin,
+      });
+    } catch (error) {
+      // The repository throws plain, code-named errors (no HTTP framework
+      // dependency in the shared database package) - translate the known
+      // ones here so a missing/foreign/already-revoked session ID surfaces
+      // as a proper 404/409 instead of falling through to an unhandled 500.
+      if (error instanceof Error && error.message === 'SESSION_NOT_FOUND')
+        throw new NotFoundException({
+          code: 'SESSION_NOT_FOUND',
+          message: 'Session not found',
+        });
+      if (error instanceof Error && error.message === 'SESSION_ALREADY_REVOKED')
+        throw new ConflictException({
+          code: 'SESSION_ALREADY_REVOKED',
+          message: 'Session already revoked',
+        });
+      throw error;
+    }
   }
   revokeAll(
     actor: AuthUser,

@@ -657,7 +657,19 @@ async function seedEnrollmentsProgressAndPayments(
   return { enrollmentCount, progressCount, paymentCount };
 }
 
-async function seedCertificates(tx: AcademyDatabase, generatedBy: string) {
+/**
+ * Mirrors `CertificatesRepository.createIdentity()` exactly: certificates are
+ * created `PENDING` with a queued `GENERATE_CERTIFICATE` background job, the
+ * same as a real "request certificate" click - never inserted directly as
+ * `GENERATED`. Only the real `CertificateWorkerService` (via
+ * `pdfkit`/`qrcode`, uploading to real storage) is allowed to mark a
+ * certificate `GENERATED`, because that's the only code path that actually
+ * produces the PDF file `certificate_files` row the download endpoint
+ * depends on. Run `CERTIFICATE_WORKER_ENABLED=true npm run worker:certificates`
+ * (or `npm run certificates:reconcile` then the worker) from `apps/api`
+ * after seeding to generate real, downloadable PDFs for these.
+ */
+async function seedCertificates(tx: AcademyDatabase, actorId: string) {
   const template = await tx.query.certificateTemplates.findFirst({
     where: eq(schema.certificateTemplates.isDefault, true),
   });
@@ -676,7 +688,7 @@ async function seedCertificates(tx: AcademyDatabase, generatedBy: string) {
     });
     if (!course) continue;
     const certificateNumber = `JTA-2026-${String(count + 1).padStart(6, '0')}`;
-    await tx
+    const [certificate] = await tx
       .insert(schema.certificates)
       .values({
         enrollmentId: enrollment.id,
@@ -690,10 +702,24 @@ async function seedCertificates(tx: AcademyDatabase, generatedBy: string) {
         completionDateSnapshot: enrollment.completedAt,
         templateNameSnapshot: template.name,
         templateVersionSnapshot: template.version,
-        status: 'GENERATED',
-        issuedAt: enrollment.completedAt,
-        generatedAt: enrollment.completedAt,
-        generatedBy,
+        status: 'PENDING',
+        generationVersion: 1,
+      })
+      .onConflictDoNothing()
+      .returning();
+    if (!certificate) continue;
+    await tx.insert(schema.certificateEvents).values({
+      certificateId: certificate.id,
+      actorId,
+      action: 'certificate.created',
+      metadata: { enrollmentId: enrollment.id, generationVersion: 1 },
+    });
+    await tx
+      .insert(schema.backgroundJobs)
+      .values({
+        jobType: 'GENERATE_CERTIFICATE',
+        deduplicationKey: `certificate:generate:${certificate.id}:v1`,
+        payload: { certificateId: certificate.id, enrollmentId: enrollment.id },
       })
       .onConflictDoNothing();
     count += 1;

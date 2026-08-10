@@ -23,6 +23,7 @@ import { LocalStorageProvider } from './providers/local-storage.provider';
 import { StorageRepository } from './repositories/storage.repository';
 import { sha256Buffer, sha256File } from './utils/checksum.util';
 import { buildStoredFileName } from './utils/filename.util';
+import type { StorageDisposition } from './utils/signed-token.util';
 import { validateUploadFile } from './validators/upload.validator';
 
 interface ProcessedImage {
@@ -266,7 +267,9 @@ export class StorageService {
     }
   }
 
-  async streamByToken(token: string): Promise<FileStreamDescriptor> {
+  async streamByToken(
+    token: string,
+  ): Promise<FileStreamDescriptor & { disposition: StorageDisposition }> {
     const verification = this.local.verifyToken(token);
     if (!verification.valid)
       throw new UnauthorizedException({
@@ -280,7 +283,10 @@ export class StorageService {
             : 'This download link is invalid',
       });
     try {
-      return await this.local.readDescriptor(verification.payload.key);
+      const descriptor = await this.local.readDescriptor(
+        verification.payload.key,
+      );
+      return { ...descriptor, disposition: verification.payload.disposition };
     } catch {
       throw new NotFoundException({
         code: 'FILE_NOT_FOUND',

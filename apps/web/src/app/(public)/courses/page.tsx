@@ -6,7 +6,6 @@ import { buildItemListJsonLd } from '@/lib/json-ld';
 import { catalogApi } from '@/features/catalog/api/catalog.api';
 import { CourseFilters } from '@/features/catalog/components/course-filters';
 import { CoursesGrid } from '@/features/catalog/components/courses-grid';
-import { SyncSearchParam } from '@/features/catalog/components/sync-search-param';
 import { ROUTES } from '@/constants/routes';
 
 export const metadata: Metadata = {
@@ -34,10 +33,9 @@ export default async function CoursesPage() {
         description="Explore our full catalog and find the course that fits your goals."
       />
       <Suspense fallback={null}>
-        <SyncSearchParam />
+        <CourseFilters />
+        <CoursesGrid />
       </Suspense>
-      <CourseFilters />
-      <CoursesGrid />
     </div>
   );
 }

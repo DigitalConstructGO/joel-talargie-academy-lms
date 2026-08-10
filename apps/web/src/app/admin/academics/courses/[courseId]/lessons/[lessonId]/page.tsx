@@ -45,6 +45,30 @@ const LESSON_TYPE_OPTIONS: { label: string; value: LessonType }[] = [
   { label: 'External link', value: 'EXTERNAL_LINK' },
 ];
 
+/**
+ * The lesson player accepts two kinds of source: a YouTube link (rendered
+ * via YouTube's own embedded player) or a direct, HTTPS link to a playable
+ * media file (set as a native `<video src>`) - anything else fails to play.
+ * The backend also silently drops non-HTTPS values (`safeHttpsUrl` in
+ * `learning.service.ts`), so the HTTPS check mirrors a real constraint.
+ */
+const VIDEO_FILE_PATTERN = /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i;
+const YOUTUBE_URL_PATTERN =
+  /(?:youtube(?:-nocookie)?\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)[a-zA-Z0-9_-]{11}/;
+
+function getVideoUrlError(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (!/^https:\/\//i.test(trimmed)) {
+    return 'Must start with https:// - the backend rejects non-HTTPS video URLs.';
+  }
+  if (YOUTUBE_URL_PATTERN.test(trimmed)) return null;
+  if (!VIDEO_FILE_PATTERN.test(trimmed)) {
+    return 'Must be a YouTube link, or a direct link to a video file (.mp4, .webm, .ogg, .mov).';
+  }
+  return null;
+}
+
 export default function AdminLessonDetailPage() {
   const { courseId, lessonId } = useParams<{ courseId: string; lessonId: string }>();
   const router = useRouter();
@@ -65,6 +89,8 @@ export default function AdminLessonDetailPage() {
   const [isMandatory, setIsMandatory] = useState(true);
   const [resourceTitle, setResourceTitle] = useState('');
   const [resourceUrl, setResourceUrl] = useState('');
+
+  const videoUrlError = lessonType === 'VIDEO' ? getVideoUrlError(videoUrl) : null;
 
   useEffect(() => {
     if (lesson) {
@@ -206,9 +232,19 @@ export default function AdminLessonDetailPage() {
                   <Label htmlFor="video-url">Video URL</Label>
                   <Input
                     id="video-url"
+                    placeholder="https://example.com/lessons/intro.mp4"
                     value={videoUrl}
                     onChange={(e) => setVideoUrl(e.target.value)}
+                    aria-invalid={Boolean(videoUrlError)}
                   />
+                  {videoUrlError ? (
+                    <p className="text-xs text-destructive">{videoUrlError}</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      A YouTube link (watch, youtu.be, or embed), or a direct HTTPS link to a video
+                      file (.mp4, .webm, .ogg, .mov). There is no file upload for lesson video yet.
+                    </p>
+                  )}
                 </div>
               )}
               {lessonType === 'EXTERNAL_LINK' && (
@@ -240,7 +276,10 @@ export default function AdminLessonDetailPage() {
                 Mandatory for course completion
               </label>
               <Can permission="lessons.update">
-                <Button onClick={handleSave} disabled={!title.trim() || updateLesson.isPending}>
+                <Button
+                  onClick={handleSave}
+                  disabled={!title.trim() || Boolean(videoUrlError) || updateLesson.isPending}
+                >
                   {updateLesson.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
                   Save changes
                 </Button>

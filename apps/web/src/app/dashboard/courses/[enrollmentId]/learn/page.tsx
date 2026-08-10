@@ -19,6 +19,7 @@ import { ErrorState } from '@/components/common/error-state';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { ROUTES } from '@/constants/routes';
+import { extractErrorCode } from '@/lib/api/api-error';
 import {
   useCompleteLesson,
   useCourseOverview,
@@ -30,6 +31,47 @@ import { LessonSidebar } from '@/features/learning/components/lesson-sidebar';
 import { LessonPlayer } from '@/features/learning/components/lesson-player';
 import { LessonTabs } from '@/features/learning/components/lesson-tabs';
 import { toast } from '@/lib/toast';
+
+/**
+ * Maps the backend's typed access-denial codes (`LearningService.requireAccess()`)
+ * to a tailored message, instead of collapsing every reason - pending payment,
+ * a cancelled enrollment, an enrollment that isn't the caller's - into one
+ * generic "couldn't load this course" state.
+ */
+const LEARN_ACCESS_ERRORS: Record<string, { title: string; description: string }> = {
+  PAYMENT_REQUIRED: {
+    title: 'Payment required',
+    description: 'Submit payment for this course to start learning.',
+  },
+  PAYMENT_REVIEW_PENDING: {
+    title: 'Payment under review',
+    description: "We're reviewing your payment - you'll get access as soon as it's approved.",
+  },
+  ENROLLMENT_CANCELLED: {
+    title: 'Enrollment cancelled',
+    description: 'This enrollment was cancelled. Contact support if this looks wrong.',
+  },
+  ENROLLMENT_ACCESS_REVOKED: {
+    title: 'Access revoked',
+    description: 'Access to this course has been revoked. Contact support for details.',
+  },
+  ENROLLMENT_NOT_FOUND: {
+    title: 'Enrollment not found',
+    description: "This course isn't linked to your account, or the link is incorrect.",
+  },
+  ACCOUNT_NOT_ACTIVE: {
+    title: 'Account not active',
+    description: 'Your account is not currently active. Contact support for help.',
+  },
+  EMAIL_NOT_VERIFIED: {
+    title: 'Verify your email',
+    description: 'Verify your email address to access course content.',
+  },
+  STUDENT_ROLE_REQUIRED: {
+    title: 'Student access required',
+    description: 'This area is only available to student accounts.',
+  },
+};
 
 export default function LessonPlayerPage() {
   const params = useParams<{ enrollmentId: string }>();
@@ -128,13 +170,17 @@ export default function LessonPlayerPage() {
   }
 
   if (overviewQuery.isError || !overview) {
+    const accessError = LEARN_ACCESS_ERRORS[extractErrorCode(overviewQuery.error) ?? ''];
     return (
       <div className="flex h-screen flex-col items-center justify-center gap-6 bg-sidebar p-8 text-center">
         <ErrorState
           className="border-white/10 bg-white/5"
-          title="We couldn't load this course"
-          description="You may not have learning access to this course yet, or it's no longer available."
-          onRetry={() => overviewQuery.refetch()}
+          title={accessError?.title ?? "We couldn't load this course"}
+          description={
+            accessError?.description ??
+            "You may not have learning access to this course yet, or it's no longer available."
+          }
+          onRetry={accessError ? undefined : () => overviewQuery.refetch()}
         />
         <Button
           asChild

@@ -13,6 +13,7 @@ const googleCallbackUrl =
 const enabledEnvironment: Environment = {
   NODE_ENV: 'test',
   API_PORT: 4000,
+  API_URL: apiUrl,
   WEB_URL: webUrl,
   TRUST_PROXY: false,
   BODY_LIMIT: '1mb',

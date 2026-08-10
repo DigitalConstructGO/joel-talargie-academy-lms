@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Maximize, Pause, Play, Volume2, VolumeX } from 'lucide-react';
+import { AlertTriangle, Maximize, Pause, Play, Volume2, VolumeX } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { formatDurationSeconds } from '@/lib/format';
 
 const POSITION_SAVE_INTERVAL_MS = 20_000;
@@ -15,7 +16,183 @@ interface LessonPlayerProps {
   onEnded: () => void;
 }
 
-export function LessonPlayer({
+/**
+ * Matches youtube.com/watch?v=, youtu.be/, youtube.com/embed/ and
+ * youtube.com/shorts/ (with or without www./m. and any extra query params),
+ * including the -nocookie domain variant. YouTube video IDs are always
+ * exactly 11 characters.
+ */
+const YOUTUBE_ID_PATTERN =
+  /(?:youtube(?:-nocookie)?\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+
+function getYouTubeVideoId(url: string): string | null {
+  return url.match(YOUTUBE_ID_PATTERN)?.[1] ?? null;
+}
+
+/** Chooses the right player for the lesson's video source - a YouTube link renders YouTube's own embedded player, anything else is treated as a direct media file for the native `<video>` element. */
+export function LessonPlayer(props: LessonPlayerProps) {
+  const youtubeVideoId = getYouTubeVideoId(props.videoUrl);
+  if (youtubeVideoId) {
+    return <YouTubeLessonPlayer {...props} videoId={youtubeVideoId} />;
+  }
+  return <NativeLessonPlayer {...props} />;
+}
+
+interface YouTubePlayerInstance {
+  getCurrentTime(): number;
+  destroy(): void;
+}
+
+interface YouTubePlayerEvent {
+  data: number;
+  target: YouTubePlayerInstance;
+}
+
+interface YouTubeIframeApi {
+  Player: new (
+    element: HTMLElement,
+    options: {
+      videoId: string;
+      playerVars?: Record<string, string | number>;
+      events?: {
+        onReady?: (event: YouTubePlayerEvent) => void;
+        onStateChange?: (event: YouTubePlayerEvent) => void;
+        onError?: () => void;
+      };
+    },
+  ) => YouTubePlayerInstance;
+  PlayerState: { ENDED: number; PLAYING: number; PAUSED: number };
+}
+
+declare global {
+  interface Window {
+    YT?: YouTubeIframeApi;
+    onYouTubeIframeAPIReady?: () => void;
+  }
+}
+
+let youtubeApiPromise: Promise<YouTubeIframeApi> | null = null;
+
+/** Loads `https://www.youtube.com/iframe_api` at most once app-wide, chaining onto any previously-registered `onYouTubeIframeAPIReady` callback. */
+function loadYouTubeIframeApi(): Promise<YouTubeIframeApi> {
+  if (window.YT) return Promise.resolve(window.YT);
+  youtubeApiPromise ??= new Promise((resolve) => {
+    const previousCallback = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      previousCallback?.();
+      if (window.YT) resolve(window.YT);
+    };
+    const script = document.createElement('script');
+    script.src = 'https://www.youtube.com/iframe_api';
+    script.async = true;
+    document.head.appendChild(script);
+  });
+  return youtubeApiPromise;
+}
+
+function YouTubeLessonPlayer({
+  lessonKey,
+  videoId,
+  initialPositionSeconds,
+  onProgress,
+  onEnded,
+}: {
+  lessonKey: string;
+  videoId: string;
+  initialPositionSeconds: number;
+  onProgress: (seconds: number) => void;
+  onEnded: () => void;
+}) {
+  const mountRef = useRef<HTMLDivElement>(null);
+  const playerRef = useRef<YouTubePlayerInstance | null>(null);
+  const [ready, setReady] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackError, setPlaybackError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setReady(false);
+    setIsPlaying(false);
+    setPlaybackError(false);
+
+    // The YouTube IFrame API replaces whatever element it's given with its
+    // own <iframe>, outside React's control. Handing it `mountRef.current`
+    // directly would let it silently swap out a node React still thinks it
+    // owns, causing DOM-reconciliation errors on the next render (and the
+    // stray postMessage warnings seen under StrictMode's mount/unmount/
+    // remount dev cycle). Instead give it a throwaway child div that React
+    // never touches again after this effect creates it.
+    const mount = mountRef.current;
+    if (!mount) return;
+    const target = document.createElement('div');
+    target.className = 'size-full';
+    mount.appendChild(target);
+
+    loadYouTubeIframeApi().then((YT) => {
+      if (cancelled) return;
+      playerRef.current = new YT.Player(target, {
+        videoId,
+        playerVars: {
+          rel: 0,
+          modestbranding: 1,
+          ...(initialPositionSeconds > 0 ? { start: Math.floor(initialPositionSeconds) } : {}),
+        },
+        events: {
+          onReady: () => setReady(true),
+          onError: () => setPlaybackError(true),
+          onStateChange: (event) => {
+            if (event.data === YT.PlayerState.PLAYING) setIsPlaying(true);
+            if (event.data === YT.PlayerState.PAUSED) {
+              setIsPlaying(false);
+              onProgress(Math.floor(event.target.getCurrentTime()));
+            }
+            if (event.data === YT.PlayerState.ENDED) {
+              setIsPlaying(false);
+              onEnded();
+            }
+          },
+        },
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      playerRef.current?.destroy();
+      playerRef.current = null;
+      target.remove();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-create the player when the lesson itself changes
+  }, [lessonKey, videoId]);
+
+  useEffect(() => {
+    if (!isPlaying) return;
+    const interval = setInterval(() => {
+      const player = playerRef.current;
+      if (player) onProgress(Math.floor(player.getCurrentTime()));
+    }, POSITION_SAVE_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [isPlaying, onProgress]);
+
+  return (
+    <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-sidebar-border bg-black shadow-2xl">
+      <div ref={mountRef} className="size-full" />
+      {playbackError && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60 px-6 text-center">
+          <AlertTriangle className="size-8 text-warning" />
+          <p className="text-sm font-medium text-white">This video couldn&apos;t be played</p>
+          <p className="text-xs text-white/70">
+            The YouTube video may be private, deleted, or unavailable.
+          </p>
+        </div>
+      )}
+      {!ready && !playbackError && (
+        <Skeleton className="absolute inset-0 rounded-xl" aria-hidden="true" />
+      )}
+    </div>
+  );
+}
+
+function NativeLessonPlayer({
   lessonKey,
   videoUrl,
   initialPositionSeconds,
@@ -28,11 +205,13 @@ export function LessonPlayer({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [muted, setMuted] = useState(false);
+  const [playbackError, setPlaybackError] = useState(false);
 
   useEffect(() => {
     setCurrentTime(0);
     setDuration(0);
     setIsPlaying(false);
+    setPlaybackError(false);
   }, [lessonKey]);
 
   useEffect(() => {
@@ -63,8 +242,14 @@ export function LessonPlayer({
   function togglePlay() {
     const video = videoRef.current;
     if (!video) return;
-    if (video.paused) void video.play();
-    else video.pause();
+    if (video.paused) {
+      video
+        .play()
+        .then(() => setPlaybackError(false))
+        .catch(() => setPlaybackError(true));
+    } else {
+      video.pause();
+    }
   }
 
   function handlePause() {
@@ -110,22 +295,36 @@ export function LessonPlayer({
           setIsPlaying(false);
           onEnded();
         }}
+        onError={() => {
+          setIsPlaying(false);
+          setPlaybackError(true);
+        }}
         onClick={togglePlay}
       >
         <track kind="captions" />
       </video>
 
-      {!isPlaying && (
-        <button
-          type="button"
-          onClick={togglePlay}
-          aria-label="Play lesson video"
-          className="absolute inset-0 flex items-center justify-center bg-black/30 transition-colors hover:bg-black/20"
-        >
-          <span className="flex size-20 items-center justify-center rounded-full border border-white/20 bg-black/40 backdrop-blur-md transition-transform hover:scale-110">
-            <Play className="size-9 fill-white text-white" />
-          </span>
-        </button>
+      {playbackError ? (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60 px-6 text-center">
+          <AlertTriangle className="size-8 text-warning" />
+          <p className="text-sm font-medium text-white">This video couldn&apos;t be played</p>
+          <p className="text-xs text-white/70">
+            The video source may be missing or in an unsupported format.
+          </p>
+        </div>
+      ) : (
+        !isPlaying && (
+          <button
+            type="button"
+            onClick={togglePlay}
+            aria-label="Play lesson video"
+            className="absolute inset-0 flex items-center justify-center bg-black/30 transition-colors hover:bg-black/20"
+          >
+            <span className="flex size-20 items-center justify-center rounded-full border border-white/20 bg-black/40 backdrop-blur-md transition-transform hover:scale-110">
+              <Play className="size-9 fill-white text-white" />
+            </span>
+          </button>
+        )
       )}
 
       <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/50 to-transparent p-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">

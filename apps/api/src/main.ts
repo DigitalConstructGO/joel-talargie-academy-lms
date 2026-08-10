@@ -43,15 +43,29 @@ async function bootstrap() {
       extended: true,
     }),
   );
+  const webUrl = config.getOrThrow<string>('WEB_URL');
   app.use(
-    helmet(),
+    helmet({
+      contentSecurityPolicy: {
+        // Same split-origin case CORS handles below: the API and web app
+        // run on different origins (e.g. :4000/:3000 in local dev), so the
+        // default `frame-ancestors: 'self'` would block the web app from
+        // embedding API-served content in an iframe (e.g. the certificate
+        // preview streamed from `storage/files/:token`). Add WEB_URL as the
+        // one legitimate frame-ancestor rather than disabling the directive.
+        directives: {
+          ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+          'frame-ancestors': ["'self'", webUrl],
+        },
+      },
+    }),
     compression(),
     cookieParser(),
     correlationMiddleware.use.bind(correlationMiddleware),
     requestLoggerMiddleware.use.bind(requestLoggerMiddleware),
   );
   app.enableCors({
-    origin: config.getOrThrow<string>('WEB_URL'),
+    origin: webUrl,
     credentials: true,
   });
   app.useGlobalPipes(

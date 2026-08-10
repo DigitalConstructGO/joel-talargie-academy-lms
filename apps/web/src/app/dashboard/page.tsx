@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Award, BookOpen, CircleCheck, Loader } from 'lucide-react';
+import { Award, Bell, BookOpen, CircleCheck, Heart, Loader } from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
 import { Reveal } from '@/components/common/reveal';
 import { WelcomeBanner } from '@/components/dashboard/welcome-banner';
@@ -14,11 +14,12 @@ import { CardSkeletonRow } from '@/components/dashboard/skeletons/card-skeleton'
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/constants/routes';
-import { useAuthStore } from '@/stores';
+import { useAuthStore, useWishlistStore } from '@/stores';
 import { useMyEnrollments } from '@/features/enrollments/hooks/use-enrollments';
 import { estimateLessonProgress } from '@/features/enrollments/utils/estimate-lesson-progress';
 import { useCourses } from '@/features/catalog/hooks/use-courses';
 import { useUnreadNotificationsCount } from '@/features/notifications/hooks/use-notifications';
+import { useMyCertificates } from '@/features/certificates/hooks/use-certificates';
 
 /** Mirrors the loaded layout below: banner+progress row, stat row, then course-list + sidebar. */
 function DashboardHomeSkeleton() {
@@ -45,6 +46,8 @@ export default function DashboardPage() {
   const enrollmentsQuery = useMyEnrollments({ pageSize: 100 });
   const coursesQuery = useCourses({ pageSize: 100 });
   const unreadQuery = useUnreadNotificationsCount();
+  const certificatesQuery = useMyCertificates({ pageSize: 100 });
+  const wishlistCount = useWishlistStore((state) => state.courseIds.length);
   const lessonCountBySlug = new Map(
     (coursesQuery.data?.items ?? []).map((course) => [course.slug, course.lessonCount]),
   );
@@ -82,9 +85,16 @@ export default function DashboardPage() {
     { icon: CircleCheck, label: 'Completed', value: completed.length, tone: 'success' as const },
     {
       icon: Award,
+      label: 'Certificates',
+      value: certificatesQuery.data?.length ?? 0,
+      tone: 'warning' as const,
+    },
+    { icon: Heart, label: 'Wishlist', value: wishlistCount, tone: 'primary' as const },
+    {
+      icon: Bell,
       label: 'Unread Notifications',
       value: unreadQuery.data?.unreadCount ?? 0,
-      tone: 'warning' as const,
+      tone: 'info' as const,
     },
   ];
 

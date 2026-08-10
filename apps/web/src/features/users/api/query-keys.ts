@@ -7,4 +7,5 @@ export const userKeys = {
   detail: (userId: string) => [...userKeys.all, 'detail', userId] as const,
   activity: (userId: string, params: UserActivityParams) =>
     [...userKeys.all, 'activity', userId, params] as const,
+  roles: (userId: string) => [...userKeys.all, 'roles', userId] as const,
 };
