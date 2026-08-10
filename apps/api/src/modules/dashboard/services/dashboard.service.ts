@@ -80,12 +80,14 @@ export class DashboardService {
         (SELECT count(*)::int FROM enrollments WHERE created_at >= ${range.from} AND created_at < ${range.to}) new_enrollments
     `);
     const base = current[0] ?? {};
+    const newStudents = Number(base.new_students ?? 0);
+    const newEnrollments = Number(base.new_enrollments ?? 0);
     const data: Record<string, unknown> = {
       students: {
         total: Number(base.total_students ?? 0),
         active: Number(base.active_students ?? 0),
         pendingVerification: Number(base.pending_verification_students ?? 0),
-        newDuringPeriod: Number(base.new_students ?? 0),
+        newDuringPeriod: newStudents,
       },
       courses: {
         total: Number(base.total_courses ?? 0),
@@ -97,7 +99,7 @@ export class DashboardService {
         active: Number(base.active_enrollments ?? 0),
         pendingPayment: Number(base.pending_payment_enrollments ?? 0),
         completed: Number(base.completed_enrollments ?? 0),
-        newDuringPeriod: Number(base.new_enrollments ?? 0),
+        newDuringPeriod: newEnrollments,
       },
       payments: { waitingForReview: Number(base.pending_payment_reviews ?? 0) },
       certificates: {
@@ -105,10 +107,52 @@ export class DashboardService {
         attention: Number(base.certificates_attention ?? 0),
       },
     };
-    if (access.financial)
-      data.revenue = await this.rows(
+    let revenueByCurrency: { currency: string; amount: string }[] | undefined;
+    if (access.financial) {
+      revenueByCurrency = (await this.rows(
         sql`SELECT currency, coalesce(sum(amount),0)::text amount FROM payments WHERE status='APPROVED' AND reviewed_at >= ${range.from} AND reviewed_at < ${range.to} GROUP BY currency ORDER BY currency`,
-      );
+      )) as { currency: string; amount: string }[];
+      data.revenue = revenueByCurrency;
+    }
+    // `range.previous` is only populated when the caller asked for a
+    // comparison (`DashboardQueryDto.comparison`, default true) - only the
+    // metrics that are themselves period-scoped in the query above
+    // (newDuringPeriod counts, revenue) have a meaningful "previous period"
+    // counterpart; cumulative totals (total students, total courses, etc.)
+    // aren't period-scoped so there's nothing sound to compare them against.
+    if (range.previous) {
+      const [previousBase] = await this.rows(sql`
+        SELECT
+          (SELECT count(*)::int FROM users u JOIN user_roles ur ON ur.user_id=u.id JOIN roles r ON r.id=ur.role_id WHERE r.code='STUDENT' AND u.created_at >= ${range.previous.from} AND u.created_at < ${range.previous.to}) new_students,
+          (SELECT count(*)::int FROM enrollments WHERE created_at >= ${range.previous.from} AND created_at < ${range.previous.to}) new_enrollments
+      `);
+      const comparisons: Record<string, unknown> = {
+        newStudents: this.comparison(
+          newStudents,
+          Number(previousBase?.new_students ?? 0),
+        ),
+        newEnrollments: this.comparison(
+          newEnrollments,
+          Number(previousBase?.new_enrollments ?? 0),
+        ),
+      };
+      if (access.financial) {
+        const previousRevenueRows = (await this.rows(
+          sql`SELECT currency, coalesce(sum(amount),0)::text amount FROM payments WHERE status='APPROVED' AND reviewed_at >= ${range.previous.from} AND reviewed_at < ${range.previous.to} GROUP BY currency ORDER BY currency`,
+        )) as { currency: string; amount: string }[];
+        const previousByCurrency = new Map(
+          previousRevenueRows.map((row) => [row.currency, Number(row.amount)]),
+        );
+        comparisons.revenue = (revenueByCurrency ?? []).map((row) => ({
+          currency: row.currency,
+          ...this.comparison(
+            Number(row.amount),
+            previousByCurrency.get(row.currency) ?? 0,
+          ),
+        }));
+      }
+      data.comparisons = comparisons;
+    }
     return { range: this.presentRange(range), kpis: data };
   }
   private presentRange(range: DashboardRange) {

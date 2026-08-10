@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
+import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
@@ -10,14 +11,31 @@ const TONE_CLASSES = {
   teal: 'bg-tertiary/10 text-tertiary',
 } as const;
 
+/** Mirrors the backend's `comparison()` shape (`DashboardService.comparison` in `dashboard.service.ts`). */
+export interface StatCardTrend {
+  direction: 'UP' | 'DOWN' | 'FLAT' | 'NOT_AVAILABLE';
+  changePercentage: string | null;
+  /** e.g. "vs previous period" - defaults to that if omitted. */
+  label?: string;
+}
+
 export interface StatCardProps {
   icon: LucideIcon;
   label: string;
   value: React.ReactNode;
   suffix?: React.ReactNode;
   tone?: keyof typeof TONE_CLASSES;
+  trend?: StatCardTrend;
   className?: string;
 }
+
+const TREND_ICON = { UP: ArrowUp, DOWN: ArrowDown, FLAT: Minus, NOT_AVAILABLE: Minus } as const;
+const TREND_CLASSES = {
+  UP: 'text-success',
+  DOWN: 'text-destructive',
+  FLAT: 'text-muted-foreground',
+  NOT_AVAILABLE: 'text-muted-foreground',
+} as const;
 
 /** A compact metric tile - icon, uppercase label, and a big value - for a dashboard stats row. */
 export function StatCard({
@@ -26,8 +44,10 @@ export function StatCard({
   value,
   suffix,
   tone = 'primary',
+  trend,
   className,
 }: StatCardProps) {
+  const TrendIcon = trend ? TREND_ICON[trend.direction] : null;
   return (
     <Card
       className={cn(
@@ -53,6 +73,22 @@ export function StatCard({
             <span className="ml-1 text-sm font-medium text-muted-foreground">{suffix}</span>
           )}
         </p>
+        {trend && TrendIcon && (
+          <p
+            className={cn(
+              'mt-0.5 flex items-center gap-1 text-xs font-medium',
+              TREND_CLASSES[trend.direction],
+            )}
+          >
+            <TrendIcon className="size-3" aria-hidden="true" />
+            {trend.direction === 'NOT_AVAILABLE'
+              ? 'No prior data'
+              : `${trend.changePercentage ?? '0'}%`}
+            <span className="font-normal text-muted-foreground">
+              {trend.label ?? 'vs previous period'}
+            </span>
+          </p>
+        )}
       </div>
     </Card>
   );

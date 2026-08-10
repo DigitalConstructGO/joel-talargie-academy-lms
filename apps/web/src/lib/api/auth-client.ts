@@ -8,6 +8,7 @@ export const authClient = axios.create({
   baseURL: getApiBaseUrl(),
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
+  timeout: 30_000,
 });
 
 export const unwrap = <T>(response: { data: { data?: T } | T }): T =>

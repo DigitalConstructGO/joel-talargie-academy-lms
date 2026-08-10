@@ -1,8 +1,9 @@
 import { DashboardService } from '../dashboard.service';
+import type { DashboardRange } from '../dashboard-date-range.service';
 
 describe('DashboardService', () => {
   const database = { client: { execute: jest.fn() } };
-  const range = {
+  const range: DashboardRange = {
     preset: 'LAST_30_DAYS',
     from: new Date('2026-07-06T00:00:00.000Z'),
     to: new Date('2026-08-05T00:00:00.000Z'),
@@ -82,6 +83,80 @@ describe('DashboardService', () => {
         pendingVerification: 0,
         newDuringPeriod: 0,
       });
+    });
+
+    it('omits comparisons entirely when the resolved range has no previous window', async () => {
+      rows([{ new_students: 3, new_enrollments: 4 }]);
+      const result = await service.kpis({} as never, []);
+      expect(result.kpis).not.toHaveProperty('comparisons');
+    });
+
+    it('adds period-over-period comparisons when the resolved range has a previous window', async () => {
+      const rangeWithPrevious = {
+        ...range,
+        previous: {
+          from: new Date('2026-06-06T00:00:00.000Z'),
+          to: new Date('2026-07-06T00:00:00.000Z'),
+        },
+      };
+      dates.resolve.mockReturnValueOnce(rangeWithPrevious);
+      rows([{ new_students: 10, new_enrollments: 20 }]); // current base counters
+      rows([{ currency: 'ETB', amount: '1000' }]); // current revenue
+      rows([{ new_students: 5, new_enrollments: 25 }]); // previous base counters
+      rows([{ currency: 'ETB', amount: '500' }]); // previous revenue
+
+      const result = await service.kpis({} as never, [
+        'dashboard.read_financial',
+      ]);
+      const comparisons = (
+        result.kpis as { comparisons: Record<string, unknown> }
+      ).comparisons;
+
+      expect(comparisons.newStudents).toEqual({
+        current: 10,
+        previous: 5,
+        change: 5,
+        changePercentage: '100.00',
+        direction: 'UP',
+      });
+      expect(comparisons.newEnrollments).toEqual({
+        current: 20,
+        previous: 25,
+        change: -5,
+        changePercentage: '-20.00',
+        direction: 'DOWN',
+      });
+      expect(comparisons.revenue).toEqual([
+        {
+          currency: 'ETB',
+          current: 1000,
+          previous: 500,
+          change: 500,
+          changePercentage: '100.00',
+          direction: 'UP',
+        },
+      ]);
+    });
+
+    it('omits the revenue comparison without dashboard.read_financial even with a previous window', async () => {
+      const rangeWithPrevious = {
+        ...range,
+        previous: {
+          from: new Date('2026-06-06T00:00:00.000Z'),
+          to: new Date('2026-07-06T00:00:00.000Z'),
+        },
+      };
+      dates.resolve.mockReturnValueOnce(rangeWithPrevious);
+      rows([{ new_students: 10, new_enrollments: 20 }]); // current base counters
+      rows([{ new_students: 5, new_enrollments: 25 }]); // previous base counters
+
+      const result = await service.kpis({} as never, []);
+      const comparisons = (
+        result.kpis as { comparisons: Record<string, unknown> }
+      ).comparisons;
+
+      expect((comparisons.newStudents as { current: number }).current).toBe(10);
+      expect(comparisons).not.toHaveProperty('revenue');
     });
   });
 

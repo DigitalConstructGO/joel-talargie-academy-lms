@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import type { DateRange } from 'react-day-picker';
 import {
   Area,
   AreaChart,
@@ -13,12 +14,22 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Award, BookOpen, CreditCard, GraduationCap, Users } from 'lucide-react';
+import {
+  Award,
+  Banknote,
+  BookOpen,
+  CalendarRange,
+  CreditCard,
+  GraduationCap,
+  UserPlus,
+  Users,
+} from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
 import { PageHeader } from '@/components/common/page-header';
 import { PageBreadcrumb } from '@/components/common/page-breadcrumb';
 import { ChartCard } from '@/components/common/chart-card';
 import { ErrorState } from '@/components/common/error-state';
+import { EmptyState } from '@/components/common/empty-state';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { ChartSkeleton } from '@/components/dashboard/skeletons/chart-skeleton';
 import { DashboardSkeleton } from '@/components/dashboard/skeletons/dashboard-skeleton';
@@ -39,6 +50,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { DateRangeFilter } from '@/components/dashboard/filters/date-range-filter';
 import {
   ChartLegend,
   ChartLegendContent,
@@ -70,6 +82,7 @@ const PERIOD_OPTIONS: { label: string; value: DashboardRangePreset }[] = [
   { label: 'This month', value: 'THIS_MONTH' },
   { label: 'Last month', value: 'LAST_MONTH' },
   { label: 'This year', value: 'THIS_YEAR' },
+  { label: 'Custom range', value: 'CUSTOM' },
 ];
 
 const REGISTRATIONS_CONFIG = {
@@ -141,24 +154,73 @@ const SLICE_COLORS = [
   'var(--chart-5)',
 ];
 
+/** Matches `ChartSkeleton`'s card shape so a failed chart doesn't shift layout. */
+function ChartErrorCard({ title, onRetry }: { title: string; onRetry: () => void }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ErrorState className="py-8" description="Unable to load this chart." onRetry={onRetry} />
+      </CardContent>
+    </Card>
+  );
+}
+
+function ChartEmptyCard({ title, description }: { title: string; description: string }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="py-8 text-center text-sm text-muted-foreground">{description}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
 interface AnalyticsFilters {
   [key: string]: string | undefined;
   period: DashboardRangePreset;
+  from: string | undefined;
+  to: string | undefined;
 }
 
 export default function AdminAnalyticsPage() {
-  const { filters, setFilter } = useQueryFilters<AnalyticsFilters>({
-    defaults: { period: 'LAST_30_DAYS' },
+  const { filters, setFilters } = useQueryFilters<AnalyticsFilters>({
+    defaults: { period: 'LAST_30_DAYS', from: undefined, to: undefined },
   });
-  const period = filters.period;
+  const { period, from, to } = filters;
+  const isCustom = period === 'CUSTOM';
+  const customRangeReady = !isCustom || Boolean(from && to);
+  const rangeParams = isCustom ? { range: period, from, to } : { range: period };
+  const dateRange: DateRange | undefined =
+    from || to
+      ? { from: from ? new Date(from) : undefined, to: to ? new Date(to) : undefined }
+      : undefined;
 
-  const overviewQuery = useDashboardOverview({ range: period, previewLimit: 10 });
+  const overviewQuery = useDashboardOverview(
+    { ...rangeParams, previewLimit: 10 },
+    { enabled: customRangeReady },
+  );
   const data = overviewQuery.data;
 
-  const revenueTrendQuery = useDashboardTrend('revenue', { range: period });
-  const certificatesTrendQuery = useDashboardTrend('certificates', { range: period });
-  const coursesByRevenueQuery = useCoursePerformance({ range: period, sort: 'REVENUE', limit: 8 });
-  const lowCompletionQuery = useLowCompletionCourses({ range: period, limit: 8 });
+  const revenueTrendQuery = useDashboardTrend('revenue', rangeParams, {
+    enabled: customRangeReady,
+  });
+  const certificatesTrendQuery = useDashboardTrend('certificates', rangeParams, {
+    enabled: customRangeReady,
+  });
+  const coursesByRevenueQuery = useCoursePerformance(
+    { ...rangeParams, sort: 'REVENUE', limit: 8 },
+    { enabled: customRangeReady },
+  );
+  const lowCompletionQuery = useLowCompletionCourses(
+    { ...rangeParams, limit: 8 },
+    { enabled: customRangeReady },
+  );
   const coursesQuery = useAdminCourses({ pageSize: 200 });
   const rolesQuery = useRoles({ pageSize: 100 });
   const campaignAnalyticsQuery = useAdminPromotionAnalytics({ limit: 8 });
@@ -192,25 +254,50 @@ export default function AdminAnalyticsPage() {
         title="Analytics"
         description="A deeper look at platform growth, revenue, and course performance."
         actions={
-          <Select
-            value={period}
-            onValueChange={(value) => setFilter('period', value as DashboardRangePreset)}
-          >
-            <SelectTrigger className="w-44" aria-label="Period">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PERIOD_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              value={period}
+              onValueChange={(value) =>
+                setFilters({
+                  period: value as DashboardRangePreset,
+                  ...(value !== 'CUSTOM' ? { from: undefined, to: undefined } : {}),
+                })
+              }
+            >
+              <SelectTrigger className="w-44" aria-label="Period">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PERIOD_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {isCustom && (
+              <DateRangeFilter
+                value={dateRange}
+                onChange={(range) =>
+                  setFilters({
+                    from: range?.from ? range.from.toISOString().slice(0, 10) : undefined,
+                    to: range?.to ? range.to.toISOString().slice(0, 10) : undefined,
+                  })
+                }
+                placeholder="Select a date range"
+              />
+            )}
+          </div>
         }
       />
 
-      {overviewQuery.isLoading ? (
+      {!customRangeReady ? (
+        <EmptyState
+          icon={CalendarRange}
+          title="Select a date range"
+          description="Choose a start and end date above to view analytics for a custom range."
+        />
+      ) : overviewQuery.isLoading ? (
         <DashboardSkeleton />
       ) : overviewQuery.isError || !data ? (
         <ErrorState
@@ -253,6 +340,38 @@ export default function AdminAnalyticsPage() {
               tone="success"
             />
           </div>
+
+          {/* Period-over-period comparisons - only present when the backend resolved a previous window */}
+          {data.kpis.comparisons && (
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+              <StatCard
+                icon={UserPlus}
+                label="New Students"
+                value={data.kpis.comparisons.newStudents.current}
+                tone="primary"
+                trend={data.kpis.comparisons.newStudents}
+              />
+              <StatCard
+                icon={GraduationCap}
+                label="New Enrollments"
+                value={data.kpis.comparisons.newEnrollments.current}
+                tone="teal"
+                trend={data.kpis.comparisons.newEnrollments}
+              />
+              <Can permission="dashboard.read_financial">
+                {data.kpis.comparisons.revenue?.map((revenue) => (
+                  <StatCard
+                    key={revenue.currency}
+                    icon={Banknote}
+                    label={`Revenue (${revenue.currency})`}
+                    value={formatCurrency(revenue.current, revenue.currency)}
+                    tone="success"
+                    trend={revenue}
+                  />
+                ))}
+              </Can>
+            </div>
+          )}
 
           {/* Section 2: Growth & revenue trends */}
           <section className="space-y-4">
@@ -321,7 +440,12 @@ export default function AdminAnalyticsPage() {
               <Can permission="dashboard.read_financial">
                 {revenueTrendQuery.isLoading ? (
                   <ChartSkeleton />
-                ) : revenueTrendQuery.data ? (
+                ) : revenueTrendQuery.isError ? (
+                  <ChartErrorCard
+                    title="Revenue Trend"
+                    onRetry={() => revenueTrendQuery.refetch()}
+                  />
+                ) : revenueTrendQuery.data && revenueTrendQuery.data.points.length > 0 ? (
                   <ChartCard
                     title="Revenue Trend"
                     description="Approved payment revenue over the selected period"
@@ -351,12 +475,22 @@ export default function AdminAnalyticsPage() {
                       />
                     </AreaChart>
                   </ChartCard>
-                ) : null}
+                ) : (
+                  <ChartEmptyCard
+                    title="Revenue Trend"
+                    description="No revenue data for this period."
+                  />
+                )}
               </Can>
 
               {certificatesTrendQuery.isLoading ? (
                 <ChartSkeleton />
-              ) : certificatesTrendQuery.data ? (
+              ) : certificatesTrendQuery.isError ? (
+                <ChartErrorCard
+                  title="Certificate Issuance"
+                  onRetry={() => certificatesTrendQuery.refetch()}
+                />
+              ) : certificatesTrendQuery.data && certificatesTrendQuery.data.points.length > 0 ? (
                 <ChartCard
                   title="Certificate Issuance"
                   description="Certificates issued over the selected period"
@@ -380,7 +514,12 @@ export default function AdminAnalyticsPage() {
                     <Bar dataKey="count" fill="var(--color-count)" radius={4} />
                   </BarChart>
                 </ChartCard>
-              ) : null}
+              ) : (
+                <ChartEmptyCard
+                  title="Certificate Issuance"
+                  description="No certificates issued in this period."
+                />
+              )}
             </div>
           </section>
 
@@ -555,6 +694,11 @@ export default function AdminAnalyticsPage() {
               <Can permission="dashboard.read_financial">
                 {coursesByRevenueQuery.isLoading ? (
                   <ChartSkeleton />
+                ) : coursesByRevenueQuery.isError ? (
+                  <ChartErrorCard
+                    title="Top Courses by Revenue"
+                    onRetry={() => coursesByRevenueQuery.refetch()}
+                  />
                 ) : coursesByRevenueQuery.data && coursesByRevenueQuery.data.length > 0 ? (
                   <ChartCard
                     title="Top Courses by Revenue"
@@ -584,11 +728,21 @@ export default function AdminAnalyticsPage() {
                       <Bar dataKey="revenue" fill="var(--color-revenue)" radius={4} />
                     </BarChart>
                   </ChartCard>
-                ) : null}
+                ) : (
+                  <ChartEmptyCard
+                    title="Top Courses by Revenue"
+                    description="No revenue data for this period."
+                  />
+                )}
               </Can>
 
               {lowCompletionQuery.isLoading ? (
                 <ChartSkeleton />
+              ) : lowCompletionQuery.isError ? (
+                <ChartErrorCard
+                  title="Lowest Completion Rates"
+                  onRetry={() => lowCompletionQuery.refetch()}
+                />
               ) : lowCompletionQuery.data && lowCompletionQuery.data.length > 0 ? (
                 <ChartCard
                   title="Lowest Completion Rates"
@@ -618,7 +772,12 @@ export default function AdminAnalyticsPage() {
                     <Bar dataKey="rate" fill="var(--color-rate)" radius={4} />
                   </BarChart>
                 </ChartCard>
-              ) : null}
+              ) : (
+                <ChartEmptyCard
+                  title="Lowest Completion Rates"
+                  description="No completion data for this period."
+                />
+              )}
             </div>
           </section>
 
@@ -628,6 +787,11 @@ export default function AdminAnalyticsPage() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               {coursesQuery.isLoading ? (
                 <ChartSkeleton />
+              ) : coursesQuery.isError ? (
+                <ChartErrorCard
+                  title="Courses by Category"
+                  onRetry={() => coursesQuery.refetch()}
+                />
               ) : categoryDistribution.length > 0 ? (
                 <ChartCard
                   title="Courses by Category"
@@ -649,10 +813,17 @@ export default function AdminAnalyticsPage() {
                     <Bar dataKey="count" fill="var(--color-count)" radius={4} />
                   </BarChart>
                 </ChartCard>
-              ) : null}
+              ) : (
+                <ChartEmptyCard
+                  title="Courses by Category"
+                  description="No published courses yet."
+                />
+              )}
 
               {rolesQuery.isLoading ? (
                 <ChartSkeleton />
+              ) : rolesQuery.isError ? (
+                <ChartErrorCard title="Role Distribution" onRetry={() => rolesQuery.refetch()} />
               ) : roleDistribution.length > 0 ? (
                 <ChartCard
                   title="Role Distribution"
@@ -677,7 +848,12 @@ export default function AdminAnalyticsPage() {
                     </Pie>
                   </PieChart>
                 </ChartCard>
-              ) : null}
+              ) : (
+                <ChartEmptyCard
+                  title="Role Distribution"
+                  description="No users have been assigned a role yet."
+                />
+              )}
             </div>
           </section>
 
@@ -687,6 +863,11 @@ export default function AdminAnalyticsPage() {
               <h2 className="text-sm font-semibold text-foreground">Promotions</h2>
               {campaignAnalyticsQuery.isLoading ? (
                 <ChartSkeleton />
+              ) : campaignAnalyticsQuery.isError ? (
+                <ChartErrorCard
+                  title="Top Campaigns by Redemptions"
+                  onRetry={() => campaignAnalyticsQuery.refetch()}
+                />
               ) : campaignAnalyticsQuery.data &&
                 campaignAnalyticsQuery.data.topCampaigns.length > 0 ? (
                 <ChartCard
@@ -714,7 +895,12 @@ export default function AdminAnalyticsPage() {
                     <Bar dataKey="redemptions" fill="var(--color-redemptions)" radius={4} />
                   </BarChart>
                 </ChartCard>
-              ) : null}
+              ) : (
+                <ChartEmptyCard
+                  title="Top Campaigns by Redemptions"
+                  description="No coupon redemptions yet."
+                />
+              )}
             </section>
           </Can>
 

@@ -297,6 +297,12 @@ export default function AdminProfilePage() {
                   <Skeleton key={index} className="h-8 w-full" />
                 ))}
               </div>
+            ) : activityQuery.isError ? (
+              <ErrorState
+                className="py-8"
+                description="Unable to load recent activity."
+                onRetry={() => activityQuery.refetch()}
+              />
             ) : activityQuery.data?.length ? (
               <ul className="space-y-2 text-sm">
                 {activityQuery.data.map((entry) => (

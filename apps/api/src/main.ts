@@ -13,6 +13,7 @@ import helmet from 'helmet';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { ApiExceptionFilter } from './common/filters/api-exception.filter';
+import { validationExceptionFactory } from './common/pipes/validation-exception-factory';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
 import { ApiResponseInterceptor } from './common/api/api-response.interceptor';
@@ -74,6 +75,7 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
       forbidUnknownValues: true,
       transform: true,
+      exceptionFactory: validationExceptionFactory,
     }),
   );
   app.useGlobalFilters(
@@ -84,16 +86,21 @@ async function bootstrap() {
     new ApiResponseInterceptor(),
   );
   app.enableShutdownHooks();
-  const document = SwaggerModule.createDocument(
-    app,
-    new DocumentBuilder()
-      .setTitle('Joel Talargie Academy API')
-      .setDescription('Versioned REST API for Joel Talargie Academy')
-      .setVersion(API_DOCUMENT_VERSION)
-      .addBearerAuth()
-      .build(),
-  );
-  SwaggerModule.setup('api/docs', app, document);
+  // Publicly exposing the full API schema (every route, DTO shape, and
+  // permission requirement) is unnecessary attack-surface in production -
+  // keep Swagger available in development/test only.
+  if (config.get('NODE_ENV') !== 'production') {
+    const document = SwaggerModule.createDocument(
+      app,
+      new DocumentBuilder()
+        .setTitle('Joel Talargie Academy API')
+        .setDescription('Versioned REST API for Joel Talargie Academy')
+        .setVersion(API_DOCUMENT_VERSION)
+        .addBearerAuth()
+        .build(),
+    );
+    SwaggerModule.setup('api/docs', app, document);
+  }
   await app.listen(config.get<number>('API_PORT') ?? 4000);
 }
 void bootstrap();

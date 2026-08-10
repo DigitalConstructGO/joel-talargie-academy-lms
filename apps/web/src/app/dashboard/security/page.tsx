@@ -51,6 +51,7 @@ import {
 } from '@/features/account/hooks/use-account';
 import { useMyNotifications } from '@/features/notifications/hooks/use-notifications';
 import { authClient } from '@/lib/api/auth-client';
+import { extractErrorMessage, extractFieldErrors } from '@/lib/api/api-error';
 import { formatRelativeTime } from '@/lib/format';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
@@ -89,10 +90,16 @@ function ChangePasswordCard() {
       toast.success('Password updated', 'Use your new password next time you sign in.');
       form.reset();
     } catch (error) {
-      const message =
-        (error as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error
-          ?.message ?? 'Could not change your password. Please try again.';
-      form.setError('currentPassword', { message });
+      const fieldErrors = extractFieldErrors(error);
+      if (fieldErrors.length > 0) {
+        for (const { field, message } of fieldErrors) {
+          form.setError(field as keyof ChangePasswordValues, { message });
+        }
+      } else {
+        form.setError('currentPassword', {
+          message: extractErrorMessage(error, 'Could not change your password. Please try again.'),
+        });
+      }
     }
   });
 
@@ -400,17 +407,13 @@ function ActivityLogCard() {
   });
   const { search, sort, from, to } = filters;
 
-  const notificationsQuery = useMyNotifications({ pageSize: 50 });
+  const notificationsQuery = useMyNotifications({ pageSize: 50, search: search || undefined });
 
+  // Search is applied backend-side (see useMyNotifications above). Date
+  // range has no backend param yet, so it - like sort order - is still
+  // applied client-side over the (already search-filtered) fetched page.
   const activity = useMemo(() => {
     let items = notificationsQuery.data ?? [];
-    if (search) {
-      const needle = search.toLowerCase();
-      items = items.filter(
-        (item) =>
-          item.title.toLowerCase().includes(needle) || item.message.toLowerCase().includes(needle),
-      );
-    }
     if (from) items = items.filter((item) => item.createdAt >= from);
     if (to) items = items.filter((item) => item.createdAt <= `${to}T23:59:59.999Z`);
     return [...items].sort((a, b) =>
@@ -418,7 +421,7 @@ function ActivityLogCard() {
         ? b.createdAt.localeCompare(a.createdAt)
         : a.createdAt.localeCompare(b.createdAt),
     );
-  }, [notificationsQuery.data, search, sort, from, to]);
+  }, [notificationsQuery.data, sort, from, to]);
 
   const dateRange: DateRange | undefined =
     from || to
@@ -432,7 +435,7 @@ function ActivityLogCard() {
         <CardTitle className="text-base">Recent account activity</CardTitle>
         <CardDescription>
           Derived from your notifications feed - login alerts, payments and enrollment updates. Not
-          a full audit log.
+          a full audit log. Date range and sort only cover your 50 most recent items.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

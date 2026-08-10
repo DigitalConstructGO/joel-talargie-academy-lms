@@ -17,6 +17,8 @@ export interface NotificationListParams {
   unread?: boolean;
   type?: string;
   priority?: NotificationPriority;
+  /** Matched against title and body (case-insensitive substring) - backend-driven, not client-side. */
+  search?: string;
 }
 
 /**

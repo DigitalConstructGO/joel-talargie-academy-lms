@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { FileUpload } from '@/components/common/file-upload';
+import { extractFieldErrors } from '@/lib/api/api-error';
 import { useSubmitPayment } from '@/features/payments/hooks/use-payments';
 import type {
   PaymentInstructions,
@@ -70,6 +71,7 @@ export function PaymentMethodStep({
     register,
     handleSubmit,
     reset,
+    setError,
     formState: { errors },
   } = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentFormSchema),
@@ -122,7 +124,13 @@ export function PaymentMethodStep({
         methodLabel,
         receiptFileName: receipt.name,
       });
-    } catch {
+    } catch (error) {
+      const fieldErrors = extractFieldErrors(error);
+      if (fieldErrors.length > 0) {
+        for (const { field, message } of fieldErrors) {
+          setError(field as keyof PaymentFormValues, { message });
+        }
+      }
       toast.error('Could not submit your payment.', 'Please check the details and try again.');
     }
   }

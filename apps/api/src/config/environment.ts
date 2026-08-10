@@ -202,6 +202,50 @@ export const environmentSchema = z
         message: 'Google OAuth credentials are required in production',
       });
     }
+    if (environment.NODE_ENV === 'production') {
+      const insecureJwtDefaults = [
+        'development-access-secret-change-me-now',
+        'development-refresh-secret-change-me-now',
+      ];
+      if (insecureJwtDefaults.includes(environment.JWT_ACCESS_SECRET)) {
+        context.addIssue({
+          code: 'custom',
+          path: ['JWT_ACCESS_SECRET'],
+          message:
+            'must be changed from the publicly-committed development default in production',
+        });
+      }
+      if (insecureJwtDefaults.includes(environment.JWT_REFRESH_SECRET)) {
+        context.addIssue({
+          code: 'custom',
+          path: ['JWT_REFRESH_SECRET'],
+          message:
+            'must be changed from the publicly-committed development default in production',
+        });
+      }
+      if (environment.JWT_ACCESS_SECRET === environment.JWT_REFRESH_SECRET) {
+        context.addIssue({
+          code: 'custom',
+          path: ['JWT_REFRESH_SECRET'],
+          message: 'must be different from JWT_ACCESS_SECRET',
+        });
+      }
+      if (!environment.STORAGE_SIGNING_SECRET) {
+        context.addIssue({
+          code: 'custom',
+          path: ['STORAGE_SIGNING_SECRET'],
+          message:
+            'is required in production - do not rely on the JWT-secret or hardcoded fallback',
+        });
+      }
+      if (!environment.AUTH_COOKIE_SECURE) {
+        context.addIssue({
+          code: 'custom',
+          path: ['AUTH_COOKIE_SECURE'],
+          message: 'must be true in production so auth cookies require HTTPS',
+        });
+      }
+    }
     const validateUrl = (
       key: 'DATABASE_URL' | 'DATABASE_DIRECT_URL' | 'DATABASE_TEST_URL',
     ) => {

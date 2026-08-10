@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { useAuthStore } from '@/stores/auth.store';
 import { GoogleLoginButton } from './google-login-button';
 import { authClient, unwrap } from '@/lib/api/auth-client';
-import { extractErrorMessage } from '@/lib/api/api-error';
+import { extractErrorMessage, extractFieldErrors } from '@/lib/api/api-error';
 import { ROUTES } from '@/constants/routes';
 import { siteConfig } from '@/config/site.config';
 import { isSafeRedirectPath, resolvePostLoginRedirect } from '@/lib/authorization/redirect';
@@ -157,7 +157,14 @@ export function AuthForm({ kind }: { kind: Kind }) {
       }
       setSuccessMessage(result.message);
     } catch (error) {
-      form.setError('root', { message: extractErrorMessage(error, 'Request failed') });
+      const fieldErrors = extractFieldErrors(error);
+      if (fieldErrors.length > 0) {
+        for (const { field, message } of fieldErrors) {
+          form.setError(field, { message });
+        }
+      } else {
+        form.setError('root', { message: extractErrorMessage(error, 'Request failed') });
+      }
     }
   });
   const has = (name: string) => fields[kind].includes(name);

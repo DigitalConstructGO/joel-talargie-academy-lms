@@ -1,5 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { and, desc, eq, isNull, schema, sql } from '@joel-academy/database';
+import {
+  and,
+  desc,
+  eq,
+  ilike,
+  isNull,
+  or,
+  schema,
+  sql,
+} from '@joel-academy/database';
 import { DatabaseService } from '../../../common/database/database.service';
 import type {
   DeliveryListDto,
@@ -35,6 +44,12 @@ export class NotificationsRepository {
           query.type ? eq(schema.notifications.type, query.type) : undefined,
           query.priority
             ? eq(schema.notifications.priority, query.priority)
+            : undefined,
+          query.search
+            ? or(
+                ilike(schema.notifications.title, `%${query.search}%`),
+                ilike(schema.notifications.body, `%${query.search}%`),
+              )
             : undefined,
         ),
       )

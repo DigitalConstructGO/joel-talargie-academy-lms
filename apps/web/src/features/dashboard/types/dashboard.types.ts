@@ -6,6 +6,22 @@ export interface DashboardRange {
   previous?: { from: string; to: string } | null;
 }
 
+/** Mirrors `DashboardService.comparison()` in `apps/api/src/modules/dashboard/services/dashboard.service.ts`. */
+export interface DashboardComparison {
+  current: number;
+  previous: number | null;
+  change: number | null;
+  changePercentage: string | null;
+  direction: 'UP' | 'DOWN' | 'FLAT' | 'NOT_AVAILABLE';
+}
+
+export interface DashboardKpiComparisons {
+  newStudents: DashboardComparison;
+  newEnrollments: DashboardComparison;
+  /** Only present with `dashboard.read_financial`. */
+  revenue?: (DashboardComparison & { currency: string })[];
+}
+
 export interface DashboardKpis {
   students: { total: number; active: number; pendingVerification: number; newDuringPeriod: number };
   courses: { total: number; published: number; draft: number };
@@ -19,6 +35,8 @@ export interface DashboardKpis {
   payments: { waitingForReview: number };
   certificates: { generated: number; attention: number };
   revenue?: { currency: string; amount: string }[];
+  /** Only present when the resolved range has a previous-period window (`DashboardQueryDto.comparison`, default true). */
+  comparisons?: DashboardKpiComparisons;
 }
 
 export interface TrendPoint {
@@ -129,10 +147,15 @@ export type DashboardRangePreset =
   | 'LAST_90_DAYS'
   | 'THIS_MONTH'
   | 'LAST_MONTH'
-  | 'THIS_YEAR';
+  | 'THIS_YEAR'
+  | 'CUSTOM';
 
 export interface DashboardOverviewParams {
   range?: DashboardRangePreset;
+  /** ISO8601 date - required when `range` is `'CUSTOM'`. */
+  from?: string;
+  /** ISO8601 date - required when `range` is `'CUSTOM'`. */
+  to?: string;
   previewLimit?: number;
 }
 
@@ -143,6 +166,8 @@ export type DashboardGranularity = 'DAY' | 'WEEK' | 'MONTH';
 
 export interface DashboardTrendParams {
   range?: DashboardRangePreset;
+  from?: string;
+  to?: string;
   granularity?: DashboardGranularity;
 }
 
@@ -165,6 +190,8 @@ export type CoursePerformanceSort =
 
 export interface CoursePerformanceParams {
   range?: DashboardRangePreset;
+  from?: string;
+  to?: string;
   limit?: number;
   sort?: CoursePerformanceSort;
 }
