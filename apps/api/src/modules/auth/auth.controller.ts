@@ -33,10 +33,13 @@ export class AuthController {
     private readonly config: ConfigService,
   ) {}
   private setCookie(response: Response, token: string) {
+    const secure = Boolean(
+      this.config.get<boolean>('AUTH_COOKIE_SECURE', false),
+    );
     response.cookie('refresh_token', token, {
       httpOnly: true,
-      secure: this.config.get('AUTH_COOKIE_SECURE', false),
-      sameSite: 'none',
+      secure,
+      sameSite: secure ? 'none' : 'lax',
       path: '/',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });

@@ -49,7 +49,7 @@ describe('AuthController', () => {
     expect(res.cookie).toHaveBeenCalledWith(
       'refresh_token',
       'refresh-token',
-      expect.objectContaining({ httpOnly: true, sameSite: 'none' }),
+      expect.objectContaining({ httpOnly: true, sameSite: 'lax' }),
     );
     expect(result).toEqual({
       user: { id: 'user-1' },
