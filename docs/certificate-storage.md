@@ -1,0 +1,3 @@
+# Certificate storage
+
+PDFs are written through the shared `StorageService` abstraction (see [file-storage-architecture.md](./file-storage-architecture.md)). By default (`STORAGE_DRIVER=local`) that resolves to the `LocalStorageProvider`, which writes to `/storage/certificates/<certificateId>/v<generationVersion>/<uuid>.pdf`; setting `STORAGE_DRIVER=s3` swaps in the S3-compatible provider with no code changes. Keys are random and include certificate identity plus generation version but no student name or email. Students receive short-lived signed URLs (default 300s, capped by `STORAGE_SIGNED_URL_TTL_SECONDS`) only for owned `GENERATED` certificates. Administrators with download permission may access generated or revoked historical files.

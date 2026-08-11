@@ -1,0 +1,1 @@
+ALTER TYPE "public"."report_export_format" ADD VALUE 'PDF';
