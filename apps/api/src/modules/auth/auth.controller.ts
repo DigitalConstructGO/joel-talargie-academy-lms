@@ -36,7 +36,7 @@ export class AuthController {
     response.cookie('refresh_token', token, {
       httpOnly: true,
       secure: this.config.get('AUTH_COOKIE_SECURE', false),
-      sameSite: 'lax',
+      sameSite: 'none',
       path: '/',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });

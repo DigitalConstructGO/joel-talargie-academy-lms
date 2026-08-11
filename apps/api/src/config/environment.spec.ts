@@ -32,6 +32,49 @@ describe('database environment validation', () => {
   });
 });
 
+describe('CORS_ADDITIONAL_ORIGINS validation', () => {
+  it('defaults to an empty string', () => {
+    expect(
+      validateEnvironment({
+        NODE_ENV: 'test',
+        WEB_URL: 'http://localhost:3000',
+      }).CORS_ADDITIONAL_ORIGINS,
+    ).toBe('');
+  });
+
+  it('accepts a single extra origin', () => {
+    expect(
+      validateEnvironment({
+        NODE_ENV: 'test',
+        WEB_URL: 'http://localhost:3000',
+        CORS_ADDITIONAL_ORIGINS:
+          'https://joel-talargie-academy-coral.vercel.app',
+      }).CORS_ADDITIONAL_ORIGINS,
+    ).toBe('https://joel-talargie-academy-coral.vercel.app');
+  });
+
+  it('accepts a comma-separated list of extra origins', () => {
+    expect(() =>
+      validateEnvironment({
+        NODE_ENV: 'test',
+        WEB_URL: 'http://localhost:3000',
+        CORS_ADDITIONAL_ORIGINS:
+          'https://joel-talargie-academy-coral.vercel.app, https://staging.example.com',
+      }),
+    ).not.toThrow();
+  });
+
+  it('rejects a non-URL entry', () => {
+    expect(() =>
+      validateEnvironment({
+        NODE_ENV: 'test',
+        WEB_URL: 'http://localhost:3000',
+        CORS_ADDITIONAL_ORIGINS: 'not-a-url',
+      }),
+    ).toThrow('CORS_ADDITIONAL_ORIGINS');
+  });
+});
+
 describe('production secret validation', () => {
   const validProductionBase = {
     NODE_ENV: 'production' as const,

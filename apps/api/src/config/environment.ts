@@ -13,6 +13,24 @@ export const environmentSchema = z
     // e.g. local dev (API on :4000, web on :3000).
     API_URL: z.string().url().default(''),
     WEB_URL: z.string().url().default(''),
+    // Extra frontend origins to allow through CORS/CSP frame-ancestors
+    // alongside WEB_URL (e.g. a Vercel preview/production URL used
+    // alongside local dev) - comma-separated, each must be a valid URL.
+    // WEB_URL remains the one canonical origin used to build absolute
+    // links (OAuth redirects, storage URLs), since a generated link can
+    // only ever point at one of them.
+    CORS_ADDITIONAL_ORIGINS: z
+      .string()
+      .default('')
+      .refine(
+        (value) =>
+          value
+            .split(',')
+            .map((origin) => origin.trim())
+            .filter(Boolean)
+            .every((origin) => z.string().url().safeParse(origin).success),
+        { message: 'must be a comma-separated list of valid URLs' },
+      ),
     TRUST_PROXY: z.stringbool().default(false),
     BODY_LIMIT: z
       .string()

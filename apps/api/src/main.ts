@@ -45,6 +45,19 @@ async function bootstrap() {
     }),
   );
   const webUrl = config.getOrThrow<string>('WEB_URL');
+  // WEB_URL is the one canonical frontend origin (used to build absolute
+  // links - OAuth redirects, storage URLs). CORS/CSP additionally allow any
+  // extra origins from CORS_ADDITIONAL_ORIGINS (e.g. a Vercel deployment
+  // used alongside local dev), since a browser request's Origin header can
+  // legitimately be any of several known frontends, even though a
+  // server-generated link can only point at one.
+  const additionalOrigins = (
+    config.get<string>('CORS_ADDITIONAL_ORIGINS') ?? ''
+  )
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  const allowedOrigins = [...new Set([webUrl, ...additionalOrigins])];
   app.use(
     helmet({
       contentSecurityPolicy: {
@@ -52,11 +65,12 @@ async function bootstrap() {
         // run on different origins (e.g. :4000/:3000 in local dev), so the
         // default `frame-ancestors: 'self'` would block the web app from
         // embedding API-served content in an iframe (e.g. the certificate
-        // preview streamed from `storage/files/:token`). Add WEB_URL as the
-        // one legitimate frame-ancestor rather than disabling the directive.
+        // preview streamed from `storage/files/:token`). Add the allowed
+        // web origins as legitimate frame-ancestors rather than disabling
+        // the directive.
         directives: {
           ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-          'frame-ancestors': ["'self'", webUrl],
+          'frame-ancestors': ["'self'", ...allowedOrigins],
         },
       },
     }),
@@ -66,7 +80,7 @@ async function bootstrap() {
     requestLoggerMiddleware.use.bind(requestLoggerMiddleware),
   );
   app.enableCors({
-    origin: webUrl,
+    origin: allowedOrigins,
     credentials: true,
   });
   app.useGlobalPipes(

@@ -66,7 +66,7 @@ describe('GoogleAuthGuard', () => {
     expect(response.cookie).toHaveBeenCalledWith(
       'google_oauth_state',
       expect.any(String),
-      expect.objectContaining({ httpOnly: true, sameSite: 'lax' }),
+      expect.objectContaining({ httpOnly: true, sameSite: 'none' }),
     );
   });
 
