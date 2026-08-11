@@ -43,6 +43,7 @@
     "*.{js,mjs,cjs,ts,tsx,json,md,css}": "prettier --check"
   },
   "dependencies": {
+    "@nestjs/cli": "^11.0.10",
     "rimraf": "^6.0.1",
     "typescript": "^5.8.3"
   },
