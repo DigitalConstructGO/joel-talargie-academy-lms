@@ -2,7 +2,12 @@ import axios from 'axios';
 
 const normalizeBaseUrl = (value?: string) => value?.trim().replace(/\/+$/, '');
 
-export const getApiBaseUrl = () => normalizeBaseUrl(process.env.NEXT_PUBLIC_API_URL) ?? '';
+export const getApiBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    return '/api/v1';
+  }
+  return normalizeBaseUrl(process.env.NEXT_PUBLIC_API_URL) ?? '';
+};
 
 export const authClient = axios.create({
   baseURL: getApiBaseUrl(),
