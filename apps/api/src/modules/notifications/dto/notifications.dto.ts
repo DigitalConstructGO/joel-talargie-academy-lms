@@ -48,6 +48,8 @@ export class NotificationListDto extends PageDto {
   @IsOptional()
   @IsEnum(NotificationPriorityDto)
   priority?: NotificationPriorityDto;
+  /** Matched against title and body (case-insensitive substring). */
+  @IsOptional() @IsString() @MaxLength(200) search?: string;
 }
 export class MarkNotificationsReadDto {
   @IsArray() @IsUUID('4', { each: true }) notificationIds!: string[];

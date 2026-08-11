@@ -40,6 +40,32 @@ export const MOCK_DASHBOARD_OVERVIEW: DashboardOverview = {
     payments: { waitingForReview: 2 },
     certificates: { generated: 1, attention: 1 },
     revenue: [{ currency: 'USD', amount: '49.99' }],
+    comparisons: {
+      newStudents: {
+        current: 2,
+        previous: 1,
+        change: 1,
+        changePercentage: '100.00',
+        direction: 'UP',
+      },
+      newEnrollments: {
+        current: 3,
+        previous: 4,
+        change: -1,
+        changePercentage: '-25.00',
+        direction: 'DOWN',
+      },
+      revenue: [
+        {
+          currency: 'USD',
+          current: 49.99,
+          previous: 39.99,
+          change: 10,
+          changePercentage: '25.01',
+          direction: 'UP',
+        },
+      ],
+    },
   },
   trends: {
     registrations: last14Days(6),

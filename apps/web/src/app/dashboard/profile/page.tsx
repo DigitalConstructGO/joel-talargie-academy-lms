@@ -16,6 +16,7 @@ import {
   UserCircle,
 } from 'lucide-react';
 import { PageHeader } from '@/components/common/page-header';
+import { ErrorState } from '@/components/common/error-state';
 import { ContentContainer } from '@/components/layout/content-container';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -84,6 +85,7 @@ export default function ProfilePage() {
     (certificate) => certificate.status === 'GENERATED',
   ).length;
   const isLoading = enrollmentsQuery.isLoading || coursesQuery.isLoading || profileQuery.isLoading;
+  const hasCoreError = profileQuery.isError || enrollmentsQuery.isError || coursesQuery.isError;
 
   const {
     register,
@@ -152,6 +154,22 @@ export default function ProfilePage() {
   const completionPercent = Math.round(
     (completionChecks.filter(Boolean).length / completionChecks.length) * 100,
   );
+
+  if (hasCoreError) {
+    return (
+      <ContentContainer>
+        <PageHeader title="Profile" description="Your personal information." />
+        <ErrorState
+          description="Unable to load your profile."
+          onRetry={() => {
+            void profileQuery.refetch();
+            void enrollmentsQuery.refetch();
+            void coursesQuery.refetch();
+          }}
+        />
+      </ContentContainer>
+    );
+  }
 
   return (
     <ContentContainer>
@@ -352,6 +370,12 @@ export default function ProfilePage() {
                   <Skeleton key={index} className="h-32 w-full rounded-xl" />
                 ))}
               </div>
+            ) : certificatesQuery.isError ? (
+              <ErrorState
+                className="py-8"
+                description="Unable to load your certificates."
+                onRetry={() => certificatesQuery.refetch()}
+              />
             ) : certificates.length === 0 ? (
               <EmptyState
                 icon={Award}
@@ -463,6 +487,12 @@ export default function ProfilePage() {
                   <Skeleton key={index} className="h-14 w-full rounded-lg" />
                 ))}
               </div>
+            ) : activityQuery.isError ? (
+              <ErrorState
+                className="py-8"
+                description="Unable to load recent activity."
+                onRetry={() => activityQuery.refetch()}
+              />
             ) : (activityQuery.data ?? []).length === 0 ? (
               <p className="text-sm text-muted-foreground">No recent activity yet.</p>
             ) : (

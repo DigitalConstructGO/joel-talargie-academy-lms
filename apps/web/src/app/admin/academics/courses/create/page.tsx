@@ -23,6 +23,7 @@ import {
 import { useAdminCategories } from '@/features/catalog/hooks/use-admin-categories';
 import { useCreateCourse } from '@/features/catalog/hooks/use-admin-courses';
 import { ROUTES } from '@/constants/routes';
+import { extractFieldErrors } from '@/lib/api/api-error';
 import { toast } from '@/lib/toast';
 
 const formSchema = z.object({
@@ -48,6 +49,7 @@ export default function AdminCourseCreatePage() {
     handleSubmit,
     watch,
     setValue,
+    setError,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -81,7 +83,11 @@ export default function AdminCourseCreatePage() {
       });
       toast.success('Course created as a draft');
       router.push(ROUTES.admin.academicsCourseDetail(course.id));
-    } catch {
+    } catch (error) {
+      const fieldErrors = extractFieldErrors(error);
+      for (const { field, message } of fieldErrors) {
+        setError(field as keyof FormValues, { message });
+      }
       toast.error('Could not create this course');
     }
   }

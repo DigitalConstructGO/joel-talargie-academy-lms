@@ -5,6 +5,7 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<un
   const response = await fetch(`${base}${path}`, {
     ...init,
     cache: 'no-store',
+    signal: init.signal ?? AbortSignal.timeout(30_000),
     headers: { Accept: 'application/json', ...init.headers },
   });
   if (!response.ok)

@@ -39,7 +39,7 @@ export class GoogleAuthGuard extends AuthGuard('google') {
       response.cookie('google_oauth_state', request.oauthState, {
         httpOnly: true,
         secure: this.config.get('AUTH_COOKIE_SECURE', false),
-        sameSite: 'lax',
+        sameSite: 'none',
         path: '/api/v1/auth/google',
         maxAge: 10 * 60 * 1000,
       });

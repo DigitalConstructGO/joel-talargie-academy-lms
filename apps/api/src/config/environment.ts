@@ -13,6 +13,24 @@ export const environmentSchema = z
     // e.g. local dev (API on :4000, web on :3000).
     API_URL: z.string().url().default(''),
     WEB_URL: z.string().url().default(''),
+    // Extra frontend origins to allow through CORS/CSP frame-ancestors
+    // alongside WEB_URL (e.g. a Vercel preview/production URL used
+    // alongside local dev) - comma-separated, each must be a valid URL.
+    // WEB_URL remains the one canonical origin used to build absolute
+    // links (OAuth redirects, storage URLs), since a generated link can
+    // only ever point at one of them.
+    CORS_ADDITIONAL_ORIGINS: z
+      .string()
+      .default('')
+      .refine(
+        (value) =>
+          value
+            .split(',')
+            .map((origin) => origin.trim())
+            .filter(Boolean)
+            .every((origin) => z.string().url().safeParse(origin).success),
+        { message: 'must be a comma-separated list of valid URLs' },
+      ),
     TRUST_PROXY: z.stringbool().default(false),
     BODY_LIMIT: z
       .string()
@@ -201,6 +219,50 @@ export const environmentSchema = z
         path: ['GOOGLE_CLIENT_ID'],
         message: 'Google OAuth credentials are required in production',
       });
+    }
+    if (environment.NODE_ENV === 'production') {
+      const insecureJwtDefaults = [
+        'development-access-secret-change-me-now',
+        'development-refresh-secret-change-me-now',
+      ];
+      if (insecureJwtDefaults.includes(environment.JWT_ACCESS_SECRET)) {
+        context.addIssue({
+          code: 'custom',
+          path: ['JWT_ACCESS_SECRET'],
+          message:
+            'must be changed from the publicly-committed development default in production',
+        });
+      }
+      if (insecureJwtDefaults.includes(environment.JWT_REFRESH_SECRET)) {
+        context.addIssue({
+          code: 'custom',
+          path: ['JWT_REFRESH_SECRET'],
+          message:
+            'must be changed from the publicly-committed development default in production',
+        });
+      }
+      if (environment.JWT_ACCESS_SECRET === environment.JWT_REFRESH_SECRET) {
+        context.addIssue({
+          code: 'custom',
+          path: ['JWT_REFRESH_SECRET'],
+          message: 'must be different from JWT_ACCESS_SECRET',
+        });
+      }
+      if (!environment.STORAGE_SIGNING_SECRET) {
+        context.addIssue({
+          code: 'custom',
+          path: ['STORAGE_SIGNING_SECRET'],
+          message:
+            'is required in production - do not rely on the JWT-secret or hardcoded fallback',
+        });
+      }
+      if (!environment.AUTH_COOKIE_SECURE) {
+        context.addIssue({
+          code: 'custom',
+          path: ['AUTH_COOKIE_SECURE'],
+          message: 'must be true in production so auth cookies require HTTPS',
+        });
+      }
     }
     const validateUrl = (
       key: 'DATABASE_URL' | 'DATABASE_DIRECT_URL' | 'DATABASE_TEST_URL',

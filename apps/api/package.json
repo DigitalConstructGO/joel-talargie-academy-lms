@@ -6,6 +6,7 @@
     "build": "rimraf dist && nest build",
     "start": "node dist/src/main.js",
     "start:dev": "nest start --watch",
+    "start:prod": "node dist/src/main.js",
     "lint": "eslint \"{src,test}/**/*.ts\"",
     "lint:fix": "npm run lint -- --fix",
     "typecheck": "tsc --noEmit --incremental false",

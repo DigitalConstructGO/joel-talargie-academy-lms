@@ -36,7 +36,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "clean": "rimraf **/dist **/.next **/coverage playwright-report test-results",
-    "prepare": "husky",
+    "prepare": "husky || true",
     "dependencies:check": "npm ls && npm audit"
   },
   "lint-staged": {

@@ -9,6 +9,10 @@ import { schema } from '../src/schema/index.ts';
 import { permissionSeed } from '../src/permission-catalog.ts';
 import { eq } from 'drizzle-orm';
 import { demoDataAlreadySeeded, seedDemoData } from '../src/seed/demo-seed.ts';
+import {
+  EMAIL_TEMPLATE_CONTENT,
+  type EmailTemplateCode,
+} from '../src/seed/email-template-content.ts';
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 loadEnvironment({ path: resolve(scriptDirectory, '../../../.env'), quiet: true });
@@ -16,29 +20,9 @@ loadEnvironment({ path: resolve(scriptDirectory, '../.env'), quiet: true, overri
 
 type DatabaseCommand = 'check' | 'migrate' | 'seed';
 
-const emailTemplateCodes = [
-  'EMAIL_VERIFICATION',
-  'PASSWORD_RESET',
-  'PASSWORD_CHANGED',
-  'NEW_LOGIN_ALERT',
-  'GOOGLE_ACCOUNT_LINKED',
-  'GOOGLE_ACCOUNT_UNLINKED',
-  'ACCOUNT_ACTIVATED',
-  'ACCOUNT_SUSPENDED',
-  'ACCOUNT_ARCHIVED',
-  'ACCOUNT_RESTORED',
-  'ROLE_ASSIGNED',
-  'ROLE_REMOVED',
-  'SESSION_REVOKED_BY_ADMIN',
-  'FREE_ENROLLMENT_CONFIRMED',
-  'PAID_ENROLLMENT_CREATED',
-  'PAYMENT_SUBMITTED',
-  'PAYMENT_APPROVED',
-  'PAYMENT_DECLINED',
-  'COURSE_COMPLETED',
-  'CERTIFICATE_READY',
-  'CERTIFICATE_REVOKED',
-] as const;
+// Derived from the same map that defines each code's actual content, so the
+// two can never drift apart.
+const emailTemplateCodes = Object.keys(EMAIL_TEMPLATE_CONTENT) as EmailTemplateCode[];
 
 async function run(): Promise<void> {
   const command = process.argv[2] as DatabaseCommand | undefined;
@@ -151,11 +135,9 @@ async function run(): Promise<void> {
                 .split('_')
                 .map((part) => part[0]!.toUpperCase() + part.slice(1))
                 .join(' '),
-              subjectTemplate: `Joel Talargie Academy: ${code.toLowerCase().replaceAll('_', ' ')}`,
-              htmlTemplate:
-                '<!doctype html><html><body style="font-family:Arial,sans-serif;color:#15324a"><main style="max-width:600px;margin:auto"><h1>Joel Talargie Academy</h1><p>Hello {{recipientName}},</p><p>This is an important transactional notification about your academy account.</p><p>If you need help, contact academy support.</p><hr><small>Joel Talargie Academy</small></main></body></html>',
-              textTemplate:
-                'Joel Talargie Academy\n\nHello {{recipientName}},\n\nThis is an important transactional notification about your academy account.\n\nContact academy support if you need help.',
+              subjectTemplate: EMAIL_TEMPLATE_CONTENT[code].subject,
+              htmlTemplate: EMAIL_TEMPLATE_CONTENT[code].html,
+              textTemplate: EMAIL_TEMPLATE_CONTENT[code].text,
               version: 1,
               locale: 'en',
               isActive: true,

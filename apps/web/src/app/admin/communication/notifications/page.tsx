@@ -57,28 +57,22 @@ export default function AdminNotificationsPage() {
   const notificationsQuery = useMyNotifications({
     pageSize: 50,
     unread: readState === 'ALL' ? undefined : readState === 'UNREAD',
+    search: search || undefined,
   });
   const markRead = useMarkNotificationsRead();
   const markAllRead = useMarkAllNotificationsRead();
   const archiveNotification = useArchiveNotification();
 
   const notificationsData = notificationsQuery.data;
+  // Search/read-state are already applied backend-side (see useMyNotifications
+  // above) - only sort order (no backend param for it yet) is applied here.
   const filtered = useMemo(() => {
-    let notifications = notificationsData ?? [];
-    if (search) {
-      const needle = search.toLowerCase();
-      notifications = notifications.filter(
-        (notification) =>
-          notification.title.toLowerCase().includes(needle) ||
-          notification.message.toLowerCase().includes(needle),
-      );
-    }
-    return [...notifications].sort((a, b) =>
+    return [...(notificationsData ?? [])].sort((a, b) =>
       sort === 'newest'
         ? b.createdAt.localeCompare(a.createdAt)
         : a.createdAt.localeCompare(b.createdAt),
     );
-  }, [notificationsData, search, sort]);
+  }, [notificationsData, sort]);
   const hasUnread = (notificationsData ?? []).some((notification) => notification.readAt === null);
   const hasActiveFilters = readState !== 'ALL' || Boolean(search);
 

@@ -37,6 +37,23 @@ export class ApiExceptionFilter implements ExceptionFilter {
       typeof raw === 'object' && raw && 'message' in raw
         ? (raw as { message: unknown }).message
         : undefined;
+    // Structured field errors from `validationExceptionFactory` - preferred
+    // over the legacy flattened-string-array shape below, which only
+    // remains as a fallback for any `BadRequestException` thrown by hand
+    // elsewhere in the codebase with a plain string-array message.
+    const rawFieldErrors =
+      typeof raw === 'object' && raw && 'errors' in raw
+        ? (raw as { errors: unknown }).errors
+        : undefined;
+    const fieldErrors = Array.isArray(rawFieldErrors)
+      ? rawFieldErrors.filter(
+          (item): item is { field: string; message: string } =>
+            typeof item === 'object' &&
+            item !== null &&
+            typeof (item as { field?: unknown }).field === 'string' &&
+            typeof (item as { message?: unknown }).message === 'string',
+        )
+      : [];
     const validationMessages = Array.isArray(rawMessage)
       ? rawMessage.filter((item): item is string => typeof item === 'string')
       : [];
@@ -45,12 +62,14 @@ export class ApiExceptionFilter implements ExceptionFilter {
         ? 'Internal server error'
         : typeof rawMessage === 'string'
           ? rawMessage
-          : validationMessages.length
+          : fieldErrors.length || validationMessages.length
             ? 'Validation failed'
             : 'Request failed';
-    const details = validationMessages.map((validationMessage) => ({
-      message: validationMessage,
-    }));
+    const details = fieldErrors.length
+      ? fieldErrors
+      : validationMessages.map((validationMessage) => ({
+          message: validationMessage,
+        }));
     const errorCode =
       typeof raw === 'object' &&
       raw &&

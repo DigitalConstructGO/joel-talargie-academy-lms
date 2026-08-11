@@ -13,12 +13,19 @@ function delay<T>(value: T, ms = 120): Promise<T> {
 let store: Notification[] = MOCK_NOTIFICATIONS.map((notification) => ({ ...notification }));
 
 function filterNotifications(params: NotificationListParams) {
+  const needle = params.search?.trim().toLowerCase();
   return store
     .filter((notification) => {
       if (params.unread !== undefined && params.unread !== (notification.readAt === null))
         return false;
       if (params.type && notification.type !== params.type) return false;
       if (params.priority && notification.priority !== params.priority) return false;
+      if (
+        needle &&
+        !notification.title.toLowerCase().includes(needle) &&
+        !notification.message.toLowerCase().includes(needle)
+      )
+        return false;
       return true;
     })
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));

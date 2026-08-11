@@ -13,6 +13,7 @@ import helmet from 'helmet';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { ApiExceptionFilter } from './common/filters/api-exception.filter';
+import { validationExceptionFactory } from './common/pipes/validation-exception-factory';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
 import { ApiResponseInterceptor } from './common/api/api-response.interceptor';
@@ -44,6 +45,19 @@ async function bootstrap() {
     }),
   );
   const webUrl = config.getOrThrow<string>('WEB_URL');
+  // WEB_URL is the one canonical frontend origin (used to build absolute
+  // links - OAuth redirects, storage URLs). CORS/CSP additionally allow any
+  // extra origins from CORS_ADDITIONAL_ORIGINS (e.g. a Vercel deployment
+  // used alongside local dev), since a browser request's Origin header can
+  // legitimately be any of several known frontends, even though a
+  // server-generated link can only point at one.
+  const additionalOrigins = (
+    config.get<string>('CORS_ADDITIONAL_ORIGINS') ?? ''
+  )
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  const allowedOrigins = [...new Set([webUrl, ...additionalOrigins])];
   app.use(
     helmet({
       contentSecurityPolicy: {
@@ -51,11 +65,12 @@ async function bootstrap() {
         // run on different origins (e.g. :4000/:3000 in local dev), so the
         // default `frame-ancestors: 'self'` would block the web app from
         // embedding API-served content in an iframe (e.g. the certificate
-        // preview streamed from `storage/files/:token`). Add WEB_URL as the
-        // one legitimate frame-ancestor rather than disabling the directive.
+        // preview streamed from `storage/files/:token`). Add the allowed
+        // web origins as legitimate frame-ancestors rather than disabling
+        // the directive.
         directives: {
           ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-          'frame-ancestors': ["'self'", webUrl],
+          'frame-ancestors': ["'self'", ...allowedOrigins],
         },
       },
     }),
@@ -65,7 +80,7 @@ async function bootstrap() {
     requestLoggerMiddleware.use.bind(requestLoggerMiddleware),
   );
   app.enableCors({
-    origin: webUrl,
+    origin: allowedOrigins,
     credentials: true,
   });
   app.useGlobalPipes(
@@ -74,6 +89,7 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
       forbidUnknownValues: true,
       transform: true,
+      exceptionFactory: validationExceptionFactory,
     }),
   );
   app.useGlobalFilters(
@@ -84,20 +100,21 @@ async function bootstrap() {
     new ApiResponseInterceptor(),
   );
   app.enableShutdownHooks();
-  const document = SwaggerModule.createDocument(
-    app,
-    new DocumentBuilder()
-      .setTitle('Joel Talargie Academy API')
-      .setDescription('Versioned REST API for Joel Talargie Academy')
-      .setVersion(API_DOCUMENT_VERSION)
-      .addBearerAuth()
-      .build(),
-  );
-  SwaggerModule.setup('api/docs', app, document);
-
-  const port = Number(
-    process.env.PORT ?? config.get<number>('API_PORT') ?? 4000,
-  );
-  await app.listen(port);
+  // Publicly exposing the full API schema (every route, DTO shape, and
+  // permission requirement) is unnecessary attack-surface in production -
+  // keep Swagger available in development/test only.
+  if (config.get('NODE_ENV') !== 'production') {
+    const document = SwaggerModule.createDocument(
+      app,
+      new DocumentBuilder()
+        .setTitle('Joel Talargie Academy API')
+        .setDescription('Versioned REST API for Joel Talargie Academy')
+        .setVersion(API_DOCUMENT_VERSION)
+        .addBearerAuth()
+        .build(),
+    );
+    SwaggerModule.setup('api/docs', app, document);
+  }
+  await app.listen(config.get<number>('API_PORT') ?? 4000);
 }
 void bootstrap();

@@ -15,6 +15,7 @@ const enabledEnvironment: Environment = {
   API_PORT: 4000,
   API_URL: apiUrl,
   WEB_URL: webUrl,
+  CORS_ADDITIONAL_ORIGINS: '',
   TRUST_PROXY: false,
   BODY_LIMIT: '1mb',
   BCRYPT_SALT_ROUNDS: 12,
