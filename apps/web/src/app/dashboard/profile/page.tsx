@@ -5,16 +5,7 @@ import Link from 'next/link';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import {
-  Award,
-  Bell,
-  Camera,
-  CreditCard,
-  KeyRound,
-  Loader2,
-  Trash2,
-  UserCircle,
-} from 'lucide-react';
+import { Award, Camera, CreditCard, KeyRound, Loader2, Trash2, UserCircle } from 'lucide-react';
 import { PageHeader } from '@/components/common/page-header';
 import { ErrorState } from '@/components/common/error-state';
 import { ContentContainer } from '@/components/layout/content-container';
@@ -334,12 +325,6 @@ export default function ProfilePage() {
                 <Link href={ROUTES.dashboard.security}>
                   <KeyRound className="size-4" />
                   Security
-                </Link>
-              </Button>
-              <Button variant="outline" className="w-full justify-start gap-2" asChild>
-                <Link href={ROUTES.dashboard.settings}>
-                  <Bell className="size-4" />
-                  Settings
                 </Link>
               </Button>
               <Button variant="outline" className="w-full justify-start gap-2" asChild>

@@ -160,7 +160,6 @@ function SecurityScoreCard() {
     { label: 'Email verified', met: Boolean(profile?.emailVerified) },
     { label: 'Account in good standing', met: profile?.status === 'ACTIVE' },
     { label: 'Few active sessions', met: sessionCount > 0 && sessionCount <= 3 },
-    { label: 'Two-factor authentication', met: false },
   ];
   const metCount = checks.filter((check) => check.met).length;
   const score = Math.round((metCount / checks.length) * 100);
@@ -242,12 +241,6 @@ function QuickActionsCard() {
           <Link href={ROUTES.dashboard.payments}>
             <CreditCard className="size-4" />
             View payments
-          </Link>
-        </Button>
-        <Button variant="outline" className="w-full justify-start gap-2" asChild>
-          <Link href={ROUTES.dashboard.settings}>
-            <Bell className="size-4" />
-            Notification settings
           </Link>
         </Button>
       </CardContent>
@@ -332,31 +325,6 @@ function DevicesCard() {
   );
 }
 
-function TwoFactorCard() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Two-factor authentication</CardTitle>
-        <CardDescription>Add an extra layer of security to your account.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center justify-between rounded-xl border border-border p-4">
-          <div className="flex items-center gap-3">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-              <ShieldCheck className="size-5" aria-hidden="true" />
-            </span>
-            <div>
-              <p className="text-sm font-medium text-foreground">Authenticator app</p>
-              <p className="text-xs text-muted-foreground">Coming soon</p>
-            </div>
-          </div>
-          <Switch disabled />
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 function RecoveryOptionsCard() {
   return (
     <Card>
@@ -373,13 +341,6 @@ function RecoveryOptionsCard() {
             </p>
           </div>
           <Badge variant="success">Active</Badge>
-        </div>
-        <div className="flex items-center justify-between rounded-xl border border-border p-4 opacity-60">
-          <div>
-            <p className="text-sm font-medium text-foreground">Backup codes</p>
-            <p className="text-xs text-muted-foreground">Coming soon</p>
-          </div>
-          <Badge variant="warning">Coming soon</Badge>
         </div>
       </CardContent>
     </Card>
@@ -524,7 +485,6 @@ export default function StudentSecurityPage() {
         <div className="space-y-6">
           <SecurityScoreCard />
           <QuickActionsCard />
-          <TwoFactorCard />
           <RecoveryOptionsCard />
         </div>
       </div>

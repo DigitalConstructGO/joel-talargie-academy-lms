@@ -50,7 +50,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       {
         question: 'Updating your profile',
         answer:
-          'You can update your name and profile details from your dashboard settings at any time.',
+          'You can update your name and profile details from the Profile page in your dashboard at any time.',
       },
       {
         question: 'Changing your password',

@@ -13,6 +13,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export const DASHBOARD_RANGES = [
   'TODAY',
+  'YESTERDAY',
   'LAST_7_DAYS',
   'LAST_30_DAYS',
   'LAST_90_DAYS',

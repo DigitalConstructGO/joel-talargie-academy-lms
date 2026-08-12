@@ -58,7 +58,6 @@ export const STUDENT_NAV: NavSection[] = [
     items: [
       { label: 'Profile', href: ROUTES.dashboard.profile, icon: UserCircle },
       { label: 'Security', href: ROUTES.dashboard.security, icon: KeyRound },
-      { label: 'Settings', href: ROUTES.dashboard.settings, icon: Settings },
     ],
   },
 ];

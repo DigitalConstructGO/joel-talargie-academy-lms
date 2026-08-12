@@ -14,4 +14,4 @@ export const REPORT_TYPES = [
   'AUTHENTICATION_SECURITY_EVENTS',
 ] as const;
 export type ReportType = (typeof REPORT_TYPES)[number];
-export type ReportFormat = 'CSV' | 'XLSX' | 'PDF';
+export type ReportFormat = 'CSV' | 'PDF';

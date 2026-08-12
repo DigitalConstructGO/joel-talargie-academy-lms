@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { LogOut, Settings, UserCircle } from 'lucide-react';
+import { LogOut, UserCircle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,12 +46,6 @@ export function ProfileMenu() {
           <Link href={ROUTES.dashboard.profile}>
             <UserCircle className="size-4" />
             Profile
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href={ROUTES.dashboard.settings}>
-            <Settings className="size-4" />
-            Settings
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />

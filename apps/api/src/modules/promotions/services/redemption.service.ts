@@ -61,23 +61,38 @@ export class RedemptionService {
       affiliateId,
       affiliateCommission,
     } = await this.resolveRewards(user.id, result, campaign ?? null);
-    const redemption = await this.repository.recordRedemption({
-      campaignId: result.campaignId!,
-      codeId: result.codeId,
-      studentId: user.id,
-      courseId: dto.courseId,
-      status: requiresApproval ? 'RESERVED' : 'CONFIRMED',
-      originalPrice: result.pricing.originalPrice,
-      discountAmount: result.pricing.discountAmount,
-      finalPrice: result.pricing.finalPrice,
-      currency: result.pricing.currency,
-      referralOwnerId,
-      referrerRewardAmount,
-      affiliateId,
-      affiliateCommission,
-      ipAddress: meta.ipAddress,
-      userAgent: meta.userAgent,
-    });
+    let redemption;
+    try {
+      redemption = await this.repository.recordRedemption({
+        campaignId: result.campaignId!,
+        codeId: result.codeId,
+        studentId: user.id,
+        courseId: dto.courseId,
+        status: requiresApproval ? 'RESERVED' : 'CONFIRMED',
+        originalPrice: result.pricing.originalPrice,
+        discountAmount: result.pricing.discountAmount,
+        finalPrice: result.pricing.finalPrice,
+        currency: result.pricing.currency,
+        referralOwnerId,
+        referrerRewardAmount,
+        affiliateId,
+        affiliateCommission,
+        ipAddress: meta.ipAddress,
+        userAgent: meta.userAgent,
+      });
+    } catch (error) {
+      // The initial preview is deliberately non-consuming. A limit can be
+      // reached by another checkout before this confirmed redemption starts.
+      if (
+        error instanceof Error &&
+        error.message === 'PROMOTION_REDEMPTION_LIMIT_REACHED'
+      )
+        throw new UnprocessableEntityException({
+          code: 'USAGE_LIMIT_REACHED',
+          message: 'This coupon has reached its usage limit',
+        });
+      throw error;
+    }
     await this.repository.logUsage({
       campaignId: result.campaignId,
       codeId: result.codeId,

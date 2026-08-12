@@ -141,6 +141,13 @@
       "when": 1785916568603,
       "tag": "0019_robust_steel_serpent",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1786622400000,
+      "tag": "0020_promo_redemption_usage_guard",
+      "breakpoints": true
     }
   ]
 }

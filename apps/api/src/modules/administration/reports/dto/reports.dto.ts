@@ -33,12 +33,12 @@ export class ReportQueryDto {
   @IsInt()
   @Min(1)
   page = 1;
-  @ApiPropertyOptional({ default: 25, maximum: 100 })
+  @ApiPropertyOptional({ default: 10, maximum: 100 })
   @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(100)
-  pageSize = 25;
+  pageSize = 10;
   @ApiPropertyOptional({ enum: ['asc', 'desc'] })
   @IsOptional()
   @IsIn(['asc', 'desc'])
@@ -49,9 +49,9 @@ export class CreateReportExportDto {
   @ApiProperty({ enum: REPORT_TYPES })
   @IsIn(REPORT_TYPES)
   reportType!: (typeof REPORT_TYPES)[number];
-  @ApiProperty({ enum: ['CSV', 'XLSX', 'PDF'] })
-  @IsIn(['CSV', 'XLSX', 'PDF'])
-  format!: 'CSV' | 'XLSX' | 'PDF';
+  @ApiProperty({ enum: ['CSV', 'PDF'] })
+  @IsIn(['CSV', 'PDF'])
+  format!: 'CSV' | 'PDF';
   @ApiPropertyOptional() @IsOptional() @IsObject() filters: Record<
     string,
     unknown
@@ -69,9 +69,9 @@ export class ExportListQueryDto extends ReportQueryDto {
   @IsOptional()
   @IsIn(REPORT_TYPES)
   reportType?: string;
-  @ApiPropertyOptional({ enum: ['CSV', 'XLSX', 'PDF'] })
+  @ApiPropertyOptional({ enum: ['CSV', 'PDF'] })
   @IsOptional()
-  @IsIn(['CSV', 'XLSX', 'PDF'])
+  @IsIn(['CSV', 'PDF'])
   format?: string;
 }
 export class ReportExportReasonDto {

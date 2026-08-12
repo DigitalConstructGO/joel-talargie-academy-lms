@@ -89,35 +89,11 @@ function filterByPermission(
  * collapsed button's fixed 32px box once `!p-2` claims 8px on every side.
  */
 const navItemClassName =
-  'min-h-9 gap-3 rounded-sm px-4 py-3 transition-colors duration-300 ease-in-out hover:bg-white/8 hover:text-sidebar-foreground data-[active=true]:bg-sidebar-active-background data-[active=true]:text-sidebar-active-foreground data-[active=true]:font-medium data-[active=true]:hover:bg-sidebar-active-background data-[active=true]:hover:text-sidebar-active-foreground group-data-[collapsible=icon]:min-h-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 [&>svg]:size-5 group-data-[collapsible=icon]:[&>svg]:size-4';
+  'min-h-9 gap-3 text-white rounded-sm px-4 py-3 transition-colors duration-300 ease-in-out hover:bg-white/8 hover:text-sidebar-foreground data-[active=true]:bg-sidebar-active-background data-[active=true]:text-sidebar-active-foreground data-[active=true]:font-medium data-[active=true]:hover:bg-sidebar-active-background data-[active=true]:hover:text-sidebar-active-foreground group-data-[collapsible=icon]:min-h-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 [&>svg]:size-5 group-data-[collapsible=icon]:[&>svg]:size-4';
 
 /** Hides a nav item's label when the sidebar collapses to icon-only, without leaving it as an invisible flex child that would skew the icon off-center. */
 const navLabelClassName =
   'min-w-0 flex-1 truncate transition-[opacity,width] duration-200 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:flex-none group-data-[collapsible=icon]:opacity-0';
-
-/** Explicit, labeled way back to the public site - the wordmark link in the sidebar header goes to the same place but isn't labeled as such. Unlike `SidebarCollapseButton`, this stays visible on mobile and when collapsed (tooltip shows the label). */
-function SidebarHomeLink() {
-  return (
-    <SidebarMenuButton asChild tooltip="Back to website">
-      <Link href={ROUTES.home}>
-        <Home />
-        <span>Website</span>
-      </Link>
-    </SidebarMenuButton>
-  );
-}
-
-function SidebarCollapseButton() {
-  const { state, toggleSidebar, isMobile } = useSidebar();
-  if (isMobile || state === 'collapsed') return null;
-
-  return (
-    <SidebarMenuButton onClick={toggleSidebar} tooltip="Collapse sidebar">
-      <ChevronsLeft />
-      <span>Collapse</span>
-    </SidebarMenuButton>
-  );
-}
 
 /** Closes the off-canvas sheet on mobile - the sheet's own default close button is suppressed so this one, aligned with the wordmark, can take its place instead. */
 function SidebarMobileCloseButton() {
@@ -147,12 +123,12 @@ export function AppSidebar({
   return (
     <Sidebar collapsible="icon" className="shadow-sidebar">
       <SidebarHeader>
-        <div className="flex items-center justify-between gap-4 px-2 py-2.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+        <div className="flex items-center justify-between gap-4 border-b border-sidebar-border px-2 py-3.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
           <Link href={ROUTES.home} className="flex min-w-0 items-center gap-2">
             <span className="hidden size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground group-data-[collapsible=icon]:flex">
               <GraduationCap className="size-4" />
             </span>
-            <span className="min-w-0 truncate text-lg font-extrabold text-sidebar-foreground transition-[opacity,width] duration-200 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
+            <span className="min-w-0 truncate text-xl  font-extrabold text-white transition-[opacity,width] duration-200 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
               {siteConfig.name}
             </span>
           </Link>
@@ -166,7 +142,7 @@ export function AppSidebar({
           return (
             <SidebarGroup key={section.label ?? index}>
               {section.label && (
-                <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-wider text-sidebar-foreground/40">
+                <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-wider text-sidebar-foreground/60">
                   {section.label}
                 </SidebarGroupLabel>
               )}
@@ -256,14 +232,7 @@ export function AppSidebar({
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border pt-2">
         <SidebarUserFooter roleLabel={portalLabel} />
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarHomeLink />
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarCollapseButton />
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <SidebarMenu></SidebarMenu>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

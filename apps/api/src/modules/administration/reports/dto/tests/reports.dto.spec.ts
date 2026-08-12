@@ -13,7 +13,7 @@ describe('reports DTOs', () => {
     it('applies page/pageSize/sortDirection defaults', () => {
       const instance = plainToInstance(ReportQueryDto, {});
       expect(instance.page).toBe(1);
-      expect(instance.pageSize).toBe(25);
+      expect(instance.pageSize).toBe(10);
       expect(instance.sortDirection).toBe('desc');
     });
 

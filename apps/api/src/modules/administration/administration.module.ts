@@ -13,7 +13,6 @@ import { ReportRegistryService } from './reports/services/report-registry.servic
 import { ReportExportService } from './reports/services/report-export.service';
 import {
   CsvReportExporter,
-  ExcelReportExporter,
   PdfReportExporter,
 } from './reports/exporters/report.exporters';
 import { ReportExportProcessor } from './reports/workers/report-export.processor';
@@ -34,7 +33,6 @@ import { PlatformSettingsService } from './settings/platform-settings.service';
     ReportRegistryService,
     ReportExportService,
     CsvReportExporter,
-    ExcelReportExporter,
     PdfReportExporter,
     ReportExportProcessor,
     SettingRegistryService,

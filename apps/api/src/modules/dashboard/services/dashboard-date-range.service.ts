@@ -28,6 +28,10 @@ export class DashboardDateRangeService {
         from = day;
         to = new Date(day.getTime() + 86400000);
         break;
+      case 'YESTERDAY':
+        from = new Date(day.getTime() - 86400000);
+        to = day;
+        break;
       case 'LAST_7_DAYS':
         from = new Date(day.getTime() - 6 * 86400000);
         to = new Date(day.getTime() + 86400000);

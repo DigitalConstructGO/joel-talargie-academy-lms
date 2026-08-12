@@ -1422,7 +1422,7 @@ export const promoRedemptions = pgTable(
     index('promo_redemptions_affiliate_idx').on(table.affiliateId),
     index('promo_redemptions_enrollment_idx').on(table.enrollmentId),
     index('promo_redemptions_payment_idx').on(table.paymentId),
-    uniqueIndex('promo_redemptions_active_code_student_uq')
+    index('promo_redemptions_active_code_student_idx')
       .on(table.codeId, table.studentId)
       .where(sql`${table.status} IN ('RESERVED', 'CONFIRMED') AND ${table.codeId} IS NOT NULL`),
     check('promo_redemptions_discount_check', sql`${table.discountAmount} >= 0`),

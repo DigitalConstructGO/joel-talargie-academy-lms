@@ -752,6 +752,7 @@ export class PromotionsRepository {
         await this.applyRedemptionCounters(tx, {
           campaignId: input.campaignId,
           codeId: input.codeId,
+          studentId: input.studentId,
           affiliateId: input.affiliateId ?? null,
           finalPrice: input.finalPrice,
           affiliateCommission: input.affiliateCommission ?? 0,
@@ -785,6 +786,7 @@ export class PromotionsRepository {
       await this.applyRedemptionCounters(tx, {
         campaignId: redemption.campaignId,
         codeId: redemption.codeId,
+        studentId: redemption.studentId,
         affiliateId: redemption.affiliateId,
         finalPrice: Number(redemption.finalPrice),
         affiliateCommission: Number(redemption.affiliateCommissionAmount ?? 0),
@@ -875,27 +877,92 @@ export class PromotionsRepository {
     input: {
       campaignId: string;
       codeId: string | null;
+      studentId: string;
       affiliateId: string | null;
       finalPrice: number;
       affiliateCommission: number;
     },
   ) {
-    await tx
+    // Serialise a student's own redemptions while the conditional counter
+    // updates below serialise the last available campaign/code slot. This
+    // makes validation previews non-consuming but redemption first-come-safe.
+    await tx.execute(
+      sql`SELECT pg_advisory_xact_lock(hashtext(${`promo:${input.campaignId}:${input.studentId}`}))`,
+    );
+    const [campaign] = await tx
+      .select({
+        maxPerUser: schema.promoCampaigns.maxRedemptionsPerUser,
+      })
+      .from(schema.promoCampaigns)
+      .where(eq(schema.promoCampaigns.id, input.campaignId));
+    const [campaignUses] = await tx
+      .select({ value: count() })
+      .from(schema.promoRedemptions)
+      .where(
+        and(
+          eq(schema.promoRedemptions.campaignId, input.campaignId),
+          eq(schema.promoRedemptions.studentId, input.studentId),
+          eq(schema.promoRedemptions.status, 'CONFIRMED'),
+        ),
+      );
+    if (!campaign || Number(campaignUses?.value ?? 0) > campaign.maxPerUser)
+      throw new Error('PROMOTION_REDEMPTION_LIMIT_REACHED');
+    if (input.codeId) {
+      const [code] = await tx
+        .select({
+          maxPerUser: schema.promoCodes.maxRedemptionsPerUser,
+          singleUse: schema.promoCodes.isSingleUse,
+        })
+        .from(schema.promoCodes)
+        .where(eq(schema.promoCodes.id, input.codeId));
+      const [codeUses] = await tx
+        .select({ value: count() })
+        .from(schema.promoRedemptions)
+        .where(
+          and(
+            eq(schema.promoRedemptions.codeId, input.codeId),
+            eq(schema.promoRedemptions.studentId, input.studentId),
+            eq(schema.promoRedemptions.status, 'CONFIRMED'),
+          ),
+        );
+      const limit = code?.maxPerUser ?? (code?.singleUse ? 1 : null);
+      if (!code || (limit !== null && Number(codeUses?.value ?? 0) > limit))
+        throw new Error('PROMOTION_REDEMPTION_LIMIT_REACHED');
+    }
+    const updatedCampaign = await tx
       .update(schema.promoCampaigns)
       .set({
         redemptionCount: sql`${schema.promoCampaigns.redemptionCount} + 1`,
         seatsUsed: sql`${schema.promoCampaigns.seatsUsed} + 1`,
         updatedAt: new Date(),
       })
-      .where(eq(schema.promoCampaigns.id, input.campaignId));
-    if (input.codeId)
-      await tx
+      .where(
+        and(
+          eq(schema.promoCampaigns.id, input.campaignId),
+          sql`(${schema.promoCampaigns.maxRedemptions} IS NULL OR ${schema.promoCampaigns.redemptionCount} < ${schema.promoCampaigns.maxRedemptions})`,
+          sql`(${schema.promoCampaigns.totalSeats} IS NULL OR ${schema.promoCampaigns.seatsUsed} < ${schema.promoCampaigns.totalSeats})`,
+        ),
+      )
+      .returning({ id: schema.promoCampaigns.id });
+    if (!updatedCampaign.length)
+      throw new Error('PROMOTION_REDEMPTION_LIMIT_REACHED');
+    if (input.codeId) {
+      const updatedCode = await tx
         .update(schema.promoCodes)
         .set({
           redemptionCount: sql`${schema.promoCodes.redemptionCount} + 1`,
           updatedAt: new Date(),
         })
-        .where(eq(schema.promoCodes.id, input.codeId));
+        .where(
+          and(
+            eq(schema.promoCodes.id, input.codeId),
+            sql`(${schema.promoCodes.maxRedemptions} IS NULL OR ${schema.promoCodes.redemptionCount} < ${schema.promoCodes.maxRedemptions})`,
+          ),
+        )
+        .returning({ id: schema.promoCodes.id });
+      if (!updatedCode.length)
+        throw new Error('PROMOTION_REDEMPTION_LIMIT_REACHED');
+    }
     if (input.affiliateId)
       await tx
         .update(schema.promoAffiliates)

@@ -32,7 +32,7 @@ export class AdminReportExportsController {
   @Post()
   @RequirePermissions('reports.export')
   @ApiOperation({
-    summary: 'Queue a CSV, XLSX, or PDF report export in PostgreSQL',
+    summary: 'Queue a CSV or PDF report export in PostgreSQL',
   })
   create(
     @CurrentUser() u: AuthUser,

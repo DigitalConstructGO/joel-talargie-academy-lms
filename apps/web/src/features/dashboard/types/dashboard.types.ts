@@ -142,6 +142,7 @@ export interface DashboardOverview {
 
 export type DashboardRangePreset =
   | 'TODAY'
+  | 'YESTERDAY'
   | 'LAST_7_DAYS'
   | 'LAST_30_DAYS'
   | 'LAST_90_DAYS'

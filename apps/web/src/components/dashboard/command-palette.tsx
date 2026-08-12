@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { LayoutDashboard, LogOut, Moon, Search, Settings, Sun, UserCircle } from 'lucide-react';
+import { LayoutDashboard, LogOut, Moon, Search, Sun, UserCircle } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -88,10 +88,6 @@ export function CommandPalette({ sections, open, onOpenChange }: CommandPaletteP
               <CommandItem value="View profile" onSelect={() => go(ROUTES.dashboard.profile)}>
                 <UserCircle />
                 <span>View profile</span>
-              </CommandItem>
-              <CommandItem value="Open settings" onSelect={() => go(ROUTES.dashboard.settings)}>
-                <Settings />
-                <span>Open settings</span>
               </CommandItem>
               <CommandItem
                 value="Switch to light theme"

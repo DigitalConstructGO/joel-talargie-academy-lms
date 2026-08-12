@@ -1,24 +1,23 @@
 'use client';
 
-import { useState } from 'react';
 import type { DateRange } from 'react-day-picker';
-import { Download, FileText, Loader2 } from 'lucide-react';
+import { ChevronDown, Download, FileText, Loader2 } from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
 import { PageHeader } from '@/components/common/page-header';
 import { PageBreadcrumb } from '@/components/common/page-breadcrumb';
 import { SearchBar } from '@/components/common/search-bar';
 import { FilterBar } from '@/components/dashboard/filters/filter-bar';
 import { DateRangeFilter } from '@/components/dashboard/filters/date-range-filter';
+import { SelectFilter } from '@/components/dashboard/filters/select-filter';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Select,
   SelectContent,
@@ -35,6 +34,7 @@ import {
   useReport,
   useReportExports,
 } from '@/features/reports/hooks/use-reports';
+import { reportsApi } from '@/features/reports/api/reports.api';
 import {
   REPORT_GROUPS,
   type ReportExportStatus,
@@ -42,11 +42,13 @@ import {
   type ReportType,
 } from '@/features/reports/types/report.types';
 import { useQueryFilters } from '@/hooks/use-query-filters';
+import { useAdminCourses } from '@/features/catalog/hooks/use-admin-courses';
+import { useAdminCategories } from '@/features/catalog/hooks/use-admin-categories';
 import { ROUTES } from '@/constants/routes';
 import { formatDateTime } from '@/lib/date';
 import { toast } from '@/lib/toast';
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 10;
 
 interface ReportsFilters {
   [key: string]: string | undefined;
@@ -54,6 +56,9 @@ interface ReportsFilters {
   search: string | undefined;
   from: string | undefined;
   to: string | undefined;
+  status: string | undefined;
+  courseId: string | undefined;
+  categoryId: string | undefined;
 }
 
 const DEFAULT_FILTERS: ReportsFilters = {
@@ -61,6 +66,9 @@ const DEFAULT_FILTERS: ReportsFilters = {
   search: undefined,
   from: undefined,
   to: undefined,
+  status: undefined,
+  courseId: undefined,
+  categoryId: undefined,
 };
 
 const EXPORT_STATUS_VARIANT: Record<ReportExportStatus, NonNullable<BadgeProps['variant']>> = {
@@ -72,50 +80,69 @@ const EXPORT_STATUS_VARIANT: Record<ReportExportStatus, NonNullable<BadgeProps['
   EXPIRED: 'outline',
 };
 
-function ExportDialog({ reportType }: { reportType: ReportType }) {
-  const [open, setOpen] = useState(false);
-  const [format, setFormat] = useState<ReportFormat>('CSV');
+function ExportMenu({
+  reportType,
+  filters,
+}: {
+  reportType: ReportType;
+  filters: Record<string, unknown>;
+}) {
   const createExport = useCreateReportExport();
 
-  async function handleSubmit() {
+  async function exportReport(format: ReportFormat) {
     try {
-      await createExport.mutateAsync({ reportType, format });
-      toast.success('Export queued', 'Check the exports list below once it finishes.');
-      setOpen(false);
+      const queued = await createExport.mutateAsync({ reportType, format, filters });
+      toast.success('Preparing download…');
+      const deadline = Date.now() + 60_000;
+      let exportState = queued;
+      while (exportState.status === 'QUEUED' || exportState.status === 'PROCESSING') {
+        if (Date.now() >= deadline) {
+          toast.error(
+            'Export is taking longer than expected',
+            'It will remain available in Recent downloads.',
+          );
+          return;
+        }
+        await new Promise((resolve) => window.setTimeout(resolve, 1_000));
+        exportState = await reportsApi.exportDetail(queued.id);
+      }
+      if (!exportState.downloadAvailable) {
+        toast.error(exportState.failureMessage ?? 'Could not generate this export');
+        return;
+      }
+      const download = await reportsApi.download(queued.id);
+      const link = document.createElement('a');
+      link.href = download.url;
+      link.download = download.fileName ?? '';
+      link.rel = 'noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Download started');
     } catch {
-      toast.error('Could not queue this export');
+      toast.error('Could not prepare this export');
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <Can permission="reports.export">
-        <Button variant="outline" className="gap-2" onClick={() => setOpen(true)}>
-          <Download className="size-4" /> Export
-        </Button>
-      </Can>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Export report</DialogTitle>
-        </DialogHeader>
-        <Select value={format} onValueChange={(value) => setFormat(value as ReportFormat)}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="CSV">CSV</SelectItem>
-            <SelectItem value="XLSX">Excel (XLSX)</SelectItem>
-            <SelectItem value="PDF">PDF</SelectItem>
-          </SelectContent>
-        </Select>
-        <DialogFooter>
-          <Button onClick={handleSubmit} disabled={createExport.isPending}>
-            {createExport.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-            Queue export
+    <Can permission="reports.export">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" className="gap-2" disabled={createExport.isPending}>
+            {createExport.isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Download className="size-4" />
+            )}
+            Export <ChevronDown className="size-4" />
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onSelect={() => void exportReport('CSV')}>Export CSV</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => void exportReport('PDF')}>Export PDF</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </Can>
   );
 }
 
@@ -126,9 +153,16 @@ function ExportsList() {
   async function handleDownload(exportId: string) {
     try {
       const result = await download.mutateAsync(exportId);
-      window.open(result.url, '_blank', 'noopener,noreferrer');
+      const link = document.createElement('a');
+      link.href = result.url;
+      link.download = result.fileName ?? '';
+      link.rel = 'noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Download started');
     } catch {
-      toast.error('This export is not ready yet');
+      toast.error('Unable to download this export', 'Please try again.');
     }
   }
 
@@ -173,13 +207,31 @@ function ExportsList() {
   );
 }
 
+import { usePermissions } from '@/hooks/use-permissions';
+
 export default function AdminReportsPage() {
-  const { filters, page, pageSize, setFilter, setFilters, setPage } =
+  const { canAny, isAdministrator } = usePermissions();
+
+  const visibleGroups = REPORT_GROUPS.filter(
+    (group) => isAdministrator || canAny(group.permissions),
+  );
+
+  const { filters, page, pageSize, setFilter, setFilters, setPage, setPageSize } =
     useQueryFilters<ReportsFilters>({
       defaults: DEFAULT_FILTERS,
       pageSize: PAGE_SIZE,
     });
-  const { type, search, from, to } = filters;
+  const { type, search, from, to, status, courseId, categoryId } = filters;
+  const coursesQuery = useAdminCourses({ pageSize: 100 });
+  const categoriesQuery = useAdminCategories({ pageSize: 100 });
+  const courseOptions = (coursesQuery.data?.items ?? []).map((course) => ({
+    label: course.title,
+    value: course.id,
+  }));
+  const categoryOptions = (categoriesQuery.data?.items ?? []).map((category) => ({
+    label: category.name,
+    value: category.id,
+  }));
 
   const reportQuery = useReport(type, {
     page,
@@ -187,6 +239,9 @@ export default function AdminReportsPage() {
     search: search || undefined,
     from: from || undefined,
     to: to || undefined,
+    status: status || undefined,
+    courseId: courseId || undefined,
+    categoryId: categoryId || undefined,
   });
 
   const dateRange: DateRange | undefined =
@@ -206,7 +261,12 @@ export default function AdminReportsPage() {
       <PageHeader
         title="Reports"
         description="Generate and export platform reports."
-        actions={<ExportDialog reportType={type} />}
+        actions={
+          <ExportMenu
+            reportType={type}
+            filters={{ search, from, to, status, courseId, categoryId }}
+          />
+        }
       />
 
       <FilterBar>
@@ -215,7 +275,7 @@ export default function AdminReportsPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {REPORT_GROUPS.map((group) => (
+            {visibleGroups.map((group) => (
               <div key={group.label}>
                 <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
                   {group.label}
@@ -244,9 +304,35 @@ export default function AdminReportsPage() {
             })
           }
         />
+        <SelectFilter
+          label="Status"
+          value={status}
+          onChange={(value) => setFilter('status', value)}
+          options={[
+            { label: 'Pending', value: 'PENDING' },
+            { label: 'Approved', value: 'APPROVED' },
+            { label: 'Declined', value: 'DECLINED' },
+            { label: 'Enrolled', value: 'ENROLLED' },
+            { label: 'Completed', value: 'COMPLETED' },
+            { label: 'Active', value: 'ACTIVE' },
+            { label: 'Suspended', value: 'SUSPENDED' },
+            { label: 'Generated', value: 'GENERATED' },
+            { label: 'Revoked', value: 'REVOKED' },
+          ]}
+        />
+        <SelectFilter
+          label="Course"
+          value={courseId}
+          onChange={(value) => setFilter('courseId', value)}
+          options={courseOptions}
+        />
+        <SelectFilter
+          label="Category"
+          value={categoryId}
+          onChange={(value) => setFilter('categoryId', value)}
+          options={categoryOptions}
+        />
       </FilterBar>
-
-      <ExportsList />
 
       <ReportTable
         result={reportQuery.data}
@@ -256,7 +342,11 @@ export default function AdminReportsPage() {
         onRetry={() => reportQuery.refetch()}
         page={page}
         onPageChange={setPage}
+        pageSize={pageSize}
+        onPageSizeChange={setPageSize}
       />
+
+      <ExportsList />
     </ContentContainer>
   );
 }

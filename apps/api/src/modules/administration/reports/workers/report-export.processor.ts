@@ -1,28 +1,72 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { createHash } from 'crypto';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
+import { createHash, randomUUID } from 'crypto';
 import { and, eq, schema, sql } from '@joel-academy/database';
 import { DatabaseService } from '../../../../common/database/database.service';
 import { STORAGE_SERVICE } from '../../../storage/storage.interface';
 import type { StorageService } from '../../../storage/storage.interface';
 import {
   CsvReportExporter,
-  ExcelReportExporter,
   PdfReportExporter,
 } from '../exporters/report.exporters';
 import { ReportRepository } from '../repositories/report.repository';
 import { ReportExportService } from '../services/report-export.service';
 import type { ReportType } from '../report.types';
 @Injectable()
-export class ReportExportProcessor {
+export class ReportExportProcessor implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(ReportExportProcessor.name);
+  private readonly workerId = `api-report-${randomUUID()}`;
+  private timer: NodeJS.Timeout | undefined;
+  private processing = false;
   constructor(
     private readonly db: DatabaseService,
     private readonly reports: ReportRepository,
     private readonly csv: CsvReportExporter,
-    private readonly xlsx: ExcelReportExporter,
     private readonly pdf: PdfReportExporter,
     private readonly exports: ReportExportService,
     @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
   ) {}
+
+  /**
+   * Process exports in the API process as well as the optional dedicated
+   * worker. `FOR UPDATE SKIP LOCKED` in claim() makes this safe when both run.
+   * This prevents local/single-process deployments leaving exports queued
+   * forever and therefore unable to download.
+   */
+  onModuleInit() {
+    this.timer = setInterval(() => void this.runSafely(), 2_000);
+    void this.runSafely();
+  }
+
+  onModuleDestroy() {
+    if (this.timer) clearInterval(this.timer);
+  }
+
+  private async processQueuedExports() {
+    if (this.processing) return;
+    this.processing = true;
+    try {
+      await this.expire();
+      while (await this.processOne(this.workerId)) {
+        // Drain currently queued exports without overlapping another timer tick.
+      }
+    } finally {
+      this.processing = false;
+    }
+  }
+
+  private async runSafely() {
+    try {
+      await this.processQueuedExports();
+    } catch {
+      this.logger.error('Report export queue processing failed');
+    }
+  }
   async claim(workerId: string) {
     const result = await this.db.client.execute(
       sql`WITH candidate AS (SELECT id FROM report_exports WHERE status='QUEUED' ORDER BY requested_at,id FOR UPDATE SKIP LOCKED LIMIT 1) UPDATE report_exports e SET status='PROCESSING',started_at=now(),attempt_count=attempt_count+1,updated_at=now() FROM candidate WHERE e.id=candidate.id RETURNING e.*`,
@@ -33,6 +77,8 @@ export class ReportExportProcessor {
     const row = await this.claim(workerId);
     if (!row) return false;
     try {
+      if (row.format !== 'CSV' && row.format !== 'PDF')
+        throw new Error('UNSUPPORTED_REPORT_FORMAT');
       const all: Record<string, unknown>[] = [];
       let page = 1,
         total = 0;
@@ -55,15 +101,11 @@ export class ReportExportProcessor {
       const body =
         row.format === 'CSV'
           ? this.csv.generate(all)
-          : row.format === 'PDF'
-            ? await this.pdf.generate(all, row.report_type)
-            : await this.xlsx.generate(all, row.report_type);
+          : await this.pdf.generate(all, row.report_type, {
+              filters: row.filters_json ?? {},
+            });
       const mimeType =
-        row.format === 'CSV'
-          ? 'text/csv; charset=utf-8'
-          : row.format === 'PDF'
-            ? 'application/pdf'
-            : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        row.format === 'CSV' ? 'text/csv; charset=utf-8' : 'application/pdf';
       const key = this.exports.key(row.requested_by, row.id, row.format);
       await this.storage.upload({ key, body, contentType: mimeType });
       const checksum = createHash('sha256').update(body).digest('hex');

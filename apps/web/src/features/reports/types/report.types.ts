@@ -15,7 +15,7 @@ export const REPORT_TYPES = [
 ] as const;
 
 export type ReportType = (typeof REPORT_TYPES)[number];
-export type ReportFormat = 'CSV' | 'XLSX' | 'PDF';
+export type ReportFormat = 'CSV' | 'PDF';
 export type ReportExportStatus =
   'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'EXPIRED';
 
@@ -35,8 +35,22 @@ export const REPORT_LABELS: Record<ReportType, string> = {
   AUTHENTICATION_SECURITY_EVENTS: 'Authentication & Security Events',
 };
 
-export const REPORT_GROUPS: { label: string; types: ReportType[] }[] = [
-  { label: 'User Reports', types: ['USER_REGISTRATIONS', 'USER_ACCOUNT_STATUS'] },
+export const REPORT_GROUPS: { label: string; types: ReportType[]; permissions: string[] }[] = [
+  {
+    label: 'User Reports',
+    types: ['USER_REGISTRATIONS', 'USER_ACCOUNT_STATUS'],
+    // Any of: read users, manage their activation/suspension/archival
+    permissions: [
+      'users.read',
+      'users.update',
+      'users.activate',
+      'users.suspend',
+      'users.archive',
+      'users.restore',
+      'users.view_activity',
+      'users.view_sessions',
+    ],
+  },
   {
     label: 'Course & Learning Reports',
     types: [
@@ -45,15 +59,49 @@ export const REPORT_GROUPS: { label: string; types: ReportType[] }[] = [
       'LEARNING_PROGRESS',
       'COURSE_COMPLETIONS',
     ],
+    // Any of: read courses, enrollments, learning/progress data
+    permissions: [
+      'courses.read',
+      'enrollments.read',
+      'enrollments.view_activity',
+      'learning.view_student_progress',
+      'learning.view_activity',
+    ],
   },
   {
     label: 'Payment & Revenue Reports',
     types: ['PAYMENTS', 'REVENUE', 'PAYMENT_REVIEW_PERFORMANCE'],
+    // Any of: read payments, view receipts, approve/decline
+    permissions: [
+      'payments.read',
+      'payments.view_receipts',
+      'payments.read_sensitive',
+      'payments.approve',
+      'payments.decline',
+      'payments.view_activity',
+    ],
   },
-  { label: 'Certificate Reports', types: ['CERTIFICATES', 'CERTIFICATE_GENERATION'] },
+  {
+    label: 'Certificate Reports',
+    types: ['CERTIFICATES', 'CERTIFICATE_GENERATION'],
+    // Any of: read or manage certificates
+    permissions: [
+      'certificates.read',
+      'certificates.generate',
+      'certificates.revoke',
+      'certificates.view_activity',
+    ],
+  },
   {
     label: 'Activity & Security Reports',
     types: ['ADMINISTRATOR_ACTIVITY', 'AUTHENTICATION_SECURITY_EVENTS'],
+    // Any of: read audit logs or admin-level security events
+    permissions: [
+      'audit.read',
+      'users.view_sessions',
+      'users.revoke_sessions',
+      'settings.view_history',
+    ],
   },
 ];
 

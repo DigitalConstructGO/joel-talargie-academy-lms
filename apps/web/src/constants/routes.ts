@@ -55,7 +55,6 @@ export const ROUTES = {
     support: '/dashboard/support',
     profile: '/dashboard/profile',
     security: '/dashboard/security',
-    settings: '/dashboard/settings',
   },
   admin: {
     root: '/admin/dashboard',

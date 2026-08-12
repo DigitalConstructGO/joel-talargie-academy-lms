@@ -42,7 +42,6 @@ export class ReportRepository {
       );
       const base = this.database.client
         .select({
-          id: schema.users.id,
           firstName: schema.userProfiles.firstName,
           lastName: schema.userProfiles.lastName,
           email: schema.users.email,
@@ -60,7 +59,7 @@ export class ReportRepository {
         .where(where);
       const [rows, total, summary] = await Promise.all([
         base
-          .orderBy(order(schema.users.createdAt), order(schema.users.id))
+          .orderBy(order(schema.users.createdAt))
           .limit(q.pageSize)
           .offset(offset),
         this.database.client
@@ -109,11 +108,8 @@ export class ReportRepository {
       const [rows, total] = await Promise.all([
         this.database.client
           .select({
-            id: schema.activityLogs.id,
-            actorId: schema.activityLogs.actorId,
             action: schema.activityLogs.action,
             entityType: schema.activityLogs.entityType,
-            entityId: schema.activityLogs.entityId,
             before: schema.activityLogs.before,
             after: schema.activityLogs.after,
             ipAddress: schema.activityLogs.ipAddress,
@@ -122,10 +118,7 @@ export class ReportRepository {
           })
           .from(schema.activityLogs)
           .where(where)
-          .orderBy(
-            order(schema.activityLogs.createdAt),
-            order(schema.activityLogs.id),
-          )
+          .orderBy(order(schema.activityLogs.createdAt))
           .limit(q.pageSize)
           .offset(offset),
         this.database.client
@@ -149,13 +142,26 @@ export class ReportRepository {
       const where = and(
         ...this.dates(schema.payments.submittedAt, q),
         q.status ? eq(schema.payments.status, q.status as any) : undefined,
+        q.courseId ? eq(schema.enrollments.courseId, q.courseId) : undefined,
+        q.studentId ? eq(schema.enrollments.studentId, q.studentId) : undefined,
+        q.categoryId ? eq(schema.courses.categoryId, q.categoryId) : undefined,
+        q.search
+          ? or(
+              ilike(schema.users.email, `%${q.search}%`),
+              ilike(schema.courses.title, `%${q.search}%`),
+              ilike(schema.userProfiles.firstName, `%${q.search}%`),
+              ilike(schema.userProfiles.lastName, `%${q.search}%`),
+            )
+          : undefined,
         revenue,
       );
       const [rows, total, sums] = await Promise.all([
         this.database.client
           .select({
-            id: schema.payments.id,
-            enrollmentId: schema.payments.enrollmentId,
+            student: sql<string>`concat_ws(' ', ${schema.userProfiles.firstName}, ${schema.userProfiles.lastName})`,
+            studentEmail: schema.users.email,
+            course: schema.courses.title,
+            category: schema.categories.name,
             status: schema.payments.status,
             attemptNumber: schema.payments.attemptNumber,
             amount: schema.payments.amount,
@@ -164,21 +170,57 @@ export class ReportRepository {
             amountMismatch: schema.payments.amountMismatch,
             submittedAt: schema.payments.submittedAt,
             reviewedAt: schema.payments.reviewedAt,
-            reviewerId: schema.payments.reviewerId,
             declineReason: schema.payments.declineReason,
             reviewNote: schema.payments.reviewNote,
           })
           .from(schema.payments)
-          .where(where)
-          .orderBy(
-            order(schema.payments.submittedAt),
-            order(schema.payments.id),
+          .innerJoin(
+            schema.enrollments,
+            eq(schema.enrollments.id, schema.payments.enrollmentId),
           )
+          .innerJoin(
+            schema.courses,
+            eq(schema.courses.id, schema.enrollments.courseId),
+          )
+          .leftJoin(
+            schema.categories,
+            eq(schema.categories.id, schema.courses.categoryId),
+          )
+          .innerJoin(
+            schema.users,
+            eq(schema.users.id, schema.enrollments.studentId),
+          )
+          .leftJoin(
+            schema.userProfiles,
+            eq(schema.userProfiles.userId, schema.users.id),
+          )
+          .where(where)
+          .orderBy(order(schema.payments.submittedAt))
           .limit(q.pageSize)
           .offset(offset),
         this.database.client
           .select({ value: count() })
           .from(schema.payments)
+          .innerJoin(
+            schema.enrollments,
+            eq(schema.enrollments.id, schema.payments.enrollmentId),
+          )
+          .innerJoin(
+            schema.courses,
+            eq(schema.courses.id, schema.enrollments.courseId),
+          )
+          .leftJoin(
+            schema.categories,
+            eq(schema.categories.id, schema.courses.categoryId),
+          )
+          .innerJoin(
+            schema.users,
+            eq(schema.users.id, schema.enrollments.studentId),
+          )
+          .leftJoin(
+            schema.userProfiles,
+            eq(schema.userProfiles.userId, schema.users.id),
+          )
           .where(where),
         this.database.client
           .select({
@@ -186,6 +228,26 @@ export class ReportRepository {
             total: sql<string>`sum(${schema.payments.amount})`,
           })
           .from(schema.payments)
+          .innerJoin(
+            schema.enrollments,
+            eq(schema.enrollments.id, schema.payments.enrollmentId),
+          )
+          .innerJoin(
+            schema.courses,
+            eq(schema.courses.id, schema.enrollments.courseId),
+          )
+          .leftJoin(
+            schema.categories,
+            eq(schema.categories.id, schema.courses.categoryId),
+          )
+          .innerJoin(
+            schema.users,
+            eq(schema.users.id, schema.enrollments.studentId),
+          )
+          .leftJoin(
+            schema.userProfiles,
+            eq(schema.userProfiles.userId, schema.users.id),
+          )
           .where(where)
           .groupBy(schema.payments.currency),
       ]);
@@ -208,8 +270,6 @@ export class ReportRepository {
       const [rows, total] = await Promise.all([
         this.database.client
           .select({
-            id: schema.certificates.id,
-            enrollmentId: schema.certificates.enrollmentId,
             status: schema.certificates.status,
             certificateNumber: schema.certificates.certificateNumber,
             studentName: schema.certificates.studentNameAtIssue,
@@ -220,10 +280,7 @@ export class ReportRepository {
           })
           .from(schema.certificates)
           .where(where)
-          .orderBy(
-            order(schema.certificates.createdAt),
-            order(schema.certificates.id),
-          )
+          .orderBy(order(schema.certificates.createdAt))
           .limit(q.pageSize)
           .offset(offset),
         this.database.client
@@ -246,14 +303,24 @@ export class ReportRepository {
       q.status ? eq(schema.enrollments.status, q.status as any) : undefined,
       q.courseId ? eq(schema.enrollments.courseId, q.courseId) : undefined,
       q.studentId ? eq(schema.enrollments.studentId, q.studentId) : undefined,
+      q.categoryId ? eq(schema.courses.categoryId, q.categoryId) : undefined,
+      q.search
+        ? or(
+            ilike(schema.users.email, `%${q.search}%`),
+            ilike(schema.courses.title, `%${q.search}%`),
+            ilike(schema.userProfiles.firstName, `%${q.search}%`),
+            ilike(schema.userProfiles.lastName, `%${q.search}%`),
+          )
+        : undefined,
       completion,
     );
     const [rows, total] = await Promise.all([
       this.database.client
         .select({
-          id: schema.enrollments.id,
-          studentId: schema.enrollments.studentId,
-          courseId: schema.enrollments.courseId,
+          student: sql<string>`concat_ws(' ', ${schema.userProfiles.firstName}, ${schema.userProfiles.lastName})`,
+          studentEmail: schema.users.email,
+          course: schema.courses.title,
+          category: schema.categories.name,
           status: schema.enrollments.status,
           price: schema.enrollments.priceAtEnrollment,
           discount: schema.enrollments.discountAtEnrollment,
@@ -264,16 +331,45 @@ export class ReportRepository {
           completedAt: schema.enrollments.completedAt,
         })
         .from(schema.enrollments)
-        .where(where)
-        .orderBy(
-          order(schema.enrollments.createdAt),
-          order(schema.enrollments.id),
+        .innerJoin(
+          schema.courses,
+          eq(schema.courses.id, schema.enrollments.courseId),
         )
+        .leftJoin(
+          schema.categories,
+          eq(schema.categories.id, schema.courses.categoryId),
+        )
+        .innerJoin(
+          schema.users,
+          eq(schema.users.id, schema.enrollments.studentId),
+        )
+        .leftJoin(
+          schema.userProfiles,
+          eq(schema.userProfiles.userId, schema.users.id),
+        )
+        .where(where)
+        .orderBy(order(schema.enrollments.createdAt))
         .limit(q.pageSize)
         .offset(offset),
       this.database.client
         .select({ value: count() })
         .from(schema.enrollments)
+        .innerJoin(
+          schema.courses,
+          eq(schema.courses.id, schema.enrollments.courseId),
+        )
+        .leftJoin(
+          schema.categories,
+          eq(schema.categories.id, schema.courses.categoryId),
+        )
+        .innerJoin(
+          schema.users,
+          eq(schema.users.id, schema.enrollments.studentId),
+        )
+        .leftJoin(
+          schema.userProfiles,
+          eq(schema.userProfiles.userId, schema.users.id),
+        )
         .where(where),
     ]);
     return {

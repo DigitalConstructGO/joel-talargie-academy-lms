@@ -18,7 +18,25 @@ export interface ReportTableProps {
   onRetry: () => void;
   page: number;
   onPageChange: (page: number) => void;
+  pageSize?: number;
+  onPageSizeChange?: (pageSize: number) => void;
   onRowClick?: (row: Record<string, unknown>) => void;
+}
+
+function SummaryValue({ value }: { value: unknown }) {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const entries = Object.entries(value as Record<string, unknown>);
+    return (
+      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm font-medium text-foreground">
+        {entries.map(([key, entry]) => (
+          <span key={key}>
+            {humanizeKey(key)}: {formatReportValue(entry)}
+          </span>
+        ))}
+      </div>
+    );
+  }
+  return <p className="text-lg font-semibold text-foreground">{formatReportValue(value)}</p>;
 }
 
 /**
@@ -36,10 +54,15 @@ export function ReportTable({
   onRetry,
   page,
   onPageChange,
+  pageSize,
+  onPageSizeChange,
   onRowClick,
 }: ReportTableProps) {
   const rows = useMemo(() => result?.rows ?? [], [result?.rows]);
-  const keys = useMemo(() => (rows.length > 0 ? Object.keys(rows[0] ?? {}) : []), [rows]);
+  const keys = useMemo(
+    () => (rows.length > 0 ? Object.keys(rows[0] ?? {}).filter((key) => key !== 'id') : []),
+    [rows],
+  );
 
   const columns = useMemo<ColumnDef<Record<string, unknown>, unknown>[]>(
     () =>
@@ -54,7 +77,7 @@ export function ReportTable({
 
   const totalPages = Math.max(
     1,
-    Math.ceil((result?.meta.total ?? 0) / (result?.meta.pageSize ?? 25)),
+    Math.ceil((result?.meta.total ?? 0) / (result?.meta.pageSize ?? pageSize ?? 10)),
   );
 
   if (isError) {
@@ -69,7 +92,7 @@ export function ReportTable({
             {Object.entries(result.summary).map(([key, value]) => (
               <div key={key}>
                 <p className="text-xs text-muted-foreground">{humanizeKey(key)}</p>
-                <p className="text-lg font-semibold text-foreground">{formatReportValue(value)}</p>
+                <SummaryValue value={value} />
               </div>
             ))}
           </CardContent>
@@ -90,7 +113,11 @@ export function ReportTable({
           page={page}
           totalPages={totalPages}
           onPageChange={onPageChange}
+          pageSize={pageSize}
+          onPageSizeChange={onPageSizeChange}
+          pageSizeOptions={[10, 20, 50, 100]}
           showFirstLast
+          showGoToPage
           isLoading={isFetching}
         />
       )}
