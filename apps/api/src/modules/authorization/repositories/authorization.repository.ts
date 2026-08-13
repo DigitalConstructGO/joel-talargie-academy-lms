@@ -4,6 +4,7 @@ import {
   assignRoleToUser,
   createRoleWithPermissions,
   getRoleDetails,
+  getSafeUser,
   listPermissionCatalog,
   listRoles,
   listUserRoles,
@@ -40,6 +41,9 @@ export class AuthorizationRepository {
   }
   userRoles(userId: string) {
     return listUserRoles(this.database.client, userId);
+  }
+  user(id: string) {
+    return getSafeUser(this.database.client, id);
   }
   assign(input: Parameters<typeof assignRoleToUser>[1]) {
     return assignRoleToUser(this.database.client, input);

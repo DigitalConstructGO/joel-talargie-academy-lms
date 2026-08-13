@@ -112,6 +112,7 @@ export const findAuthUserByGoogleId = async (database: AcademyDatabase, googleId
   });
   return user ? hydrateAuthUser(database, user) : null;
 };
+export type GoogleUserUpsertEvent = 'GOOGLE_MATCH' | 'EMAIL_LINKED' | 'CREATED';
 export const upsertGoogleUser = async (
   database: AcademyDatabase,
   input: {
@@ -122,7 +123,7 @@ export const upsertGoogleUser = async (
     avatarUrl?: string;
     passwordHash: string;
   },
-) =>
+): Promise<{ user: AuthUserRecord; event: GoogleUserUpsertEvent }> =>
   database.transaction(async (tx) => {
     const googleMatch = await tx.query.users.findFirst({
       where: eq(schema.users.googleId, input.googleId),
@@ -150,12 +151,15 @@ export const upsertGoogleUser = async (
           target: [schema.oauthAccounts.provider, schema.oauthAccounts.providerAccountId],
           set: { providerEmail: input.email, lastLoginAt: new Date() },
         });
-      return hydrateAuthUser(database, {
-        ...googleMatch,
-        avatarUrl: input.avatarUrl ?? null,
-        emailVerified: true,
-        status: 'ACTIVE',
-      });
+      return {
+        user: await hydrateAuthUser(database, {
+          ...googleMatch,
+          avatarUrl: input.avatarUrl ?? null,
+          emailVerified: true,
+          status: 'ACTIVE',
+        }),
+        event: 'GOOGLE_MATCH',
+      };
     }
     const emailMatch = await tx.query.users.findFirst({
       where: eq(schema.users.emailNormalized, input.email),
@@ -184,14 +188,17 @@ export const upsertGoogleUser = async (
           target: [schema.oauthAccounts.provider, schema.oauthAccounts.providerAccountId],
           set: { providerEmail: input.email, lastLoginAt: new Date() },
         });
-      return hydrateAuthUser(database, {
-        ...emailMatch,
-        googleId: input.googleId,
-        avatarUrl: input.avatarUrl ?? null,
-        provider: 'GOOGLE',
-        emailVerified: true,
-        status: 'ACTIVE',
-      });
+      return {
+        user: await hydrateAuthUser(database, {
+          ...emailMatch,
+          googleId: input.googleId,
+          avatarUrl: input.avatarUrl ?? null,
+          provider: 'GOOGLE',
+          emailVerified: true,
+          status: 'ACTIVE',
+        }),
+        event: 'EMAIL_LINKED',
+      };
     }
     const [created] = await tx
       .insert(schema.users)
@@ -224,7 +231,7 @@ export const upsertGoogleUser = async (
         .returning();
     if (!role) throw new Error('Student role could not be assigned');
     await tx.insert(schema.userRoles).values({ userId: created.id, roleId: role.id });
-    return hydrateAuthUser(database, created);
+    return { user: await hydrateAuthUser(database, created), event: 'CREATED' };
   });
 export const createStudentUser = async (
   database: AcademyDatabase,

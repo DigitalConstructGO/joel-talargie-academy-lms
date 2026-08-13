@@ -83,6 +83,34 @@ export const getUserRecordSummary = jest.fn();
 export const transitionUserStatus = jest.fn();
 export const listUserActivity = jest.fn();
 
+// `EMAIL_TEMPLATE_CONTENT` is pure code (no live database) in the database
+// package, and Jest only transforms files inside the API root dir - so
+// re-exporting the real module would fail at runtime with a raw ESM syntax
+// error. The mock therefore supplies a representative typed fixture instead.
+// Production code reads the full real catalog via `@joel-academy/database`;
+// only unit tests see this subset, and the code under test consumes it the
+// same way. The type-only import keeps the fixture checked against the real
+// catalog types while being erased at runtime.
+import type {
+  EmailTemplateCode,
+  EmailTemplateContent,
+} from '../../../packages/database/src/seed/email-template-content.ts';
+
+export const EMAIL_TEMPLATE_CONTENT: Partial<
+  Record<EmailTemplateCode, EmailTemplateContent>
+> = {
+  EMAIL_VERIFICATION: {
+    subject: 'Verify your email to get started',
+    html: '<p>Verify your email: {{verificationUrl}}</p>',
+    text: 'Verify your email: {{verificationUrl}}',
+  },
+  PASSWORD_CHANGED: {
+    subject: 'Your password was changed',
+    html: '<p>Your {{academyName}} password was changed.</p>',
+    text: 'Your {{academyName}} password was changed.',
+  },
+};
+
 export function validateDatabaseUrl(value: string): string {
   return value;
 }

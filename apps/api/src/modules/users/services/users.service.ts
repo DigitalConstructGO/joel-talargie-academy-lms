@@ -5,8 +5,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AuthService } from '../../auth/auth.service';
 import type { AuthUser } from '../../auth/interfaces/auth-user.interface';
+import { NotificationsService } from '../../notifications/services/notifications.service';
 import type {
   ActivityQueryDto,
   ListUsersQueryDto,
@@ -19,6 +21,8 @@ export class UsersService {
   constructor(
     private readonly repository: UsersRepository,
     private readonly auth: AuthService,
+    private readonly notifications: NotificationsService,
+    private readonly config: ConfigService,
   ) {}
   async profile(id: string) {
     const user = await this.repository.safe(id);
@@ -71,12 +75,14 @@ export class UsersService {
     admin = false,
   ) {
     try {
-      return await this.repository.revoke({
+      const revoked = await this.repository.revoke({
         actorId: actor.id,
         userId: target,
         sessionId,
         admin,
       });
+      if (admin) await this.notifySessionRevoked(target, revoked);
+      return revoked;
     } catch (error) {
       // The repository throws plain, code-named errors (no HTTP framework
       // dependency in the shared database package) - translate the known
@@ -95,18 +101,20 @@ export class UsersService {
       throw error;
     }
   }
-  revokeAll(
+  async revokeAll(
     actor: AuthUser,
     target: string,
     keep: string | undefined,
     admin = false,
   ) {
-    return this.repository.revokeAll({
+    const revoked = await this.repository.revokeAll({
       actorId: actor.id,
       userId: target,
       keepSessionId: keep,
       admin,
     });
+    if (admin) await this.notifySessionsRevokedAll(target);
+    return revoked;
   }
   list(query: ListUsersQueryDto) {
     return this.repository.list({
@@ -135,8 +143,9 @@ export class UsersService {
     reason: string | undefined,
     action: string,
   ) {
+    let status: string;
     try {
-      return await this.repository.transition({
+      status = await this.repository.transition({
         actorId,
         userId,
         target,
@@ -169,6 +178,8 @@ export class UsersService {
         throw new BadRequestException('A reason is required');
       throw error;
     }
+    await this.notifyAccountStatus(userId, action);
+    return status;
   }
   activity(userId: string, query: ActivityQueryDto) {
     return this.repository.activity({
@@ -185,5 +196,103 @@ export class UsersService {
       message:
         'If password login is available, reset instructions have been created.',
     };
+  }
+  private accountStatusTemplate(action: string): string | null {
+    const mapping: Record<string, string> = {
+      'admin.user.activated': 'ACCOUNT_ACTIVATED',
+      'admin.user.suspended': 'ACCOUNT_SUSPENDED',
+      'admin.user.archived': 'ACCOUNT_ARCHIVED',
+      'admin.user.restored': 'ACCOUNT_RESTORED',
+    };
+    return mapping[action] ?? null;
+  }
+  private accountStatusTitle(templateCode: string): string {
+    const titles: Record<string, string> = {
+      ACCOUNT_ACTIVATED: 'Account activated',
+      ACCOUNT_SUSPENDED: 'Account suspended',
+      ACCOUNT_ARCHIVED: 'Account archived',
+      ACCOUNT_RESTORED: 'Account restored',
+    };
+    return titles[templateCode] ?? 'Account status changed';
+  }
+  private async notifyAccountStatus(userId: string, action: string) {
+    const templateCode = this.accountStatusTemplate(action);
+    if (!templateCode) return;
+    try {
+      const user = await this.repository.safe(userId);
+      if (!user?.email) return;
+      await this.notifications.notify({
+        userId,
+        recipientEmail: user.email,
+        recipientName: user.fullName?.trim() || user.firstName || 'Student',
+        templateCode,
+        variables: {
+          recipientName: user.firstName || 'Student',
+          academyName: 'Joel Talargie Academy',
+          supportEmail:
+            this.config.get('EMAIL_SUPPORT_ADDRESS') || 'academy support',
+        },
+        deduplicationKey: `account-status:${userId}:${action}:${Date.now()}`,
+        category: 'security',
+        title: this.accountStatusTitle(templateCode),
+        message: 'Your academy account status has changed.',
+        actionUrl: '/dashboard',
+        priority: 'HIGH',
+      });
+    } catch {
+      // Email failures must never break the account transition itself.
+    }
+  }
+  private async notifySessionRevoked(userId: string, sessionId: string) {
+    try {
+      const user = await this.repository.safe(userId);
+      if (!user?.email) return;
+      await this.notifications.notify({
+        userId,
+        recipientEmail: user.email,
+        recipientName: user.fullName?.trim() || user.firstName || 'Student',
+        templateCode: 'SESSION_REVOKED_BY_ADMIN',
+        variables: {
+          recipientName: user.firstName || 'Student',
+          academyName: 'Joel Talargie Academy',
+          supportEmail:
+            this.config.get('EMAIL_SUPPORT_ADDRESS') || 'academy support',
+        },
+        deduplicationKey: `session-revoked:${userId}:${sessionId}`,
+        category: 'security',
+        title: 'Session revoked by administrator',
+        message: 'An administrator signed one of your active sessions out.',
+        actionUrl: '/dashboard/security',
+        priority: 'CRITICAL',
+      });
+    } catch {
+      // Email failures must never break the session revocation itself.
+    }
+  }
+  private async notifySessionsRevokedAll(userId: string) {
+    try {
+      const user = await this.repository.safe(userId);
+      if (!user?.email) return;
+      await this.notifications.notify({
+        userId,
+        recipientEmail: user.email,
+        recipientName: user.fullName?.trim() || user.firstName || 'Student',
+        templateCode: 'SESSION_REVOKED_BY_ADMIN',
+        variables: {
+          recipientName: user.firstName || 'Student',
+          academyName: 'Joel Talargie Academy',
+          supportEmail:
+            this.config.get('EMAIL_SUPPORT_ADDRESS') || 'academy support',
+        },
+        deduplicationKey: `sessions-revoked:${userId}:${Date.now()}`,
+        category: 'security',
+        title: 'Sessions revoked by administrator',
+        message: 'An administrator signed out all of your active sessions.',
+        actionUrl: '/dashboard/security',
+        priority: 'CRITICAL',
+      });
+    } catch {
+      // Email failures must never break the session revocation itself.
+    }
   }
 }

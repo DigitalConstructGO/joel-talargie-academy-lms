@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { DatabaseModule } from '../../common/database/database.module';
 import { AuditModule } from '../audit/audit.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { CurrentAuthorizationController } from './controllers/current-authorization.controller';
 import { PermissionsController } from './controllers/permissions.controller';
 import { RolesController } from './controllers/roles.controller';
@@ -13,7 +14,7 @@ import { PermissionsService } from './services/permissions.service';
 import { RolesService } from './services/roles.service';
 import { UserRolesService } from './services/user-roles.service';
 @Module({
-  imports: [DatabaseModule, AuditModule],
+  imports: [DatabaseModule, AuditModule, NotificationsModule],
   controllers: [
     PermissionsController,
     RolesController,

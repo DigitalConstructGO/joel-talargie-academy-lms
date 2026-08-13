@@ -238,7 +238,7 @@ export class AuthService {
       throw new UnauthorizedException(
         'Google account must have a verified email',
       );
-    const user = await upsertGoogleUser(this.database.client, {
+    const { user, event } = await upsertGoogleUser(this.database.client, {
       googleId: profile.googleId,
       email: this.normalizeEmail(profile.email),
       firstName: profile.firstName,
@@ -269,6 +269,27 @@ export class AuthService {
         this.logger.error('Failed to record login audit log', error),
       ),
     ]);
+    if (event === 'EMAIL_LINKED')
+      await this.notifications
+        .notify({
+          userId: user.id,
+          recipientEmail: user.email,
+          recipientName: user.firstName ?? 'Student',
+          templateCode: 'GOOGLE_ACCOUNT_LINKED',
+          variables: {
+            recipientName: user.firstName ?? 'Student',
+            academyName: 'Joel Talargie Academy',
+            supportEmail:
+              this.config.get('EMAIL_SUPPORT_ADDRESS') || 'academy support',
+          },
+          deduplicationKey: `google-linked:${user.id}:${Date.now()}`,
+          category: 'security',
+          title: 'Google account linked',
+          message: 'Your Google account was linked to your academy account.',
+          actionUrl: '/dashboard/security',
+          priority: 'HIGH',
+        })
+        .catch(() => null);
     return {
       user: safe,
       accessToken: this.signAccess(safe, sessionId),

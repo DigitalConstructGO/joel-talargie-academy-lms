@@ -10,9 +10,15 @@ describe('UserRolesService', () => {
     assign: jest.fn(),
     remove: jest.fn(),
     userRoles: jest.fn(),
+    user: jest.fn(),
   };
   const contexts = { resolve: jest.fn() };
-  const service = new UserRolesService(repository as never, contexts as never);
+  const notifications = { notify: jest.fn().mockResolvedValue(null) };
+  const service = new UserRolesService(
+    repository as never,
+    contexts as never,
+    notifications as never,
+  );
   beforeEach(() => jest.clearAllMocks());
   it('prevents non-Administrators assigning Administrator', async () => {
     contexts.resolve.mockResolvedValue({
@@ -109,5 +115,65 @@ describe('UserRolesService', () => {
     await expect(service.remove('actor', 'user', 'role')).resolves.toEqual({
       removed: true,
     });
+  });
+
+  it('emails the target user when a role is assigned', async () => {
+    contexts.resolve.mockResolvedValueOnce({ isAdministrator: true });
+    repository.role.mockResolvedValueOnce({
+      code: 'COURSE_MANAGER',
+      permissions: [],
+    });
+    repository.assign.mockResolvedValueOnce({
+      id: 'role-1',
+      code: 'COURSE_MANAGER',
+      name: 'Course Manager',
+    });
+    repository.user.mockResolvedValueOnce({
+      email: 'student@example.com',
+      firstName: 'Ada',
+      fullName: 'Ada Lovelace',
+    });
+    await service.assign('actor', 'user-1', 'role-1');
+    expect(notifications.notify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-1',
+        recipientEmail: 'student@example.com',
+        templateCode: 'ROLE_ASSIGNED',
+        variables: expect.objectContaining({ roleName: 'Course Manager' }),
+      }),
+    );
+  });
+
+  it('emails the target user when a role is removed', async () => {
+    repository.remove.mockResolvedValueOnce({
+      id: 'role-1',
+      code: 'COURSE_MANAGER',
+      name: 'Course Manager',
+    });
+    repository.user.mockResolvedValueOnce({
+      email: 'student@example.com',
+      firstName: 'Ada',
+      fullName: 'Ada Lovelace',
+    });
+    await service.remove('actor', 'user-1', 'role-1');
+    expect(notifications.notify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-1',
+        templateCode: 'ROLE_REMOVED',
+        variables: expect.objectContaining({ roleName: 'Course Manager' }),
+      }),
+    );
+  });
+
+  it('skips the role email when the target user has no email', async () => {
+    contexts.resolve.mockResolvedValueOnce({ isAdministrator: true });
+    repository.role.mockResolvedValueOnce({
+      code: 'STUDENT',
+      permissions: [],
+    });
+    repository.assign.mockResolvedValueOnce({ id: 'role-1', code: 'STUDENT' });
+    repository.user.mockResolvedValueOnce(undefined);
+    await service.assign('actor', 'user-1', 'role-1');
+    expect(notifications.notify).not.toHaveBeenCalled();
   });
 });

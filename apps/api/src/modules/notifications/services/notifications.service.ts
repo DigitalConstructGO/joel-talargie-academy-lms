@@ -7,11 +7,17 @@ import {
 /* eslint-disable no-control-regex */
 import { ConfigService } from '@nestjs/config';
 import type { Environment } from '../../../config/environment';
+import { MailService } from '../../../common/mail/mail.service';
 import type {
   DeliveryListDto,
   NotificationListDto,
 } from '../dto/notifications.dto';
 import { NotificationsRepository } from '../repositories/notifications.repository';
+import {
+  builtinTemplateCount,
+  isBuiltinTemplateCode,
+  resolveBuiltinTemplate,
+} from '../templates/builtin-templates';
 import {
   EmailRenderingService,
   TEMPLATE_PLACEHOLDERS,
@@ -20,7 +26,11 @@ import {
 const ESSENTIAL = new Set([
   'PASSWORD_CHANGED',
   'NEW_LOGIN_ALERT',
+  'ACCOUNT_ACTIVATED',
   'ACCOUNT_SUSPENDED',
+  'ACCOUNT_ARCHIVED',
+  'ACCOUNT_RESTORED',
+  'GOOGLE_ACCOUNT_LINKED',
   'ROLE_ASSIGNED',
   'ROLE_REMOVED',
   'SESSION_REVOKED_BY_ADMIN',
@@ -49,6 +59,7 @@ export class NotificationsService {
     private readonly repository: NotificationsRepository,
     private readonly renderer: EmailRenderingService,
     private readonly config: ConfigService<Environment, true>,
+    private readonly mail: MailService,
   ) {}
   listMine(userId: string, query: NotificationListDto) {
     return this.repository.listMine(userId, query);
@@ -100,10 +111,11 @@ export class NotificationsService {
         priority: input.priority ?? 'NORMAL',
         deduplicationKey: `in-app:${input.deduplicationKey}`,
       });
-    const template = await this.repository.activeTemplate(
-      input.templateCode,
-      this.config.get('EMAIL_DEFAULT_LOCALE', { infer: true }),
-    );
+    const template =
+      (await this.repository.activeTemplate(
+        input.templateCode,
+        this.config.get('EMAIL_DEFAULT_LOCALE', { infer: true }),
+      )) ?? resolveBuiltinTemplate(input.templateCode, 'en');
     if (!template)
       throw new UnprocessableEntityException({
         code: 'EMAIL_TEMPLATE_UNAVAILABLE',
@@ -201,18 +213,25 @@ export class NotificationsService {
     const data = await this.repository.health(
       this.config.get('EMAIL_WORKER_LOCK_TIMEOUT_MS', { infer: true }),
     );
+    const active = (await this.repository.templates()).filter(
+      (row) => row.isActive,
+    );
+    const missingBuiltin =
+      builtinTemplateCount() -
+      active.filter((row) => isBuiltinTemplateCode(row.code)).length;
+    const templates = active.length + Math.max(0, missingBuiltin);
+    const smtp = await this.mail.verifyConnection();
     return {
       workerEnabled: this.config.get('EMAIL_WORKER_ENABLED', { infer: true }),
       mailEnabled: this.config.get('MAIL_ENABLED', { infer: true }),
+      smtp,
       pending: Number(data?.pending ?? 0),
       retryScheduled: Number(data?.retrying ?? 0),
       processing: Number(data?.processing ?? 0),
       failed: Number(data?.failed ?? 0),
       staleLocks: Number(data?.stale ?? 0),
       oldestQueuedAt: data?.oldest ?? null,
-      templates: (await this.repository.templates()).filter(
-        (row) => row.isActive,
-      ).length,
+      templates,
     };
   }
   private email(value: string) {

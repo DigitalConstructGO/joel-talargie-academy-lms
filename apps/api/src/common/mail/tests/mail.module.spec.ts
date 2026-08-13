@@ -38,4 +38,28 @@ describe('mail transporter provider', () => {
     });
     expect(first).toBeDefined();
   });
+
+  it('strips whitespace from the SMTP password (Gmail app passwords are pasted in spaced blocks)', () => {
+    const values: Partial<Environment> = {
+      SMTP_HOST: 'smtp.gmail.com',
+      SMTP_PORT: 587,
+      SMTP_SECURE: false,
+      SMTP_USER: 'user',
+      SMTP_PASSWORD: 'abcd efgh ijkl mnop',
+      SMTP_CONNECTION_TIMEOUT_MS: 10_000,
+      SMTP_GREETING_TIMEOUT_MS: 10_000,
+      SMTP_SOCKET_TIMEOUT_MS: 15_000,
+    };
+    const config = {
+      get: jest.fn((key: keyof Environment) => values[key]),
+    } as unknown as ConfigService<Environment, true>;
+
+    createMailTransporter(config);
+
+    expect(nodemailer.createTransport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        auth: { user: 'user', pass: 'abcdefghijklmnop' },
+      }),
+    );
+  });
 });

@@ -45,8 +45,8 @@ export class MailService implements OnModuleDestroy {
           ? info.messageId
           : undefined;
       return { status: 'sent', ...(messageId ? { messageId } : {}) };
-    } catch {
-      this.logger.error('Email delivery failed');
+    } catch (error) {
+      this.logger.error(`Email delivery failed: ${this.redact(error)}`);
       return { status: 'failed', error: 'Email delivery failed' };
     }
   }
@@ -57,14 +57,28 @@ export class MailService implements OnModuleDestroy {
     try {
       await this.transporter.verify();
       return { status: 'available' };
-    } catch {
-      this.logger.error('Email connection verification failed');
+    } catch (error) {
+      this.logger.error(
+        `Email connection verification failed: ${this.redact(error)}`,
+      );
       return { status: 'unavailable', error: 'Email connection unavailable' };
     }
   }
 
   onModuleDestroy(): void {
     this.transporter.close();
+  }
+
+  // Log the underlying SMTP error so the cause is diagnosable, but never let
+  // the configured password (raw or whitespace-stripped) appear in logs.
+  private redact(error: unknown): string {
+    const raw = this.config.get('SMTP_PASSWORD', { infer: true });
+    const secrets = new Set(
+      [raw, raw.replace(/\s+/g, '')].filter((value) => value.length > 0),
+    );
+    let detail = error instanceof Error ? error.message : String(error ?? '');
+    for (const secret of secrets) detail = detail.split(secret).join('[REDACTED]');
+    return detail;
   }
 
   private validateOptions(options: SendMailOptions): void {

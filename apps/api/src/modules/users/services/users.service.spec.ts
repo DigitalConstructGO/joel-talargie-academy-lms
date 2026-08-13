@@ -21,7 +21,18 @@ describe('UsersService', () => {
     activity: jest.fn(),
   };
   const auth = { forgotPassword: jest.fn() };
-  const service = new UsersService(repository as never, auth as never);
+  const notifications = { notify: jest.fn().mockResolvedValue(null) };
+  const config = {
+    get: jest.fn((key: string) =>
+      key === 'EMAIL_SUPPORT_ADDRESS' ? 'support@example.com' : undefined,
+    ),
+  };
+  const service = new UsersService(
+    repository as never,
+    auth as never,
+    notifications as never,
+    config as never,
+  );
 
   beforeEach(() => jest.clearAllMocks());
 
@@ -231,5 +242,141 @@ describe('UsersService', () => {
     const result = await service.triggerReset('admin-1', 'user-1');
     expect(auth.forgotPassword).toHaveBeenCalledWith('ada@example.com');
     expect(result.message).toContain('If password login is available');
+  });
+
+  describe('account-status emails', () => {
+    const user = {
+      id: 'user-1',
+      email: 'student@example.com',
+      firstName: 'Ada',
+      lastName: 'Lovelace',
+      fullName: 'Ada Lovelace',
+    };
+
+    it.each([
+      ['admin.user.activated', 'ACCOUNT_ACTIVATED'],
+      ['admin.user.suspended', 'ACCOUNT_SUSPENDED'],
+      ['admin.user.archived', 'ACCOUNT_ARCHIVED'],
+      ['admin.user.restored', 'ACCOUNT_RESTORED'],
+    ] as const)(
+      'emails %s with the matching template',
+      async (action, templateCode) => {
+        repository.transition.mockResolvedValueOnce('ACTIVE');
+        repository.safe.mockResolvedValueOnce(user);
+        await service.transition(
+          'admin-1',
+          'user-1',
+          'ACTIVE',
+          undefined,
+          action,
+        );
+        expect(notifications.notify).toHaveBeenCalledWith(
+          expect.objectContaining({
+            userId: 'user-1',
+            recipientEmail: 'student@example.com',
+            templateCode,
+            variables: expect.objectContaining({ recipientName: 'Ada' }),
+          }),
+        );
+      },
+    );
+
+    it('does not email when the action has no account-status template', async () => {
+      repository.transition.mockResolvedValueOnce('ACTIVE');
+      await service.transition(
+        'admin-1',
+        'user-1',
+        'ACTIVE',
+        undefined,
+        'custom.action',
+      );
+      expect(notifications.notify).not.toHaveBeenCalled();
+    });
+
+    it('skips the email when the target user cannot be resolved', async () => {
+      repository.transition.mockResolvedValueOnce('ACTIVE');
+      repository.safe.mockResolvedValueOnce(undefined);
+      await service.transition(
+        'admin-1',
+        'user-1',
+        'ACTIVE',
+        undefined,
+        'admin.user.activated',
+      );
+      expect(notifications.notify).not.toHaveBeenCalled();
+    });
+
+    it('keeps the transition result even when the email send fails', async () => {
+      repository.transition.mockResolvedValueOnce('ACTIVE');
+      repository.safe.mockResolvedValueOnce(user);
+      notifications.notify.mockRejectedValueOnce(new Error('smtp down'));
+      await expect(
+        service.transition(
+          'admin-1',
+          'user-1',
+          'ACTIVE',
+          undefined,
+          'admin.user.activated',
+        ),
+      ).resolves.toBe('ACTIVE');
+    });
+  });
+
+  describe('admin session-revoked emails', () => {
+    it('emails the target user when an administrator revokes a single session', async () => {
+      repository.revoke.mockResolvedValueOnce('session-1');
+      repository.safe.mockResolvedValueOnce({
+        id: 'user-1',
+        email: 'student@example.com',
+        firstName: 'Ada',
+        fullName: 'Ada Lovelace',
+      });
+      await service.revoke(
+        { id: 'admin-1' } as never,
+        'user-1',
+        'session-1',
+        true,
+      );
+      expect(notifications.notify).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'user-1',
+          templateCode: 'SESSION_REVOKED_BY_ADMIN',
+          deduplicationKey: 'session-revoked:user-1:session-1',
+        }),
+      );
+    });
+
+    it('does not email when a user revokes their own session', async () => {
+      repository.revoke.mockResolvedValueOnce('session-1');
+      await service.revoke(
+        { id: 'user-1' } as never,
+        'user-1',
+        'session-1',
+        false,
+      );
+      expect(notifications.notify).not.toHaveBeenCalled();
+    });
+
+    it('emails the target user when an administrator revokes all sessions', async () => {
+      repository.revokeAll.mockResolvedValueOnce(2);
+      repository.safe.mockResolvedValueOnce({
+        id: 'user-1',
+        email: 'student@example.com',
+        firstName: 'Ada',
+        fullName: 'Ada Lovelace',
+      });
+      await service.revokeAll(
+        { id: 'admin-1' } as never,
+        'user-1',
+        undefined,
+        true,
+      );
+      expect(notifications.notify).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'user-1',
+          templateCode: 'SESSION_REVOKED_BY_ADMIN',
+        }),
+      );
+    });
   });
 });

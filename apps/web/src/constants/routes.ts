@@ -92,7 +92,6 @@ export const ROUTES = {
     communication: '/admin/communication',
     communicationNotifications: '/admin/communication/notifications',
     communicationEmailTemplates: '/admin/communication/email-templates',
-    communicationEmailTemplateCreate: '/admin/communication/email-templates/create',
     communicationEmailTemplateDetail: (templateId: string) =>
       `/admin/communication/email-templates/${templateId}`,
     communicationSupport: '/admin/communication/support',

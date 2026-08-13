@@ -3,6 +3,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { EMAIL_TEMPLATE_CONTENT } from '@joel-academy/database';
 import { NotificationsService } from '../notifications.service';
 
 describe('NotificationsService', () => {
@@ -26,6 +27,7 @@ describe('NotificationsService', () => {
     health: jest.fn(),
   };
   const renderer = { render: jest.fn() };
+  const mail = { verifyConnection: jest.fn() };
   const configValues: Record<string, unknown> = {
     EMAIL_DEFAULT_LOCALE: 'en',
     EMAIL_MAX_RETRY_ATTEMPTS: 5,
@@ -38,6 +40,7 @@ describe('NotificationsService', () => {
     repository as never,
     renderer as never,
     config as never,
+    mail as never,
   );
 
   const baseInput = {
@@ -62,6 +65,7 @@ describe('NotificationsService', () => {
       text: 'Text',
       html: '<p>Html</p>',
     });
+    mail.verifyConnection.mockResolvedValue({ status: 'available' });
   });
 
   describe('listMine / mine / unread / mark / archive', () => {
@@ -180,6 +184,30 @@ describe('NotificationsService', () => {
       repository.activeTemplate.mockResolvedValueOnce(undefined);
       await expect(service.notify(baseInput)).rejects.toThrow(
         UnprocessableEntityException,
+      );
+    });
+
+    it('falls back to the built-in catalog template when no active DB template exists', async () => {
+      repository.activeTemplate.mockResolvedValueOnce(undefined);
+      await service.notify({
+        ...baseInput,
+        templateCode: 'EMAIL_VERIFICATION',
+        category: 'security',
+        variables: {
+          recipientName: 'Ada',
+          verificationUrl: 'https://academy.example.com/auth/verify-email?token=abc',
+          expiresInMinutes: '1440',
+          academyName: 'Academy',
+          supportEmail: 'support@example.com',
+        },
+      });
+      expect(repository.createDelivery).toHaveBeenCalledWith(
+        expect.objectContaining({
+          templateCode: 'EMAIL_VERIFICATION',
+          templateVersion: 1,
+          locale: 'en',
+          status: 'QUEUED',
+        }),
       );
     });
 
@@ -373,7 +401,9 @@ describe('NotificationsService', () => {
   });
 
   describe('health', () => {
-    it('aggregates queue health and active template count', async () => {
+    const builtinCount = Object.keys(EMAIL_TEMPLATE_CONTENT).length;
+
+    it('aggregates queue health and available template count (DB + built-in)', async () => {
       repository.health.mockResolvedValueOnce({
         pending: 3,
         retrying: 1,
@@ -390,22 +420,25 @@ describe('NotificationsService', () => {
       expect(result).toEqual({
         workerEnabled: true,
         mailEnabled: true,
+        smtp: { status: 'available' },
         pending: 3,
         retryScheduled: 1,
         processing: 2,
         failed: 0,
         staleLocks: 0,
         oldestQueuedAt: '2026-08-01T00:00:00.000Z',
-        templates: 1,
+        templates: 1 + builtinCount,
       });
     });
 
-    it('defaults every counter to 0 when the repository returns no data', async () => {
+    it('defaults every counter to 0 and still counts built-in templates', async () => {
       repository.health.mockResolvedValueOnce(undefined);
       repository.templates.mockResolvedValueOnce([]);
       const result = await service.health();
       expect(result.pending).toBe(0);
       expect(result.oldestQueuedAt).toBeNull();
+      expect(result.templates).toBe(builtinCount);
+      expect(result.smtp).toEqual({ status: 'available' });
     });
   });
 });

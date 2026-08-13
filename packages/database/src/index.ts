@@ -42,3 +42,8 @@ export {
   or,
   sql,
 } from 'drizzle-orm';
+export {
+  EMAIL_TEMPLATE_CONTENT,
+  type EmailTemplateCode,
+  type EmailTemplateContent,
+} from './seed/email-template-content.ts';

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useMemo } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Eye, Plus } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
 import { PageHeader } from '@/components/common/page-header';
 import { PageBreadcrumb } from '@/components/common/page-breadcrumb';
@@ -14,7 +14,6 @@ import { FilterBar } from '@/components/dashboard/filters/filter-bar';
 import { SelectFilter } from '@/components/dashboard/filters/select-filter';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Can } from '@/components/auth/can';
 import { useEmailTemplates } from '@/features/email-templates/hooks/use-email-templates';
 import type { EmailTemplate } from '@/features/email-templates/types/email-template.types';
 import { useQueryFilters } from '@/hooks/use-query-filters';
@@ -113,17 +112,7 @@ export default function AdminEmailTemplatesPage() {
       />
       <PageHeader
         title="Email Templates"
-        description="System transactional email templates. Templates are managed in code and shown here read-only, with live preview."
-        actions={
-          <Can permission="notifications.manage_templates">
-            <Button asChild className="gap-2">
-              <Link href={ROUTES.admin.communicationEmailTemplateCreate}>
-                <Plus className="size-4" />
-                New Template
-              </Link>
-            </Button>
-          </Can>
-        }
+        description="System transactional email templates. Templates are created automatically in code when a system event fires - account status changes, role assignments, session revocations, Google account linking, payments, courses and certificates - and are shown here read-only, with live preview."
       />
 
       <FilterBar>

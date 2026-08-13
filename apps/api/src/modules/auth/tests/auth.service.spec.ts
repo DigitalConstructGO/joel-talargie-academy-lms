@@ -101,9 +101,12 @@ describe('AuthService', () => {
   });
   it('uses the shared JWT and refresh-session flow for Google users', async () => {
     jest.mocked(upsertGoogleUser).mockResolvedValue({
-      ...user,
-      provider: 'GOOGLE',
-      avatarUrl: 'https://example.com/avatar.png',
+      user: {
+        ...user,
+        provider: 'GOOGLE',
+        avatarUrl: 'https://example.com/avatar.png',
+      },
+      event: 'EMAIL_LINKED',
     });
     jest.mocked(createRefreshSession).mockResolvedValue('session-id');
     jest.mocked(rotateRefreshSession).mockResolvedValue(true);
@@ -125,6 +128,9 @@ describe('AuthService', () => {
         email: 'student@example.com',
       }),
     );
+    expect(notifications.notify).toHaveBeenCalledWith(
+      expect.objectContaining({ templateCode: 'GOOGLE_ACCOUNT_LINKED' }),
+    );
     expect(
       jwt.verify(result.accessToken, {
         secret: config.get('JWT_ACCESS_SECRET'),
@@ -137,6 +143,33 @@ describe('AuthService', () => {
       }),
     );
     expect(result.refreshToken).toBeTruthy();
+  });
+
+  it('does not email a Google-linked notice for an existing Google identity', async () => {
+    jest.mocked(upsertGoogleUser).mockResolvedValue({
+      user: {
+        ...user,
+        provider: 'GOOGLE',
+        avatarUrl: 'https://example.com/avatar.png',
+      },
+      event: 'GOOGLE_MATCH',
+    });
+    jest.mocked(createRefreshSession).mockResolvedValue('session-id');
+    jest.mocked(rotateRefreshSession).mockResolvedValue(true);
+    await service.loginWithGoogle(
+      {
+        googleId: 'google-123',
+        email: 'STUDENT@EXAMPLE.COM',
+        firstName: 'Test',
+        lastName: 'Student',
+        avatarUrl: 'https://example.com/avatar.png',
+        emailVerified: true,
+      },
+      {},
+    );
+    expect(notifications.notify).not.toHaveBeenCalledWith(
+      expect.objectContaining({ templateCode: 'GOOGLE_ACCOUNT_LINKED' }),
+    );
   });
   it('rejects an unverified Google email', async () => {
     await expect(

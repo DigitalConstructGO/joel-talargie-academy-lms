@@ -149,7 +149,10 @@ describe('MailService', () => {
     });
     expect(JSON.stringify(result)).not.toContain('top-secret-password');
     expect(Logger.prototype.error).toHaveBeenCalledWith(
-      'Email delivery failed',
+      expect.stringContaining('Email delivery failed'),
+    );
+    expect((Logger.prototype.error as jest.Mock).mock.calls.join('\n')).not.toContain(
+      'top-secret-password',
     );
   });
 

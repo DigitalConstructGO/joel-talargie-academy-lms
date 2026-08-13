@@ -1,6 +1,8 @@
 import 'reflect-metadata';
 import {
   ClassSerializerInterceptor,
+  INestApplication,
+  Logger,
   ValidationPipe,
   VersioningType,
 } from '@nestjs/common';
@@ -17,11 +19,52 @@ import { validationExceptionFactory } from './common/pipes/validation-exception-
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
 import { ApiResponseInterceptor } from './common/api/api-response.interceptor';
+import { EmailWorkerService } from './modules/notifications/workers/email-worker.service';
 import {
   API_DOCUMENT_VERSION,
   API_PREFIX,
   API_VERSION,
 } from './common/constants/api.constants';
+
+// The email worker is normally a standalone process (`npm run worker:email`).
+// Running it in-process here - gated by the same EMAIL_WORKER_ENABLED flag the
+// standalone entry checks - makes queued emails actually send for a plain
+// `npm run dev`/`npm run start`, without a second process. Concurrent workers
+// are safe: delivery claim uses `FOR UPDATE SKIP LOCKED`, so a row is only
+// ever processed by one of them.
+function startEmailWorkerWhenEnabled(
+  app: INestApplication,
+  config: ConfigService,
+): void {
+  if (config.get<boolean>('EMAIL_WORKER_ENABLED') !== true) return;
+  const worker = app.get(EmailWorkerService);
+  const logger = new Logger('EmailWorker');
+  const poll = Math.max(
+    config.get<number>('EMAIL_WORKER_POLL_INTERVAL_MS') ?? 5000,
+    1000,
+  );
+  let stopped = false;
+  process.once('SIGTERM', () => {
+    stopped = true;
+  });
+  process.once('SIGINT', () => {
+    stopped = true;
+  });
+  logger.log(`Email worker started in-process (poll interval ${poll}ms)`);
+  void (async () => {
+    while (!stopped) {
+      try {
+        await worker.tick();
+      } catch (error) {
+        logger.error(
+          `Email worker tick failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+      await new Promise((resolve) => setTimeout(resolve, poll));
+    }
+  })();
+}
+
 async function bootstrap() {
   process.env.TZ = 'UTC';
   const app = await NestFactory.create(AppModule);
@@ -116,5 +159,6 @@ async function bootstrap() {
     SwaggerModule.setup('api/docs', app, document);
   }
   await app.listen(config.get<number>('API_PORT') ?? 4000);
+  startEmailWorkerWhenEnabled(app, config);
 }
 void bootstrap();
