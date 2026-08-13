@@ -112,13 +112,10 @@ export const PERMISSION_CODES = [
   'dashboard.read_administrator_activity',
   'promotions.read',
   'promotions.create',
-  'promotions.update',
-  'promotions.archive',
   'promotions.generate_coupons',
   'promotions.manage_coupons',
   'promotions.manage_affiliates',
   'promotions.view_analytics',
-  'promotions.approve_redemptions',
 ] as const;
 export type PermissionCode = (typeof PERMISSION_CODES)[number];
 export const permissionSeed = PERMISSION_CODES.map((code) => ({

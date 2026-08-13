@@ -1,7 +1,4 @@
-import {
-  computeAffiliateCommission,
-  computeReferrerReward,
-} from '../engine/rules/reward.rules';
+import { computeAffiliateCommission } from '../engine/rules/reward.rules';
 
 const pricing = {
   originalPrice: 200,
@@ -9,18 +6,6 @@ const pricing = {
   finalPrice: 180,
   currency: 'USD',
 };
-
-describe('computeReferrerReward', () => {
-  it('computes a percentage reward off the final price', () => {
-    expect(computeReferrerReward('PERCENTAGE', '10', pricing)).toBe(18);
-  });
-  it('computes a fixed reward', () => {
-    expect(computeReferrerReward('FIXED', '25', pricing)).toBe(25);
-  });
-  it('returns null when no reward is configured', () => {
-    expect(computeReferrerReward(null, null, pricing)).toBeNull();
-  });
-});
 
 describe('computeAffiliateCommission', () => {
   it('computes a percentage commission off the final price', () => {

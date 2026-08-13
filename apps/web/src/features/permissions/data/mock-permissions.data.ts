@@ -62,8 +62,6 @@ const PERMISSION_CODES = [
   'payments.decline',
   'promotions.read',
   'promotions.create',
-  'promotions.update',
-  'promotions.archive',
   'promotions.generate_coupons',
   'promotions.manage_coupons',
   'promotions.view_analytics',

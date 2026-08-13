@@ -25,6 +25,7 @@ describe('CatalogService', () => {
     courseDetail: jest.fn(),
     listCourses: jest.fn(),
     duplicateCourse: jest.fn(),
+    courseCategory: jest.fn(),
   };
   const service = new CatalogService(repository as never);
   const actor = { id: 'actor-id' } as never;
@@ -86,6 +87,38 @@ describe('CatalogService', () => {
     await expect(service.publicCourse('draft')).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+  it('exposes category and media fields on public course detail', async () => {
+    repository.courseBySlug.mockResolvedValue({
+      id: 'course-id',
+      categoryId: 'category-id',
+      status: 'PUBLISHED',
+      visibility: 'PUBLIC',
+      archivedAt: null,
+    });
+    repository.courseDetail.mockResolvedValue({
+      id: 'course-id',
+      categoryId: 'category-id',
+      thumbnailKey: 'courses/cover.jpg',
+      featured: true,
+      outcomes: [],
+      requirements: [],
+      sections: [],
+    });
+    repository.courseCategory.mockResolvedValue({
+      id: 'category-id',
+      name: 'Development',
+      slug: 'development',
+    });
+    const result = await service.publicCourse('intro-to-ts');
+    expect(result).toMatchObject({
+      categoryId: 'category-id',
+      categoryName: 'Development',
+      categorySlug: 'development',
+      thumbnailKey: 'courses/cover.jpg',
+      featured: true,
+    });
+    expect(repository.courseCategory).toHaveBeenCalledWith('category-id');
   });
   it('duplicates curriculum through a single repository transaction', async () => {
     repository.courseById.mockResolvedValue({ title: 'Original' });

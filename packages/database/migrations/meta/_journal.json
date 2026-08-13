@@ -148,6 +148,27 @@
       "when": 1786622400000,
       "tag": "0020_promo_redemption_usage_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1786719600000,
+      "tag": "0021_standalone_promo_codes",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1786800000000,
+      "tag": "0022_promo_code_max_users",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1786806000000,
+      "tag": "0023_drop_promo_code_limit_fields",
+      "breakpoints": true
     }
   ]
 }

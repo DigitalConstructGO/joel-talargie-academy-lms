@@ -49,7 +49,7 @@ export const FAQ_ITEMS: FaqEntry[] = [
   {
     question: 'How do promo codes work?',
     answer:
-      'If a course has an active promotion, you can enter a promo code at checkout to see the discounted price before you enroll. Some promotions apply automatically without a code.',
+      'Enter your promo code at checkout to see the discounted price before you enroll.',
   },
   {
     question: 'Can I request a refund?',

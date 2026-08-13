@@ -15,6 +15,9 @@ export function OrderSummaryCard({ course, redemption }: OrderSummaryCardProps) 
     course.discountPrice !== null && Number(course.discountPrice) < Number(course.price);
   const basePrice = hasDiscount ? Number(course.discountPrice) : Number(course.price);
   const currency = redemption?.pricing.currency ?? course.currency;
+  // When a promo code is applied, every price shown is the backend-verified
+  // calculation returned by `/promotions/redeem` - never recomputed here.
+  const displayPrice = redemption ? redemption.pricing.originalPrice : basePrice;
   const finalPrice = redemption ? redemption.pricing.finalPrice : basePrice;
 
   return (
@@ -42,7 +45,7 @@ export function OrderSummaryCard({ course, redemption }: OrderSummaryCardProps) 
           <div className="flex items-center justify-between">
             <dt className="text-muted-foreground">Course price</dt>
             <dd className="font-medium text-foreground">
-              {formatCurrency(basePrice, course.currency)}
+              {formatCurrency(displayPrice, course.currency)}
             </dd>
           </div>
           {redemption && (

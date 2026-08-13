@@ -4,19 +4,7 @@ function round2(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
-/** Computes what the referrer earns, in the same currency as the redeemed course. */
-export function computeReferrerReward(
-  rewardType: string | null,
-  rewardValue: string | null,
-  pricing: PromotionPricing,
-): number | null {
-  if (!rewardType || rewardValue === null) return null;
-  if (rewardType === 'PERCENTAGE')
-    return round2((pricing.finalPrice * Number(rewardValue)) / 100);
-  if (rewardType === 'FIXED') return round2(Number(rewardValue));
-  return null;
-}
-
+/** Computes the affiliate's commission, in the same currency as the redeemed course. */
 export function computeAffiliateCommission(
   affiliate: {
     commissionType: string;

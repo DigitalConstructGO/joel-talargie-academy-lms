@@ -46,7 +46,6 @@ describe('StudentPromotionsController (integration)', () => {
     validate: jest.fn(),
     redeem: jest.fn(),
     history: jest.fn(),
-    myReferralCode: jest.fn(),
   };
 
   async function boot(user: { id: string; roles: string[] }) {

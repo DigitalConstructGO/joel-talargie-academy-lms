@@ -1,43 +1,58 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsIn,
+  IsISO8601,
   IsOptional,
   IsString,
   IsUUID,
   Length,
   MaxLength,
-  MinLength,
 } from 'class-validator';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
-import { COUPON_CODE_MAX_LENGTH } from '../constants/promotion.constants';
+import {
+  COUPON_CODE_MAX_LENGTH,
+  PROMO_REDEMPTION_STATUSES,
+  type PromoRedemptionStatus,
+} from '../constants/promotion.constants';
 
 export class ValidateCouponDto {
   @ApiProperty() @IsUUID() courseId!: string;
   @ApiPropertyOptional({
     description:
-      'Omit to let the engine auto-discover an applicable automatic promotion.',
+      'The promo code to check. Omitted when the checkout is code-free.',
   })
   @IsOptional()
   @IsString()
   @Length(1, COUPON_CODE_MAX_LENGTH)
   code?: string;
-  @ApiPropertyOptional({
-    description: 'ISO 3166-1 alpha-2 country code, client-supplied.',
-  })
-  @IsOptional()
-  @IsString()
-  @MaxLength(2)
-  country?: string;
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  @MaxLength(40)
-  paymentMethod?: string;
 }
 
 export class RedeemCouponDto extends ValidateCouponDto {}
 
 export class ListRedemptionsDto extends PaginationDto {}
 
-export class RejectRedemptionDto {
-  @ApiProperty() @IsString() @MinLength(3) @MaxLength(500) reason!: string;
+export class ListCodeRedemptionsDto extends PaginationDto {
+  @ApiPropertyOptional({ enum: PROMO_REDEMPTION_STATUSES })
+  @IsOptional()
+  @IsIn(PROMO_REDEMPTION_STATUSES)
+  status?: PromoRedemptionStatus;
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  courseId?: string;
+  @ApiPropertyOptional({
+    description: 'Matches student name/email, course title, or transaction id.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  search?: string;
+  @ApiPropertyOptional({ description: 'ISO-8601 inclusive lower bound.' })
+  @IsOptional()
+  @IsISO8601()
+  from?: string;
+  @ApiPropertyOptional({ description: 'ISO-8601 inclusive upper bound.' })
+  @IsOptional()
+  @IsISO8601()
+  to?: string;
 }

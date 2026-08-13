@@ -6,13 +6,12 @@ import {
 import type { AuthUser } from '../../auth/interfaces/auth-user.interface';
 import type {
   CreateCouponDto,
-  GenerateCouponsDto,
   ListCouponsDto,
   UpdateCouponDto,
 } from '../dto/coupon.dto';
+import type { ListCodeRedemptionsDto } from '../dto/redemption.dto';
 import { PromotionsRepository } from '../repositories/promotions.repository';
 import {
-  generateBulkCodes,
   generateSecureCode,
   normalizeCouponCode,
 } from '../utils/coupon-code.util';
@@ -24,42 +23,17 @@ export class CouponsService {
   constructor(private readonly repository: PromotionsRepository) {}
 
   async create(actor: AuthUser, dto: CreateCouponDto) {
-    await this.requireCampaign(dto.campaignId);
     const code = dto.code
       ? await this.claimNormalizedCode(dto.code)
       : await this.generateUniqueCode({});
     const row = await this.repository.createCode(actor.id, { ...dto, code });
     await this.repository.logUsage({
-      campaignId: dto.campaignId,
       codeId: row.id,
       actorId: actor.id,
       action: 'COUPON_GENERATED',
       metadata: { code: row.code, manual: !!dto.code },
     });
     return row;
-  }
-
-  async generate(actor: AuthUser, dto: GenerateCouponsDto) {
-    await this.requireCampaign(dto.campaignId);
-    const codes = await this.generateUniqueBatch(dto.count, {
-      length: dto.length,
-      prefix: dto.prefix,
-      suffix: dto.suffix,
-      excludeAmbiguous: dto.excludeAmbiguousCharacters,
-    });
-    const rows = await this.repository.bulkCreateCodes(
-      actor.id,
-      dto.campaignId,
-      codes,
-      dto,
-    );
-    await this.repository.logUsage({
-      campaignId: dto.campaignId,
-      actorId: actor.id,
-      action: 'COUPON_GENERATED',
-      metadata: { count: rows.length, bulk: true },
-    });
-    return rows;
   }
 
   async list(query: ListCouponsDto) {
@@ -72,12 +46,45 @@ export class CouponsService {
     return code;
   }
 
+  /**
+   * Composed admin detail view: the coupon, its own targeting rules, and its
+   * current validity status. This is the display snapshot only - real
+   * validation still runs through the engine.
+   */
+  async detail(id: string) {
+    const found = await this.repository.findCodeWithRules(id);
+    if (!found) throw this.notFound();
+    const { code, rules } = found;
+    const now = new Date();
+
+    let validityStatus: 'NOT_STARTED' | 'ACTIVE' | 'EXPIRED' | 'INACTIVE' | 'REVOKED';
+    if (code.status === 'REVOKED') {
+      validityStatus = 'REVOKED';
+    } else if (code.status === 'PAUSED') {
+      validityStatus = 'INACTIVE';
+    } else if (code.status === 'EXPIRED') {
+      validityStatus = 'EXPIRED';
+    } else if (code.validFrom && now < code.validFrom) {
+      validityStatus = 'NOT_STARTED';
+    } else if (code.validUntil && now >= code.validUntil) {
+      validityStatus = 'EXPIRED';
+    } else {
+      validityStatus = 'ACTIVE';
+    }
+
+    return { ...code, validityStatus, rules };
+  }
+
+  async redemptions(id: string, query: ListCodeRedemptionsDto) {
+    await this.get(id);
+    return this.repository.listCodeRedemptions(id, query);
+  }
+
   async update(actor: AuthUser, id: string, dto: UpdateCouponDto) {
     await this.get(id);
     const row = await this.repository.updateCode(id, dto);
     await this.repository.logUsage({
       codeId: id,
-      campaignId: row.campaignId,
       actorId: actor.id,
       action: 'COUPON_UPDATED',
       metadata: { fields: Object.keys(dto) },
@@ -86,25 +93,14 @@ export class CouponsService {
   }
 
   async archive(actor: AuthUser, id: string) {
-    const existing = await this.get(id);
+    await this.get(id);
     const row = await this.repository.archiveCode(id);
     await this.repository.logUsage({
       codeId: id,
-      campaignId: existing.campaignId,
       actorId: actor.id,
       action: 'COUPON_ARCHIVED',
     });
     return row;
-  }
-
-  private async requireCampaign(campaignId: string) {
-    const campaign = await this.repository.findCampaign(campaignId);
-    if (!campaign)
-      throw new NotFoundException({
-        code: 'CAMPAIGN_NOT_FOUND',
-        message: 'Promotion campaign not found',
-      });
-    return campaign;
   }
 
   private async claimNormalizedCode(rawCode: string): Promise<string> {
@@ -135,33 +131,6 @@ export class CouponsService {
       code: 'COUPON_CODE_GENERATION_FAILED',
       message:
         'Could not generate a unique coupon code, try a different prefix/length',
-    });
-  }
-
-  private async generateUniqueBatch(
-    count: number,
-    options: {
-      length?: number;
-      prefix?: string;
-      suffix?: string;
-      excludeAmbiguous?: boolean;
-    },
-  ): Promise<string[]> {
-    for (
-      let attempt = 0;
-      attempt < MAX_MANUAL_GENERATION_ATTEMPTS;
-      attempt += 1
-    ) {
-      const candidates = generateBulkCodes(count, options);
-      const collisions = await Promise.all(
-        candidates.map((code) => this.repository.codeExists(code)),
-      );
-      if (!collisions.some(Boolean)) return candidates;
-    }
-    throw new ConflictException({
-      code: 'COUPON_CODE_GENERATION_FAILED',
-      message:
-        'Could not generate unique coupon codes, try a different prefix/length',
     });
   }
 

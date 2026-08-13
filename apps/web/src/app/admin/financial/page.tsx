@@ -7,7 +7,6 @@ import { Reveal } from '@/components/common/reveal';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { QuickActionCard } from '@/components/dashboard/quick-action-card';
 import { useDashboardOverview } from '@/features/dashboard/hooks/use-dashboard';
-import { useAdminCampaigns } from '@/features/promotions/hooks/use-admin-campaigns';
 import { useAdminCoupons } from '@/features/promotions/hooks/use-admin-coupons';
 import { ROUTES } from '@/constants/routes';
 
@@ -20,21 +19,14 @@ const QUICK_LINKS = [
   },
   {
     icon: Tag,
-    label: 'Campaigns',
-    description: 'Manage promotional campaigns',
-    href: ROUTES.admin.financialPromotions,
-  },
-  {
-    icon: Tag,
     label: 'Promo Codes',
-    description: 'Manage individual coupon codes',
+    description: 'Manage discount coupon codes',
     href: ROUTES.admin.financialPromoCodes,
   },
 ];
 
 export default function AdminFinancialPage() {
   const overviewQuery = useDashboardOverview();
-  const activeCampaignsQuery = useAdminCampaigns({ status: 'ACTIVE', pageSize: 1 });
   const activeCouponsQuery = useAdminCoupons({ status: 'ACTIVE', pageSize: 1 });
 
   return (
@@ -42,7 +34,7 @@ export default function AdminFinancialPage() {
       <PageHeader title="Financial Management" description="Payments and promotions overview." />
 
       <Reveal>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <StatCard
             icon={CreditCard}
             label="Pending payments"
@@ -51,12 +43,6 @@ export default function AdminFinancialPage() {
               (overviewQuery.isLoading ? '—' : 0)
             }
             tone="warning"
-          />
-          <StatCard
-            icon={Tag}
-            label="Active campaigns"
-            value={activeCampaignsQuery.data?.total ?? (activeCampaignsQuery.isLoading ? '—' : 0)}
-            tone="primary"
           />
           <StatCard
             icon={Wallet}

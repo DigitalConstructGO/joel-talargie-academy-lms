@@ -2,13 +2,7 @@ import 'reflect-metadata';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import {
-  CreateCampaignDto,
-  UpdateCampaignDto,
-  ListCampaignsDto,
-} from '../campaign.dto';
-import {
   CreateCouponDto,
-  GenerateCouponsDto,
   UpdateCouponDto,
   ListCouponsDto,
 } from '../coupon.dto';
@@ -20,101 +14,26 @@ import {
 import { AnalyticsQueryDto } from '../analytics.dto';
 
 describe('promotions DTOs', () => {
-  describe('CreateCampaignDto', () => {
-    const valid = {
-      name: 'Summer Sale',
-      type: 'PERCENTAGE_DISCOUNT',
-      discountType: 'PERCENTAGE',
-      discountValue: 10,
-    };
-
+  describe('CreateCouponDto', () => {
     it('accepts a minimal valid payload', async () => {
-      const errors = await validate(plainToInstance(CreateCampaignDto, valid));
+      const errors = await validate(plainToInstance(CreateCouponDto, {}));
       expect(errors).toHaveLength(0);
-    });
-
-    it('rejects a name shorter than the minimum length', async () => {
-      const errors = await validate(
-        plainToInstance(CreateCampaignDto, { ...valid, name: 'ab' }),
-      );
-      expect(errors.length).toBeGreaterThan(0);
-    });
-
-    it('rejects an unrecognized campaign type', async () => {
-      const errors = await validate(
-        plainToInstance(CreateCampaignDto, { ...valid, type: 'NOT_A_TYPE' }),
-      );
-      expect(errors.length).toBeGreaterThan(0);
-    });
-
-    it('rejects a discountValue outside its allowed range', async () => {
-      const errors = await validate(
-        plainToInstance(CreateCampaignDto, { ...valid, discountValue: -5 }),
-      );
-      expect(errors.length).toBeGreaterThan(0);
-    });
-
-    it('rejects a malformed startsAt date', async () => {
-      const errors = await validate(
-        plainToInstance(CreateCampaignDto, {
-          ...valid,
-          startsAt: 'not-a-date',
-        }),
-      );
-      expect(errors.length).toBeGreaterThan(0);
-    });
-
-    it('rejects a courseIds entry that is not a UUID', async () => {
-      const errors = await validate(
-        plainToInstance(CreateCampaignDto, {
-          ...valid,
-          courseIds: ['not-a-uuid'],
-        }),
-      );
-      expect(errors.length).toBeGreaterThan(0);
-    });
-
-    it('rejects an allowedRoles entry outside STUDENT/ADMINISTRATOR', async () => {
-      const errors = await validate(
-        plainToInstance(CreateCampaignDto, {
-          ...valid,
-          allowedRoles: ['SUPERUSER'],
-        }),
-      );
-      expect(errors.length).toBeGreaterThan(0);
     });
 
     it('accepts a fully populated payload', async () => {
       const errors = await validate(
-        plainToInstance(CreateCampaignDto, {
-          ...valid,
-          description: 'A big summer sale',
+        plainToInstance(CreateCouponDto, {
+          code: 'SAVE20',
+          codeType: 'MANUAL',
           status: 'ACTIVE',
-          maxDiscountAmount: 50,
-          minimumPurchaseAmount: 10,
-          isAutomatic: true,
-          priority: 5,
-          startsAt: '2026-06-01T00:00:00.000Z',
-          endsAt: '2026-08-01T00:00:00.000Z',
-          maxRedemptions: 1000,
-          maxRedemptionsPerUser: 1,
-          allowedRoles: ['STUDENT'],
-          allowedCountries: ['ET'],
-          allowedEmailDomains: ['example.com'],
-          allowedPaymentMethods: ['BANK_TRANSFER'],
-          allowedDaysOfWeek: [1, 2, 3],
-          allowedHourStart: 8,
-          allowedHourEnd: 20,
-          newStudentsOnly: true,
-          restrictToInstructorId: '3cf4bc56-c5ed-4e46-8558-822bcde19501',
-          requiresApproval: false,
-          totalSeats: 100,
-          sponsorName: 'Sponsor Inc',
-          sponsorNotes: 'notes',
-          referrerRewardType: 'FIXED',
-          referrerRewardValue: 5,
+          discountType: 'PERCENTAGE',
+          discountValue: 20,
+          ownerUserId: '3cf4bc56-c5ed-4e46-8558-822bcde19501',
           affiliateId: '3cf4bc56-c5ed-4e46-8558-822bcde19501',
-          metadata: { source: 'campaign' },
+          isSingleUse: false,
+          maxUsers: 50,
+          validFrom: '2026-06-01T00:00:00.000Z',
+          validUntil: '2026-08-01T00:00:00.000Z',
           courseIds: ['3cf4bc56-c5ed-4e46-8558-822bcde19501'],
           categoryIds: ['3cf4bc56-c5ed-4e46-8558-822bcde19501'],
           userIds: ['3cf4bc56-c5ed-4e46-8558-822bcde19501'],
@@ -122,92 +41,38 @@ describe('promotions DTOs', () => {
       );
       expect(errors).toHaveLength(0);
     });
-  });
 
-  describe('UpdateCampaignDto', () => {
-    it('accepts an empty payload (every field optional)', async () => {
-      const errors = await validate(plainToInstance(UpdateCampaignDto, {}));
-      expect(errors).toHaveLength(0);
-    });
-
-    it('rejects an out-of-range discountValue', async () => {
+    it('rejects a non-positive maxUsers', async () => {
       const errors = await validate(
-        plainToInstance(UpdateCampaignDto, { discountValue: 2_000_000 }),
+        plainToInstance(CreateCouponDto, { maxUsers: 0 }),
       );
       expect(errors.length).toBeGreaterThan(0);
-    });
-  });
-
-  describe('ListCampaignsDto', () => {
-    it('accepts an empty query', async () => {
-      const errors = await validate(plainToInstance(ListCampaignsDto, {}));
-      expect(errors).toHaveLength(0);
-    });
-
-    it('rejects an unrecognized status filter', async () => {
-      const errors = await validate(
-        plainToInstance(ListCampaignsDto, { status: 'NOT_A_STATUS' }),
-      );
-      expect(errors.length).toBeGreaterThan(0);
-    });
-  });
-
-  describe('CreateCouponDto', () => {
-    it('accepts a minimal valid payload', async () => {
-      const errors = await validate(
-        plainToInstance(CreateCouponDto, {
-          campaignId: '3cf4bc56-c5ed-4e46-8558-822bcde19501',
-        }),
-      );
-      expect(errors).toHaveLength(0);
     });
 
     it('rejects a manual code containing invalid characters', async () => {
       const errors = await validate(
-        plainToInstance(CreateCouponDto, {
-          campaignId: '3cf4bc56-c5ed-4e46-8558-822bcde19501',
-          code: 'not a valid code!!',
-        }),
+        plainToInstance(CreateCouponDto, { code: 'not a valid code!!' }),
       );
       expect(errors.length).toBeGreaterThan(0);
     });
 
-    it('rejects a non-UUID campaignId', async () => {
+    it('rejects an unrecognized discount type', async () => {
       const errors = await validate(
-        plainToInstance(CreateCouponDto, { campaignId: 'not-a-uuid' }),
-      );
-      expect(errors.length).toBeGreaterThan(0);
-    });
-  });
-
-  describe('GenerateCouponsDto', () => {
-    it('accepts a minimal valid payload', async () => {
-      const errors = await validate(
-        plainToInstance(GenerateCouponsDto, {
-          campaignId: '3cf4bc56-c5ed-4e46-8558-822bcde19501',
-          count: 10,
-        }),
-      );
-      expect(errors).toHaveLength(0);
-    });
-
-    it('rejects a count above the bulk-generate limit', async () => {
-      const errors = await validate(
-        plainToInstance(GenerateCouponsDto, {
-          campaignId: '3cf4bc56-c5ed-4e46-8558-822bcde19501',
-          count: 100000,
-        }),
+        plainToInstance(CreateCouponDto, { discountType: 'NOT_A_TYPE' }),
       );
       expect(errors.length).toBeGreaterThan(0);
     });
 
-    it('rejects a prefix with invalid characters', async () => {
+    it('rejects a negative discountValue', async () => {
       const errors = await validate(
-        plainToInstance(GenerateCouponsDto, {
-          campaignId: '3cf4bc56-c5ed-4e46-8558-822bcde19501',
-          count: 10,
-          prefix: '!!invalid!!',
-        }),
+        plainToInstance(CreateCouponDto, { discountValue: -5 }),
+      );
+      expect(errors.length).toBeGreaterThan(0);
+    });
+
+    it('rejects a non-UUID targeting rule entry', async () => {
+      const errors = await validate(
+        plainToInstance(CreateCouponDto, { courseIds: ['not-a-uuid'] }),
       );
       expect(errors.length).toBeGreaterThan(0);
     });
@@ -224,6 +89,15 @@ describe('promotions DTOs', () => {
         plainToInstance(UpdateCouponDto, { status: 'NOT_A_STATUS' }),
       );
       expect(errors.length).toBeGreaterThan(0);
+    });
+
+    it('accepts a nullable maxUsers override', async () => {
+      const errors = await validate(
+        plainToInstance(UpdateCouponDto, {
+          maxUsers: null,
+        }),
+      );
+      expect(errors).toHaveLength(0);
     });
   });
 

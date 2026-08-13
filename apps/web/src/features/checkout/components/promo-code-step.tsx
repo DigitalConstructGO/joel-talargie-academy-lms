@@ -12,6 +12,7 @@ import type {
   RedeemCouponResult,
 } from '@/features/promotions/types/promotion.types';
 import { formatCurrency } from '@/lib/format';
+import { extractErrorMessage } from '@/lib/api/api-error';
 import { cn } from '@/lib/utils';
 import { toast } from '@/lib/toast';
 
@@ -56,8 +57,11 @@ export function PromoCodeStep({
       const result = await redeemCoupon.mutateAsync({ courseId, code: code.trim() });
       onApplied(result);
       toast.success('Promo code applied.');
-    } catch {
-      toast.error('That code could not be applied.', 'It may have expired or already been used.');
+    } catch (error) {
+      toast.error(
+        'That code could not be applied.',
+        extractErrorMessage(error, 'It may have expired or already been used.'),
+      );
     }
   }
 
@@ -84,7 +88,6 @@ export function PromoCodeStep({
               <div>
                 <p className="text-sm font-semibold text-foreground">
                   {redemption.code} applied
-                  {redemption.campaignName ? ` — ${redemption.campaignName}` : ''}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   You save{' '}

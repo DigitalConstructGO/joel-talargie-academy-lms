@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ContentContainer } from '@/components/layout/content-container';
 import { PageHeader } from '@/components/common/page-header';
+import { PageBreadcrumb } from '@/components/common/page-breadcrumb';
 import { ErrorState } from '@/components/common/error-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ROUTES } from '@/constants/routes';
@@ -128,6 +129,18 @@ export default function CheckoutPage() {
     pathname,
   ]);
 
+  // Free courses bypass checkout entirely: the course page's enroll card
+  // enrolls directly and opens the lesson player. Redirect anyone who lands
+  // here on a free course (e.g. a stale bookmark) back to that flow.
+  useEffect(() => {
+    if (!hydrated || !courseQuery.data) return;
+    if (courseQuery.data.accessType === 'FREE') {
+      router.replace(ROUTES.dashboard.courseDetail(courseQuery.data.slug), {
+        scroll: false,
+      });
+    }
+  }, [hydrated, courseQuery.data, router]);
+
   // Guard against landing on a later step without the state it depends on (e.g. a stale bookmarked URL).
   useEffect(() => {
     if (!hydrated) return;
@@ -194,6 +207,17 @@ export default function CheckoutPage() {
 
   return (
     <ContentContainer>
+      <div className="mb-4">
+        <PageBreadcrumb
+          items={[
+            { label: 'Home', href: ROUTES.home },
+            { label: 'Courses', href: ROUTES.dashboard.browseCourses },
+            { label: course.title, href: ROUTES.dashboard.courseDetail(course.slug) },
+            { label: 'Checkout' },
+          ]}
+        />
+      </div>
+
       <PageHeader title="Checkout" description={`Enrolling in ${course.title}`} />
 
       <div className="mb-2">

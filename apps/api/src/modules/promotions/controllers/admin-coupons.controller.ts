@@ -10,16 +10,15 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { AuthUser } from '../../auth/interfaces/auth-user.interface';
 import { RequirePermissions } from '../../authorization/decorators/require-permissions.decorator';
 import {
   CreateCouponDto,
-  GenerateCouponsDto,
   ListCouponsDto,
   UpdateCouponDto,
 } from '../dto/coupon.dto';
+import { ListCodeRedemptionsDto } from '../dto/redemption.dto';
 import { CouponsService } from '../services/coupons.service';
 
 @Controller('promotions')
@@ -37,21 +36,30 @@ export class AdminCouponsController {
     return this.coupons.create(actor, dto);
   }
 
-  @Post('generate')
-  @RequirePermissions('promotions.generate_coupons')
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  @ApiOperation({
-    summary: 'Bulk-generate secure random coupon codes for a campaign',
-  })
-  generate(@CurrentUser() actor: AuthUser, @Body() dto: GenerateCouponsDto) {
-    return this.coupons.generate(actor, dto);
-  }
-
   @Get('coupons')
   @RequirePermissions('promotions.read')
   @ApiOperation({ summary: 'List coupons' })
   list(@Query() query: ListCouponsDto) {
     return this.coupons.list(query);
+  }
+
+  @Get('coupons/:id')
+  @RequirePermissions('promotions.read')
+  @ApiOperation({
+    summary: 'Get a coupon with its targeting rules and validity status',
+  })
+  detail(@Param('id', ParseUUIDPipe) id: string) {
+    return this.coupons.detail(id);
+  }
+
+  @Get('coupons/:id/redemptions')
+  @RequirePermissions('promotions.read')
+  @ApiOperation({ summary: 'List real redemption history for a coupon' })
+  redemptions(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: ListCodeRedemptionsDto,
+  ) {
+    return this.coupons.redemptions(id, query);
   }
 
   @Patch('coupons/:id')

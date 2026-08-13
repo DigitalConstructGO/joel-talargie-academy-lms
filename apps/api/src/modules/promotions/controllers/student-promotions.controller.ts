@@ -24,12 +24,6 @@ import {
 } from '../dto/redemption.dto';
 import { RedemptionService } from '../services/redemption.service';
 
-/**
- * Owns only static paths under /promotions - safe to register anywhere
- * relative to AdminCampaignsController's wildcard :id route, but kept early
- * in promotions.module.ts for readability alongside the other static-path
- * controllers.
- */
 @Controller('promotions')
 @ApiTags('My Promotions')
 @ApiBearerAuth()
@@ -41,10 +35,9 @@ export class StudentPromotionsController {
   @HttpCode(200)
   @Throttle({ default: REDEMPTION_VALIDATION_THROTTLE })
   @ApiOperation({
-    summary:
-      'Check whether a coupon (or an automatic promotion) applies to a course',
+    summary: 'Check whether a promo code applies to a course',
     description:
-      'Always returns 200 with { valid, reasonCode, pricing }. Never throws for an invalid/expired/ineligible coupon - only for a missing course.',
+      'Always returns 200 with { valid, reasonCode, pricing }. Never throws for an invalid/expired/ineligible code - only for a missing course.',
   })
   validate(
     @CurrentUser() user: AuthUser,
@@ -58,9 +51,9 @@ export class StudentPromotionsController {
   @HttpCode(200)
   @Throttle({ default: REDEMPTION_THROTTLE })
   @ApiOperation({
-    summary: 'Redeem a coupon (or the best automatic promotion) for a course',
+    summary: 'Redeem a promo code for a course',
     description:
-      'Records a redemption ledger entry. Returns 422 if the coupon is not valid.',
+      'Records a redemption ledger entry. Returns 422 if the code is not valid.',
   })
   redeem(
     @CurrentUser() user: AuthUser,
@@ -74,12 +67,6 @@ export class StudentPromotionsController {
   @ApiOperation({ summary: 'View my own redemption history' })
   history(@CurrentUser() user: AuthUser, @Query() query: ListRedemptionsDto) {
     return this.redemption.history(user.id, query);
-  }
-
-  @Get('referral-code')
-  @ApiOperation({ summary: 'Get (or lazily create) my personal referral code' })
-  referralCode(@CurrentUser() user: AuthUser) {
-    return this.redemption.myReferralCode(user.id);
   }
 }
 

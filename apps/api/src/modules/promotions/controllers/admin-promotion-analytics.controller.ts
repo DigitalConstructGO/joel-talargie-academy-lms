@@ -14,7 +14,7 @@ export class AdminPromotionAnalyticsController {
   @Get()
   @ApiOperation({
     summary:
-      'Campaign/coupon counts, revenue, discount given, conversion rate, and top campaigns/affiliates/referral codes',
+      'Code/coupon counts, revenue, discount given, conversion rate, and top codes/affiliates',
   })
   overview(@Query() query: AnalyticsQueryDto) {
     return this.analytics.overview(query);

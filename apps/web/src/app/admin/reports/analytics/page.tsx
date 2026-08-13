@@ -144,7 +144,7 @@ const ROLE_CONFIG = {
   count: { label: 'Users', color: 'var(--chart-3)' },
 } satisfies ChartConfig;
 
-const CAMPAIGN_CONFIG = {
+const CODES_CONFIG = {
   redemptions: { label: 'Redemptions', color: 'var(--chart-5)' },
 } satisfies ChartConfig;
 
@@ -266,7 +266,7 @@ export default function AdminAnalyticsPage() {
   );
   const coursesQuery = useAdminCourses({ pageSize: 200 });
   const rolesQuery = useRoles({ pageSize: 100 });
-  const campaignAnalyticsQuery = useAdminPromotionAnalytics({ limit: 8 });
+  const promotionAnalyticsQuery = useAdminPromotionAnalytics({ limit: 8 });
 
   const categoryDistribution = useMemo(() => {
     const counts = new Map<string, number>();
@@ -941,23 +941,23 @@ export default function AdminAnalyticsPage() {
           <Can permission="promotions.view_analytics">
             <section className="space-y-4">
               <h2 className="text-sm font-semibold text-foreground">Promotions</h2>
-              {campaignAnalyticsQuery.isLoading ? (
+              {promotionAnalyticsQuery.isLoading ? (
                 <ChartSkeleton />
-              ) : campaignAnalyticsQuery.isError ? (
+              ) : promotionAnalyticsQuery.isError ? (
                 <ChartErrorCard
-                  title="Top Campaigns by Redemptions"
-                  onRetry={() => campaignAnalyticsQuery.refetch()}
+                  title="Top Promo Codes by Redemptions"
+                  onRetry={() => promotionAnalyticsQuery.refetch()}
                 />
-              ) : campaignAnalyticsQuery.data &&
-                campaignAnalyticsQuery.data.topCampaigns.length > 0 ? (
+              ) : promotionAnalyticsQuery.data &&
+                promotionAnalyticsQuery.data.topCodes.length > 0 ? (
                 <ChartCard
-                  title="Top Campaigns by Redemptions"
-                  description={`${campaignAnalyticsQuery.data.totalRedemptions} total redemptions · ${campaignAnalyticsQuery.data.conversionRate}% conversion rate`}
-                  config={CAMPAIGN_CONFIG}
+                  title="Top Promo Codes by Redemptions"
+                  description={`${promotionAnalyticsQuery.data.totalRedemptions} total redemptions · ${promotionAnalyticsQuery.data.conversionRate}% conversion rate`}
+                  config={CODES_CONFIG}
                 >
                   <BarChart
-                    data={campaignAnalyticsQuery.data.topCampaigns.map((c) => ({
-                      name: c.campaignName,
+                    data={promotionAnalyticsQuery.data.topCodes.map((c) => ({
+                      name: c.code,
                       redemptions: c.redemptions,
                     }))}
                   >
@@ -977,7 +977,7 @@ export default function AdminAnalyticsPage() {
                 </ChartCard>
               ) : (
                 <ChartEmptyCard
-                  title="Top Campaigns by Redemptions"
+                  title="Top Promo Codes by Redemptions"
                   description="No coupon redemptions yet."
                 />
               )}

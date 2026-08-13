@@ -1039,7 +1039,7 @@ export const CONTENT_MANAGER_PERSON: DemoPerson = {
   email: 'content@academy.test',
   firstName: 'Priya',
   lastName: 'Sharma',
-  bio: 'Content operations manager responsible for the course catalog, categories, and promotional campaigns.',
+  bio: 'Content operations manager responsible for the course catalog, categories, and promo codes.',
   phone: '+251911234502',
 };
 
@@ -1091,70 +1091,57 @@ export const DEMO_PASSWORD = {
 
 // ---------------------------------------------------------------- Promotions
 
-export interface DemoCampaign {
-  name: string;
-  description: string;
-  type: 'FIRST_STUDENT_DISCOUNT' | 'SEASONAL_PROMOTION' | 'EVENT_PROMOTION' | 'FLASH_SALE';
-  status: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'EXPIRED' | 'ARCHIVED';
+export interface DemoPromoCode {
+  code: string;
+  status: 'ACTIVE' | 'PAUSED' | 'EXPIRED' | 'REVOKED';
   discountType: 'PERCENTAGE' | 'FIXED';
   discountValue: string;
-  startsInDays: number;
-  endsInDays: number | null;
-  codes: {
-    code: string;
-    status: 'ACTIVE' | 'PAUSED' | 'EXPIRED' | 'REVOKED';
-    maxRedemptions: number | null;
-    validUntilInDays: number | null;
-  }[];
+  maxUsers?: number;
+  validFromInDays: number;
+  validUntilInDays: number | null;
 }
 
-export const CAMPAIGN_CATALOG: DemoCampaign[] = [
+export const PROMO_CODE_CATALOG: DemoPromoCode[] = [
   {
-    name: 'New Student Welcome',
-    description: 'A one-time discount for students enrolling in their very first course.',
-    type: 'FIRST_STUDENT_DISCOUNT',
+    code: 'WELCOME10',
     status: 'ACTIVE',
     discountType: 'PERCENTAGE',
     discountValue: '10',
-    startsInDays: -60,
-    endsInDays: null,
-    codes: [{ code: 'WELCOME10', status: 'ACTIVE', maxRedemptions: null, validUntilInDays: null }],
+    validFromInDays: -60,
+    validUntilInDays: null,
   },
   {
-    name: 'Early Bird Enrollment',
-    description: 'Discounted pricing for students who enroll ahead of a course’s next cohort.',
-    type: 'SEASONAL_PROMOTION',
+    code: 'EARLYBIRD20',
     status: 'ACTIVE',
     discountType: 'PERCENTAGE',
     discountValue: '20',
-    startsInDays: -14,
-    endsInDays: 30,
-    codes: [
-      { code: 'EARLYBIRD20', status: 'ACTIVE', maxRedemptions: 100, validUntilInDays: 30 },
-      { code: 'STUDENT15', status: 'ACTIVE', maxRedemptions: 50, validUntilInDays: 30 },
-    ],
+    validFromInDays: -14,
+    validUntilInDays: 30,
   },
   {
-    name: 'Developer Week',
-    description: 'A week-long promotion on programming courses that has already concluded.',
-    type: 'EVENT_PROMOTION',
+    code: 'STUDENT15',
+    status: 'ACTIVE',
+    discountType: 'PERCENTAGE',
+    discountValue: '15',
+    maxUsers: 50,
+    validFromInDays: -14,
+    validUntilInDays: 30,
+  },
+  {
+    code: 'DEV25',
     status: 'EXPIRED',
     discountType: 'PERCENTAGE',
     discountValue: '25',
-    startsInDays: -45,
-    endsInDays: -38,
-    codes: [{ code: 'DEV25', status: 'EXPIRED', maxRedemptions: 200, validUntilInDays: -38 }],
+    validFromInDays: -45,
+    validUntilInDays: -38,
   },
   {
-    name: 'Summer Learning',
-    description: 'A fixed-amount discount campaign scheduled for the upcoming summer term.',
-    type: 'SEASONAL_PROMOTION',
-    status: 'DRAFT',
+    code: 'SUMMER20',
+    status: 'PAUSED',
     discountType: 'FIXED',
     discountValue: '20',
-    startsInDays: 20,
-    endsInDays: 80,
-    codes: [{ code: 'SUMMER20', status: 'PAUSED', maxRedemptions: 150, validUntilInDays: 80 }],
+    validFromInDays: 20,
+    validUntilInDays: 80,
   },
 ];
 

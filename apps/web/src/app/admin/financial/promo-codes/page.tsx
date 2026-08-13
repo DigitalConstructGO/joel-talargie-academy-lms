@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Loader2, MoreHorizontal, Pencil, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { Eye, Loader2, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
 import { PageHeader } from '@/components/common/page-header';
 import { PageBreadcrumb } from '@/components/common/page-breadcrumb';
@@ -16,6 +16,7 @@ import { FilterBar } from '@/components/dashboard/filters/filter-bar';
 import { SelectFilter } from '@/components/dashboard/filters/select-filter';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -40,21 +41,25 @@ import {
 } from '@/components/ui/select';
 import { Can } from '@/components/auth/can';
 import { useQueryFilters } from '@/hooks/use-query-filters';
-import { useAdminCampaigns } from '@/features/promotions/hooks/use-admin-campaigns';
 import {
   useAdminCoupons,
   useArchiveCoupon,
   useCreateCoupon,
-  useGenerateCoupons,
-  useUpdateCoupon,
 } from '@/features/promotions/hooks/use-admin-coupons';
+import {
+  CouponTargetingFields,
+  type CouponTargetType,
+} from '@/features/promotions/components/coupon-targeting-fields';
+import { EditCouponDialog } from '@/features/promotions/components/edit-coupon-dialog';
 import type {
   Coupon,
   PromoCodeStatus,
   PromoCodeType,
+  PromoDiscountType,
 } from '@/features/promotions/types/admin-promotion.types';
 import { ROUTES } from '@/constants/routes';
 import { formatDate } from '@/lib/date';
+import { formatCurrency } from '@/lib/format';
 import { toast } from '@/lib/toast';
 
 const PAGE_SIZE = 20;
@@ -91,263 +96,250 @@ const STATUS_VARIANT: Record<PromoCodeStatus, 'success' | 'warning' | 'outline' 
   REVOKED: 'destructive',
 };
 
-function CreateCouponDialog({ campaignId }: { campaignId: string | undefined }) {
-  const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<'single' | 'bulk'>('single');
-  const [selectedCampaignId, setSelectedCampaignId] = useState(campaignId ?? '');
-  const [code, setCode] = useState('');
-  const [count, setCount] = useState('10');
-  const [prefix, setPrefix] = useState('');
-  const campaignsQuery = useAdminCampaigns({ pageSize: 100 });
-  const createCoupon = useCreateCoupon();
-  const generateCoupons = useGenerateCoupons();
+const CREATE_STATUS_OPTIONS: { label: string; value: PromoCodeStatus }[] = [
+  { label: 'Active', value: 'ACTIVE' },
+  { label: 'Paused', value: 'PAUSED' },
+];
 
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    if (!selectedCampaignId) return;
-    try {
-      if (mode === 'single') {
-        await createCoupon.mutateAsync({
-          campaignId: selectedCampaignId,
-          code: code.trim() || undefined,
-        });
-        toast.success('Promo code created');
-      } else {
-        await generateCoupons.mutateAsync({
-          campaignId: selectedCampaignId,
-          count: Number(count),
-          prefix: prefix.trim() || undefined,
-        });
-        toast.success(`${count} promo codes generated`);
-      }
-      setCode('');
-      setOpen(false);
-    } catch {
-      toast.error('Could not create promo code(s)');
+const DISCOUNT_TYPE_OPTIONS: { label: string; value: PromoDiscountType }[] = [
+  { label: 'Percentage', value: 'PERCENTAGE' },
+  { label: 'Fixed amount', value: 'FIXED' },
+  { label: 'Free', value: 'FREE' },
+];
+
+function generatePromoCode(): string {
+  const random = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `PROMO-${random}`;
+}
+
+function CreateCouponDialog() {
+  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState('');
+  const [status, setStatus] = useState<PromoCodeStatus>('ACTIVE');
+  const [discountType, setDiscountType] = useState<PromoDiscountType>('PERCENTAGE');
+  const [discountValue, setDiscountValue] = useState('');
+  const [validFrom, setValidFrom] = useState('');
+  const [validUntil, setValidUntil] = useState('');
+  const [maxUsers, setMaxUsers] = useState('');
+  const [isSingleUse, setIsSingleUse] = useState(false);
+  const [targetType, setTargetType] = useState<CouponTargetType>('ALL');
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+  const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>([]);
+  const [error, setError] = useState('');
+  const createCoupon = useCreateCoupon();
+
+  function handleTargetTypeChange(value: CouponTargetType) {
+    setTargetType(value);
+    if (value === 'CATEGORIES') setSelectedCourseIds([]);
+    if (value === 'COURSES') setSelectedCategoryIds([]);
+    if (value === 'ALL') {
+      setSelectedCourseIds([]);
+      setSelectedCategoryIds([]);
     }
   }
 
-  const isPending = createCoupon.isPending || generateCoupons.isPending;
+  function resetForm() {
+    setCode('');
+    setStatus('ACTIVE');
+    setDiscountType('PERCENTAGE');
+    setDiscountValue('');
+    setValidFrom('');
+    setValidUntil('');
+    setMaxUsers('');
+    setIsSingleUse(false);
+    setTargetType('ALL');
+    setSelectedCategoryIds([]);
+    setSelectedCourseIds([]);
+    setError('');
+  }
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    if (discountType !== 'FREE' && !discountValue.trim()) {
+      setError('Enter a discount value.');
+      return;
+    }
+    const finalCode = code.trim() || generatePromoCode();
+    try {
+      await createCoupon.mutateAsync({
+        code: finalCode,
+        status,
+        discountType,
+        discountValue: Number(discountValue) || 0,
+        validFrom: validFrom ? new Date(validFrom).toISOString() : undefined,
+        validUntil: validUntil ? new Date(validUntil).toISOString() : undefined,
+        maxUsers: maxUsers.trim() ? Number(maxUsers) : undefined,
+        isSingleUse,
+        courseIds: selectedCourseIds.length ? selectedCourseIds : undefined,
+        categoryIds: selectedCategoryIds.length ? selectedCategoryIds : undefined,
+      });
+      toast.success(`Promo code ${finalCode} created`);
+      setOpen(false);
+      resetForm();
+    } catch {
+      setError('Could not create this promo code. The code may already be in use.');
+    }
+  }
+
+  const isPending = createCoupon.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) resetForm();
+      }}
+    >
       <Can permission="promotions.manage_coupons">
         <Button className="gap-2" onClick={() => setOpen(true)}>
           <Plus className="size-4" /> New promo code
         </Button>
       </Can>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>New promo code</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="campaign">Campaign</Label>
-            <Select value={selectedCampaignId} onValueChange={setSelectedCampaignId}>
-              <SelectTrigger id="campaign">
-                <SelectValue placeholder="Select a campaign" />
-              </SelectTrigger>
-              <SelectContent>
-                {(campaignsQuery.data?.items ?? []).map((campaign) => (
-                  <SelectItem key={campaign.id} value={campaign.id}>
-                    {campaign.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant={mode === 'single' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setMode('single')}
-            >
-              Single code
-            </Button>
-            <Can permission="promotions.generate_coupons">
-              <Button
-                type="button"
-                variant={mode === 'bulk' ? 'default' : 'outline'}
-                size="sm"
-                className="gap-1.5"
-                onClick={() => setMode('bulk')}
-              >
-                <Sparkles className="size-3.5" /> Bulk generate
-              </Button>
-            </Can>
-          </div>
-          {mode === 'single' ? (
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="code">Code (optional - auto-generated if empty)</Label>
+              <Label htmlFor="create-code">Code (optional - auto-generated if empty)</Label>
               <Input
-                id="code"
+                id="create-code"
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
+                placeholder="SUMMER20"
               />
             </div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="create-status">Status</Label>
+              <Select
+                value={status}
+                onValueChange={(value) => setStatus(value as PromoCodeStatus)}
+              >
+                <SelectTrigger id="create-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CREATE_STATUS_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="create-discount-type">Discount type</Label>
+              <Select
+                value={discountType}
+                onValueChange={(value) => setDiscountType(value as PromoDiscountType)}
+              >
+                <SelectTrigger id="create-discount-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DISCOUNT_TYPE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {discountType === 'FREE' ? (
               <div className="space-y-2">
-                <Label htmlFor="count">Count</Label>
+                <Label htmlFor="create-discount-value">Discount value</Label>
+                <Input id="create-discount-value" value="100% off" disabled />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="create-discount-value">
+                  Discount value {discountType === 'PERCENTAGE' ? '(%)' : '(amount)'}
+                </Label>
                 <Input
-                  id="count"
+                  id="create-discount-value"
                   type="number"
-                  min="1"
-                  max="1000"
-                  value={count}
-                  onChange={(e) => setCount(e.target.value)}
+                  min="0"
+                  step="0.01"
+                  value={discountValue}
+                  onChange={(e) => setDiscountValue(e.target.value)}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="prefix">Prefix (optional)</Label>
-                <Input
-                  id="prefix"
-                  value={prefix}
-                  onChange={(e) => setPrefix(e.target.value.toUpperCase())}
-                />
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button type="submit" disabled={!selectedCampaignId || isPending}>
-              {isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-              {mode === 'single' ? 'Create code' : 'Generate codes'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-/**
- * The backend has no single-coupon detail endpoint (`GET /promotions/coupons/:id`
- * doesn't exist - confirmed against the real controller), so this edits the
- * row data already fetched by the list query rather than a separate `/edit`
- * route that would have nothing to fetch on direct navigation/refresh.
- */
-function EditCouponDialog({
-  coupon,
-  open,
-  onOpenChange,
-}: {
-  coupon: Coupon;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const [status, setStatus] = useState<PromoCodeStatus>(coupon.status);
-  const [maxRedemptions, setMaxRedemptions] = useState(coupon.maxRedemptions?.toString() ?? '');
-  const [maxRedemptionsPerUser, setMaxRedemptionsPerUser] = useState(
-    coupon.maxRedemptionsPerUser?.toString() ?? '',
-  );
-  const [validFrom, setValidFrom] = useState(coupon.validFrom?.slice(0, 10) ?? '');
-  const [validUntil, setValidUntil] = useState(coupon.validUntil?.slice(0, 10) ?? '');
-  const updateCoupon = useUpdateCoupon();
-
-  // Re-seed local state whenever a different coupon is opened for editing -
-  // this dialog is remounted per-row (see `key={coupon.id}` at the call
-  // site) so this only guards against the same row being reopened.
-  useEffect(() => {
-    setStatus(coupon.status);
-    setMaxRedemptions(coupon.maxRedemptions?.toString() ?? '');
-    setMaxRedemptionsPerUser(coupon.maxRedemptionsPerUser?.toString() ?? '');
-    setValidFrom(coupon.validFrom?.slice(0, 10) ?? '');
-    setValidUntil(coupon.validUntil?.slice(0, 10) ?? '');
-  }, [coupon]);
-
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    try {
-      await updateCoupon.mutateAsync({
-        couponId: coupon.id,
-        input: {
-          status,
-          maxRedemptions: maxRedemptions.trim() ? Number(maxRedemptions) : null,
-          maxRedemptionsPerUser: maxRedemptionsPerUser.trim()
-            ? Number(maxRedemptionsPerUser)
-            : null,
-          validFrom: validFrom ? new Date(validFrom).toISOString() : null,
-          validUntil: validUntil ? new Date(validUntil).toISOString() : null,
-        },
-      });
-      toast.success('Promo code updated');
-      onOpenChange(false);
-    } catch {
-      toast.error('Could not update this promo code');
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            Edit <code>{coupon.code}</code>
-          </DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="edit-status">Status</Label>
-            <Select value={status} onValueChange={(value) => setStatus(value as PromoCodeStatus)}>
-              <SelectTrigger id="edit-status">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            )}
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="edit-max-redemptions">Max redemptions (blank = unlimited)</Label>
+              <Label htmlFor="create-valid-from">Valid from (blank = immediately)</Label>
               <Input
-                id="edit-max-redemptions"
-                type="number"
-                min="0"
-                value={maxRedemptions}
-                onChange={(e) => setMaxRedemptions(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-max-per-user">Max per user (blank = unlimited)</Label>
-              <Input
-                id="edit-max-per-user"
-                type="number"
-                min="0"
-                value={maxRedemptionsPerUser}
-                onChange={(e) => setMaxRedemptionsPerUser(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="edit-valid-from">Valid from (blank = immediately)</Label>
-              <Input
-                id="edit-valid-from"
+                id="create-valid-from"
                 type="date"
                 value={validFrom}
                 onChange={(e) => setValidFrom(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-valid-until">Valid until (blank = never)</Label>
+              <Label htmlFor="create-valid-until">Valid until (blank = never)</Label>
               <Input
-                id="edit-valid-until"
+                id="create-valid-until"
                 type="date"
                 value={validUntil}
                 onChange={(e) => setValidUntil(e.target.value)}
               />
             </div>
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="create-max-users">
+              Max users (blank = unlimited)
+            </Label>
+            <Input
+              id="create-max-users"
+              type="number"
+              min="1"
+              value={maxUsers}
+              onChange={(e) => setMaxUsers(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Limit the code to the first N students who use it (e.g. 50 for
+              a &quot;first 50&quot; offer).
+            </p>
+          </div>
+          <div className="flex items-center gap-3 rounded-lg border border-border px-4 py-3">
+            <Checkbox
+              id="create-single-use"
+              checked={isSingleUse}
+              onCheckedChange={(checked) => setIsSingleUse(Boolean(checked))}
+            />
+            <div>
+              <Label htmlFor="create-single-use" className="font-medium">
+                Single use
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Each student can redeem this code once.
+              </p>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label>Targeting</Label>
+            <p className="text-sm text-muted-foreground">
+              Choose which courses this promo code applies to.
+            </p>
+          </div>
+          <CouponTargetingFields
+            targetType={targetType}
+            onTargetTypeChange={handleTargetTypeChange}
+            selectedCategoryIds={selectedCategoryIds}
+            onCategoryIdsChange={setSelectedCategoryIds}
+            selectedCourseIds={selectedCourseIds}
+            onCourseIdsChange={setSelectedCourseIds}
+          />
+          {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
-            <Button type="submit" disabled={updateCoupon.isPending}>
-              {updateCoupon.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-              Save changes
+            <Button type="submit" disabled={isPending}>
+              {isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+              Create promo code
             </Button>
           </DialogFooter>
         </form>
@@ -357,8 +349,6 @@ function EditCouponDialog({
 }
 
 export default function AdminPromoCodesPage() {
-  const searchParams = useSearchParams();
-  const campaignIdFilter = searchParams.get('campaignId') ?? undefined;
   const { filters, page, pageSize, setFilter, setPage } = useQueryFilters<CouponsFilters>({
     defaults: DEFAULT_FILTERS,
     pageSize: PAGE_SIZE,
@@ -373,7 +363,6 @@ export default function AdminPromoCodesPage() {
     search: search || undefined,
     status: status === 'ALL' ? undefined : status,
     codeType: codeType === 'ALL' ? undefined : codeType,
-    campaignId: campaignIdFilter,
   });
 
   const totalPages = Math.max(1, Math.ceil((couponsQuery.data?.total ?? 0) / pageSize));
@@ -399,10 +388,20 @@ export default function AdminPromoCodesPage() {
         ),
       },
       {
+        accessorKey: 'discountValue',
+        header: 'Discount',
+        cell: ({ row }) => {
+          const coupon = row.original;
+          if (coupon.discountType === 'FREE') return 'Free';
+          if (coupon.discountType === 'PERCENTAGE')
+            return `${Number(coupon.discountValue)}%`;
+          return formatCurrency(coupon.discountValue);
+        },
+      },
+      {
         accessorKey: 'redemptionCount',
         header: 'Used',
-        cell: ({ row }) =>
-          `${row.original.redemptionCount}${row.original.maxRedemptions ? ` / ${row.original.maxRedemptions}` : ''}`,
+        cell: ({ row }) => `${row.original.redemptionCount}`,
       },
       {
         accessorKey: 'validUntil',
@@ -422,6 +421,11 @@ export default function AdminPromoCodesPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild className="gap-2">
+                <Link href={ROUTES.admin.financialPromoCodeDetail(row.original.id)}>
+                  <Eye className="size-4" /> View
+                </Link>
+              </DropdownMenuItem>
               <Can permission="promotions.manage_coupons">
                 <DropdownMenuItem
                   onSelect={(event) => {
@@ -468,8 +472,12 @@ export default function AdminPromoCodesPage() {
       />
       <PageHeader
         title="Promo Codes"
-        description="Coupon codes generated under your campaigns."
-        actions={<CreateCouponDialog campaignId={campaignIdFilter} />}
+        description="Discount codes for student purchases."
+        actions={
+          <div className="flex gap-2">
+            <CreateCouponDialog />
+          </div>
+        }
       />
 
       <FilterBar>

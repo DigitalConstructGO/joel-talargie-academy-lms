@@ -386,6 +386,9 @@ export class CatalogService {
         message: 'Course not found',
       });
     const detail = await this.adminCourse(course.id);
+    const category = course.categoryId
+      ? await this.repository.courseCategory(course.categoryId)
+      : undefined;
     return {
       id: detail.id,
       title: detail.title,
@@ -393,6 +396,11 @@ export class CatalogService {
       shortDescription: detail.shortDescription,
       description: detail.description,
       presenterName: detail.presenterName,
+      thumbnailKey: detail.thumbnailKey ?? null,
+      categoryId: detail.categoryId ?? null,
+      categoryName: category?.name ?? null,
+      categorySlug: category?.slug ?? null,
+      featured: detail.featured,
       accessType: detail.accessType,
       price: detail.price,
       discountPrice: detail.discountPrice,

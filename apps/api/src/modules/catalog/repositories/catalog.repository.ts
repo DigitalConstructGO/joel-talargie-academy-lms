@@ -50,6 +50,16 @@ export class CatalogRepository {
       where: eq(schema.courses.slug, slug),
     });
   }
+  courseCategory(categoryId: string) {
+    return this.db.query.categories.findFirst({
+      where: eq(schema.categories.id, categoryId),
+      columns: {
+        id: true,
+        name: true,
+        slug: true,
+      },
+    });
+  }
   sectionById(id: string) {
     return this.db.query.courseSections.findFirst({
       where: eq(schema.courseSections.id, id),

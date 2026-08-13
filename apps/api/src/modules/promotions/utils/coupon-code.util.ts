@@ -33,19 +33,3 @@ export function generateSecureCode(options: CouponCodeOptions = {}): string {
   const suffix = options.suffix ? normalizeCouponCode(options.suffix) : '';
   return normalizeCouponCode(`${prefix}${body}${suffix}`);
 }
-
-/** Generates `count` unique codes in-batch, retrying on collision within the batch itself. */
-export function generateBulkCodes(
-  count: number,
-  options: CouponCodeOptions = {},
-): string[] {
-  const codes = new Set<string>();
-  let attempts = 0;
-  const maxAttempts = count * 20 + 100;
-  while (codes.size < count && attempts < maxAttempts) {
-    codes.add(generateSecureCode(options));
-    attempts += 1;
-  }
-  if (codes.size < count) throw new Error('COUPON_CODE_GENERATION_EXHAUSTED');
-  return [...codes];
-}

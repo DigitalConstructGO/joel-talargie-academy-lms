@@ -1,5 +1,4 @@
 import {
-  generateBulkCodes,
   generateSecureCode,
   normalizeCouponCode,
 } from '../utils/coupon-code.util';
@@ -50,18 +49,5 @@ describe('generateSecureCode', () => {
       Array.from({ length: 1000 }, () => generateSecureCode({ length: 12 })),
     );
     expect(codes.size).toBe(1000);
-  });
-});
-
-describe('generateBulkCodes', () => {
-  it('generates the requested count of unique codes', () => {
-    const codes = generateBulkCodes(50, { length: 8 });
-    expect(codes).toHaveLength(50);
-    expect(new Set(codes).size).toBe(50);
-  });
-
-  it('supports single-use style short batches with prefix', () => {
-    const codes = generateBulkCodes(5, { length: 6, prefix: 'vip' });
-    for (const code of codes) expect(code.startsWith('VIP')).toBe(true);
   });
 });

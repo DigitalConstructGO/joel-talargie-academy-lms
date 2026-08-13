@@ -78,14 +78,8 @@ export const ROUTES = {
     academicsEnrollments: '/admin/academics/enrollments',
     financial: '/admin/financial',
     financialPayments: '/admin/financial/payments',
-    financialPromotions: '/admin/financial/promotions',
-    financialPromotionCreate: '/admin/financial/promotions/create',
-    financialPromotionDetail: (promotionId: string) => `/admin/financial/promotions/${promotionId}`,
-    financialPromotionEdit: (promotionId: string) =>
-      `/admin/financial/promotions/${promotionId}/edit`,
-    financialPromotionUsage: (promotionId: string) =>
-      `/admin/financial/promotions/${promotionId}/usage`,
     financialPromoCodes: '/admin/financial/promo-codes',
+    financialPromoCodeDetail: (codeId: string) => `/admin/financial/promo-codes/${codeId}`,
     certificates: '/admin/certificates',
     certificateDetail: (certificateId: string) => `/admin/certificates/${certificateId}`,
     verifyCertificate: '/admin/verify-certificate',

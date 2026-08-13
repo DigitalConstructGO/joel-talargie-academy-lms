@@ -46,9 +46,15 @@ export default function WishlistPage() {
             <div key={course.id} className="flex flex-col gap-3">
               <CourseCard course={course} href={ROUTES.dashboard.courseDetail(course.slug)} />
               <Button variant="outline" asChild className="w-full">
-                <Link href={`${ROUTES.dashboard.checkout}?course=${course.slug}`}>
+                <Link
+                  href={
+                    course.accessType === 'FREE'
+                      ? ROUTES.dashboard.courseDetail(course.slug)
+                      : `${ROUTES.dashboard.checkout}?course=${course.slug}`
+                  }
+                >
                   <ShoppingCart className="size-4" />
-                  Move to Checkout
+                  {course.accessType === 'FREE' ? 'Enroll Free' : 'Move to Checkout'}
                 </Link>
               </Button>
             </div>

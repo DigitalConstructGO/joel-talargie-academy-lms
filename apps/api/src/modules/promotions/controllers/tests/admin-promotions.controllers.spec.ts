@@ -1,55 +1,13 @@
 import { AdminAffiliatesController } from '../admin-affiliates.controller';
-import { AdminCampaignsController } from '../admin-campaigns.controller';
 import { AdminCouponsController } from '../admin-coupons.controller';
 import { AdminPromotionAnalyticsController } from '../admin-promotion-analytics.controller';
-import { AdminRedemptionsController } from '../admin-redemptions.controller';
-
-describe('AdminCampaignsController', () => {
-  const campaigns = {
-    create: jest.fn(),
-    list: jest.fn(),
-    get: jest.fn(),
-    update: jest.fn(),
-    archive: jest.fn(),
-  };
-  const controller = new AdminCampaignsController(campaigns as never);
-  const actor = { id: 'admin-1' } as never;
-
-  beforeEach(() => jest.clearAllMocks());
-
-  it('create() delegates to the campaigns service', () => {
-    controller.create(actor, { name: 'Sale' } as never);
-    expect(campaigns.create).toHaveBeenCalledWith(actor, { name: 'Sale' });
-  });
-
-  it('list() delegates to the campaigns service', () => {
-    controller.list({ page: 1 } as never);
-    expect(campaigns.list).toHaveBeenCalledWith({ page: 1 });
-  });
-
-  it('get() delegates to the campaigns service', () => {
-    controller.get('campaign-1');
-    expect(campaigns.get).toHaveBeenCalledWith('campaign-1');
-  });
-
-  it('update() delegates to the campaigns service', () => {
-    controller.update(actor, 'campaign-1', { name: 'New' } as never);
-    expect(campaigns.update).toHaveBeenCalledWith(actor, 'campaign-1', {
-      name: 'New',
-    });
-  });
-
-  it('archive() delegates to the campaigns service', () => {
-    controller.archive(actor, 'campaign-1');
-    expect(campaigns.archive).toHaveBeenCalledWith(actor, 'campaign-1');
-  });
-});
 
 describe('AdminCouponsController', () => {
   const coupons = {
     create: jest.fn(),
-    generate: jest.fn(),
     list: jest.fn(),
+    detail: jest.fn(),
+    redemptions: jest.fn(),
     update: jest.fn(),
     archive: jest.fn(),
   };
@@ -59,21 +17,25 @@ describe('AdminCouponsController', () => {
   beforeEach(() => jest.clearAllMocks());
 
   it('create() delegates to the coupons service', () => {
-    controller.create(actor, { campaignId: 'c1' } as never);
-    expect(coupons.create).toHaveBeenCalledWith(actor, { campaignId: 'c1' });
-  });
-
-  it('generate() delegates to the coupons service', () => {
-    controller.generate(actor, { campaignId: 'c1', count: 10 } as never);
-    expect(coupons.generate).toHaveBeenCalledWith(actor, {
-      campaignId: 'c1',
-      count: 10,
+    controller.create(actor, { discountType: 'PERCENTAGE' } as never);
+    expect(coupons.create).toHaveBeenCalledWith(actor, {
+      discountType: 'PERCENTAGE',
     });
   });
 
   it('list() delegates to the coupons service', () => {
     controller.list({ page: 1 } as never);
     expect(coupons.list).toHaveBeenCalledWith({ page: 1 });
+  });
+
+  it('detail() delegates to the coupons service', () => {
+    controller.detail('coupon-1');
+    expect(coupons.detail).toHaveBeenCalledWith('coupon-1');
+  });
+
+  it('redemptions() delegates to the coupons service', () => {
+    controller.redemptions('coupon-1', { page: 1 } as never);
+    expect(coupons.redemptions).toHaveBeenCalledWith('coupon-1', { page: 1 });
   });
 
   it('update() delegates to the coupons service', () => {
@@ -127,39 +89,6 @@ describe('AdminAffiliatesController', () => {
     expect(affiliates.update).toHaveBeenCalledWith('affiliate-1', {
       status: 'ACTIVE',
     });
-  });
-});
-
-describe('AdminRedemptionsController', () => {
-  const approvals = {
-    pending: jest.fn(),
-    approve: jest.fn(),
-    reject: jest.fn(),
-  };
-  const controller = new AdminRedemptionsController(approvals as never);
-  const actor = { id: 'admin-1' } as never;
-
-  beforeEach(() => jest.clearAllMocks());
-
-  it('pending() delegates to the approval service', () => {
-    controller.pending({ page: 1 } as never);
-    expect(approvals.pending).toHaveBeenCalledWith({ page: 1 });
-  });
-
-  it('approve() delegates to the approval service', () => {
-    controller.approve(actor, 'redemption-1');
-    expect(approvals.approve).toHaveBeenCalledWith(actor, 'redemption-1');
-  });
-
-  it('reject() extracts the reason from the DTO', () => {
-    controller.reject(actor, 'redemption-1', {
-      reason: 'Not eligible',
-    } as never);
-    expect(approvals.reject).toHaveBeenCalledWith(
-      actor,
-      'redemption-1',
-      'Not eligible',
-    );
   });
 });
 

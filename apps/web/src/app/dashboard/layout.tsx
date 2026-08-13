@@ -11,6 +11,10 @@ import { STUDENT_NAV } from '@/constants/nav';
 
 const FOCUS_MODE_PATTERN = /^\/dashboard\/courses\/[^/]+\/learn/;
 
+// Checkout renders its own page-level breadcrumb (Home > Courses > Course > Checkout)
+// because the global trail can't know the course from the URL - keep the two apart.
+const SELF_BREADCRUMB_PATTERN = /^\/dashboard\/checkout/;
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const crumbs = useBreadcrumbTrail(STUDENT_NAV, 'Dashboard', ROUTES.dashboard.root);
@@ -35,7 +39,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         sections={STUDENT_NAV}
         portalLabel="Student"
         rootHref={ROUTES.dashboard.root}
-        breadcrumb={<PageBreadcrumb items={crumbs} />}
+        breadcrumb={
+          pathname && SELF_BREADCRUMB_PATTERN.test(pathname) ? undefined : (
+            <PageBreadcrumb items={crumbs} />
+          )
+        }
         title={isRoot ? crumbs.at(-1)?.label : undefined}
         hasPermission={can}
       >

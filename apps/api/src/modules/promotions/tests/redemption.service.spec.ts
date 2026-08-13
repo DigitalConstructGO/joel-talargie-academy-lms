@@ -15,53 +15,19 @@ const course = {
   accessType: 'PAID',
 };
 
-const activeCampaign = {
-  id: 'campaign-1',
-  name: 'Save 20',
-  type: 'MANUAL_COUPON',
-  status: 'ACTIVE',
-  discountType: 'PERCENTAGE',
-  discountValue: '20',
-  maxDiscountAmount: null,
-  minimumPurchaseAmount: null,
-  isAutomatic: false,
-  priority: 0,
-  startsAt: new Date('2020-01-01T00:00:00Z'),
-  endsAt: null,
-  maxRedemptions: null,
-  maxRedemptionsPerUser: 1,
-  redemptionCount: 0,
-  allowedRoles: null,
-  allowedCountries: null,
-  allowedEmailDomains: null,
-  allowedPaymentMethods: null,
-  allowedDaysOfWeek: null,
-  allowedHourStart: null,
-  allowedHourEnd: null,
-  newStudentsOnly: false,
-  restrictToInstructorId: null,
-  requiresApproval: false,
-  totalSeats: null,
-  seatsUsed: 0,
-  archivedAt: null,
-  referrerRewardType: null,
-  referrerRewardValue: null,
-};
-
-function manualRuleSet() {
+function ruleSet() {
   return {
-    campaign: activeCampaign,
     promoCode: {
       id: 'code-1',
-      campaignId: 'campaign-1',
       code: 'SAVE20',
       codeType: 'MANUAL',
       status: 'ACTIVE',
+      discountType: 'PERCENTAGE',
+      discountValue: '20',
       ownerUserId: null,
       affiliateId: null,
       isSingleUse: false,
-      maxRedemptions: null,
-      maxRedemptionsPerUser: null,
+      maxUsers: null,
       redemptionCount: 0,
       validFrom: null,
       validUntil: null,
@@ -70,7 +36,7 @@ function manualRuleSet() {
     categoryRuleCategoryIds: [],
     userRuleUserIds: [],
     userRedemptionCountForCode: 0,
-    userRedemptionCountForCampaign: 0,
+    userCountForCode: 0,
   };
 }
 
@@ -78,17 +44,12 @@ describe('RedemptionService', () => {
   const repository = {
     findCourseForEngine: jest.fn(),
     findRuleSetByCode: jest.fn(),
-    findAutomaticCandidates: jest.fn(),
-    isNewStudent: jest.fn(),
     recordAffiliateClick: jest.fn(),
     findCode: jest.fn(),
-    findCampaign: jest.fn(),
     findAffiliate: jest.fn(),
     recordRedemption: jest.fn(),
     logUsage: jest.fn(),
     listMyRedemptions: jest.fn(),
-    findActiveReferralCampaign: jest.fn(),
-    findOrCreateReferralCode: jest.fn(),
   };
   const service = new RedemptionService(
     repository as never,
@@ -104,13 +65,11 @@ describe('RedemptionService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     repository.findCourseForEngine.mockResolvedValue(course);
-    repository.isNewStudent.mockResolvedValue(false);
-    repository.findAutomaticCandidates.mockResolvedValue([]);
   });
 
   describe('validate', () => {
     it('returns a valid result without throwing (Validate Coupon)', async () => {
-      repository.findRuleSetByCode.mockResolvedValue(manualRuleSet());
+      repository.findRuleSetByCode.mockResolvedValue(ruleSet());
       const result = await service.validate(
         student,
         { courseId: 'course-1', code: 'SAVE20' } as never,
@@ -133,10 +92,13 @@ describe('RedemptionService', () => {
       );
     });
 
-    it('logs COUPON_EXPIRED distinctly for an expired campaign (Expired Coupon)', async () => {
+    it('logs COUPON_EXPIRED distinctly for an expired code (Expired Coupon)', async () => {
       repository.findRuleSetByCode.mockResolvedValue({
-        ...manualRuleSet(),
-        campaign: { ...activeCampaign, endsAt: new Date('2020-01-01') },
+        ...ruleSet(),
+        promoCode: {
+          ...ruleSet().promoCode,
+          validUntil: new Date('2020-01-01'),
+        },
       });
       await service.validate(
         student,
@@ -157,8 +119,8 @@ describe('RedemptionService', () => {
 
     it('tracks an affiliate click when validating a code tied to an affiliate (Affiliate Tracking)', async () => {
       repository.findRuleSetByCode.mockResolvedValue({
-        ...manualRuleSet(),
-        promoCode: { ...manualRuleSet().promoCode, affiliateId: 'affiliate-1' },
+        ...ruleSet(),
+        promoCode: { ...ruleSet().promoCode, affiliateId: 'affiliate-1' },
       });
       await service.validate(
         student,
@@ -185,7 +147,7 @@ describe('RedemptionService', () => {
     });
 
     it('records a redemption with correct pricing and logs COUPON_REDEEMED (Redeem Coupon)', async () => {
-      repository.findRuleSetByCode.mockResolvedValue(manualRuleSet());
+      repository.findRuleSetByCode.mockResolvedValue(ruleSet());
       repository.findCode.mockResolvedValue({
         id: 'code-1',
         codeType: 'MANUAL',
@@ -203,10 +165,8 @@ describe('RedemptionService', () => {
       );
       expect(repository.recordRedemption).toHaveBeenCalledWith(
         expect.objectContaining({
-          campaignId: 'campaign-1',
           codeId: 'code-1',
           studentId: 'student-1',
-          status: 'CONFIRMED',
           originalPrice: 100,
           discountAmount: 20,
           finalPrice: 80,
@@ -217,116 +177,32 @@ describe('RedemptionService', () => {
         expect.objectContaining({ action: 'COUPON_REDEEMED' }),
       );
       expect(result.redemptionId).toBe('redemption-1');
-      expect(result.pendingApproval).toBe(false);
     });
 
-    it('reserves (does not confirm) a redemption for a requiresApproval scholarship campaign', async () => {
-      repository.findRuleSetByCode.mockResolvedValue({
-        ...manualRuleSet(),
-        campaign: { ...activeCampaign, requiresApproval: true },
-      });
-      repository.findCampaign.mockResolvedValue({
-        ...activeCampaign,
-        requiresApproval: true,
-      });
+    it('throws MAX_USERS_REACHED when the ledger rejects the redemption (usage cap)', async () => {
+      repository.findRuleSetByCode.mockResolvedValue(ruleSet());
       repository.findCode.mockResolvedValue({
         id: 'code-1',
-        codeType: 'MANUAL',
-        ownerUserId: null,
         affiliateId: null,
       });
-      repository.recordRedemption.mockResolvedValue({
-        id: 'redemption-1',
-        status: 'RESERVED',
-        redeemedAt: new Date(),
-      });
-      const result = await service.redeem(
-        student,
-        { courseId: 'course-1', code: 'SAVE20' } as never,
-        meta,
+      repository.recordRedemption.mockRejectedValue(
+        new Error('PROMOTION_REDEMPTION_LIMIT_REACHED'),
       );
-      expect(repository.recordRedemption).toHaveBeenCalledWith(
-        expect.objectContaining({ status: 'RESERVED' }),
-      );
-      expect(result.pendingApproval).toBe(true);
-      expect(result.redemptionStatus).toBe('RESERVED');
-    });
-
-    it('credits the referral owner with a computed reward when a referral code is redeemed by someone else (Referral Tracking)', async () => {
-      repository.findRuleSetByCode.mockResolvedValue({
-        ...manualRuleSet(),
-        campaign: {
-          ...activeCampaign,
-          referrerRewardType: 'PERCENTAGE',
-          referrerRewardValue: '10',
-        },
-        promoCode: {
-          ...manualRuleSet().promoCode,
-          codeType: 'REFERRAL',
-          ownerUserId: 'referrer-1',
-        },
+      await expect(
+        service.redeem(
+          student,
+          { courseId: 'course-1', code: 'SAVE20' } as never,
+          meta,
+        ),
+      ).rejects.toMatchObject({
+        response: { code: 'MAX_USERS_REACHED' },
       });
-      repository.findCode.mockResolvedValue({
-        id: 'code-1',
-        codeType: 'REFERRAL',
-        ownerUserId: 'referrer-1',
-        affiliateId: null,
-      });
-      repository.findCampaign.mockResolvedValue({
-        ...activeCampaign,
-        referrerRewardType: 'PERCENTAGE',
-        referrerRewardValue: '10',
-      });
-      repository.recordRedemption.mockResolvedValue({
-        id: 'redemption-1',
-        redeemedAt: new Date(),
-      });
-      await service.redeem(
-        student,
-        { courseId: 'course-1', code: 'SAVE20' } as never,
-        meta,
-      );
-      expect(repository.recordRedemption).toHaveBeenCalledWith(
-        expect.objectContaining({
-          referralOwnerId: 'referrer-1',
-          referrerRewardAmount: 8,
-        }),
-      );
-    });
-
-    it('does not self-credit a referral when the redeemer owns the code', async () => {
-      repository.findRuleSetByCode.mockResolvedValue({
-        ...manualRuleSet(),
-        promoCode: {
-          ...manualRuleSet().promoCode,
-          codeType: 'REFERRAL',
-          ownerUserId: 'student-1',
-        },
-      });
-      repository.findCode.mockResolvedValue({
-        id: 'code-1',
-        codeType: 'REFERRAL',
-        ownerUserId: 'student-1',
-        affiliateId: null,
-      });
-      repository.recordRedemption.mockResolvedValue({
-        id: 'redemption-1',
-        redeemedAt: new Date(),
-      });
-      await service.redeem(
-        student,
-        { courseId: 'course-1', code: 'SAVE20' } as never,
-        meta,
-      );
-      expect(repository.recordRedemption).toHaveBeenCalledWith(
-        expect.objectContaining({ referralOwnerId: null }),
-      );
     });
 
     it('computes affiliate commission on redemption (Affiliate Tracking)', async () => {
       repository.findRuleSetByCode.mockResolvedValue({
-        ...manualRuleSet(),
-        promoCode: { ...manualRuleSet().promoCode, affiliateId: 'affiliate-1' },
+        ...ruleSet(),
+        promoCode: { ...ruleSet().promoCode, affiliateId: 'affiliate-1' },
       });
       repository.findCode.mockResolvedValue({
         id: 'code-1',
@@ -371,44 +247,6 @@ describe('RedemptionService', () => {
         page: 1,
         pageSize: 20,
       });
-    });
-  });
-
-  describe('myReferralCode', () => {
-    it('throws NotFoundException when no active referral program exists', async () => {
-      repository.findActiveReferralCampaign.mockResolvedValue(undefined);
-      await expect(service.myReferralCode('student-1')).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it('returns the existing referral code without creating a new one', async () => {
-      repository.findActiveReferralCampaign.mockResolvedValue({
-        id: 'ref-campaign',
-        name: 'Referrals',
-      });
-      repository.findOrCreateReferralCode.mockResolvedValue({
-        code: 'REFABCD',
-        created: false,
-      });
-      const result = await service.myReferralCode('student-1');
-      expect(result.code).toBe('REFABCD');
-      expect(repository.logUsage).not.toHaveBeenCalled();
-    });
-
-    it('logs COUPON_GENERATED when a new referral code is minted', async () => {
-      repository.findActiveReferralCampaign.mockResolvedValue({
-        id: 'ref-campaign',
-        name: 'Referrals',
-      });
-      repository.findOrCreateReferralCode.mockResolvedValue({
-        code: 'REFNEW1',
-        created: true,
-      });
-      await service.myReferralCode('student-1');
-      expect(repository.logUsage).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'COUPON_GENERATED' }),
-      );
     });
   });
 });

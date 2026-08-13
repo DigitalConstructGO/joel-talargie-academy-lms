@@ -6,12 +6,12 @@ import type { AcademyDatabase } from '../queries.ts';
 import {
   ACTIVITY_ACTIONS,
   ADMIN_PERSON,
-  CAMPAIGN_CATALOG,
   CATEGORY_CATALOG,
   CONTENT_MANAGER_PERSON,
   COURSE_CATALOG,
   DEMO_PASSWORD,
   INSTRUCTOR_PERSON,
+  PROMO_CODE_CATALOG,
   STUDENT_PEOPLE,
   type DemoPerson,
 } from './demo-data.ts';
@@ -33,7 +33,6 @@ export interface DemoSeedCounts {
   resources: number;
   enrollments: number;
   progress: number;
-  campaigns: number;
   promoCodes: number;
   payments: number;
   certificates: number;
@@ -65,7 +64,7 @@ async function seedCustomRoles(tx: AcademyDatabase) {
     .values({
       code: 'CONTENT_MANAGER',
       name: 'Content Manager',
-      description: 'Manages the course catalog, categories, and promotional campaigns.',
+      description: 'Manages the course catalog, categories, and promo codes.',
       isSystem: false,
     })
     .onConflictDoNothing({ target: schema.roles.code })
@@ -142,8 +141,6 @@ async function seedCustomRoles(tx: AcademyDatabase) {
     'lessons.manage_resources',
     'promotions.read',
     'promotions.create',
-    'promotions.update',
-    'promotions.archive',
     'promotions.generate_coupons',
     'promotions.manage_coupons',
     'notifications.read',
@@ -726,40 +723,23 @@ async function seedCertificates(tx: AcademyDatabase, actorId: string) {
 }
 
 async function seedPromotions(tx: AcademyDatabase, createdBy: string) {
-  let campaignCount = 0;
-  let codeCount = 0;
-  for (const campaignData of CAMPAIGN_CATALOG) {
-    const [campaign] = await tx
-      .insert(schema.promoCampaigns)
-      .values({
-        name: campaignData.name,
-        description: campaignData.description,
-        type: campaignData.type,
-        status: campaignData.status,
-        discountType: campaignData.discountType,
-        discountValue: campaignData.discountValue,
-        startsAt: daysFromNow(campaignData.startsInDays),
-        endsAt: campaignData.endsInDays != null ? daysFromNow(campaignData.endsInDays) : null,
-        createdBy,
-      })
-      .returning();
-    if (!campaign) continue;
-    campaignCount += 1;
-    const codeRows = campaignData.codes.map((codeData) => ({
-      campaignId: campaign.id,
-      code: codeData.code,
-      codeType: 'MANUAL' as const,
-      status: codeData.status,
-      maxRedemptions: codeData.maxRedemptions,
-      validUntil: codeData.validUntilInDays != null ? daysFromNow(codeData.validUntilInDays) : null,
-      createdBy,
-    }));
-    await tx.insert(schema.promoCodes).values(codeRows).onConflictDoNothing({
-      target: schema.promoCodes.code,
-    });
-    codeCount += codeRows.length;
-  }
-  return { campaignCount, codeCount };
+  const rows = PROMO_CODE_CATALOG.map((codeData) => ({
+    code: codeData.code,
+    codeType: 'MANUAL' as const,
+    status: codeData.status,
+    discountType: codeData.discountType,
+    discountValue: codeData.discountValue,
+    maxUsers: codeData.maxUsers,
+    validFrom: daysFromNow(codeData.validFromInDays),
+    validUntil: codeData.validUntilInDays != null ? daysFromNow(codeData.validUntilInDays) : null,
+    createdBy,
+  }));
+  const inserted = await tx
+    .insert(schema.promoCodes)
+    .values(rows)
+    .onConflictDoNothing({ target: schema.promoCodes.code })
+    .returning();
+  return { codeCount: inserted.length };
 }
 
 async function seedActivityLogs(tx: AcademyDatabase, actors: { id: string }[]) {
@@ -841,7 +821,7 @@ export async function seedDemoData(database: AcademyDatabase): Promise<DemoSeedC
       await seedEnrollmentsProgressAndPayments(tx, students, courseBySlug, admin.id);
 
     const certificateCount = await seedCertificates(tx, admin.id);
-    const { campaignCount, codeCount } = await seedPromotions(tx, contentManager.id);
+    const { codeCount } = await seedPromotions(tx, contentManager.id);
 
     const allUsers = [admin, contentManager, instructor, ...students];
     const activityLogCount = await seedActivityLogs(tx, allUsers);
@@ -858,7 +838,6 @@ export async function seedDemoData(database: AcademyDatabase): Promise<DemoSeedC
       resources: resourceCount,
       enrollments: enrollmentCount,
       progress: progressCount,
-      campaigns: campaignCount,
       promoCodes: codeCount,
       payments: paymentCount,
       certificates: certificateCount,

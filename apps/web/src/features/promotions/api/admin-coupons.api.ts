@@ -3,10 +3,12 @@ import { CATALOG_DATA_SOURCE } from '@/config/data-source.config';
 import { mockAdminCouponsApi } from '../data/mock-admin-promotions.api';
 import type {
   Coupon,
+  CouponDetail,
   CouponListParams,
   CouponListResult,
+  CouponRedemptionListParams,
+  CouponRedemptionListResult,
   CreateCouponInput,
-  GenerateCouponsInput,
   UpdateCouponInput,
 } from '../types/admin-promotion.types';
 
@@ -21,11 +23,20 @@ const liveAdminCouponsApi = {
       await authClient.get('/promotions/coupons', { params: cleanParams(params) }),
     ),
 
+  detail: async (couponId: string) =>
+    unwrap<CouponDetail>(
+      await authClient.get(`/promotions/coupons/${encodeURIComponent(couponId)}`),
+    ),
+
+  redemptions: async (couponId: string, params: CouponRedemptionListParams = {}) =>
+    unwrap<CouponRedemptionListResult>(
+      await authClient.get(`/promotions/coupons/${encodeURIComponent(couponId)}/redemptions`, {
+        params: cleanParams(params),
+      }),
+    ),
+
   create: async (input: CreateCouponInput) =>
     unwrap<Coupon>(await authClient.post('/promotions/coupons', input)),
-
-  generate: async (input: GenerateCouponsInput) =>
-    unwrap<Coupon[]>(await authClient.post('/promotions/generate', input)),
 
   update: async (couponId: string, input: UpdateCouponInput) =>
     unwrap<Coupon>(

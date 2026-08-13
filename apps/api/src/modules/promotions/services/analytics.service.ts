@@ -8,13 +8,11 @@ export class PromotionAnalyticsService {
 
   async overview(query: AnalyticsQueryDto) {
     const limit = query.limit ?? 5;
-    const [overview, topCampaigns, topAffiliates, topReferralCodes] =
-      await Promise.all([
-        this.repository.analyticsOverview(),
-        this.repository.topCampaigns(limit),
-        this.repository.topAffiliates(limit),
-        this.repository.topReferralCodes(limit),
-      ]);
-    return { ...overview, topCampaigns, topAffiliates, topReferralCodes };
+    const [overview, topCodes, topAffiliates] = await Promise.all([
+      this.repository.analyticsOverview(),
+      this.repository.topCodes(limit),
+      this.repository.topAffiliates(limit),
+    ]);
+    return { ...overview, topCodes, topAffiliates };
   }
 }

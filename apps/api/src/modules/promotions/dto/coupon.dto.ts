@@ -4,30 +4,30 @@ import {
   IsIn,
   IsInt,
   IsISO8601,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
   Matches,
-  Max,
   MaxLength,
   Min,
   MinLength,
 } from 'class-validator';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
 import {
-  COUPON_BULK_GENERATE_MAX,
   COUPON_CODE_MAX_LENGTH,
   COUPON_CODE_MIN_LENGTH,
   PROMO_CODE_STATUSES,
   PROMO_CODE_TYPES,
+  PROMO_DISCOUNT_TYPES,
   type PromoCodeStatus,
   type PromoCodeType,
+  type PromoDiscountType,
 } from '../constants/promotion.constants';
 
 const CODE_PATTERN = /^[A-Za-z0-9-]+$/;
 
 export class CreateCouponDto {
-  @ApiProperty() @IsUUID() campaignId!: string;
   @ApiPropertyOptional({
     description: 'Manual code. Omit to auto-generate a secure random code.',
   })
@@ -43,67 +43,57 @@ export class CreateCouponDto {
   @IsOptional()
   @IsIn(PROMO_CODE_TYPES)
   codeType?: PromoCodeType;
+  @ApiPropertyOptional({ enum: PROMO_CODE_STATUSES })
+  @IsOptional()
+  @IsIn(PROMO_CODE_STATUSES)
+  status?: PromoCodeStatus;
+  @ApiPropertyOptional({ enum: PROMO_DISCOUNT_TYPES, default: 'PERCENTAGE' })
+  @IsOptional()
+  @IsIn(PROMO_DISCOUNT_TYPES)
+  discountType?: PromoDiscountType;
+  @ApiPropertyOptional({
+    description: 'Discount value (percentage points for PERCENTAGE, amount for FIXED).',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  discountValue?: number;
   @ApiPropertyOptional() @IsOptional() @IsUUID() ownerUserId?: string;
   @ApiPropertyOptional() @IsOptional() @IsUUID() affiliateId?: string;
   @ApiPropertyOptional({ default: false })
   @IsOptional()
   @IsBoolean()
   isSingleUse?: boolean;
-  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(1) maxRedemptions?: number;
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    description: 'Cap on the number of distinct students who can redeem this code.',
+  })
   @IsOptional()
   @IsInt()
   @Min(1)
-  maxRedemptionsPerUser?: number;
+  maxUsers?: number;
   @ApiPropertyOptional() @IsOptional() @IsISO8601() validFrom?: string;
   @ApiPropertyOptional() @IsOptional() @IsISO8601() validUntil?: string;
-}
-
-export class GenerateCouponsDto {
-  @ApiProperty() @IsUUID() campaignId!: string;
-  @ApiProperty({ default: 10, maximum: COUPON_BULK_GENERATE_MAX })
-  @IsInt()
-  @Min(1)
-  @Max(COUPON_BULK_GENERATE_MAX)
-  count!: number;
-  @ApiPropertyOptional({ default: 10 })
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Course IDs this code applies to.',
+  })
   @IsOptional()
-  @IsInt()
-  @Min(COUPON_CODE_MIN_LENGTH)
-  @Max(COUPON_CODE_MAX_LENGTH)
-  length?: number;
-  @ApiPropertyOptional()
+  @IsUUID('4', { each: true })
+  courseIds?: string[];
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Category IDs whose courses this code applies to.',
+  })
   @IsOptional()
-  @IsString()
-  @MaxLength(10)
-  @Matches(CODE_PATTERN)
-  prefix?: string;
-  @ApiPropertyOptional()
+  @IsUUID('4', { each: true })
+  categoryIds?: string[];
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Student user IDs this code applies to.',
+  })
   @IsOptional()
-  @IsString()
-  @MaxLength(10)
-  @Matches(CODE_PATTERN)
-  suffix?: string;
-  @ApiPropertyOptional({ default: true })
-  @IsOptional()
-  @IsBoolean()
-  excludeAmbiguousCharacters?: boolean;
-  @ApiPropertyOptional({ enum: PROMO_CODE_TYPES })
-  @IsOptional()
-  @IsIn(PROMO_CODE_TYPES)
-  codeType?: PromoCodeType;
-  @ApiPropertyOptional({ default: false })
-  @IsOptional()
-  @IsBoolean()
-  isSingleUse?: boolean;
-  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(1) maxRedemptions?: number;
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  maxRedemptionsPerUser?: number;
-  @ApiPropertyOptional() @IsOptional() @IsISO8601() validFrom?: string;
-  @ApiPropertyOptional() @IsOptional() @IsISO8601() validUntil?: string;
+  @IsUUID('4', { each: true })
+  userIds?: string[];
 }
 
 export class UpdateCouponDto {
@@ -111,16 +101,37 @@ export class UpdateCouponDto {
   @IsOptional()
   @IsIn(PROMO_CODE_STATUSES)
   status?: PromoCodeStatus;
-  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(1) maxRedemptions?:
-    number | null;
-  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(1) maxRedemptionsPerUser?:
-    number | null;
+  @ApiPropertyOptional({ enum: PROMO_DISCOUNT_TYPES })
+  @IsOptional()
+  @IsIn(PROMO_DISCOUNT_TYPES)
+  discountType?: PromoDiscountType;
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  discountValue?: number;
+  @ApiPropertyOptional({ default: false })
+  @IsOptional()
+  @IsBoolean()
+  isSingleUse?: boolean;
+  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(1) maxUsers?: number | null;
   @ApiPropertyOptional() @IsOptional() @IsISO8601() validFrom?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsISO8601() validUntil?: string | null;
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsUUID('4', { each: true })
+  courseIds?: string[];
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsUUID('4', { each: true })
+  categoryIds?: string[];
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsUUID('4', { each: true })
+  userIds?: string[];
 }
 
 export class ListCouponsDto extends PaginationDto {
-  @ApiPropertyOptional() @IsOptional() @IsUUID() campaignId?: string;
   @ApiPropertyOptional({ enum: PROMO_CODE_STATUSES })
   @IsOptional()
   @IsIn(PROMO_CODE_STATUSES)

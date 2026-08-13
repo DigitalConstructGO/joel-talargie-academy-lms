@@ -1,123 +1,41 @@
-export type PromoCampaignType =
-  | 'PERCENTAGE_DISCOUNT'
-  | 'FIXED_DISCOUNT'
-  | 'FREE_COURSE'
-  | 'SCHOLARSHIP'
-  | 'BUNDLE_DISCOUNT'
-  | 'REFERRAL_REWARD'
-  | 'AFFILIATE_DISCOUNT'
-  | 'CORPORATE_DISCOUNT'
-  | 'PARTNER_DISCOUNT'
-  | 'EVENT_PROMOTION'
-  | 'FLASH_SALE'
-  | 'SEASONAL_PROMOTION'
-  | 'FIRST_STUDENT_DISCOUNT'
-  | 'BIRTHDAY_COUPON'
-  | 'MANUAL_COUPON'
-  | 'AUTOMATIC_PROMOTION';
-
-export type PromoCampaignStatus = 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'EXPIRED' | 'ARCHIVED';
 export type PromoDiscountType = 'PERCENTAGE' | 'FIXED' | 'FREE';
 export type PromoCodeType =
-  'MANUAL' | 'REFERRAL' | 'AFFILIATE' | 'CORPORATE' | 'UNIVERSITY_PARTNER' | 'SYSTEM_GENERATED';
+  | 'MANUAL' | 'REFERRAL' | 'AFFILIATE' | 'CORPORATE' | 'UNIVERSITY_PARTNER' | 'SYSTEM_GENERATED';
 export type PromoCodeStatus = 'ACTIVE' | 'PAUSED' | 'EXPIRED' | 'REVOKED';
-
-export interface Campaign {
-  id: string;
-  name: string;
-  description: string | null;
-  type: PromoCampaignType;
-  status: PromoCampaignStatus;
-  discountType: PromoDiscountType;
-  discountValue: string;
-  maxDiscountAmount: string | null;
-  minimumPurchaseAmount: string | null;
-  isAutomatic: boolean;
-  priority: number;
-  startsAt: string;
-  endsAt: string | null;
-  maxRedemptions: number | null;
-  maxRedemptionsPerUser: number;
-  redemptionCount: number;
-  requiresApproval: boolean;
-  totalSeats: number | null;
-  seatsUsed: number;
-  archivedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CampaignDetail extends Campaign {
-  rules: unknown;
-}
-
-export interface CampaignListParams {
-  page?: number;
-  pageSize?: number;
-  search?: string;
-  status?: PromoCampaignStatus;
-  type?: PromoCampaignType;
-  isAutomatic?: boolean;
-}
-
-export interface CampaignListResult {
-  items: Campaign[];
-  total: number;
-}
-
-export interface CreateCampaignInput {
-  name: string;
-  description?: string;
-  type: PromoCampaignType;
-  discountType: PromoDiscountType;
-  discountValue: number;
-  maxDiscountAmount?: number;
-  minimumPurchaseAmount?: number;
-  isAutomatic?: boolean;
-  priority?: number;
-  startsAt?: string;
-  endsAt?: string;
-  maxRedemptions?: number;
-  maxRedemptionsPerUser?: number;
-  requiresApproval?: boolean;
-}
-
-export interface UpdateCampaignInput {
-  name?: string;
-  description?: string;
-  status?: PromoCampaignStatus;
-  discountType?: PromoDiscountType;
-  discountValue?: number;
-  maxDiscountAmount?: number | null;
-  minimumPurchaseAmount?: number | null;
-  priority?: number;
-  startsAt?: string;
-  endsAt?: string | null;
-  maxRedemptions?: number | null;
-  maxRedemptionsPerUser?: number;
-  requiresApproval?: boolean;
-}
+export type PromoRedemptionStatus = 'RESERVED' | 'CONFIRMED' | 'CANCELLED' | 'FAILED';
+export type CouponValidityStatus = 'NOT_STARTED' | 'ACTIVE' | 'EXPIRED' | 'INACTIVE' | 'REVOKED';
 
 export interface Coupon {
   id: string;
-  campaignId: string;
   code: string;
   codeType: PromoCodeType;
   status: PromoCodeStatus;
+  discountType: PromoDiscountType;
+  discountValue: string;
+  ownerUserId: string | null;
+  affiliateId: string | null;
   isSingleUse: boolean;
-  maxRedemptions: number | null;
-  maxRedemptionsPerUser: number | null;
+  maxUsers: number | null;
   redemptionCount: number;
   validFrom: string | null;
   validUntil: string | null;
   createdAt: string;
 }
 
+/**
+ * Targeting rules resolved to their target ids. An empty courseIds and
+ * categoryIds list means "all eligible courses".
+ */
+export interface CouponRules {
+  courseIds: string[];
+  categoryIds: string[];
+  userIds: string[];
+}
+
 export interface CouponListParams {
   page?: number;
   pageSize?: number;
   search?: string;
-  campaignId?: string;
   status?: PromoCodeStatus;
   codeType?: PromoCodeType;
 }
@@ -128,48 +46,92 @@ export interface CouponListResult {
 }
 
 export interface CreateCouponInput {
-  campaignId: string;
   code?: string;
   codeType?: PromoCodeType;
+  status?: PromoCodeStatus;
+  discountType?: PromoDiscountType;
+  discountValue?: number;
+  ownerUserId?: string;
+  affiliateId?: string;
   isSingleUse?: boolean;
-  maxRedemptions?: number;
-  maxRedemptionsPerUser?: number;
+  maxUsers?: number;
   validFrom?: string;
   validUntil?: string;
-}
-
-export interface GenerateCouponsInput {
-  campaignId: string;
-  count: number;
-  prefix?: string;
-  isSingleUse?: boolean;
+  courseIds?: string[];
+  categoryIds?: string[];
+  userIds?: string[];
 }
 
 export interface UpdateCouponInput {
   status?: PromoCodeStatus;
-  maxRedemptions?: number | null;
-  maxRedemptionsPerUser?: number | null;
+  discountType?: PromoDiscountType;
+  discountValue?: number;
+  isSingleUse?: boolean;
+  maxUsers?: number | null;
   validFrom?: string | null;
   validUntil?: string | null;
+  courseIds?: string[];
+  categoryIds?: string[];
+  userIds?: string[];
+}
+
+export interface CouponDetail extends Coupon {
+  validityStatus: CouponValidityStatus;
+  rules: CouponRules;
+}
+
+export interface CouponRedemption {
+  id: string;
+  status: PromoRedemptionStatus;
+  courseId: string;
+  courseTitle: string;
+  code: string;
+  studentId: string;
+  studentEmail: string;
+  studentFirstName: string | null;
+  studentLastName: string | null;
+  originalPrice: string;
+  discountAmount: string;
+  finalPrice: string;
+  currency: string;
+  redeemedAt: string;
+  enrollmentId: string | null;
+  paymentId: string | null;
+  transactionId: string | null;
+}
+
+export interface CouponRedemptionListParams {
+  page?: number;
+  pageSize?: number;
+  status?: PromoRedemptionStatus;
+  courseId?: string;
+  search?: string;
+  from?: string;
+  to?: string;
+}
+
+export interface CouponRedemptionListResult {
+  items: CouponRedemption[];
+  total: number;
 }
 
 export interface PromotionAnalyticsQueryParams {
   limit?: number;
 }
 
-export interface TopCampaignPerformance {
-  campaignId: string;
-  campaignName: string;
+export interface TopCodePerformance {
+  codeId: string;
+  code: string;
   redemptions: number;
   revenue: string;
 }
 
 export interface PromotionAnalyticsOverview {
-  campaigns: { active: number; expired: number; total: number };
+  codes: { active: number; expired: number; total: number };
   coupons: { total: number; redeemed: number; unused: number };
   revenueGenerated: string;
   discountGiven: string;
   totalRedemptions: number;
   conversionRate: number;
-  topCampaigns: TopCampaignPerformance[];
+  topCodes: TopCodePerformance[];
 }

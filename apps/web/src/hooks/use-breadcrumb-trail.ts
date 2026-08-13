@@ -25,14 +25,13 @@ const DASHBOARD_COURSE_DETAIL_PATTERN = /^\/dashboard\/browse-courses\/[^/]+$/;
 
 /**
  * A couple of dashboard routes are deliberately absent from the nav tree
- * (Checkout isn't a sidebar destination; the course-detail route is
- * dynamic) so `findChain` can never match them - special-case their
- * breadcrumb trail here instead of forcing them into the nav config.
+ * (the course-detail route is dynamic) so `findChain` can never match them -
+ * special-case their breadcrumb trail here instead of forcing them into the
+ * nav config. (Checkout renders its own page-level breadcrumb that includes
+ * the actual course title, so the dashboard layout suppresses the global one
+ * for it.)
  */
 function specialCaseCrumbs(pathname: string, home: BreadcrumbCrumb): BreadcrumbCrumb[] | null {
-  if (pathname === ROUTES.dashboard.checkout) {
-    return [home, { label: 'My Courses', href: ROUTES.dashboard.courses }, { label: 'Checkout' }];
-  }
   if (DASHBOARD_COURSE_DETAIL_PATTERN.test(pathname)) {
     return [
       home,

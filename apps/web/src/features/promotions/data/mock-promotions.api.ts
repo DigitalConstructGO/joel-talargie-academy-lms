@@ -22,11 +22,8 @@ function evaluate(input: ValidateCouponInput): PromotionValidationResult {
   if (!input.code) {
     return {
       valid: false,
-      reasonCode: 'NO_CODE_PROVIDED',
-      message: 'No coupon code provided',
-      campaignId: null,
-      campaignName: null,
-      campaignType: null,
+      reasonCode: 'COUPON_REQUIRED',
+      message: 'Enter a promo code to continue',
       codeId: null,
       code: null,
       pricing: { originalPrice, discountAmount: 0, finalPrice: originalPrice, currency: 'USD' },
@@ -37,9 +34,6 @@ function evaluate(input: ValidateCouponInput): PromotionValidationResult {
       valid: false,
       reasonCode: 'COUPON_NOT_FOUND',
       message: 'This coupon code is invalid or has expired',
-      campaignId: null,
-      campaignName: null,
-      campaignType: null,
       codeId: null,
       code: input.code,
       pricing: { originalPrice, discountAmount: 0, finalPrice: originalPrice, currency: 'USD' },
@@ -50,9 +44,6 @@ function evaluate(input: ValidateCouponInput): PromotionValidationResult {
     valid: true,
     reasonCode: null,
     message: '15% welcome discount applied',
-    campaignId: 'mock-campaign-welcome',
-    campaignName: 'Welcome Discount',
-    campaignType: 'COUPON',
     codeId: 'mock-code-welcome15',
     code: MOCK_COUPON_CODE,
     pricing: {
@@ -84,7 +75,6 @@ export const mockPromotionsApi = {
       ...result,
       redemptionId: `redemption-${Date.now()}`,
       redemptionStatus: 'CONFIRMED',
-      pendingApproval: false,
       redeemedAt: new Date().toISOString(),
     });
   },
