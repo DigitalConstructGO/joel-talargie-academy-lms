@@ -131,6 +131,12 @@ describe('AuthService', () => {
     expect(notifications.notify).toHaveBeenCalledWith(
       expect.objectContaining({ templateCode: 'GOOGLE_ACCOUNT_LINKED' }),
     );
+    expect(notifications.notify).toHaveBeenCalledWith(
+      expect.objectContaining({ templateCode: 'GOOGLE_SIGN_IN' }),
+    );
+    expect(notifications.notify).not.toHaveBeenCalledWith(
+      expect.objectContaining({ templateCode: 'WELCOME' }),
+    );
     expect(
       jwt.verify(result.accessToken, {
         secret: config.get('JWT_ACCESS_SECRET'),
@@ -170,7 +176,47 @@ describe('AuthService', () => {
     expect(notifications.notify).not.toHaveBeenCalledWith(
       expect.objectContaining({ templateCode: 'GOOGLE_ACCOUNT_LINKED' }),
     );
+    expect(notifications.notify).not.toHaveBeenCalledWith(
+      expect.objectContaining({ templateCode: 'WELCOME' }),
+    );
+    expect(notifications.notify).toHaveBeenCalledWith(
+      expect.objectContaining({ templateCode: 'GOOGLE_SIGN_IN' }),
+    );
   });
+
+  it('welcomes a brand-new Google user and alerts them about the sign-in', async () => {
+    jest.mocked(upsertGoogleUser).mockResolvedValue({
+      user: {
+        ...user,
+        provider: 'GOOGLE',
+        avatarUrl: 'https://example.com/avatar.png',
+      },
+      event: 'CREATED',
+    });
+    jest.mocked(createRefreshSession).mockResolvedValue('session-id');
+    jest.mocked(rotateRefreshSession).mockResolvedValue(true);
+    await service.loginWithGoogle(
+      {
+        googleId: 'google-123',
+        email: 'STUDENT@EXAMPLE.COM',
+        firstName: 'Test',
+        lastName: 'Student',
+        avatarUrl: 'https://example.com/avatar.png',
+        emailVerified: true,
+      },
+      {},
+    );
+    expect(notifications.notify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        templateCode: 'WELCOME',
+        deduplicationKey: `welcome:${user.id}`,
+      }),
+    );
+    expect(notifications.notify).toHaveBeenCalledWith(
+      expect.objectContaining({ templateCode: 'GOOGLE_SIGN_IN' }),
+    );
+  });
+
   it('rejects an unverified Google email', async () => {
     await expect(
       service.loginWithGoogle(
@@ -480,10 +526,14 @@ describe('AuthService', () => {
       );
     });
 
-    it('succeeds for a valid token', async () => {
-      jest.mocked(consumeEmailVerification).mockResolvedValue(true);
+    it('succeeds for a valid token and sends the welcome notification', async () => {
+      jest.mocked(consumeEmailVerification).mockResolvedValue(user.id);
+      jest.mocked(findAuthUserById).mockResolvedValue(user);
       const result = await service.verifyEmail('good-token');
       expect(result.message).toBe('Email verified successfully');
+      expect(notifications.notify).toHaveBeenCalledWith(
+        expect.objectContaining({ templateCode: 'WELCOME', userId: user.id }),
+      );
     });
   });
 

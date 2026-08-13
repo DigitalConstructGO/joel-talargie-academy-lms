@@ -7,6 +7,7 @@ import { MotionConfig } from 'framer-motion';
 import { Toaster } from '@/components/ui/sonner';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthBootstrap } from '@/components/auth/auth-bootstrap';
+import { NotificationSocketProvider } from '@/providers/notification-socket-provider';
 
 function createQueryClient() {
   return new QueryClient({
@@ -29,7 +30,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         <MotionConfig reducedMotion="user">
           <TooltipProvider delayDuration={200}>
             <AuthBootstrap />
-            {children}
+            <NotificationSocketProvider>{children}</NotificationSocketProvider>
             <Toaster position="top-right" richColors closeButton expand />
           </TooltipProvider>
         </MotionConfig>

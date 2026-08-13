@@ -1158,65 +1158,7 @@ export const CAMPAIGN_CATALOG: DemoCampaign[] = [
   },
 ];
 
-// ---------------------------------------------------------------- Notifications & activity
-
-export interface DemoNotificationTemplate {
-  type: string;
-  title: string;
-  body: string;
-  priority: 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';
-}
-
-export const NOTIFICATION_TEMPLATES: DemoNotificationTemplate[] = [
-  {
-    type: 'ENROLLMENT',
-    title: 'Enrollment confirmed',
-    body: 'You have successfully enrolled in a new course. Start learning whenever you’re ready.',
-    priority: 'NORMAL',
-  },
-  {
-    type: 'PAYMENT',
-    title: 'Payment received',
-    body: 'We received your payment submission and it is now waiting for review.',
-    priority: 'NORMAL',
-  },
-  {
-    type: 'PAYMENT',
-    title: 'Payment approved',
-    body: 'Your payment has been approved. Your course access is now active.',
-    priority: 'HIGH',
-  },
-  {
-    type: 'CERTIFICATE',
-    title: 'Certificate issued',
-    body: 'Congratulations! Your certificate of completion is ready to download.',
-    priority: 'HIGH',
-  },
-  {
-    type: 'COURSE',
-    title: 'Course completed',
-    body: 'You’ve completed every mandatory lesson in this course. Great work!',
-    priority: 'NORMAL',
-  },
-  {
-    type: 'PROMOTION',
-    title: 'New promotion available',
-    body: 'A new discount code is available on select courses for a limited time.',
-    priority: 'LOW',
-  },
-  {
-    type: 'SECURITY',
-    title: 'New login detected',
-    body: 'We noticed a new sign-in to your account. If this wasn’t you, please secure your account.',
-    priority: 'HIGH',
-  },
-  {
-    type: 'SECURITY',
-    title: 'Password changed',
-    body: 'Your account password was changed successfully.',
-    priority: 'NORMAL',
-  },
-];
+// ---------------------------------------------------------------- Activity
 
 /** Real activity-log action codes, matching the lowercase dot-notation convention already used by `packages/database/src/{users,rbac}.ts`. */
 export const ACTIVITY_ACTIONS = {

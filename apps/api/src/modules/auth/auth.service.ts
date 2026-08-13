@@ -98,6 +98,63 @@ export class AuthService {
       expiresIn: refreshSeconds,
     });
   }
+  private academyName() {
+    return 'Joel Talargie Academy';
+  }
+  private supportEmail() {
+    return this.config.get('EMAIL_SUPPORT_ADDRESS') || 'academy support';
+  }
+  private notifyWelcome(user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  }) {
+    return this.notifications
+      .notify({
+        userId: user.id,
+        recipientEmail: user.email,
+        recipientName:
+          `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || 'Student',
+        templateCode: 'WELCOME',
+        variables: {
+          recipientName: user.firstName ?? 'Student',
+          dashboardUrl: `${this.config.get('EMAIL_PUBLIC_APP_URL')}/dashboard`,
+          academyName: this.academyName(),
+          supportEmail: this.supportEmail(),
+        },
+        deduplicationKey: `welcome:${user.id}`,
+        category: 'learning',
+        title: 'Welcome to Joel Talargie Academy!',
+        message: 'Your account is ready. Start exploring courses and begin learning today.',
+        actionUrl: '/dashboard',
+        relatedEntityType: 'user',
+        relatedEntityId: user.id,
+        priority: 'NORMAL',
+      })
+      .catch(() => null);
+  }
+  private notifyGoogleSignIn(user: { id: string; email: string; firstName: string }, sessionId: string) {
+    return this.notifications
+      .notify({
+        userId: user.id,
+        recipientEmail: user.email,
+        recipientName: user.firstName ?? 'Student',
+        templateCode: 'GOOGLE_SIGN_IN',
+        variables: {
+          recipientName: user.firstName ?? 'Student',
+          academyName: this.academyName(),
+          supportEmail: this.supportEmail(),
+        },
+        deduplicationKey: `new-login:${sessionId}`,
+        category: 'security',
+        title: 'New Google sign-in',
+        message: 'A new sign-in to your academy account with Google was detected.',
+        actionUrl: '/dashboard/security',
+        priority: 'CRITICAL',
+      })
+      .catch(() => null);
+  }
   async register(dto: RegisterDto) {
     if (dto.password !== dto.confirmPassword)
       throw new BadRequestException('Passwords do not match');
@@ -278,9 +335,8 @@ export class AuthService {
           templateCode: 'GOOGLE_ACCOUNT_LINKED',
           variables: {
             recipientName: user.firstName ?? 'Student',
-            academyName: 'Joel Talargie Academy',
-            supportEmail:
-              this.config.get('EMAIL_SUPPORT_ADDRESS') || 'academy support',
+            academyName: this.academyName(),
+            supportEmail: this.supportEmail(),
           },
           deduplicationKey: `google-linked:${user.id}:${Date.now()}`,
           category: 'security',
@@ -290,6 +346,8 @@ export class AuthService {
           priority: 'HIGH',
         })
         .catch(() => null);
+    if (event === 'CREATED') await this.notifyWelcome(user);
+    await this.notifyGoogleSignIn(user, sessionId);
     return {
       user: safe,
       accessToken: this.signAccess(safe, sessionId),
@@ -345,10 +403,14 @@ export class AuthService {
     return { message: 'Logged out successfully' };
   }
   async verifyEmail(token: string) {
-    if (
-      !(await consumeEmailVerification(this.database.client, hashToken(token)))
-    )
+    const userId = await consumeEmailVerification(
+      this.database.client,
+      hashToken(token),
+    );
+    if (!userId)
       throw new BadRequestException('Verification token is invalid or expired');
+    const user = await findAuthUserById(this.database.client, userId);
+    if (user) await this.notifyWelcome(user);
     return { message: 'Email verified successfully' };
   }
   async forgotPassword(emailValue: string) {

@@ -1,6 +1,4 @@
 import { authClient, unwrap } from '@/lib/api/auth-client';
-import { CATALOG_DATA_SOURCE } from '@/config/data-source.config';
-import { mockNotificationsApi } from '../data/mock-notifications.api';
 import type { NotificationListParams, NotificationListResult } from '../types/notification.types';
 
 const cleanParams = <T extends object>(params: T) =>
@@ -8,8 +6,13 @@ const cleanParams = <T extends object>(params: T) =>
     Object.entries(params).filter(([, value]) => value !== undefined && value !== ''),
   );
 
-/** Talks to the real backend's authenticated `/me/notifications` endpoints. */
-const liveNotificationsApi = {
+/**
+ * Talks to the real backend's authenticated `/me/notifications` endpoints.
+ * There is deliberately no mock variant anymore - notifications are real,
+ * per-user, event-driven records, so the UI always reads the authenticated
+ * user's own data from the API.
+ */
+export const notificationsApi = {
   listMine: async (params: NotificationListParams = {}) =>
     unwrap<NotificationListResult>(
       await authClient.get('/me/notifications', { params: cleanParams(params) }),
@@ -32,7 +35,3 @@ const liveNotificationsApi = {
       await authClient.delete(`/me/notifications/${encodeURIComponent(id)}`),
     ),
 };
-
-/** Same mock/live switch as `catalogApi` - flips with `NEXT_PUBLIC_CATALOG_DATA_SOURCE`. */
-export const notificationsApi =
-  CATALOG_DATA_SOURCE === 'live' ? liveNotificationsApi : mockNotificationsApi;

@@ -349,12 +349,6 @@ export const createPasswordReset = async (
       .delete(schema.passwordResetTokens)
       .where(eq(schema.passwordResetTokens.userId, input.userId));
     await tx.insert(schema.passwordResetTokens).values(input);
-    await tx.insert(schema.notifications).values({
-      userId: input.userId,
-      channel: 'EMAIL',
-      title: 'Reset your password',
-      body: 'A password reset was requested for your account.',
-    });
   });
 export const consumePasswordReset = async (
   database: AcademyDatabase,
@@ -403,7 +397,7 @@ export const consumeEmailVerification = async (database: AcademyDatabase, tokenH
     await tx
       .delete(schema.emailVerificationTokens)
       .where(eq(schema.emailVerificationTokens.userId, token.userId));
-    return true;
+    return token.userId;
   });
 export const changeUserPassword = async (
   database: AcademyDatabase,

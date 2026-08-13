@@ -416,12 +416,6 @@ export class LearningRepository {
           entityId: enrollmentId,
           after: { courseId: enrollment.courseId, progressPercentage: 100 },
         });
-        await tx.insert(schema.notifications).values({
-          userId: studentId,
-          channel: 'IN_APP',
-          title: 'Course completed',
-          body: 'Congratulations! You completed all mandatory lessons.',
-        });
         if (enrollment.certificateEnabled)
           await tx
             .insert(schema.backgroundJobs)

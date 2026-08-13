@@ -12,6 +12,10 @@ import type {
   DeliveryListDto,
   NotificationListDto,
 } from '../dto/notifications.dto';
+import {
+  NotificationsGateway,
+  type RealtimeNotification,
+} from '../gateways/notifications.gateway';
 import { NotificationsRepository } from '../repositories/notifications.repository';
 import {
   builtinTemplateCount,
@@ -26,6 +30,8 @@ import {
 const ESSENTIAL = new Set([
   'PASSWORD_CHANGED',
   'NEW_LOGIN_ALERT',
+  'GOOGLE_SIGN_IN',
+  'WELCOME',
   'ACCOUNT_ACTIVATED',
   'ACCOUNT_SUSPENDED',
   'ACCOUNT_ARCHIVED',
@@ -53,6 +59,20 @@ export interface NotificationRequest {
   priority?: 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';
 }
 
+export interface InAppNotificationInput {
+  userId: string;
+  type: string;
+  title: string;
+  message: string;
+  actionUrl?: string;
+  relatedEntityType?: string;
+  relatedEntityId?: string;
+  priority?: 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';
+  deduplicationKey: string;
+  category: 'security' | 'learning' | 'payments' | 'certificates';
+  metadata?: Record<string, unknown>;
+}
+
 @Injectable()
 export class NotificationsService {
   constructor(
@@ -60,6 +80,7 @@ export class NotificationsService {
     private readonly renderer: EmailRenderingService,
     private readonly config: ConfigService<Environment, true>,
     private readonly mail: MailService,
+    private readonly gateway: NotificationsGateway,
   ) {}
   listMine(userId: string, query: NotificationListDto) {
     return this.repository.listMine(userId, query);
@@ -93,24 +114,21 @@ export class NotificationsService {
     const emailEnabled =
       essential ||
       preferences?.[`email${suffix}` as keyof typeof preferences] !== false;
-    const inAppEnabled =
-      essential ||
-      input.category === 'security' ||
-      preferences?.[`inApp${suffix}` as keyof typeof preferences] !== false;
-    if (inAppEnabled)
-      await this.repository.createInApp({
+    await this.createInApp(
+      {
         userId: input.userId,
-        channel: 'IN_APP',
-        status: 'SENT',
         type: input.templateCode,
-        title: this.clean(input.title, 200),
-        body: this.clean(input.message, 2000),
+        title: input.title,
+        message: input.message,
         actionUrl: input.actionUrl,
         relatedEntityType: input.relatedEntityType,
         relatedEntityId: input.relatedEntityId,
-        priority: input.priority ?? 'NORMAL',
-        deduplicationKey: `in-app:${input.deduplicationKey}`,
-      });
+        priority: input.priority,
+        deduplicationKey: input.deduplicationKey,
+        category: input.category,
+      },
+      preferences,
+    );
     const template =
       (await this.repository.activeTemplate(
         input.templateCode,
@@ -143,6 +161,49 @@ export class NotificationsService {
         infer: true,
       }),
     });
+  }
+
+  /**
+   * Persists a single in-app notification for a specific user (respecting
+   * their in-app category preference for non-essential, non-security events)
+   * and pushes it to that user's WebSocket room in real time. Deduplication
+   * is enforced by the `deduplication_key` unique index - an event that is
+   * fired again (retry, reconnect, duplicate handler) creates no second row
+   * and emits no second socket message.
+   */
+  async createInApp(
+    input: InAppNotificationInput,
+    preferences?: Record<string, unknown>,
+  ) {
+    this.validateAction(input.actionUrl);
+    const essential = ESSENTIAL.has(input.type);
+    const prefs =
+      preferences ??
+      (await this.repository.db.query.userNotificationPreferences.findFirst({
+        where: (table, { eq }) => eq(table.userId, input.userId),
+      }));
+    const suffix = input.category[0]!.toUpperCase() + input.category.slice(1);
+    const inAppEnabled =
+      essential ||
+      input.category === 'security' ||
+      prefs?.[`inApp${suffix}` as keyof typeof prefs] !== false;
+    if (!inAppEnabled) return null;
+    const row = await this.repository.createInApp({
+      userId: input.userId,
+      channel: 'IN_APP',
+      status: 'SENT',
+      type: input.type,
+      title: this.clean(input.title, 200),
+      body: this.clean(input.message, 2000),
+      actionUrl: input.actionUrl,
+      relatedEntityType: input.relatedEntityType,
+      relatedEntityId: input.relatedEntityId,
+      priority: input.priority ?? 'NORMAL',
+      deduplicationKey: `in-app:${input.deduplicationKey}`,
+      metadata: input.metadata,
+    });
+    if (row) this.gateway.notifyUser(row.userId, this.presentInApp(row));
+    return row;
   }
 
   listDeliveries(query: DeliveryListDto) {
@@ -256,6 +317,22 @@ export class NotificationsService {
       .replace(/<[^>]*>/g, '')
       .trim()
       .slice(0, max);
+  }
+  private presentInApp(
+    row: typeof import('@joel-academy/database').schema.notifications.$inferSelect,
+  ): RealtimeNotification {
+    return {
+      id: row.id,
+      type: row.type,
+      title: row.title,
+      message: row.body,
+      actionUrl: row.actionUrl ?? null,
+      priority: row.priority,
+      readAt: row.readAt ? row.readAt.toISOString() : null,
+      createdAt: row.createdAt.toISOString(),
+      relatedEntityType: row.relatedEntityType ?? null,
+      relatedEntityId: row.relatedEntityId ?? null,
+    };
   }
   private mask(value: string) {
     const [local, domain] = value.split('@');

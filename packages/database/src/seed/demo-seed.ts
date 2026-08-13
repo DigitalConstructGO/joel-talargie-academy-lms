@@ -12,7 +12,6 @@ import {
   COURSE_CATALOG,
   DEMO_PASSWORD,
   INSTRUCTOR_PERSON,
-  NOTIFICATION_TEMPLATES,
   STUDENT_PEOPLE,
   type DemoPerson,
 } from './demo-data.ts';
@@ -38,7 +37,6 @@ export interface DemoSeedCounts {
   promoCodes: number;
   payments: number;
   certificates: number;
-  notifications: number;
   activityLogs: number;
   sessions: number;
 }
@@ -764,53 +762,6 @@ async function seedPromotions(tx: AcademyDatabase, createdBy: string) {
   return { campaignCount, codeCount };
 }
 
-async function seedNotifications(
-  tx: AcademyDatabase,
-  staff: { id: string }[],
-  students: { id: string }[],
-) {
-  // Templates: 0 enrollment, 1 payment received, 2 payment approved, 3 certificate,
-  // 4 course completed, 5 promotion, 6 security login, 7 security password changed.
-  const staffTemplateIndexes = [6];
-  const studentTemplateIndexes = [0, 1, 2];
-  const completedCourseExtraIndexes = [3, 4];
-
-  const assignments: { userId: string; templateIndex: number }[] = [];
-  staff.forEach((user) => {
-    staffTemplateIndexes.forEach((templateIndex) =>
-      assignments.push({ userId: user.id, templateIndex }),
-    );
-  });
-  students.forEach((user) => {
-    studentTemplateIndexes.forEach((templateIndex) =>
-      assignments.push({ userId: user.id, templateIndex }),
-    );
-    // Every student has at least one COMPLETED enrollment in the plan below, so each
-    // gets the certificate/course-completed notifications too, matching seedCertificates' output.
-    completedCourseExtraIndexes.forEach((templateIndex) =>
-      assignments.push({ userId: user.id, templateIndex }),
-    );
-  });
-
-  const rows = assignments.map(({ userId, templateIndex }, index) => {
-    const template = NOTIFICATION_TEMPLATES[templateIndex]!;
-    const isRead = index % 3 !== 0;
-    return {
-      userId,
-      channel: 'IN_APP' as const,
-      status: 'SENT' as const,
-      type: template.type,
-      title: template.title,
-      body: template.body,
-      priority: template.priority,
-      readAt: isRead ? daysFromNow(-index - 1) : null,
-      createdAt: daysFromNow(-index - 2),
-    };
-  });
-  await tx.insert(schema.notifications).values(rows);
-  return rows.length;
-}
-
 async function seedActivityLogs(tx: AcademyDatabase, actors: { id: string }[]) {
   const actions = Object.values(ACTIVITY_ACTIONS);
   const rows = Array.from({ length: 32 }, (_, index) => {
@@ -893,11 +844,6 @@ export async function seedDemoData(database: AcademyDatabase): Promise<DemoSeedC
     const { campaignCount, codeCount } = await seedPromotions(tx, contentManager.id);
 
     const allUsers = [admin, contentManager, instructor, ...students];
-    const notificationCount = await seedNotifications(
-      tx,
-      [admin, contentManager, instructor],
-      students,
-    );
     const activityLogCount = await seedActivityLogs(tx, allUsers);
     const sessionCount = await seedSessions(tx, [admin, instructor, ...students]);
 
@@ -916,7 +862,6 @@ export async function seedDemoData(database: AcademyDatabase): Promise<DemoSeedC
       promoCodes: codeCount,
       payments: paymentCount,
       certificates: certificateCount,
-      notifications: notificationCount,
       activityLogs: activityLogCount,
       sessions: sessionCount,
     };

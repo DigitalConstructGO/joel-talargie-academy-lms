@@ -394,16 +394,6 @@ export class CertificatesRepository {
         action: 'certificate.revoked',
         reason,
       });
-      const enrollment = await tx.query.enrollments.findFirst({
-        where: eq(schema.enrollments.id, certificate.enrollmentId),
-      });
-      if (enrollment)
-        await tx.insert(schema.notifications).values({
-          userId: enrollment.studentId,
-          channel: 'IN_APP',
-          title: 'Certificate revoked',
-          body: 'Your certificate was revoked. Contact academy support for assistance.',
-        });
       await tx.insert(schema.activityLogs).values({
         actorId,
         action: 'certificate.revoked',

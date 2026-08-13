@@ -200,12 +200,6 @@ export class CertificateWorkerService {
             fileSize: pdf.length,
           },
         });
-        await tx.insert(schema.notifications).values({
-          userId: data.studentId,
-          channel: 'IN_APP',
-          title: 'Certificate ready',
-          body: 'Your course-completion certificate is ready to download.',
-        });
         await tx
           .update(schema.backgroundJobs)
           .set({

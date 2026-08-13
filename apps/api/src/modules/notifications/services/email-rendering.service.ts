@@ -9,6 +9,7 @@ export const TEMPLATE_PLACEHOLDERS: Record<string, readonly string[]> = {
     'academyName',
     'supportEmail',
   ],
+  WELCOME: ['recipientName', 'dashboardUrl', 'academyName', 'supportEmail'],
   PASSWORD_RESET: [
     'recipientName',
     'resetUrl',
@@ -20,6 +21,7 @@ export const TEMPLATE_PLACEHOLDERS: Record<string, readonly string[]> = {
   NEW_LOGIN_ALERT: ['recipientName', 'academyName', 'supportEmail'],
   GOOGLE_ACCOUNT_LINKED: ['recipientName', 'academyName', 'supportEmail'],
   GOOGLE_ACCOUNT_UNLINKED: ['recipientName', 'academyName', 'supportEmail'],
+  GOOGLE_SIGN_IN: ['recipientName', 'academyName', 'supportEmail'],
   ACCOUNT_ACTIVATED: ['recipientName', 'academyName'],
   ACCOUNT_SUSPENDED: ['recipientName', 'academyName', 'supportEmail'],
   ACCOUNT_ARCHIVED: ['recipientName', 'academyName', 'supportEmail'],

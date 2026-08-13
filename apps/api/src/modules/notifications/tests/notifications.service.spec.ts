@@ -19,11 +19,13 @@ describe('NotificationsService security', () => {
   const renderer = { render: jest.fn() };
   const config = { get: jest.fn() };
   const mail = { verifyConnection: jest.fn() };
+  const gateway = { notifyUser: jest.fn() };
   const service = new NotificationsService(
     repository as never,
     renderer as never,
     config as never,
     mail as never,
+    gateway as never,
   );
   it('always scopes notification reads to the authenticated user', async () => {
     repository.mine.mockResolvedValueOnce(null);

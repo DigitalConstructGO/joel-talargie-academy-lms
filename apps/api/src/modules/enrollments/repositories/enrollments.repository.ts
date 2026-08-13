@@ -170,16 +170,6 @@ export class EnrollmentsRepository {
           redemptionId: redemption?.id ?? null,
         },
       });
-      await tx.insert(schema.notifications).values({
-        userId: studentId,
-        channel: 'IN_APP',
-        title:
-          status === 'ENROLLED' ? 'Enrollment confirmed' : 'Payment required',
-        body:
-          status === 'ENROLLED'
-            ? `You now have access to ${course.title}.`
-            : `Your enrollment in ${course.title} was created. Submit payment to continue.`,
-      });
       return { created: true, enrollment };
     });
   }
@@ -419,18 +409,6 @@ export class EnrollmentsRepository {
           studentId: enrollment.studentId,
           courseId: enrollment.courseId,
         },
-      });
-      await tx.insert(schema.notifications).values({
-        userId: enrollment.studentId,
-        channel: 'IN_APP',
-        title:
-          operation === 'cancel'
-            ? 'Enrollment cancelled'
-            : 'Course access revoked',
-        body:
-          operation === 'cancel'
-            ? `Your enrollment was cancelled. Reason: ${reason}`
-            : `Your course access was revoked. Contact support if you need assistance.`,
       });
       return updated;
     });

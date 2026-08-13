@@ -173,20 +173,67 @@ export class EnrollmentsService {
   }
   async cancel(actorId: string, id: string, reason: string) {
     try {
-      return this.present(
-        await this.repository.transition(actorId, id, 'cancel', reason),
+      const enrollment = await this.repository.transition(
+        actorId,
+        id,
+        'cancel',
+        reason,
       );
+      await this.notifyAccessChange(
+        enrollment.studentId,
+        enrollment.id,
+        'cancel',
+        reason,
+      );
+      return this.present(enrollment);
     } catch (error) {
       this.map(error);
     }
   }
   async revoke(actorId: string, id: string, reason: string) {
     try {
-      return this.present(
-        await this.repository.transition(actorId, id, 'revoke', reason),
+      const enrollment = await this.repository.transition(
+        actorId,
+        id,
+        'revoke',
+        reason,
       );
+      await this.notifyAccessChange(
+        enrollment.studentId,
+        enrollment.id,
+        'revoke',
+        reason,
+      );
+      return this.present(enrollment);
     } catch (error) {
       this.map(error);
+    }
+  }
+  private async notifyAccessChange(
+    studentId: string,
+    enrollmentId: string,
+    operation: 'cancel' | 'revoke',
+    reason: string,
+  ) {
+    const cancelled = operation === 'cancel';
+    try {
+      await this.notifications.createInApp({
+        userId: studentId,
+        type: cancelled ? 'ENROLLMENT_CANCELLED' : 'ENROLLMENT_ACCESS_REVOKED',
+        title: cancelled ? 'Enrollment cancelled' : 'Course access revoked',
+        message: cancelled
+          ? `Your enrollment was cancelled.${reason ? ` Reason: ${reason}` : ''}`
+          : 'Your course access was revoked. Contact support if you need assistance.',
+        actionUrl: '/dashboard/my-courses',
+        deduplicationKey: cancelled
+          ? `enrollment-cancelled:${enrollmentId}`
+          : `enrollment-revoked:${enrollmentId}`,
+        category: 'learning',
+        relatedEntityType: 'enrollment',
+        relatedEntityId: enrollmentId,
+      });
+    } catch {
+      // Notification failures must never break the transition itself.
     }
   }
   async activity(id: string, query: EnrollmentActivityQueryDto) {

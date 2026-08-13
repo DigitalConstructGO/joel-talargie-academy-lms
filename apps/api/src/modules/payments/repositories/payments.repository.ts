@@ -172,12 +172,6 @@ export class PaymentsRepository {
           amountMismatch,
         },
       });
-      await tx.insert(schema.notifications).values({
-        userId: studentId,
-        channel: 'IN_APP',
-        title: 'Payment submitted',
-        body: 'Your payment receipt is awaiting Administrator review.',
-      });
       return payment;
     });
   }
@@ -363,15 +357,6 @@ export class PaymentsRepository {
             decision === 'approve' ? 'ENROLLED' : 'PENDING_PAYMENT',
           reason: input.reason,
         },
-      });
-      await tx.insert(schema.notifications).values({
-        userId: enrollment.studentId,
-        channel: 'IN_APP',
-        title: decision === 'approve' ? 'Payment approved' : 'Payment declined',
-        body:
-          decision === 'approve'
-            ? 'Your payment was approved. Course access is now available.'
-            : `Your payment was declined. Reason: ${input.reason}`,
       });
       return {
         paymentId,

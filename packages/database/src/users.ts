@@ -201,13 +201,6 @@ export const revokeOwnedSession = async (
       entityId: session.id,
       after: { targetUserId: input.userId },
     });
-    if (input.admin)
-      await tx.insert(schema.notifications).values({
-        userId: input.userId,
-        channel: 'IN_APP',
-        title: 'Session revoked',
-        body: 'An administrator revoked one of your login sessions.',
-      });
     return session.id;
   });
 export const revokeSessionsExcept = async (
@@ -232,13 +225,6 @@ export const revokeSessionsExcept = async (
       entityId: input.userId,
       after: { count: revoked.length, preservedCurrent: Boolean(input.keepSessionId) },
     });
-    if (input.admin)
-      await tx.insert(schema.notifications).values({
-        userId: input.userId,
-        channel: 'IN_APP',
-        title: 'Sessions revoked',
-        body: 'An administrator revoked your active login sessions.',
-      });
     return revoked.length;
   });
 export const listManagedUsers = async (
@@ -430,12 +416,6 @@ export const transitionUserStatus = async (
       entityId: input.userId,
       before: { status: current },
       after: { status: input.target, reason: input.reason },
-    });
-    await tx.insert(schema.notifications).values({
-      userId: input.userId,
-      channel: 'IN_APP',
-      title: `Account ${input.target.toLowerCase()}`,
-      body: `Your account status changed to ${input.target}.`,
     });
     return input.target;
   });

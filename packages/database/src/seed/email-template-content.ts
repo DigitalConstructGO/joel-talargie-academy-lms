@@ -112,11 +112,13 @@ export interface EmailTemplateContent {
 
 export type EmailTemplateCode =
   | 'EMAIL_VERIFICATION'
+  | 'WELCOME'
   | 'PASSWORD_RESET'
   | 'PASSWORD_CHANGED'
   | 'NEW_LOGIN_ALERT'
   | 'GOOGLE_ACCOUNT_LINKED'
   | 'GOOGLE_ACCOUNT_UNLINKED'
+  | 'GOOGLE_SIGN_IN'
   | 'ACCOUNT_ACTIVATED'
   | 'ACCOUNT_SUSPENDED'
   | 'ACCOUNT_ARCHIVED'
@@ -150,6 +152,20 @@ export const EMAIL_TEMPLATE_CONTENT: Record<EmailTemplateCode, EmailTemplateCont
     ),
     text: shellText(
       'Hi {{recipientName}},\n\nWelcome to {{academyName}}! Confirm your email address using the link below:\n{{verificationUrl}}\n\nThis link expires in {{expiresInMinutes}} minutes.\nIf you did not create this account, you can ignore this email.\nNeed help? {{supportEmail}}',
+    ),
+  },
+  WELCOME: {
+    subject: 'Welcome to Joel Talargie Academy!',
+    html: shellHtml(
+      heading('Welcome to {{academyName}}!') +
+        paragraph(
+          'Hi {{recipientName}}, your account is ready. Start exploring courses and begin learning today.',
+        ) +
+        button('Start Learning', '{{dashboardUrl}}') +
+        muted(supportLine()),
+    ),
+    text: shellText(
+      'Hi {{recipientName}},\n\nWelcome to {{academyName}}! Your account is ready. Start exploring courses and begin learning today:\n{{dashboardUrl}}\n\nNeed help? {{supportEmail}}',
     ),
   },
   PASSWORD_RESET: {
@@ -224,6 +240,22 @@ export const EMAIL_TEMPLATE_CONTENT: Record<EmailTemplateCode, EmailTemplateCont
     ),
     text: shellText(
       "Hi {{recipientName}},\n\nYour Google account has been unlinked from your {{academyName}} account.\nIf this wasn't you, please contact us at {{supportEmail}}.",
+    ),
+  },
+  GOOGLE_SIGN_IN: {
+    subject: 'New sign-in to your account with Google',
+    html: shellHtml(
+      heading('New Google sign-in detected') +
+        paragraph(
+          'Hi {{recipientName}}, we noticed a new sign-in to your {{academyName}} account using your Google account.',
+        ) +
+        noticeBox('If this was you, you can safely ignore this message.', COLOR.green) +
+        muted(
+          "If you don't recognize this activity, please secure your account and " + supportLine(),
+        ),
+    ),
+    text: shellText(
+      'Hi {{recipientName}},\n\nWe noticed a new sign-in to your {{academyName}} account using your Google account.\nIf this was you, no action is needed.\nIf not, please secure your account.\nNeed help? {{supportEmail}}',
     ),
   },
   ACCOUNT_ACTIVATED: {

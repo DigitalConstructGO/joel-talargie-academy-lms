@@ -104,6 +104,16 @@ export const EMAIL_TEMPLATE_CONTENT: Partial<
     html: '<p>Verify your email: {{verificationUrl}}</p>',
     text: 'Verify your email: {{verificationUrl}}',
   },
+  WELCOME: {
+    subject: 'Welcome to Joel Talargie Academy!',
+    html: '<p>Welcome: {{dashboardUrl}}</p>',
+    text: 'Welcome: {{dashboardUrl}}',
+  },
+  GOOGLE_SIGN_IN: {
+    subject: 'New Google sign-in',
+    html: '<p>New sign-in with Google.</p>',
+    text: 'New sign-in with Google.',
+  },
   PASSWORD_CHANGED: {
     subject: 'Your password was changed',
     html: '<p>Your {{academyName}} password was changed.</p>',

@@ -28,6 +28,7 @@ describe('NotificationsService', () => {
   };
   const renderer = { render: jest.fn() };
   const mail = { verifyConnection: jest.fn() };
+  const gateway = { notifyUser: jest.fn() };
   const configValues: Record<string, unknown> = {
     EMAIL_DEFAULT_LOCALE: 'en',
     EMAIL_MAX_RETRY_ATTEMPTS: 5,
@@ -41,6 +42,7 @@ describe('NotificationsService', () => {
     renderer as never,
     config as never,
     mail as never,
+    gateway as never,
   );
 
   const baseInput = {
@@ -156,7 +158,10 @@ describe('NotificationsService', () => {
         version: 1,
         locale: 'en',
       });
-      await service.notify(baseInput);
+      await service.notify({
+        ...baseInput,
+        templateCode: 'FREE_ENROLLMENT_CONFIRMED',
+      });
       expect(repository.createInApp).not.toHaveBeenCalled();
     });
 
@@ -182,9 +187,9 @@ describe('NotificationsService', () => {
 
     it('throws UnprocessableEntityException when no active email template exists', async () => {
       repository.activeTemplate.mockResolvedValueOnce(undefined);
-      await expect(service.notify(baseInput)).rejects.toThrow(
-        UnprocessableEntityException,
-      );
+      await expect(
+        service.notify({ ...baseInput, templateCode: 'CUSTOM_CODE' }),
+      ).rejects.toThrow(UnprocessableEntityException);
     });
 
     it('falls back to the built-in catalog template when no active DB template exists', async () => {
@@ -246,10 +251,134 @@ describe('NotificationsService', () => {
         version: 1,
         locale: 'en',
       });
-      await service.notify(baseInput);
+      await service.notify({
+        ...baseInput,
+        templateCode: 'FREE_ENROLLMENT_CONFIRMED',
+      });
       expect(repository.createDelivery).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'SUPPRESSED' }),
       );
+    });
+
+    it('pushes the created in-app notification to the owner over the gateway', async () => {
+      const createdAt = new Date('2026-08-01T00:00:00.000Z');
+      repository.createInApp.mockResolvedValueOnce({
+        id: 'n1',
+        userId: 'user-1',
+        type: 'WELCOME',
+        title: 'Title',
+        body: 'Message',
+        actionUrl: '/dashboard/courses',
+        priority: 'NORMAL',
+        readAt: null,
+        createdAt,
+      });
+      repository.activeTemplate.mockResolvedValueOnce({
+        code: 'WELCOME',
+        version: 1,
+        locale: 'en',
+      });
+      await service.notify({ ...baseInput, actionUrl: '/dashboard/courses' });
+      expect(gateway.notifyUser).toHaveBeenCalledWith('user-1', {
+        id: 'n1',
+        type: 'WELCOME',
+        title: 'Title',
+        message: 'Message',
+        actionUrl: '/dashboard/courses',
+        priority: 'NORMAL',
+        readAt: null,
+        createdAt: createdAt.toISOString(),
+        relatedEntityType: null,
+        relatedEntityId: null,
+      });
+    });
+
+    it('emits nothing over the gateway when the row was deduplicated (no new row)', async () => {
+      repository.createInApp.mockResolvedValueOnce(null);
+      repository.activeTemplate.mockResolvedValueOnce({
+        code: 'WELCOME',
+        version: 1,
+        locale: 'en',
+      });
+      await service.notify(baseInput);
+      expect(gateway.notifyUser).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('createInApp', () => {
+    it('persists an in-app notification and pushes it to the owner', async () => {
+      const createdAt = new Date('2026-08-01T00:00:00.000Z');
+      repository.createInApp.mockResolvedValueOnce({
+        id: 'n2',
+        userId: 'user-1',
+        type: 'ENROLLMENT',
+        title: 'Enrollment cancelled',
+        body: 'Your enrollment was cancelled.',
+        actionUrl: null,
+        priority: 'NORMAL',
+        readAt: null,
+        createdAt,
+      });
+      const result = await service.createInApp({
+        userId: 'user-1',
+        type: 'ENROLLMENT',
+        title: 'Enrollment cancelled',
+        message: 'Your enrollment was cancelled.',
+        deduplicationKey: 'enrollment-cancelled:abc',
+        category: 'learning',
+      });
+      expect(result).not.toBeNull();
+      expect(repository.createInApp).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'user-1',
+          channel: 'IN_APP',
+          status: 'SENT',
+          type: 'ENROLLMENT',
+          deduplicationKey: 'in-app:enrollment-cancelled:abc',
+        }),
+      );
+      expect(gateway.notifyUser).toHaveBeenCalledWith('user-1', {
+        id: 'n2',
+        type: 'ENROLLMENT',
+        title: 'Enrollment cancelled',
+        message: 'Your enrollment was cancelled.',
+        actionUrl: null,
+        priority: 'NORMAL',
+        readAt: null,
+        createdAt: createdAt.toISOString(),
+        relatedEntityType: null,
+        relatedEntityId: null,
+      });
+    });
+
+    it('skips persistence entirely when the user opted out of the category', async () => {
+      await service.createInApp(
+        {
+          userId: 'user-1',
+          type: 'ENROLLMENT',
+          title: 'Title',
+          message: 'Message',
+          deduplicationKey: 'dedup-1',
+          category: 'learning',
+        },
+        { inAppLearning: false },
+      );
+      expect(repository.createInApp).not.toHaveBeenCalled();
+      expect(gateway.notifyUser).not.toHaveBeenCalled();
+    });
+
+    it('rejects an actionUrl outside the approved internal path pattern', async () => {
+      await expect(
+        service.createInApp({
+          userId: 'user-1',
+          type: 'ENROLLMENT',
+          title: 'Title',
+          message: 'Message',
+          deduplicationKey: 'dedup-1',
+          category: 'learning',
+          actionUrl: 'https://evil.example.com',
+        }),
+      ).rejects.toThrow(UnprocessableEntityException);
     });
   });
 
