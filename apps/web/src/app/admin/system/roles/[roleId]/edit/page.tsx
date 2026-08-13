@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -43,6 +43,7 @@ export default function AdminRoleEditPage() {
   const replacePermissions = useReplaceRolePermissions();
   const role = roleQuery.data;
   const [permissionIds, setPermissionIds] = useState<string[]>([]);
+  const initialized = useRef(false);
   const { can } = usePermissions();
 
   const {
@@ -56,7 +57,8 @@ export default function AdminRoleEditPage() {
   });
 
   useEffect(() => {
-    if (role) {
+    if (role && !initialized.current) {
+      initialized.current = true;
       reset({ name: role.name, description: role.description ?? '' });
       setPermissionIds(role.permissions.map((permission) => permission.id));
     }
@@ -68,18 +70,29 @@ export default function AdminRoleEditPage() {
         roleId,
         input: { name: values.name.trim(), description: values.description?.trim() || undefined },
       });
-      const currentIds = role?.permissions
-        .map((p) => p.id)
-        .sort()
-        .join(',');
-      if (permissionIds.slice().sort().join(',') !== currentIds) {
-        await replacePermissions.mutateAsync({ roleId, permissionIds });
-      }
-      toast.success('Role updated');
-      router.push(ROUTES.admin.systemRoleDetail(roleId));
     } catch {
-      toast.error('Could not update this role', 'Check you hold every permission you selected.');
+      toast.error('Could not update this role');
+      return;
     }
+
+    const currentIds = role?.permissions
+      .map((p) => p.id)
+      .sort()
+      .join(',');
+    if (permissionIds.slice().sort().join(',') !== currentIds) {
+      try {
+        await replacePermissions.mutateAsync({ roleId, permissionIds });
+      } catch {
+        toast.error(
+          'Could not update permissions',
+          'Check you hold every permission you selected.',
+        );
+        return;
+      }
+    }
+
+    toast.success('Role updated');
+    router.push(ROUTES.admin.systemRoleDetail(roleId));
   }
 
   if (!can('roles.update')) {

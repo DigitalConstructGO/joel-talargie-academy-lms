@@ -131,7 +131,7 @@ export const getRoleDetails = async (db: AcademyDatabase, id: string) => {
     .select({ users: count() })
     .from(schema.userRoles)
     .where(eq(schema.userRoles.roleId, id));
-  return { ...role, permissions, userCount: Number(users) };
+  return { ...role, permissions, permissionCount: permissions.length, userCount: Number(users) };
 };
 const log = (
   tx: AcademyDatabase,
@@ -186,7 +186,7 @@ export const createRoleWithPermissions = async (
       entityId: role.id,
       after: { name: role.name, code: role.code, permissions: permissions.map((x) => x.code) },
     });
-    return role;
+    return getRoleDetails(tx as AcademyDatabase, role.id);
   });
 export const updateCustomRole = async (
   db: AcademyDatabase,
@@ -213,7 +213,7 @@ export const updateCustomRole = async (
       before: { name: role.name, description: role.description },
       after: { name: updated?.name, description: updated?.description },
     });
-    return updated;
+    return getRoleDetails(tx as AcademyDatabase, role.id);
   });
 export const replaceCustomRolePermissions = async (
   db: AcademyDatabase,
@@ -223,7 +223,11 @@ export const replaceCustomRolePermissions = async (
     const role = await tx.query.roles.findFirst({ where: eq(schema.roles.id, input.roleId) });
     if (!role) throw new Error('ROLE_NOT_FOUND');
     if (role.isSystem) throw new Error('SYSTEM_ROLE');
-    const before = await getRoleDetails(tx as AcademyDatabase, role.id);
+    const before = await tx
+      .select({ code: schema.permissions.code })
+      .from(schema.rolePermissions)
+      .innerJoin(schema.permissions, eq(schema.rolePermissions.permissionId, schema.permissions.id))
+      .where(eq(schema.rolePermissions.roleId, role.id));
     const permissions = await getPermissionsByIds(tx as AcademyDatabase, input.permissionIds);
     if (permissions.length !== input.permissionIds.length) throw new Error('INVALID_PERMISSION');
     const actor = await getAuthorizationContext(tx as AcademyDatabase, input.actorId);
@@ -244,10 +248,10 @@ export const replaceCustomRolePermissions = async (
       action: 'role.permissions.updated',
       entityType: 'role',
       entityId: role.id,
-      before: { permissions: before?.permissions.map((x) => x.code) },
+      before: { permissions: before.map((x) => x.code) },
       after: { permissions: permissions.map((x) => x.code) },
     });
-    return permissions;
+    return getRoleDetails(tx as AcademyDatabase, role.id);
   });
 export const archiveCustomRole = async (db: AcademyDatabase, actorId: string, roleId: string) =>
   db.transaction(async (tx) => {

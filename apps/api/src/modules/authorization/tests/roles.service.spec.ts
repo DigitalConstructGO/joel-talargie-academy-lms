@@ -147,7 +147,7 @@ describe('RolesService', () => {
     });
   });
 
-  describe('replacePermissions', () => {
+   describe('replacePermissions', () => {
     it('checks assignability before delegating to the repository', async () => {
       contexts.resolve.mockResolvedValueOnce({
         status: 'ACTIVE',
@@ -170,6 +170,19 @@ describe('RolesService', () => {
       await expect(
         service.replacePermissions('admin', 'role-1', []),
       ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('maps an INVALID_PERMISSION repository error to BadRequestException', async () => {
+      contexts.resolve.mockResolvedValueOnce({
+        status: 'ACTIVE',
+        isAdministrator: true,
+      });
+      repository.replacePermissions.mockRejectedValueOnce(
+        new Error('INVALID_PERMISSION'),
+      );
+      await expect(
+        service.replacePermissions('admin', 'role-1', ['bad-id']),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
   });
 

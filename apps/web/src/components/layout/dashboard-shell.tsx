@@ -3,7 +3,6 @@
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { SiteHeader } from '@/components/layout/site-header';
-import { DashboardFooter } from '@/components/layout/dashboard-footer';
 import { useCommandPaletteState } from '@/components/dashboard/command-palette';
 import { DashboardPageTransition } from '@/components/dashboard/dashboard-page-transition';
 import type { NavSection } from '@/types';
@@ -52,7 +51,6 @@ export function DashboardShell({
         <main className="flex flex-1 flex-col">
           <DashboardPageTransition>{children}</DashboardPageTransition>
         </main>
-        <DashboardFooter />
       </SidebarInset>
     </SidebarProvider>
   );

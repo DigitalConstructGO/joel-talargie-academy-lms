@@ -3,7 +3,6 @@ import { CATALOG_DATA_SOURCE } from '@/config/data-source.config';
 import { mockRolesApi } from '../data/mock-roles.api';
 import type {
   CreateRoleInput,
-  Role,
   RoleDetail,
   RoleListParams,
   RoleListResult,
@@ -26,7 +25,7 @@ const liveRolesApi = {
     unwrap<RoleDetail>(await authClient.post('/admin/roles', input)),
 
   update: async (roleId: string, input: UpdateRoleInput) =>
-    unwrap<Role>(await authClient.patch(`/admin/roles/${encodeURIComponent(roleId)}`, input)),
+    unwrap<RoleDetail>(await authClient.patch(`/admin/roles/${encodeURIComponent(roleId)}`, input)),
 
   replacePermissions: async (roleId: string, permissionIds: string[]) =>
     unwrap<RoleDetail>(

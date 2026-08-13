@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { rolesApi } from '../api/roles.api';
 import { roleKeys } from '../api/query-keys';
 import type { CreateRoleInput, RoleListParams, UpdateRoleInput } from '../types/role.types';
+import { useAuthStore } from '@/stores/auth.store';
 
 export function useRoles(params: RoleListParams = {}) {
   return useQuery({
@@ -25,7 +26,8 @@ export function useCreateRole() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: CreateRoleInput) => rolesApi.create(input),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data) void queryClient.setQueryData(roleKeys.detail(data.id), data);
       void queryClient.invalidateQueries({ queryKey: roleKeys.lists() });
     },
   });
@@ -36,7 +38,8 @@ export function useUpdateRole() {
   return useMutation({
     mutationFn: ({ roleId, input }: { roleId: string; input: UpdateRoleInput }) =>
       rolesApi.update(roleId, input),
-    onSuccess: (_data, variables) => {
+    onSuccess: (data, variables) => {
+      if (data) void queryClient.setQueryData(roleKeys.detail(variables.roleId), data);
       void queryClient.invalidateQueries({ queryKey: roleKeys.lists() });
       void queryClient.invalidateQueries({ queryKey: roleKeys.detail(variables.roleId) });
     },
@@ -48,9 +51,11 @@ export function useReplaceRolePermissions() {
   return useMutation({
     mutationFn: ({ roleId, permissionIds }: { roleId: string; permissionIds: string[] }) =>
       rolesApi.replacePermissions(roleId, permissionIds),
-    onSuccess: (_data, variables) => {
+    onSuccess: (data, variables) => {
+      if (data) void queryClient.setQueryData(roleKeys.detail(variables.roleId), data);
       void queryClient.invalidateQueries({ queryKey: roleKeys.lists() });
       void queryClient.invalidateQueries({ queryKey: roleKeys.detail(variables.roleId) });
+      void useAuthStore.getState().fetchAuthorization();
     },
   });
 }

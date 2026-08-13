@@ -60,16 +60,7 @@ export class RolesService {
         permissionIds: dto.permissionIds,
       });
     } catch (error) {
-      if (String(error).includes('INVALID_PERMISSION'))
-        throw new BadRequestException('One or more permission IDs are invalid');
-      if (String(error).includes('PRIVILEGE_ESCALATION'))
-        throw new ForbiddenException({
-          code: 'PRIVILEGE_ESCALATION_BLOCKED',
-          message: 'You cannot assign permissions you do not possess.',
-        });
-      if (/unique|duplicate/i.test(String(error)))
-        throw new ConflictException('Role name or code already exists');
-      throw error;
+      this.map(error);
     }
   }
   async update(actorId: string, id: string, dto: UpdateRoleDto) {
@@ -113,13 +104,15 @@ export class RolesService {
       throw new NotFoundException('Role not found');
     if (value.includes('SYSTEM_ROLE'))
       throw new ForbiddenException('System roles cannot be modified');
+    if (value.includes('INVALID_PERMISSION'))
+      throw new BadRequestException('One or more permission IDs are invalid');
     if (value.includes('PRIVILEGE_ESCALATION'))
       throw new ForbiddenException({
         code: 'PRIVILEGE_ESCALATION_BLOCKED',
         message: 'You cannot assign permissions you do not possess.',
       });
     if (/unique|duplicate/i.test(value))
-      throw new ConflictException('Role name already exists');
+      throw new ConflictException('Role name or code already exists');
     throw error;
   }
 }
