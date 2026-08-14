@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import Image from 'next/image';
 import {
   BarChart3,
@@ -56,22 +59,63 @@ export interface CourseThumbnailProps {
   title: string;
   categoryName?: string;
   categorySlug?: string;
+  thumbnailKey?: string | null;
+  thumbnailUrl?: string | null;
+  showBadge?: boolean;
   className?: string;
 }
 
 /**
- * The public catalog API does not yet expose a pre-resolved thumbnail URL
- * (uploaded images live behind expiring signed-URL tokens). For categories
- * with a downloaded, freely-licensed Unsplash photo under
- * /public/images/categories/, that photo is used; otherwise this falls back
- * to a generated category-icon placeholder rather than a broken image.
+ * Renders an uploaded course thumbnail image if available, falling back to
+ * licensed category photos or a styled category-icon placeholder.
  */
 export function CourseThumbnail({
   title,
   categoryName,
   categorySlug,
+  thumbnailKey,
+  thumbnailUrl,
+  showBadge = true,
   className,
 }: CourseThumbnailProps) {
+  const [imageError, setImageError] = useState(false);
+
+  const resolvedUrl =
+    thumbnailUrl ||
+    (thumbnailKey
+      ? `/api/v1/storage/course-thumbnails/${thumbnailKey.replace(/^course-thumbnails\//, '')}`
+      : null);
+
+  if (resolvedUrl && !imageError) {
+    return (
+      <div
+        className={cn(
+          'relative aspect-video w-full overflow-hidden rounded-t-xl bg-muted',
+          className,
+        )}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={resolvedUrl}
+          alt={categoryName ?? title}
+          className="size-full object-cover"
+          onError={() => setImageError(true)}
+        />
+        {showBadge && (
+          <div
+            className="absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-transparent"
+            aria-hidden="true"
+          />
+        )}
+        {showBadge && categoryName && (
+          <span className="absolute bottom-2 left-2 rounded-full bg-background/90 px-2.5 py-1 text-xs font-medium text-foreground backdrop-blur">
+            {categoryName}
+          </span>
+        )}
+      </div>
+    );
+  }
+
   if (categorySlug && CATEGORY_PHOTOS.has(categorySlug)) {
     return (
       <div
@@ -87,11 +131,13 @@ export function CourseThumbnail({
           sizes="(min-width: 1024px) 25vw, 50vw"
           className="object-cover"
         />
-        <div
-          className="absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-transparent"
-          aria-hidden="true"
-        />
-        {categoryName && (
+        {showBadge && (
+          <div
+            className="absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-transparent"
+            aria-hidden="true"
+          />
+        )}
+        {showBadge && categoryName && (
           <span className="absolute bottom-2 left-2 rounded-full bg-background/90 px-2.5 py-1 text-xs font-medium text-foreground backdrop-blur">
             {categoryName}
           </span>
@@ -134,7 +180,7 @@ export function CourseThumbnail({
       >
         <Icon className={cn('size-6', tint.icon)} aria-hidden="true" />
       </span>
-      {categoryName && (
+      {showBadge && categoryName && (
         <span className="absolute bottom-2 left-2 rounded-full bg-background/90 px-2.5 py-1 text-xs font-medium text-foreground backdrop-blur">
           {categoryName}
         </span>

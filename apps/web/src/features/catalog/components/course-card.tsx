@@ -50,6 +50,7 @@ export function CourseCard({
             title={course.title}
             categoryName={course.categoryName}
             categorySlug={course.categorySlug}
+            thumbnailKey={course.thumbnailKey}
             className="w-full rounded-t-xl sm:w-56 sm:rounded-l-xl sm:rounded-tr-none"
           />
           <div className="flex flex-1 flex-col gap-2 p-4 pt-0 sm:pt-4">
@@ -93,6 +94,7 @@ export function CourseCard({
             title={course.title}
             categoryName={course.categoryName}
             categorySlug={course.categorySlug}
+            thumbnailKey={course.thumbnailKey}
           />
           <WishlistButton
             courseId={course.id}

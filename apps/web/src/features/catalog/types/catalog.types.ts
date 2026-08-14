@@ -74,6 +74,7 @@ export interface CourseDetail {
   shortDescription: string;
   description: string;
   presenterName: string;
+  thumbnailKey?: string | null;
   accessType: CourseAccessType;
   price: string;
   discountPrice: string | null;

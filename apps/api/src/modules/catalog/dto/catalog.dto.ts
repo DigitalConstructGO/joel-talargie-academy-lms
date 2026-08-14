@@ -193,6 +193,7 @@ export class ListCoursesDto extends PaginationDto {
   @Transform(({ value }) => value === 'true')
   @IsBoolean()
   featured?: boolean;
+  @IsOptional() @IsUUID() createdBy?: string;
   @IsOptional()
   @IsIn([
     'newest',

@@ -183,6 +183,13 @@
       "when": 1787000000000,
       "tag": "0025_payment_method_instructions",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1787400000000,
+      "tag": "0026_course_currency_and_ownership",
+      "breakpoints": true
     }
   ]
 }

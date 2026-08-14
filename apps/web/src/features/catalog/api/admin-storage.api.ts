@@ -5,7 +5,9 @@ export interface StorageUploadResult {
   originalFileName: string;
   mimeType: string;
   fileSize: number;
-  storageKey: string;
+  storageKey?: string;
+  thumbnailKey?: string;
+  variantKey?: string;
 }
 
 /** Real uploads only - no mock fallback (nothing meaningful to fake for a binary upload). */

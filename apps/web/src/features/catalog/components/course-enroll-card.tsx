@@ -13,6 +13,7 @@ import { extractErrorMessage } from '@/lib/api/api-error';
 import { toast } from '@/lib/toast';
 import { PriceTag } from './price-tag';
 import { WishlistButton } from './wishlist-button';
+import { CourseThumbnail } from './course-thumbnail';
 import { DIFFICULTY_LABELS } from '../constants/catalog.constants';
 import type { CourseDetail } from '../types/catalog.types';
 
@@ -58,7 +59,15 @@ export function CourseEnrollCard({ course }: { course: CourseDetail }) {
       : 'Sign Up to Enroll';
 
   return (
-    <Card className="sticky top-24">
+    <Card className="sticky top-24 overflow-hidden">
+      <CourseThumbnail
+        title={course.title}
+        categoryName={course.categoryName}
+        categorySlug={course.categorySlug}
+        thumbnailKey={course.thumbnailKey}
+        showBadge={false}
+        className="aspect-video w-full rounded-t-xl rounded-b-none"
+      />
       <CardContent className="flex flex-col gap-4 p-5">
         <div className="flex items-center justify-between">
           <PriceTag

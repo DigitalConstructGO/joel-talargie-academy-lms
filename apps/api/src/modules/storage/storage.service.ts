@@ -158,6 +158,19 @@ export class StorageService {
     }
   }
 
+  async streamCourseThumbnail(filename: string): Promise<FileStreamDescriptor> {
+    const sanitized = filename.replace(/^course-thumbnails\//, '').replace(/[\\/]/g, '');
+    const key = `${UPLOAD_CATEGORY_FOLDER.COURSE_THUMBNAIL}/${sanitized}`;
+    try {
+      return await this.local.readDescriptor(key, sanitized);
+    } catch {
+      throw new NotFoundException({
+        code: 'COURSE_THUMBNAIL_NOT_FOUND',
+        message: 'Course thumbnail not found',
+      });
+    }
+  }
+
   async registerCourseThumbnail(actor: AuthUser, file?: Express.Multer.File) {
     if (!file?.buffer?.length)
       throw new UnprocessableEntityException({

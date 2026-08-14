@@ -31,6 +31,7 @@ export function OrderSummaryCard({ course, redemption }: OrderSummaryCardProps) 
             title={course.title}
             categoryName={course.categoryName}
             categorySlug={course.categorySlug}
+            thumbnailKey={course.thumbnailKey}
             className="aspect-square w-16 shrink-0 rounded-lg"
           />
           <div className="min-w-0">

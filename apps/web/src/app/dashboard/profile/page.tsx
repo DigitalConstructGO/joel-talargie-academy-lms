@@ -409,6 +409,7 @@ export default function ProfilePage() {
                       href={ROUTES.dashboard.learn(enrollment.id)}
                       category={enrollment.categoryName}
                       categorySlug={enrollment.categorySlug}
+                      thumbnailKey={enrollment.thumbnailKey}
                       title={enrollment.courseTitle}
                       progressPercent={enrollment.progressPercentage}
                       {...estimateLessonProgress(
@@ -450,6 +451,7 @@ export default function ProfilePage() {
                       href={ROUTES.dashboard.learn(enrollment.id)}
                       category={enrollment.categoryName}
                       categorySlug={enrollment.categorySlug}
+                      thumbnailKey={enrollment.thumbnailKey}
                       title={enrollment.courseTitle}
                       progressPercent={enrollment.progressPercentage}
                     />

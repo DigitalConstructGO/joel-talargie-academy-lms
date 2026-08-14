@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
 import { CatalogService } from '../catalog.service';
@@ -41,7 +42,16 @@ describe('CatalogService', () => {
     updateResource: jest.fn(),
     deleteResource: jest.fn(),
   };
-  const service = new CatalogService(repository as never);
+  const contexts = {
+    resolve: jest.fn().mockResolvedValue({
+      userId: 'admin-1',
+      status: 'ACTIVE',
+      roles: ['ADMINISTRATOR'],
+      permissions: [],
+      isAdministrator: true,
+    }),
+  };
+  const service = new CatalogService(repository as never, contexts as never);
   const actor = { id: 'admin-1' } as never;
 
   beforeEach(() => jest.clearAllMocks());
@@ -311,28 +321,41 @@ describe('CatalogService', () => {
     });
   });
 
-  it('pricing validates and delegates to updateCourse with the pricing event', () => {
-    expect(() =>
+  it('pricing validates and delegates to updateCourse with the pricing event', async () => {
+    await expect(
       service.pricing(actor, 'course-1', {
         accessType: 'PAID',
         price: '-5',
+        currency: 'ETB',
       } as never),
-    ).toThrow(BadRequestException);
+    ).rejects.toThrow(BadRequestException);
 
-    service.pricing(actor, 'course-1', {
+    await service.pricing(actor, 'course-1', {
       accessType: 'PAID',
       price: '50',
+      currency: 'ETB',
     } as never);
     expect(repository.updateCourse).toHaveBeenCalledWith(
       'admin-1',
       'course-1',
-      expect.objectContaining({ price: '50' }),
+      expect.objectContaining({ price: '50', currency: 'ETB' }),
       'course.pricing_updated',
     );
   });
 
-  it('visibility delegates to updateCourse with the visibility event', () => {
-    service.visibility(actor, 'course-1', { visibility: 'PUBLIC' } as never);
+  it('pricing rejects any currency other than ETB', async () => {
+    await expect(
+      service.pricing(actor, 'course-1', {
+        accessType: 'PAID',
+        price: '50',
+        currency: 'USD',
+      } as never),
+    ).rejects.toThrow(BadRequestException);
+    expect(repository.updateCourse).not.toHaveBeenCalled();
+  });
+
+  it('visibility delegates to updateCourse with the visibility event', async () => {
+    await service.visibility(actor, 'course-1', { visibility: 'PUBLIC' } as never);
     expect(repository.updateCourse).toHaveBeenCalledWith(
       'admin-1',
       'course-1',
@@ -341,15 +364,15 @@ describe('CatalogService', () => {
     );
   });
 
-  it('settings validates dates and converts enrollment date strings to Date objects', () => {
-    expect(() =>
+  it('settings validates dates and converts enrollment date strings to Date objects', async () => {
+    await expect(
       service.settings(actor, 'course-1', {
         enrollmentOpenAt: '2026-02-01',
         enrollmentCloseAt: '2026-01-01',
       } as never),
-    ).toThrow(BadRequestException);
+    ).rejects.toThrow(BadRequestException);
 
-    service.settings(actor, 'course-1', {
+    await service.settings(actor, 'course-1', {
       enrollmentOpenAt: '2026-01-01T00:00:00.000Z',
       enrollmentCloseAt: '2026-02-01T00:00:00.000Z',
     } as never);
@@ -364,8 +387,8 @@ describe('CatalogService', () => {
     );
   });
 
-  it('items trims and filters empty entries before replacing them', () => {
-    service.items(actor, 'course-1', 'outcomes', {
+  it('items trims and filters empty entries before replacing them', async () => {
+    await service.items(actor, 'course-1', 'outcomes', {
       items: [' Learn TS ', '   ', 'Build APIs'],
     } as never);
     expect(repository.replaceCourseItems).toHaveBeenCalledWith(
@@ -416,15 +439,15 @@ describe('CatalogService', () => {
     });
   });
 
-  it('unpublish / archiveCourse delegate to courseStatus with the right transition', () => {
-    service.unpublish(actor, 'course-1');
+  it('unpublish / archiveCourse delegate to courseStatus with the right transition', async () => {
+    await service.unpublish(actor, 'course-1');
     expect(repository.courseStatus).toHaveBeenCalledWith(
       'admin-1',
       'course-1',
       'DRAFT',
       'course.unpublished',
     );
-    service.archiveCourse(actor, 'course-1');
+    await service.archiveCourse(actor, 'course-1');
     expect(repository.courseStatus).toHaveBeenCalledWith(
       'admin-1',
       'course-1',
@@ -480,6 +503,113 @@ describe('CatalogService', () => {
         'intro-to-cs-copy',
       );
       expect(result).toEqual({ id: 'course-2' });
+    });
+  });
+
+  describe('course ownership enforcement', () => {
+    const instructorContext = {
+      userId: 'u1',
+      status: 'ACTIVE',
+      roles: ['INSTRUCTOR'],
+      permissions: [],
+      isAdministrator: false,
+    };
+
+    beforeEach(() => {
+      contexts.resolve.mockReset();
+      repository.courseById.mockReset();
+    });
+
+    it('rejects a non-admin managing a course they did not create', async () => {
+      contexts.resolve.mockResolvedValueOnce(instructorContext);
+      repository.courseById.mockResolvedValueOnce({
+        id: 'course-1',
+        createdBy: 'someone-else',
+      });
+      await expect(
+        service.updateCourse(actor, 'course-1', { title: 'Hijack' } as never),
+      ).rejects.toThrow(ForbiddenException);
+      expect(repository.updateCourse).not.toHaveBeenCalled();
+    });
+
+    it('rejects a non-admin publishing/pricing/archiving a course they do not own', async () => {
+      contexts.resolve.mockResolvedValue(instructorContext);
+      repository.courseById.mockResolvedValue({
+        id: 'course-1',
+        createdBy: 'someone-else',
+      });
+      await expect(service.publish(actor, 'course-1')).rejects.toThrow(
+        ForbiddenException,
+      );
+      await expect(
+        service.pricing(actor, 'course-1', {
+          accessType: 'PAID',
+          price: '50',
+          currency: 'ETB',
+        } as never),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(service.archiveCourse(actor, 'course-1')).rejects.toThrow(
+        ForbiddenException,
+      );
+      await expect(
+        service.duplicateCourse(actor, 'course-1', {} as never),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.items(actor, 'course-1', 'outcomes', { items: ['x'] } as never),
+      ).rejects.toThrow(ForbiddenException);
+      expect(repository.updateCourse).not.toHaveBeenCalled();
+      expect(repository.duplicateCourse).not.toHaveBeenCalled();
+    });
+
+    it('allows a non-admin to manage their own course', async () => {
+      contexts.resolve.mockResolvedValueOnce(instructorContext);
+      repository.courseById.mockResolvedValueOnce({
+        id: 'course-1',
+        createdBy: 'admin-1',
+      });
+      repository.updateCourse.mockResolvedValueOnce({ id: 'course-1' });
+      const result = await service.updateCourse(actor, 'course-1', {
+        title: 'My course',
+      } as never);
+      expect(result).toEqual({ id: 'course-1' });
+      expect(repository.updateCourse).toHaveBeenCalledWith(
+        'admin-1',
+        'course-1',
+        expect.objectContaining({ title: 'My course' }),
+      );
+    });
+
+    it('allows a non-admin with courses.manage_all to manage any course', async () => {
+      contexts.resolve.mockResolvedValueOnce({
+        ...instructorContext,
+        permissions: ['courses.manage_all'],
+      });
+      repository.updateCourse.mockResolvedValueOnce({ id: 'course-1' });
+      const result = await service.updateCourse(actor, 'course-1', {
+        title: 'Managed',
+      } as never);
+      expect(result).toEqual({ id: 'course-1' });
+    });
+
+    it('throws NotFoundException when a non-admin manages a missing course', async () => {
+      contexts.resolve.mockResolvedValueOnce(instructorContext);
+      repository.courseById.mockResolvedValueOnce(undefined);
+      await expect(
+        service.archiveCourse(actor, 'missing'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('rejects a non-active or missing authorization context', async () => {
+      contexts.resolve.mockResolvedValueOnce({
+        userId: 'u1',
+        status: 'SUSPENDED',
+        roles: [],
+        permissions: [],
+        isAdministrator: false,
+      });
+      await expect(
+        service.updateCourse(actor, 'course-1', {} as never),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 

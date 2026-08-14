@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -34,9 +34,11 @@ import {
   useUpdateCourseSettings,
   useUpdateCourseVisibility,
 } from '@/features/catalog/hooks/use-admin-courses';
+import { CourseThumbnailUploader } from '@/features/catalog/components/course-thumbnail-uploader';
 import type { CourseAccessType, CourseDifficulty } from '@/features/catalog/types/catalog.types';
 import type { CourseVisibility } from '@/features/catalog/types/admin-course.types';
 import { ROUTES } from '@/constants/routes';
+import { extractErrorMessage } from '@/lib/api/api-error';
 import { toast } from '@/lib/toast';
 
 const basicsSchema = z.object({
@@ -147,6 +149,61 @@ function BasicsTab({
   );
 }
 
+function ThumbnailTab({
+  courseId,
+  course,
+}: {
+  courseId: string;
+  course: {
+    title: string;
+    thumbnailKey: string | null;
+    categoryName?: string;
+    categorySlug?: string;
+  };
+}) {
+  const updateCourse = useUpdateCourse();
+  const [thumbnailKey, setThumbnailKey] = useState<string | null>(course.thumbnailKey);
+
+  useEffect(() => {
+    setThumbnailKey(course.thumbnailKey);
+  }, [course.thumbnailKey]);
+
+  async function handleThumbnailChange(newKey: string | null) {
+    setThumbnailKey(newKey);
+    try {
+      await updateCourse.mutateAsync({
+        courseId,
+        input: {
+          thumbnailKey: newKey,
+        },
+      });
+      toast.success(newKey ? 'Thumbnail updated' : 'Thumbnail removed');
+    } catch (error) {
+      const message = extractErrorMessage(error, 'Could not update thumbnail');
+      toast.error('Could not update thumbnail', message);
+    }
+  }
+
+  return (
+    <div className="space-y-4 max-w-2xl">
+      <div>
+        <h3 className="text-sm font-semibold text-foreground">Course Thumbnail</h3>
+        <p className="text-xs text-muted-foreground mt-1 mb-4">
+          Upload a custom image to represent this course across the catalog and student dashboard.
+        </p>
+      </div>
+      <CourseThumbnailUploader
+        value={thumbnailKey}
+        onChange={handleThumbnailChange}
+        title={course.title}
+        categoryName={course.categoryName}
+        categorySlug={course.categorySlug}
+        disabled={updateCourse.isPending}
+      />
+    </div>
+  );
+}
+
 function PricingTab({
   courseId,
   course,
@@ -163,7 +220,13 @@ function PricingTab({
   const [accessType, setAccessType] = useState<CourseAccessType>(course.accessType);
   const [price, setPrice] = useState(course.price);
   const [discountPrice, setDiscountPrice] = useState(course.discountPrice ?? '');
-  const [currency, setCurrency] = useState(course.currency);
+  const currency = 'ETB';
+
+  useEffect(() => {
+    setAccessType(course.accessType);
+    setPrice(course.price);
+    setDiscountPrice(course.discountPrice ?? '');
+  }, [course.accessType, course.price, course.discountPrice]);
 
   async function handleSave() {
     try {
@@ -172,8 +235,9 @@ function PricingTab({
         input: { accessType, price: price || '0', discountPrice: discountPrice || null, currency },
       });
       toast.success('Pricing updated');
-    } catch {
-      toast.error('Could not update pricing');
+    } catch (error) {
+      const message = extractErrorMessage(error, 'Could not update pricing');
+      toast.error('Could not update pricing', message);
     }
   }
 
@@ -220,12 +284,7 @@ function PricingTab({
           </div>
           <div className="space-y-2">
             <Label htmlFor="currency">Currency</Label>
-            <Input
-              id="currency"
-              maxLength={3}
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-            />
+            <Input id="currency" value={currency} disabled aria-readonly readOnly />
           </div>
         </div>
       )}
@@ -248,12 +307,18 @@ function VisibilityTab({
   const [visibility, setVisibility] = useState<CourseVisibility>(course.visibility);
   const [featured, setFeatured] = useState(course.featured);
 
+  useEffect(() => {
+    setVisibility(course.visibility);
+    setFeatured(course.featured);
+  }, [course.visibility, course.featured]);
+
   async function handleSave() {
     try {
       await updateVisibility.mutateAsync({ courseId, input: { visibility, featured } });
       toast.success('Visibility updated');
-    } catch {
-      toast.error('Could not update visibility');
+    } catch (error) {
+      const message = extractErrorMessage(error, 'Could not update visibility');
+      toast.error('Could not update visibility', message);
     }
   }
 
@@ -301,6 +366,11 @@ function SettingsTab({
   const [certificateEnabled, setCertificateEnabled] = useState(course.certificateEnabled);
   const [capacity, setCapacity] = useState(course.capacity?.toString() ?? '');
 
+  useEffect(() => {
+    setCertificateEnabled(course.certificateEnabled);
+    setCapacity(course.capacity?.toString() ?? '');
+  }, [course.certificateEnabled, course.capacity]);
+
   async function handleSave() {
     try {
       await updateSettings.mutateAsync({
@@ -311,8 +381,9 @@ function SettingsTab({
         },
       });
       toast.success('Settings updated');
-    } catch {
-      toast.error('Could not update settings');
+    } catch (error) {
+      const message = extractErrorMessage(error, 'Could not update settings');
+      toast.error('Could not update settings', message);
     }
   }
 
@@ -361,17 +432,25 @@ function ListEditor({
   isSaving: boolean;
   placeholder: string;
 }) {
-  const [values, setValues] = useState(items);
+  const [values, setValues] = useState<string[]>(() =>
+    (items ?? []).map((item) => (typeof item === 'string' ? item : (item ? String(item) : ''))),
+  );
+
+  useEffect(() => {
+    setValues((items ?? []).map((item) => (typeof item === 'string' ? item : (item ? String(item) : ''))));
+  }, [items]);
 
   return (
     <div className="space-y-3">
       {values.map((value, index) => (
         <div key={index} className="flex gap-2">
           <Input
-            value={value}
+            value={value ?? ''}
             placeholder={placeholder}
             onChange={(e) =>
-              setValues((prev) => prev.map((item, i) => (i === index ? e.target.value : item)))
+              setValues((prev) =>
+                prev.map((item, i) => (i === index ? e.target.value : (item ?? ''))),
+              )
             }
           />
           <Button
@@ -395,7 +474,12 @@ function ListEditor({
       </Button>
       <div>
         <Button
-          onClick={() => onSave(values.map((v) => v.trim()).filter(Boolean))}
+          onClick={() => {
+            const cleanItems = (values ?? [])
+              .map((v) => (typeof v === 'string' ? v.trim() : (v ? String(v).trim() : '')))
+              .filter(Boolean);
+            onSave(cleanItems);
+          }}
           disabled={isSaving}
         >
           {isSaving && <Loader2 className="mr-2 size-4 animate-spin" />}
@@ -468,6 +552,7 @@ export default function AdminCourseEditPage() {
             <Tabs defaultValue="basics">
               <TabsList className="mb-6 flex-wrap">
                 <TabsTrigger value="basics">Basics</TabsTrigger>
+                <TabsTrigger value="thumbnail">Thumbnail</TabsTrigger>
                 <TabsTrigger value="pricing">Pricing</TabsTrigger>
                 <TabsTrigger value="visibility">Visibility</TabsTrigger>
                 <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -476,6 +561,9 @@ export default function AdminCourseEditPage() {
               </TabsList>
               <TabsContent value="basics">
                 <BasicsTab courseId={courseId} course={course} />
+              </TabsContent>
+              <TabsContent value="thumbnail">
+                <ThumbnailTab courseId={courseId} course={course} />
               </TabsContent>
               <TabsContent value="pricing">
                 <PricingTab courseId={courseId} course={course} />
@@ -488,7 +576,7 @@ export default function AdminCourseEditPage() {
               </TabsContent>
               <TabsContent value="outcomes">
                 <ListEditor
-                  items={course.outcomes.map((o) => o.text)}
+                  items={(course.outcomes ?? []).map((o) => o?.text ?? '')}
                   onSave={handleSaveOutcomes}
                   isSaving={updateOutcomes.isPending}
                   placeholder="What will students learn?"
@@ -496,7 +584,7 @@ export default function AdminCourseEditPage() {
               </TabsContent>
               <TabsContent value="requirements">
                 <ListEditor
-                  items={course.requirements.map((r) => r.text)}
+                  items={(course.requirements ?? []).map((r) => r?.text ?? '')}
                   onSave={handleSaveRequirements}
                   isSaving={updateRequirements.isPending}
                   placeholder="What do students need before starting?"

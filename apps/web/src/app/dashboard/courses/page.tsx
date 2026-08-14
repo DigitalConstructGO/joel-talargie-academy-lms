@@ -196,6 +196,7 @@ export default function CoursesPage() {
               href={ROUTES.dashboard.learn(enrollment.id)}
               category={enrollment.categoryName}
               categorySlug={enrollment.categorySlug}
+              thumbnailKey={enrollment.thumbnailKey}
               title={enrollment.courseTitle}
               progressPercent={enrollment.progressPercentage}
               {...estimateLessonProgress(

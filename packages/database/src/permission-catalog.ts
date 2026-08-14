@@ -36,6 +36,7 @@ export const PERMISSION_CODES = [
   'courses.manage_pricing',
   'courses.manage_visibility',
   'courses.manage_certificate_settings',
+  'courses.manage_all',
   'sections.read',
   'sections.create',
   'sections.update',

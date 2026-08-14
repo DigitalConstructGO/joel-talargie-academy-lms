@@ -27,7 +27,16 @@ describe('CatalogService', () => {
     duplicateCourse: jest.fn(),
     courseCategory: jest.fn(),
   };
-  const service = new CatalogService(repository as never);
+  const contexts = {
+    resolve: jest.fn().mockResolvedValue({
+      userId: 'actor-id',
+      status: 'ACTIVE',
+      roles: ['ADMINISTRATOR'],
+      permissions: [],
+      isAdministrator: true,
+    }),
+  };
+  const service = new CatalogService(repository as never, contexts as never);
   const actor = { id: 'actor-id' } as never;
   beforeEach(() => jest.clearAllMocks());
 

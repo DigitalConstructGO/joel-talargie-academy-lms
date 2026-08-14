@@ -12,6 +12,7 @@ import { writeFileResponse } from './utils/http-file-response.util';
  * expiry, HMAC-signed with STORAGE_SIGNING_SECRET - it IS the credential,
  * so this route intentionally accepts no bearer token.
  */
+@Public()
 @Controller('storage')
 @ApiTags('Signed File Downloads')
 export class PublicStorageFilesController {
@@ -31,5 +32,19 @@ export class PublicStorageFilesController {
   ) {
     const descriptor = await this.storage.streamByToken(token);
     writeFileResponse(response, descriptor, descriptor.disposition);
+  }
+
+  @Public()
+  @Get('course-thumbnails/:filename')
+  @Throttle({ default: { limit: 120, ttl: 60_000 } })
+  @ApiOperation({
+    summary: 'Stream a public course thumbnail image',
+  })
+  async streamThumbnail(
+    @Param('filename') filename: string,
+    @Res() response: Response,
+  ) {
+    const descriptor = await this.storage.streamCourseThumbnail(filename);
+    writeFileResponse(response, descriptor, 'inline');
   }
 }

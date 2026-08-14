@@ -100,6 +100,7 @@ export const mockAdminCoursesApi = {
       if (params.difficulty && course.difficulty !== params.difficulty) return false;
       if (params.categoryId && course.categoryId !== params.categoryId) return false;
       if (params.featured !== undefined && course.featured !== params.featured) return false;
+      if (params.createdBy && course.createdBy !== params.createdBy) return false;
       if (params.search && !course.title.toLowerCase().includes(params.search.toLowerCase()))
         return false;
       return true;
@@ -122,7 +123,7 @@ export const mockAdminCoursesApi = {
       slug: input.slug?.trim() || slugify(input.title),
       shortDescription: input.shortDescription.trim(),
       description: input.description.trim(),
-      thumbnailKey: null,
+      thumbnailKey: input.thumbnailKey ?? null,
       presenterName: input.presenterName?.trim() || '',
       categoryId: input.categoryId,
       categoryName: '',
@@ -130,19 +131,22 @@ export const mockAdminCoursesApi = {
       accessType: input.accessType,
       price: input.price ?? '0',
       discountPrice: input.discountPrice ?? null,
-      currency: input.currency ?? 'USD',
+      currency: input.currency ?? 'ETB',
       difficulty: input.difficulty,
       estimatedDurationMinutes: input.estimatedDurationMinutes ?? null,
       status: 'DRAFT',
-      visibility: 'PRIVATE',
-      certificateEnabled: false,
-      featured: false,
+      visibility: input.visibility ?? 'PUBLIC',
+      certificateEnabled: input.certificateEnabled ?? false,
+      featured: input.featured ?? false,
       publishedAt: null,
+      createdBy: 'user-1',
+      creatorName: 'Meron Alemu',
+      creator: { id: 'user-1', email: 'meron@academy.test', name: 'Meron Alemu' },
       enrollmentOpenAt: null,
       enrollmentCloseAt: null,
-      capacity: null,
-      outcomes: [],
-      requirements: [],
+      capacity: input.capacity ?? null,
+      outcomes: (input.outcomes ?? []).map((text, i) => ({ id: `outcome-${i}`, text, sortOrder: i })),
+      requirements: (input.requirements ?? []).map((text, i) => ({ id: `req-${i}`, text, sortOrder: i })),
       sections: [],
       readiness: { ready: false, issues: ['At least one section with a lesson is required.'] },
       archivedAt: null,

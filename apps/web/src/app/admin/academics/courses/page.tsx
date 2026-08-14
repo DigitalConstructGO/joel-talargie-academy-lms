@@ -3,19 +3,22 @@
 import Link from 'next/link';
 import { useMemo } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Copy, Eye, Loader2, MoreHorizontal, Pencil, Plus, Rocket, Trash2 } from 'lucide-react';
+import { Eye, Loader2, MoreHorizontal, Pencil, Plus, Rocket, SearchX, Trash2 } from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
 import { PageHeader } from '@/components/common/page-header';
 import { PageBreadcrumb } from '@/components/common/page-breadcrumb';
 import { DataTable } from '@/components/common/data-table';
 import { DynamicPagination } from '@/components/common/dynamic-pagination';
 import { SearchBar } from '@/components/common/search-bar';
+import { EmptyState } from '@/components/common/empty-state';
 import { ErrorState } from '@/components/common/error-state';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { FilterBar } from '@/components/dashboard/filters/filter-bar';
 import { SelectFilter } from '@/components/dashboard/filters/select-filter';
+import { ViewSwitcher } from '@/components/dashboard/filters/view-switcher';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,14 +27,18 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Can } from '@/components/auth/can';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQueryFilters } from '@/hooks/use-query-filters';
+import { usePermissions } from '@/hooks/use-permissions';
+import { useAuthStore } from '@/stores/auth.store';
 import {
   useAdminCourses,
   useArchiveCourse,
-  useDuplicateCourse,
   usePublishCourse,
 } from '@/features/catalog/hooks/use-admin-courses';
 import { useAdminCategories } from '@/features/catalog/hooks/use-admin-categories';
+import { CourseThumbnail } from '@/features/catalog/components/course-thumbnail';
+import { CoursesGridSkeleton } from '@/features/catalog/components/course-card-skeleton';
 import type { AdminCourseSummary, CourseStatus } from '@/features/catalog/types/admin-course.types';
 import type {
   CourseAccessType,
@@ -40,12 +47,14 @@ import type {
 } from '@/features/catalog/types/catalog.types';
 import { ROUTES } from '@/constants/routes';
 import { formatCurrency } from '@/lib/format';
+import { extractErrorMessage } from '@/lib/api/api-error';
 import { toast } from '@/lib/toast';
 
 const PAGE_SIZE = 20;
 
 interface CoursesFilters {
   [key: string]: string | undefined;
+  tab: 'all' | 'my';
   status: 'ALL' | CourseStatus;
   categoryId: string | undefined;
   difficulty: 'ALL' | CourseDifficulty;
@@ -53,9 +62,11 @@ interface CoursesFilters {
   sort: CourseSort;
   featured: 'true' | undefined;
   search: string | undefined;
+  view: 'grid' | 'list';
 }
 
 const DEFAULT_FILTERS: CoursesFilters = {
+  tab: 'all',
   status: 'ALL',
   categoryId: undefined,
   difficulty: 'ALL',
@@ -63,6 +74,7 @@ const DEFAULT_FILTERS: CoursesFilters = {
   sort: 'newest',
   featured: undefined,
   search: undefined,
+  view: 'list',
 };
 
 const STATUS_OPTIONS = [
@@ -104,11 +116,19 @@ export default function AdminCoursesPage() {
     defaults: DEFAULT_FILTERS,
     pageSize: PAGE_SIZE,
   });
-  const { status, categoryId, difficulty, accessType, sort, featured, search } = filters;
+  const { status, categoryId, difficulty, accessType, sort, featured, search, tab, view } = filters;
   const archiveCourse = useArchiveCourse();
   const publishCourse = usePublishCourse();
-  const duplicateCourse = useDuplicateCourse();
   const categoriesQuery = useAdminCategories({ pageSize: 100, isActive: true });
+  const currentUserId = useAuthStore((state) => state.user?.id);
+  const { can } = usePermissions();
+
+  // A course can be managed by administrators, anyone with the explicit
+  // `courses.manage_all` permission, or the user who created it (non-admins
+  // are limited to their own courses on the backend).
+  const canManageCourse = (course: AdminCourseSummary) =>
+    can('courses.manage_all') ||
+    (currentUserId != null && course.createdBy === currentUserId);
 
   const coursesQuery = useAdminCourses({
     page,
@@ -120,6 +140,7 @@ export default function AdminCoursesPage() {
     accessType: accessType === 'ALL' ? undefined : accessType,
     sort,
     featured: featured === 'true' ? true : undefined,
+    createdBy: tab === 'my' && currentUserId ? currentUserId : undefined,
   });
 
   const totalPages = Math.max(1, Math.ceil((coursesQuery.data?.total ?? 0) / pageSize));
@@ -128,8 +149,9 @@ export default function AdminCoursesPage() {
     try {
       await archiveCourse.mutateAsync({ courseId, input: undefined });
       toast.success('Course archived');
-    } catch {
-      toast.error('Could not archive this course');
+    } catch (error) {
+      const message = extractErrorMessage(error, 'Could not archive this course');
+      toast.error('Could not archive this course', message);
     }
   }
 
@@ -137,20 +159,12 @@ export default function AdminCoursesPage() {
     try {
       await publishCourse.mutateAsync({ courseId, input: undefined });
       toast.success('Course published');
-    } catch {
-      toast.error(
-        'Could not publish this course',
-        'Check the course has at least one section and lesson.',
+    } catch (error) {
+      const message = extractErrorMessage(
+        error,
+        'Course is not ready to publish. Please ensure you have added curriculum sections, published lessons, and learning outcomes.',
       );
-    }
-  }
-
-  async function handleDuplicate(courseId: string) {
-    try {
-      await duplicateCourse.mutateAsync({ courseId, input: {} });
-      toast.success('Course duplicated');
-    } catch {
-      toast.error('Could not duplicate this course');
+      toast.error('Could not publish this course', message);
     }
   }
 
@@ -158,18 +172,48 @@ export default function AdminCoursesPage() {
     () => [
       {
         accessorKey: 'title',
-        header: 'Title',
+        header: 'Course',
         cell: ({ row }) => (
-          <Link
-            href={ROUTES.admin.academicsCourseDetail(row.original.id)}
-            className="font-medium text-foreground hover:underline"
-          >
-            {row.original.title}
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href={ROUTES.admin.academicsCourseDetail(row.original.id)}
+              className="shrink-0 overflow-hidden rounded-md border border-border transition-opacity hover:opacity-80"
+            >
+              <CourseThumbnail
+                title={row.original.title}
+                categoryName={row.original.categoryName}
+                categorySlug={row.original.categorySlug}
+                thumbnailKey={row.original.thumbnailKey}
+                showBadge={false}
+                className="h-10 w-16 rounded-none object-cover"
+              />
+            </Link>
+            <div className="min-w-0">
+              <Link
+                href={ROUTES.admin.academicsCourseDetail(row.original.id)}
+                className="font-medium text-foreground hover:underline line-clamp-1"
+              >
+                {row.original.title}
+              </Link>
+              <p className="text-xs text-muted-foreground line-clamp-1">
+                {row.original.categoryName} • {row.original.difficulty}
+              </p>
+            </div>
+          </div>
         ),
       },
       { accessorKey: 'categoryName', header: 'Category' },
       { accessorKey: 'presenterName', header: 'Instructor' },
+      ...(tab === 'all'
+        ? [
+            {
+              accessorKey: 'creatorName' as const,
+              header: 'Creator',
+              cell: ({ row }: { row: { original: AdminCourseSummary } }) =>
+                row.original.creatorName || '—',
+            },
+          ]
+        : []),
       {
         accessorKey: 'price',
         header: 'Price',
@@ -203,86 +247,71 @@ export default function AdminCoursesPage() {
                 </Link>
               </DropdownMenuItem>
               <Can permission="courses.update">
-                <DropdownMenuItem asChild>
-                  <Link href={ROUTES.admin.academicsCourseEdit(row.original.id)} className="gap-2">
-                    <Pencil className="size-4" /> Edit
-                  </Link>
-                </DropdownMenuItem>
+                {canManageCourse(row.original) && (
+                  <DropdownMenuItem asChild>
+                    <Link href={ROUTES.admin.academicsCourseEdit(row.original.id)} className="gap-2">
+                      <Pencil className="size-4" /> Edit
+                    </Link>
+                  </DropdownMenuItem>
+                )}
               </Can>
               {row.original.status !== 'PUBLISHED' && (
                 <Can permission="courses.publish">
-                  <DropdownMenuItem
-                    className="gap-2"
-                    disabled={
-                      publishCourse.isPending &&
-                      publishCourse.variables?.courseId === row.original.id
-                    }
-                    onSelect={(event) => {
-                      event.preventDefault();
-                      handlePublish(row.original.id);
-                    }}
-                  >
-                    {publishCourse.isPending &&
-                    publishCourse.variables?.courseId === row.original.id ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <Rocket className="size-4" />
-                    )}
-                    Publish
-                  </DropdownMenuItem>
+                  {canManageCourse(row.original) && (
+                    <DropdownMenuItem
+                      className="gap-2"
+                      disabled={
+                        publishCourse.isPending &&
+                        publishCourse.variables?.courseId === row.original.id
+                      }
+                      onSelect={(event) => {
+                        event.preventDefault();
+                        handlePublish(row.original.id);
+                      }}
+                    >
+                      {publishCourse.isPending &&
+                      publishCourse.variables?.courseId === row.original.id ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Rocket className="size-4" />
+                      )}
+                      Publish
+                    </DropdownMenuItem>
+                  )}
                 </Can>
               )}
-              <Can permission="courses.duplicate">
-                <DropdownMenuItem
-                  className="gap-2"
-                  disabled={
-                    duplicateCourse.isPending &&
-                    duplicateCourse.variables?.courseId === row.original.id
-                  }
-                  onSelect={(event) => {
-                    event.preventDefault();
-                    handleDuplicate(row.original.id);
-                  }}
-                >
-                  {duplicateCourse.isPending &&
-                  duplicateCourse.variables?.courseId === row.original.id ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <Copy className="size-4" />
-                  )}
-                  Duplicate
-                </DropdownMenuItem>
-              </Can>
               <Can permission="courses.archive">
-                <ConfirmDialog
-                  trigger={
-                    <DropdownMenuItem
-                      onSelect={(event) => event.preventDefault()}
-                      className="gap-2 text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="size-4" /> Archive
-                    </DropdownMenuItem>
-                  }
-                  title="Archive this course?"
-                  description="Students already enrolled keep their access. The course is hidden from the catalog."
-                  confirmLabel="Archive"
-                  variant="destructive"
-                  onConfirm={() => handleArchive(row.original.id)}
-                />
+                {canManageCourse(row.original) && (
+                  <ConfirmDialog
+                    trigger={
+                      <DropdownMenuItem
+                        onSelect={(event) => event.preventDefault()}
+                        className="gap-2 text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="size-4" /> Archive
+                      </DropdownMenuItem>
+                    }
+                    title="Archive this course?"
+                    description="Students already enrolled keep their access. The course is hidden from the catalog."
+                    confirmLabel="Archive"
+                    variant="destructive"
+                    onConfirm={() => handleArchive(row.original.id)}
+                  />
+                )}
               </Can>
             </DropdownMenuContent>
           </DropdownMenu>
         ),
       },
     ],
-    // Re-derive columns whenever publish/duplicate pending state changes, so
+    // Re-derive columns whenever publish/archive pending state changes, so
     // the row-specific spinner reflects live mutation state.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleArchive/handlePublish/handleDuplicate are stable per render via mutation identity
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleArchive/handlePublish are stable per render via mutation identity
     [
+      tab,
+      canManageCourse,
       publishCourse.isPending,
       publishCourse.variables,
-      duplicateCourse.isPending,
-      duplicateCourse.variables,
     ],
   );
 
@@ -309,6 +338,17 @@ export default function AdminCoursesPage() {
           </Can>
         }
       />
+
+      <Tabs
+        value={tab}
+        onValueChange={(value) => setFilter('tab', value as CoursesFilters['tab'])}
+        className="mb-4"
+      >
+        <TabsList>
+          <TabsTrigger value="all">All courses</TabsTrigger>
+          <TabsTrigger value="my">My courses</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       <FilterBar>
         <SearchBar
@@ -361,18 +401,197 @@ export default function AdminCoursesPage() {
           />
           Featured only
         </label>
+        <div className="ml-auto">
+          <ViewSwitcher
+            view={view === 'grid' ? 'grid' : 'list'}
+            onChange={(next) => setFilter('view', next)}
+          />
+        </div>
       </FilterBar>
 
       {coursesQuery.isError ? (
         <ErrorState onRetry={() => coursesQuery.refetch()} description="Unable to load courses." />
+      ) : (view ?? 'list') === 'grid' ? (
+        <>
+          {coursesQuery.isLoading ? (
+            <CoursesGridSkeleton count={pageSize} view="grid" />
+          ) : (coursesQuery.data?.items ?? []).length === 0 ? (
+            <EmptyState
+              icon={SearchX}
+              title={tab === 'my' ? 'No courses yet' : 'No courses found'}
+              description={
+                tab === 'my'
+                  ? 'You have not created any courses yet. Use New Course to get started.'
+                  : 'No courses match your filters.'
+              }
+            />
+          ) : (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {coursesQuery.data?.items.map((course) => (
+                <Card
+                  key={course.id}
+                  className="group flex flex-col justify-between overflow-hidden transition-shadow hover:shadow-md"
+                >
+                  <div>
+                    <div className="relative">
+                      <Link href={ROUTES.admin.academicsCourseDetail(course.id)}>
+                        <CourseThumbnail
+                          title={course.title}
+                          categoryName={course.categoryName}
+                          categorySlug={course.categorySlug}
+                          thumbnailKey={course.thumbnailKey}
+                        />
+                      </Link>
+                      <div className="absolute left-2 top-2 flex flex-wrap gap-1">
+                        <Badge variant={STATUS_VARIANT[course.status]}>{course.status}</Badge>
+                        {course.featured && <Badge variant="secondary">Featured</Badge>}
+                      </div>
+                      <div className="absolute right-2 top-2">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="secondary"
+                              size="icon"
+                              className="size-8 rounded-full bg-background/80 shadow-xs backdrop-blur-sm hover:bg-background"
+                              aria-label="Actions"
+                            >
+                              <MoreHorizontal className="size-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link
+                                href={ROUTES.admin.academicsCourseDetail(course.id)}
+                                className="gap-2"
+                              >
+                                <Eye className="size-4" /> View
+                              </Link>
+                            </DropdownMenuItem>
+                            <Can permission="courses.update">
+                              {canManageCourse(course) && (
+                                <DropdownMenuItem asChild>
+                                  <Link
+                                    href={ROUTES.admin.academicsCourseEdit(course.id)}
+                                    className="gap-2"
+                                  >
+                                    <Pencil className="size-4" /> Edit
+                                  </Link>
+                                </DropdownMenuItem>
+                              )}
+                            </Can>
+                            {course.status !== 'PUBLISHED' && (
+                              <Can permission="courses.publish">
+                                {canManageCourse(course) && (
+                                  <DropdownMenuItem
+                                    className="gap-2"
+                                    disabled={
+                                      publishCourse.isPending &&
+                                      publishCourse.variables?.courseId === course.id
+                                    }
+                                    onSelect={(event) => {
+                                      event.preventDefault();
+                                      handlePublish(course.id);
+                                    }}
+                                  >
+                                    {publishCourse.isPending &&
+                                    publishCourse.variables?.courseId === course.id ? (
+                                      <Loader2 className="size-4 animate-spin" />
+                                    ) : (
+                                      <Rocket className="size-4" />
+                                    )}
+                                    Publish
+                                  </DropdownMenuItem>
+                                )}
+                              </Can>
+                            )}
+                            <Can permission="courses.archive">
+                              {canManageCourse(course) && (
+                                <ConfirmDialog
+                                  trigger={
+                                    <DropdownMenuItem
+                                      onSelect={(event) => event.preventDefault()}
+                                      className="gap-2 text-destructive focus:text-destructive"
+                                    >
+                                      <Trash2 className="size-4" /> Archive
+                                    </DropdownMenuItem>
+                                  }
+                                  title="Archive this course?"
+                                  description="Students already enrolled keep their access. The course is hidden from the catalog."
+                                  confirmLabel="Archive"
+                                  variant="destructive"
+                                  onConfirm={() => handleArchive(course.id)}
+                                />
+                              )}
+                            </Can>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                    <CardContent className="space-y-2 p-4">
+                      <Link
+                        href={ROUTES.admin.academicsCourseDetail(course.id)}
+                        className="line-clamp-2 text-sm font-semibold text-foreground group-hover:text-brand"
+                      >
+                        {course.title}
+                      </Link>
+                      <p className="line-clamp-2 text-xs text-muted-foreground">
+                        {course.shortDescription}
+                      </p>
+                      <div className="flex items-center justify-between pt-1 text-xs text-muted-foreground">
+                        <span>by {course.presenterName || '—'}</span>
+                        <span>{course.difficulty}</span>
+                      </div>
+                    </CardContent>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-border bg-muted/20 px-4 py-3">
+                    <span className="text-sm font-semibold text-foreground">
+                      {course.accessType === 'FREE'
+                        ? 'Free'
+                        : formatCurrency(course.discountPrice ?? course.price, course.currency)}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <Button asChild size="sm" variant="ghost" className="h-8 px-2 text-xs">
+                        <Link href={ROUTES.admin.academicsCourseDetail(course.id)}>
+                          <Eye className="mr-1 size-3.5" /> View
+                        </Link>
+                      </Button>
+                      <Can permission="courses.update">
+                        {canManageCourse(course) && (
+                          <Button asChild size="sm" variant="ghost" className="h-8 px-2 text-xs">
+                            <Link href={ROUTES.admin.academicsCourseEdit(course.id)}>
+                              <Pencil className="mr-1 size-3.5" /> Edit
+                            </Link>
+                          </Button>
+                        )}
+                      </Can>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+          {!coursesQuery.isLoading && (coursesQuery.data?.items.length ?? 0) > 0 && (
+            <DynamicPagination
+              page={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              showFirstLast
+              isLoading={coursesQuery.isFetching}
+            />
+          )}
+        </>
       ) : (
         <>
           <DataTable
             columns={columns}
             data={coursesQuery.data?.items ?? []}
             isLoading={coursesQuery.isLoading}
-            emptyTitle="No courses found"
-            emptyDescription="No courses match your filters."
+            emptyTitle={tab === 'my' ? 'No courses yet' : 'No courses found'}
+            emptyDescription={
+              tab === 'my'
+                ? 'You have not created any courses yet. Use New Course to get started.'
+                : 'No courses match your filters.'
+            }
             manualPagination
           />
           {!coursesQuery.isLoading && (coursesQuery.data?.items.length ?? 0) > 0 && (

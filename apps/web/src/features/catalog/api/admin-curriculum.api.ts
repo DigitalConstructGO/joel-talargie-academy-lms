@@ -1,6 +1,4 @@
 import { authClient, unwrap } from '@/lib/api/auth-client';
-import { CATALOG_DATA_SOURCE } from '@/config/data-source.config';
-import { mockAdminCurriculumApi } from '../data/mock-admin-curriculum.api';
 import type {
   AdminLessonDetail,
   AdminLessonResource,
@@ -94,6 +92,5 @@ const liveAdminCurriculumApi = {
     ),
 };
 
-/** Same mock/live switch as `catalogApi` - flips with `NEXT_PUBLIC_CATALOG_DATA_SOURCE`. */
-export const adminCurriculumApi =
-  CATALOG_DATA_SOURCE === 'live' ? liveAdminCurriculumApi : mockAdminCurriculumApi;
+/** Live curriculum-management API - the admin curriculum builder is always DB-backed. */
+export const adminCurriculumApi = liveAdminCurriculumApi;

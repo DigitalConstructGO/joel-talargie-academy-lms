@@ -11,7 +11,7 @@ import { StorageService } from './storage.service';
 
 @Module({
   imports: [DatabaseModule],
-  controllers: [StorageController, PublicStorageFilesController],
+  controllers: [PublicStorageFilesController, StorageController],
   providers: [
     LocalStorageProvider,
     S3StorageProvider,

@@ -38,6 +38,7 @@ const PERMISSION_CODES = [
   'courses.manage_pricing',
   'courses.manage_visibility',
   'courses.manage_certificate_settings',
+  'courses.manage_all',
   'sections.create',
   'sections.update',
   'sections.reorder',

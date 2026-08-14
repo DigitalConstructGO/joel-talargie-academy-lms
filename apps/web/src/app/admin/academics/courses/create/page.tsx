@@ -1,17 +1,19 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus, X } from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
 import { PageHeader } from '@/components/common/page-header';
 import { PageBreadcrumb } from '@/components/common/page-breadcrumb';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -22,27 +24,85 @@ import {
 } from '@/components/ui/select';
 import { useAdminCategories } from '@/features/catalog/hooks/use-admin-categories';
 import { useCreateCourse } from '@/features/catalog/hooks/use-admin-courses';
+import { CourseThumbnailUploader } from '@/features/catalog/components/course-thumbnail-uploader';
+import type { CourseVisibility } from '@/features/catalog/types/admin-course.types';
 import { ROUTES } from '@/constants/routes';
-import { extractFieldErrors } from '@/lib/api/api-error';
+import { extractErrorMessage, extractFieldErrors } from '@/lib/api/api-error';
 import { toast } from '@/lib/toast';
 
-const formSchema = z.object({
-  title: z.string().trim().min(3, 'Enter a course title.').max(180),
-  categoryId: z.string().min(1, 'Select a category.'),
-  shortDescription: z.string().trim().min(10, 'At least 10 characters.').max(500),
-  description: z.string().trim().min(10, 'At least 10 characters.').max(100000),
-  presenterName: z.string().trim().max(180).optional().or(z.literal('')),
-  accessType: z.enum(['FREE', 'PAID']),
-  difficulty: z.enum(['BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'ALL_LEVELS']),
-  price: z.string().optional(),
-});
+const formSchema = z
+  .object({
+    title: z.string().trim().min(3, 'Enter a course title.').max(180),
+    categoryId: z.string().min(1, 'Select a category.'),
+    shortDescription: z.string().trim().min(10, 'At least 10 characters.').max(500),
+    description: z.string().trim().min(10, 'At least 10 characters.').max(100000),
+    presenterName: z.string().trim().max(180).optional().or(z.literal('')),
+    accessType: z.enum(['FREE', 'PAID']),
+    difficulty: z.enum(['BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'ALL_LEVELS']),
+    visibility: z.enum(['PUBLIC', 'PRIVATE', 'UNLISTED']),
+    featured: z.boolean().optional(),
+    certificateEnabled: z.boolean().optional(),
+    price: z.string().optional(),
+    estimatedDurationMinutes: z.string().optional().or(z.literal('')),
+    capacity: z.string().optional().or(z.literal('')),
+  })
+  .refine((values) => values.accessType === 'FREE' || Boolean(values.price?.trim()), {
+    path: ['price'],
+    message: 'Enter a price for paid courses.',
+  });
 
 type FormValues = z.infer<typeof formSchema>;
+
+function ItemListEditor({
+  items,
+  onChange,
+  placeholder,
+}: {
+  items: string[];
+  onChange: (items: string[]) => void;
+  placeholder: string;
+}) {
+  return (
+    <div className="space-y-2">
+      {items.map((value, index) => (
+        <div key={index} className="flex gap-2">
+          <Input
+            value={value ?? ''}
+            placeholder={placeholder}
+            onChange={(e) =>
+              onChange(items.map((item, i) => (i === index ? e.target.value : (item ?? ''))))
+            }
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => onChange(items.filter((_, i) => i !== index))}
+          >
+            <X className="size-4" />
+          </Button>
+        </div>
+      ))}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="gap-2"
+        onClick={() => onChange([...items, ''])}
+      >
+        <Plus className="size-4" /> Add item
+      </Button>
+    </div>
+  );
+}
 
 export default function AdminCourseCreatePage() {
   const router = useRouter();
   const categoriesQuery = useAdminCategories({ pageSize: 100, isActive: true });
   const createCourse = useCreateCourse();
+  const [thumbnailKey, setThumbnailKey] = useState<string | null>(null);
+  const [outcomes, setOutcomes] = useState<string[]>(['']);
+  const [requirements, setRequirements] = useState<string[]>(['']);
 
   const {
     register,
@@ -61,13 +121,26 @@ export default function AdminCourseCreatePage() {
       presenterName: '',
       accessType: 'FREE',
       difficulty: 'ALL_LEVELS',
+      visibility: 'PUBLIC',
+      featured: false,
+      certificateEnabled: false,
       price: '',
+      estimatedDurationMinutes: '',
+      capacity: '',
     },
   });
 
   const accessType = watch('accessType');
   const difficulty = watch('difficulty');
+  const visibility = watch('visibility');
   const categoryId = watch('categoryId');
+  const featured = watch('featured') ?? false;
+  const certificateEnabled = watch('certificateEnabled') ?? false;
+  const courseTitle = watch('title');
+
+  const selectedCategory = (categoriesQuery.data?.items ?? []).find(
+    (category) => category.id === categoryId,
+  );
 
   async function onSubmit(values: FormValues) {
     try {
@@ -76,10 +149,21 @@ export default function AdminCourseCreatePage() {
         categoryId: values.categoryId,
         shortDescription: values.shortDescription.trim(),
         description: values.description.trim(),
+        thumbnailKey: thumbnailKey ?? undefined,
         presenterName: values.presenterName?.trim() || undefined,
         accessType: values.accessType,
         difficulty: values.difficulty,
+        visibility: values.visibility,
+        currency: 'ETB',
+        featured,
+        certificateEnabled,
         price: values.accessType === 'PAID' ? values.price?.trim() || '0' : undefined,
+        estimatedDurationMinutes: values.estimatedDurationMinutes
+          ? Number(values.estimatedDurationMinutes)
+          : undefined,
+        capacity: values.capacity ? Number(values.capacity) : undefined,
+        outcomes: outcomes.map((item) => (item ?? '').trim()).filter(Boolean),
+        requirements: requirements.map((item) => (item ?? '').trim()).filter(Boolean),
       });
       toast.success('Course created as a draft');
       router.push(ROUTES.admin.academicsCourseDetail(course.id));
@@ -88,7 +172,8 @@ export default function AdminCourseCreatePage() {
       for (const { field, message } of fieldErrors) {
         setError(field as keyof FormValues, { message });
       }
-      toast.error('Could not create this course');
+      const message = extractErrorMessage(error, 'Could not create this course');
+      toast.error('Could not create this course', message);
     }
   }
 
@@ -109,7 +194,10 @@ export default function AdminCourseCreatePage() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <Card>
-          <CardContent className="grid gap-4 pt-6 sm:grid-cols-2">
+          <CardHeader>
+            <CardTitle className="text-base">Basics</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 pt-0 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="title">Title</Label>
               <Input id="title" {...register('title')} placeholder="Modern React Development" />
@@ -172,6 +260,38 @@ export default function AdminCourseCreatePage() {
               </Select>
             </div>
             <div className="space-y-2">
+              <Label htmlFor="estimatedDurationMinutes">Estimated duration (minutes, optional)</Label>
+              <Input
+                id="estimatedDurationMinutes"
+                type="number"
+                min="0"
+                {...register('estimatedDurationMinutes')}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Course thumbnail (optional)</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <CourseThumbnailUploader
+              value={thumbnailKey}
+              onChange={setThumbnailKey}
+              title={courseTitle || 'Course thumbnail'}
+              categorySlug={selectedCategory?.slug}
+              categoryName={selectedCategory?.name}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Access & pricing</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 pt-0 sm:grid-cols-2">
+            <div className="space-y-2">
               <Label htmlFor="accessType">Access</Label>
               <Select
                 value={accessType}
@@ -188,10 +308,109 @@ export default function AdminCourseCreatePage() {
             </div>
             {accessType === 'PAID' && (
               <div className="space-y-2">
-                <Label htmlFor="price">Price (USD)</Label>
+                <Label htmlFor="price">Price (ETB)</Label>
                 <Input id="price" type="number" step="0.01" min="0" {...register('price')} />
+                {errors.price && (
+                  <p className="text-sm text-destructive">{errors.price.message}</p>
+                )}
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Visibility & settings</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-0">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="visibility">Visibility</Label>
+                <Select
+                  value={visibility}
+                  onValueChange={(value) =>
+                    setValue('visibility', value as CourseVisibility, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }
+                >
+                  <SelectTrigger id="visibility">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PUBLIC">Public</SelectItem>
+                    <SelectItem value="PRIVATE">Private</SelectItem>
+                    <SelectItem value="UNLISTED">Unlisted</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="capacity">Enrollment capacity (optional)</Label>
+                <Input
+                  id="capacity"
+                  type="number"
+                  min="1"
+                  {...register('capacity')}
+                  placeholder="Unlimited"
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-border px-4 py-3 sm:max-w-md">
+              <div>
+                <Label htmlFor="featured">Featured</Label>
+                <p className="text-xs text-muted-foreground">Highlight on the public homepage.</p>
+              </div>
+              <Switch
+                id="featured"
+                checked={featured}
+                onCheckedChange={(checked) =>
+                  setValue('featured', checked, { shouldDirty: true, shouldValidate: true })
+                }
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-border px-4 py-3 sm:max-w-md">
+              <div>
+                <Label htmlFor="certificateEnabled">Certificate on completion</Label>
+                <p className="text-xs text-muted-foreground">
+                  Issue a certificate when a student finishes.
+                </p>
+              </div>
+              <Switch
+                id="certificateEnabled"
+                checked={certificateEnabled}
+                onCheckedChange={(checked) =>
+                  setValue('certificateEnabled', checked, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Learning outcomes & requirements</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-6 pt-0 lg:grid-cols-2">
+            <div className="space-y-2">
+              <Label>What will students learn?</Label>
+              <ItemListEditor
+                items={outcomes}
+                onChange={setOutcomes}
+                placeholder="e.g. Build a REST API with NestJS"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>What do students need before starting?</Label>
+              <ItemListEditor
+                items={requirements}
+                onChange={setRequirements}
+                placeholder="e.g. Basic JavaScript knowledge"
+              />
+            </div>
           </CardContent>
         </Card>
 

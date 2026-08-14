@@ -44,6 +44,7 @@ export interface UpdateLessonInput {
 export interface AdminLessonResource {
   id: string;
   title: string;
+  label?: string;
   storageKey: string | null;
   externalUrl: string | null;
   originalFileName: string | null;
@@ -66,6 +67,7 @@ export interface AdminLessonDetail {
   durationSeconds: number | null;
   isMandatory: boolean;
   isPreview: boolean;
+  isPublished?: boolean;
   publishedAt: string | null;
   position: number;
   resources: AdminLessonResource[];

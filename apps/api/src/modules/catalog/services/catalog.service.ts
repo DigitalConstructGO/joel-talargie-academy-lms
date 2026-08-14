@@ -1,10 +1,12 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import type { AuthUser } from '../../auth/interfaces/auth-user.interface';
+import { AuthorizationContextService } from '../../authorization/services/authorization-context.service';
 import type {
   CreateCategoryDto,
   CreateCourseDto,
@@ -38,7 +40,38 @@ import {
 
 @Injectable()
 export class CatalogService {
-  constructor(private readonly repository: CatalogRepository) {}
+  constructor(
+    private readonly repository: CatalogRepository,
+    private readonly authorizationContextService: AuthorizationContextService,
+  ) {}
+  private async assertCanManageCourse(actorId: string, courseId: string) {
+    const context = await this.authorizationContextService.resolve(actorId);
+    if (!context || context.status !== 'ACTIVE')
+      throw new ForbiddenException({
+        code: 'INSUFFICIENT_PERMISSIONS',
+        message: 'You do not have permission to perform this action.',
+      });
+    if (context.isAdministrator || context.permissions.includes('courses.manage_all'))
+      return;
+    const course = await this.repository.courseById(courseId);
+    if (!course)
+      throw new NotFoundException({
+        code: 'COURSE_NOT_FOUND',
+        message: 'Course not found',
+      });
+    if (course.createdBy !== actorId)
+      throw new ForbiddenException({
+        code: 'COURSE_NOT_OWNED',
+        message: 'You can only manage courses you created.',
+      });
+  }
+  private assertEtbCurrency(currency: string | undefined) {
+    if (currency && currency !== 'ETB')
+      throw new BadRequestException({
+        code: 'INVALID_COURSE_CURRENCY',
+        message: 'Course currency must be ETB',
+      });
+  }
   private async uniqueSlug(
     kind: 'category' | 'course',
     requested: string | undefined,
@@ -211,11 +244,12 @@ export class CatalogService {
     return this.repository.archiveCategory(actor.id, id);
   }
   async createCourse(actor: AuthUser, dto: CreateCourseDto) {
+    this.assertEtbCurrency(dto.currency);
     validatePricing({
       accessType: dto.accessType,
       price: dto.price ?? '0',
       discountPrice: dto.discountPrice,
-      currency: dto.currency ?? 'USD',
+      currency: dto.currency ?? 'ETB',
     });
     validateDates(dto);
     try {
@@ -230,6 +264,7 @@ export class CatalogService {
     }
   }
   async updateCourse(actor: AuthUser, id: string, dto: UpdateCourseDto) {
+    await this.assertCanManageCourse(actor.id, id);
     if (dto.categoryId) {
       const category = await this.repository.categoryById(dto.categoryId);
       if (!category || category.archivedAt || !category.isActive)
@@ -250,8 +285,10 @@ export class CatalogService {
       this.map(e);
     }
   }
-  pricing(actor: AuthUser, id: string, dto: PricingDto) {
+  async pricing(actor: AuthUser, id: string, dto: PricingDto) {
+    this.assertEtbCurrency(dto.currency);
     validatePricing(dto);
+    await this.assertCanManageCourse(actor.id, id);
     return this.repository.updateCourse(
       actor.id,
       id,
@@ -259,7 +296,8 @@ export class CatalogService {
       'course.pricing_updated',
     );
   }
-  visibility(actor: AuthUser, id: string, dto: VisibilityDto) {
+  async visibility(actor: AuthUser, id: string, dto: VisibilityDto) {
+    await this.assertCanManageCourse(actor.id, id);
     return this.repository.updateCourse(
       actor.id,
       id,
@@ -267,7 +305,8 @@ export class CatalogService {
       'course.visibility_updated',
     );
   }
-  settings(actor: AuthUser, id: string, dto: SettingsDto) {
+  async settings(actor: AuthUser, id: string, dto: SettingsDto) {
+    await this.assertCanManageCourse(actor.id, id);
     validateDates(dto);
     return this.repository.updateCourse(
       actor.id,
@@ -284,12 +323,13 @@ export class CatalogService {
       'course.settings_updated',
     );
   }
-  items(
+  async items(
     actor: AuthUser,
     id: string,
     type: 'outcomes' | 'requirements',
     dto: StringItemsDto,
   ) {
+    await this.assertCanManageCourse(actor.id, id);
     return this.repository.replaceCourseItems(
       actor.id,
       id,
@@ -310,21 +350,36 @@ export class CatalogService {
     return this.repository.listCourses(query);
   }
   async publish(actor: AuthUser, id: string) {
+    await this.assertCanManageCourse(actor.id, id);
     const readiness = await this.repository.readiness(id);
     if (!readiness)
       throw new NotFoundException({
         code: 'COURSE_NOT_FOUND',
         message: 'Course not found',
       });
-    if (!readiness.ready)
+    if (!readiness.ready) {
+      const issueDescriptions: Record<string, string> = {
+        COURSE_DETAILS_REQUIRED: 'Course title and descriptions are required.',
+        SECTION_REQUIRED: 'At least one curriculum section is required before publishing.',
+        PUBLISHED_LESSON_REQUIRED: 'At least one published lesson is required before publishing.',
+        OUTCOME_REQUIRED: 'At least one learning outcome is required before publishing.',
+        VALID_PRICE_REQUIRED: 'Paid courses must have a valid price greater than 0.',
+      };
+      const detailedMessage = readiness.issues
+        .map((issue) => issueDescriptions[issue] || issue)
+        .join(' ');
       throw new ConflictException({
         code: 'COURSE_NOT_READY',
-        message: 'Course is not ready to publish',
+        message:
+          detailedMessage ||
+          'Course is not ready to publish. Please add curriculum sections, published lessons, and outcomes.',
         issues: readiness.issues,
       });
+    }
     return this.repository.publishCourse(actor.id, id);
   }
-  unpublish(actor: AuthUser, id: string) {
+  async unpublish(actor: AuthUser, id: string) {
+    await this.assertCanManageCourse(actor.id, id);
     return this.repository.courseStatus(
       actor.id,
       id,
@@ -332,7 +387,8 @@ export class CatalogService {
       'course.unpublished',
     );
   }
-  archiveCourse(actor: AuthUser, id: string) {
+  async archiveCourse(actor: AuthUser, id: string) {
+    await this.assertCanManageCourse(actor.id, id);
     return this.repository.courseStatus(
       actor.id,
       id,
@@ -341,6 +397,7 @@ export class CatalogService {
     );
   }
   async restoreCourse(actor: AuthUser, id: string) {
+    await this.assertCanManageCourse(actor.id, id);
     const course = await this.repository.courseById(id);
     if (!course)
       throw new NotFoundException({
@@ -360,6 +417,7 @@ export class CatalogService {
     );
   }
   async duplicateCourse(actor: AuthUser, id: string, dto: DuplicateCourseDto) {
+    await this.assertCanManageCourse(actor.id, id);
     const source = await this.repository.courseById(id);
     if (!source)
       throw new NotFoundException({
@@ -509,6 +567,24 @@ export class CatalogService {
         code: 'LESSON_NOT_FOUND',
         message: 'Lesson not found',
       });
+    if (lesson.lessonType === 'VIDEO' && !lesson.videoUrl?.trim()) {
+      throw new BadRequestException({
+        code: 'VIDEO_URL_REQUIRED',
+        message: 'A valid video URL is required before publishing a video lesson.',
+      });
+    }
+    if (lesson.lessonType === 'TEXT' && !lesson.content?.trim()) {
+      throw new BadRequestException({
+        code: 'CONTENT_REQUIRED',
+        message: 'Lesson content/notes are required before publishing a text lesson.',
+      });
+    }
+    if (lesson.lessonType === 'EXTERNAL_LINK' && !lesson.externalUrl?.trim()) {
+      throw new BadRequestException({
+        code: 'EXTERNAL_URL_REQUIRED',
+        message: 'An external URL is required before publishing an external link lesson.',
+      });
+    }
     validateLesson(lesson as unknown as CreateLessonDto);
     return this.repository.updateLesson(
       actor.id,

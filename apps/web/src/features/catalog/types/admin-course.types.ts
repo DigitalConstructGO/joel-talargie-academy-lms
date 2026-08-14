@@ -25,6 +25,8 @@ export interface AdminCourseSummary {
   certificateEnabled: boolean;
   featured: boolean;
   publishedAt: string | null;
+  createdBy: string;
+  creatorName: string | null;
 }
 
 export interface AdminCourseListResult {
@@ -43,6 +45,7 @@ export interface AdminCourseListParams {
   categoryId?: string;
   featured?: boolean;
   sort?: CourseSort;
+  createdBy?: string;
 }
 
 export interface CourseReadiness {
@@ -71,6 +74,7 @@ export interface AdminCourseDetail extends AdminCourseSummary {
   archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  creator: { id: string; email: string; name: string | null } | null;
 }
 
 export interface CreateCourseInput {
@@ -79,6 +83,7 @@ export interface CreateCourseInput {
   slug?: string;
   shortDescription: string;
   description: string;
+  thumbnailKey?: string | null;
   accessType: CourseAccessType;
   difficulty: CourseDifficulty;
   presenterName?: string;
@@ -86,6 +91,12 @@ export interface CreateCourseInput {
   discountPrice?: string;
   currency?: string;
   estimatedDurationMinutes?: number;
+  visibility?: CourseVisibility;
+  certificateEnabled?: boolean;
+  featured?: boolean;
+  capacity?: number | null;
+  outcomes?: string[];
+  requirements?: string[];
 }
 
 export interface UpdateCourseInput {
@@ -93,6 +104,7 @@ export interface UpdateCourseInput {
   title?: string;
   shortDescription?: string;
   description?: string;
+  thumbnailKey?: string | null;
   presenterName?: string;
   difficulty?: CourseDifficulty;
   estimatedDurationMinutes?: number | null;

@@ -388,7 +388,7 @@ export const courses = pgTable(
     featured: boolean('featured').notNull().default(false),
     price: numeric('price', { precision: 12, scale: 2 }).notNull().default('0'),
     discountPrice: numeric('discount_price', { precision: 12, scale: 2 }),
-    currency: text('currency').notNull().default('USD'),
+    currency: text('currency').notNull().default('ETB'),
     difficulty: courseDifficulty('difficulty').notNull().default('ALL_LEVELS'),
     estimatedDurationMinutes: integer('estimated_duration_minutes'),
     certificateEnabled: boolean('certificate_enabled').notNull().default(false),

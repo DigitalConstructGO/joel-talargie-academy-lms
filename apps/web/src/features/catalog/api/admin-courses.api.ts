@@ -1,6 +1,4 @@
 import { authClient, unwrap } from '@/lib/api/auth-client';
-import { CATALOG_DATA_SOURCE } from '@/config/data-source.config';
-import { mockAdminCoursesApi } from '../data/mock-admin-courses.api';
 import type {
   AdminCourseDetail,
   AdminCourseListParams,
@@ -91,6 +89,5 @@ const liveAdminCoursesApi = {
     ),
 };
 
-/** Same mock/live switch as `catalogApi` - flips with `NEXT_PUBLIC_CATALOG_DATA_SOURCE`. */
-export const adminCoursesApi =
-  CATALOG_DATA_SOURCE === 'live' ? liveAdminCoursesApi : mockAdminCoursesApi;
+/** Live course-management API - the admin catalog is always DB-backed. */
+export const adminCoursesApi = liveAdminCoursesApi;

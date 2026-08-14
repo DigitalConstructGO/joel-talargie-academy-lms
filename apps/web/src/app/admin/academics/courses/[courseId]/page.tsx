@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   AlertTriangle,
   BookOpen,
-  Copy,
   ListTree,
   Pencil,
   Rocket,
@@ -23,10 +22,12 @@ import { LoadingButton } from '@/components/ui/loading-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Can } from '@/components/auth/can';
+import { CourseThumbnail } from '@/features/catalog/components/course-thumbnail';
+import { usePermissions } from '@/hooks/use-permissions';
+import { useAuthStore } from '@/stores/auth.store';
 import {
   useAdminCourse,
   useArchiveCourse,
-  useDuplicateCourse,
   usePublishCourse,
   useRestoreCourse,
   useUnpublishCourse,
@@ -35,6 +36,7 @@ import type { CourseStatus } from '@/features/catalog/types/admin-course.types';
 import { ROUTES } from '@/constants/routes';
 import { formatCurrency } from '@/lib/format';
 import { formatDate } from '@/lib/date';
+import { extractErrorMessage } from '@/lib/api/api-error';
 import { toast } from '@/lib/toast';
 
 const STATUS_VARIANT: Record<CourseStatus, 'secondary' | 'success' | 'outline'> = {
@@ -51,15 +53,25 @@ export default function AdminCourseDetailPage() {
   const unpublishCourse = useUnpublishCourse();
   const archiveCourse = useArchiveCourse();
   const restoreCourse = useRestoreCourse();
-  const duplicateCourse = useDuplicateCourse();
   const course = courseQuery.data;
+  const currentUserId = useAuthStore((state) => state.user?.id);
+  const { can } = usePermissions();
+
+  const canManageCourse = (target: typeof course) =>
+    Boolean(target) &&
+    (can('courses.manage_all') ||
+      (currentUserId != null && target!.createdBy === currentUserId));
 
   async function handlePublish() {
     try {
       await publishCourse.mutateAsync({ courseId, input: undefined });
       toast.success('Course published');
-    } catch {
-      toast.error('Could not publish this course');
+    } catch (error) {
+      const message = extractErrorMessage(
+        error,
+        'Course is not ready to publish. Please check that curriculum sections, published lessons, and outcomes exist.',
+      );
+      toast.error('Could not publish this course', message);
     }
   }
 
@@ -67,8 +79,9 @@ export default function AdminCourseDetailPage() {
     try {
       await unpublishCourse.mutateAsync({ courseId, input: undefined });
       toast.success('Course moved back to draft');
-    } catch {
-      toast.error('Could not unpublish this course');
+    } catch (error) {
+      const message = extractErrorMessage(error, 'Could not unpublish this course');
+      toast.error('Could not unpublish this course', message);
     }
   }
 
@@ -77,8 +90,9 @@ export default function AdminCourseDetailPage() {
       await archiveCourse.mutateAsync({ courseId, input: undefined });
       toast.success('Course archived');
       router.push(ROUTES.admin.academicsCourses);
-    } catch {
-      toast.error('Could not archive this course');
+    } catch (error) {
+      const message = extractErrorMessage(error, 'Could not archive this course');
+      toast.error('Could not archive this course', message);
     }
   }
 
@@ -86,18 +100,9 @@ export default function AdminCourseDetailPage() {
     try {
       await restoreCourse.mutateAsync({ courseId, input: undefined });
       toast.success('Course restored to draft');
-    } catch {
-      toast.error('Could not restore this course');
-    }
-  }
-
-  async function handleDuplicate() {
-    try {
-      const duplicate = await duplicateCourse.mutateAsync({ courseId, input: {} });
-      toast.success('Course duplicated');
-      router.push(ROUTES.admin.academicsCourseDetail(duplicate.id));
-    } catch {
-      toast.error('Could not duplicate this course');
+    } catch (error) {
+      const message = extractErrorMessage(error, 'Could not restore this course');
+      toast.error('Could not restore this course', message);
     }
   }
 
@@ -133,11 +138,13 @@ export default function AdminCourseDetailPage() {
           course && (
             <div className="flex flex-wrap gap-2">
               <Can permission="courses.update">
-                <Button asChild variant="outline" className="gap-2">
-                  <Link href={ROUTES.admin.academicsCourseEdit(courseId)}>
-                    <Pencil className="size-4" /> Edit
-                  </Link>
-                </Button>
+                {canManageCourse(course) && (
+                  <Button asChild variant="outline" className="gap-2">
+                    <Link href={ROUTES.admin.academicsCourseEdit(courseId)}>
+                      <Pencil className="size-4" /> Edit
+                    </Link>
+                  </Button>
+                )}
               </Can>
               <Button asChild variant="outline" className="gap-2">
                 <Link href={ROUTES.admin.academicsCourseCurriculum(courseId)}>
@@ -146,71 +153,68 @@ export default function AdminCourseDetailPage() {
               </Button>
               {course.status === 'PUBLISHED' ? (
                 <Can permission="courses.unpublish">
-                  <LoadingButton
-                    variant="outline"
-                    className="gap-2"
-                    onClick={handleUnpublish}
-                    loading={unpublishCourse.isPending}
-                    loadingText="Unpublishing..."
-                  >
-                    Unpublish
-                  </LoadingButton>
+                  {canManageCourse(course) && (
+                    <LoadingButton
+                      variant="outline"
+                      className="gap-2"
+                      onClick={handleUnpublish}
+                      loading={unpublishCourse.isPending}
+                      loadingText="Unpublishing..."
+                    >
+                      Unpublish
+                    </LoadingButton>
+                  )}
                 </Can>
               ) : (
                 course.status !== 'ARCHIVED' && (
                   <Can permission="courses.publish">
-                    <LoadingButton
-                      variant="outline"
-                      className="gap-2"
-                      onClick={handlePublish}
-                      loading={publishCourse.isPending}
-                      loadingText="Publishing..."
-                    >
-                      <Rocket className="size-4" /> Publish
-                    </LoadingButton>
+                    {canManageCourse(course) && (
+                      <LoadingButton
+                        variant="outline"
+                        className="gap-2"
+                        onClick={handlePublish}
+                        loading={publishCourse.isPending}
+                        loadingText="Publishing..."
+                      >
+                        <Rocket className="size-4" /> Publish
+                      </LoadingButton>
+                    )}
                   </Can>
                 )
               )}
-              <Can permission="courses.duplicate">
-                <LoadingButton
-                  variant="outline"
-                  className="gap-2"
-                  onClick={handleDuplicate}
-                  loading={duplicateCourse.isPending}
-                  loadingText="Duplicating..."
-                >
-                  <Copy className="size-4" /> Duplicate
-                </LoadingButton>
-              </Can>
               {course.status === 'ARCHIVED' ? (
                 <Can permission="courses.restore">
-                  <LoadingButton
-                    variant="outline"
-                    className="gap-2"
-                    onClick={handleRestore}
-                    loading={restoreCourse.isPending}
-                    loadingText="Restoring..."
-                  >
-                    <RotateCcw className="size-4" /> Restore
-                  </LoadingButton>
+                  {canManageCourse(course) && (
+                    <LoadingButton
+                      variant="outline"
+                      className="gap-2"
+                      onClick={handleRestore}
+                      loading={restoreCourse.isPending}
+                      loadingText="Restoring..."
+                    >
+                      <RotateCcw className="size-4" /> Restore
+                    </LoadingButton>
+                  )}
                 </Can>
               ) : (
                 <Can permission="courses.archive">
-                  <ConfirmDialog
-                    trigger={
-                      <Button
-                        variant="outline"
-                        className="gap-2 text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="size-4" /> Archive
-                      </Button>
-                    }
-                    title="Archive this course?"
-                    description="Students already enrolled keep their access. The course is hidden from the catalog."
-                    confirmLabel="Archive"
-                    variant="destructive"
-                    onConfirm={handleArchive}
-                  />
+                  {canManageCourse(course) && (
+                    <ConfirmDialog
+                      trigger={
+                        <Button
+                          variant="outline"
+                          className="gap-2 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="size-4" /> Archive
+                        </Button>
+                      }
+                      title="Archive this course?"
+                      description="Students already enrolled keep their access. The course is hidden from the catalog."
+                      confirmLabel="Archive"
+                      variant="destructive"
+                      onConfirm={handleArchive}
+                    />
+                  )}
                 </Can>
               )}
             </div>
@@ -252,6 +256,12 @@ export default function AdminCourseDetailPage() {
                 <div>
                   <p className="text-xs text-muted-foreground">Instructor</p>
                   <p className="font-medium text-foreground">{course.presenterName || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Created by</p>
+                  <p className="font-medium text-foreground">
+                    {course.creator?.name ?? course.creator?.email ?? '—'}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Price</p>
@@ -304,12 +314,23 @@ export default function AdminCourseDetailPage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <BookOpen className="size-4" /> Curriculum
-                </CardTitle>
-              </CardHeader>
+            <div className="space-y-6">
+              <Card className="overflow-hidden">
+                <CourseThumbnail
+                  title={course.title}
+                  categoryName={course.categoryName}
+                  categorySlug={course.categorySlug}
+                  thumbnailKey={course.thumbnailKey}
+                  className="rounded-none aspect-video w-full"
+                />
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <BookOpen className="size-4" /> Curriculum
+                  </CardTitle>
+                </CardHeader>
               <CardContent className="space-y-3">
                 <dl className="space-y-2 text-sm">
                   <div className="flex items-center justify-between">
@@ -330,6 +351,7 @@ export default function AdminCourseDetailPage() {
             </Card>
           </div>
         </div>
+      </div>
       )}
     </ContentContainer>
   );

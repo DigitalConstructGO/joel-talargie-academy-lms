@@ -313,7 +313,7 @@ export class CatalogRepository {
           accessType: dto.accessType,
           price: dto.price ?? '0',
           discountPrice: dto.discountPrice,
-          currency: dto.currency ?? 'USD',
+          currency: dto.currency ?? 'ETB',
           difficulty: dto.difficulty,
           estimatedDurationMinutes: dto.estimatedDurationMinutes,
           visibility: dto.visibility ?? 'PUBLIC',
@@ -537,8 +537,16 @@ export class CatalogRepository {
   async courseDetail(id: string) {
     const course = await this.courseById(id);
     if (!course) return null;
-    const [outcomes, requirements, sections, lessons, resources, readiness] =
-      await Promise.all([
+    const [
+      outcomes,
+      requirements,
+      sections,
+      lessons,
+      resources,
+      readiness,
+      creator,
+      category,
+    ] = await Promise.all([
         this.db
           .select()
           .from(schema.courseOutcomes)
@@ -568,9 +576,36 @@ export class CatalogRepository {
           )
           .where(eq(schema.lessons.courseId, id)),
         this.readiness(id),
+        this.db.query.users.findFirst({
+          where: eq(schema.users.id, course.createdBy),
+          columns: { id: true, email: true },
+        }),
+        this.db.query.categories.findFirst({
+          where: eq(schema.categories.id, course.categoryId),
+          columns: { id: true, name: true, slug: true },
+        }),
       ]);
+    const creatorProfile = creator
+      ? await this.db.query.userProfiles.findFirst({
+          where: eq(schema.userProfiles.userId, creator.id),
+          columns: { firstName: true, lastName: true },
+        })
+      : null;
     return {
       ...course,
+      categoryName: category?.name,
+      categorySlug: category?.slug,
+      creator: creator
+        ? {
+            id: creator.id,
+            email: creator.email,
+            name:
+              creatorProfile &&
+              [creatorProfile.firstName, creatorProfile.lastName]
+                .filter(Boolean)
+                .join(' '),
+          }
+        : null,
       outcomes,
       requirements,
       sections: sections.map((section) => ({
@@ -579,9 +614,18 @@ export class CatalogRepository {
           .filter((x) => x.sectionId === section.id)
           .map((lesson) => ({
             ...lesson,
+            isPublished: Boolean(lesson.isPublished),
+            publishedAt: lesson.isPublished
+              ? ((lesson as unknown as { updatedAt?: string }).updatedAt ??
+                new Date().toISOString())
+              : null,
             resources: resources
               .filter((x) => x.lesson_resources.lessonId === lesson.id)
-              .map((x) => x.lesson_resources),
+              .map((x) => ({
+                ...x.lesson_resources,
+                title: x.lesson_resources.label,
+                sortOrder: x.lesson_resources.position,
+              })),
           })),
       })),
       readiness,
@@ -788,6 +832,9 @@ export class CatalogRepository {
       query.categoryId
         ? eq(schema.courses.categoryId, query.categoryId)
         : undefined,
+      query.createdBy
+        ? eq(schema.courses.createdBy, query.createdBy)
+        : undefined,
       query.featured === undefined
         ? undefined
         : eq(schema.courses.featured, query.featured),
@@ -824,6 +871,8 @@ export class CatalogRepository {
         categoryId: schema.courses.categoryId,
         categoryName: schema.categories.name,
         categorySlug: schema.categories.slug,
+        createdBy: schema.courses.createdBy,
+        creatorName: sql<string | null>`trim(concat(${schema.userProfiles.firstName}, ' ', ${schema.userProfiles.lastName}))`,
         accessType: schema.courses.accessType,
         price: schema.courses.price,
         discountPrice: schema.courses.discountPrice,
@@ -840,6 +889,10 @@ export class CatalogRepository {
       .innerJoin(
         schema.categories,
         eq(schema.categories.id, schema.courses.categoryId),
+      )
+      .leftJoin(
+        schema.userProfiles,
+        eq(schema.userProfiles.userId, schema.courses.createdBy),
       )
       .where(
         and(
@@ -1079,7 +1132,11 @@ export class CatalogRepository {
         entityId: row.id,
         after: { lessonId, title: row.label, visibility: row.visibility },
       });
-      return row;
+      return {
+        ...row,
+        title: row.label,
+        sortOrder: row.position,
+      };
     });
   }
   updateResource(actorId: string, id: string, values: Record<string, unknown>) {

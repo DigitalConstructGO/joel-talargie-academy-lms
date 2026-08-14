@@ -2,15 +2,24 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Loader2, Plus, Trash2 } from 'lucide-react';
+import {
+  Clock,
+  Eye,
+  EyeOff,
+  FileText,
+  Loader2,
+  Paperclip,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
 import { PageHeader } from '@/components/common/page-header';
 import { PageBreadcrumb } from '@/components/common/page-breadcrumb';
 import { ErrorState } from '@/components/common/error-state';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -21,12 +30,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Can } from '@/components/auth/can';
 import { useAdminCourse } from '@/features/catalog/hooks/use-admin-courses';
 import {
   useCreateResource,
   useDeleteResource,
+  usePreviewLesson,
+  usePublishLesson,
+  useUnpublishLesson,
   useUpdateLesson,
 } from '@/features/catalog/hooks/use-admin-curriculum';
 import type {
@@ -34,15 +47,16 @@ import type {
   ResourceVisibility,
 } from '@/features/catalog/types/admin-curriculum.types';
 import { ROUTES } from '@/constants/routes';
-import { formatFileSize } from '@/lib/format';
+import { formatFileSize, formatDurationSeconds } from '@/lib/format';
+import { extractErrorMessage } from '@/lib/api/api-error';
 import { toast } from '@/lib/toast';
 
 const LESSON_TYPE_OPTIONS: { label: string; value: LessonType }[] = [
   { label: 'Video', value: 'VIDEO' },
-  { label: 'Text', value: 'TEXT' },
+  { label: 'Text / Article', value: 'TEXT' },
   { label: 'Document', value: 'DOCUMENT' },
-  { label: 'Download', value: 'DOWNLOAD' },
-  { label: 'External link', value: 'EXTERNAL_LINK' },
+  { label: 'Downloadable File', value: 'DOWNLOAD' },
+  { label: 'External Link', value: 'EXTERNAL_LINK' },
 ];
 
 /**
@@ -74,6 +88,9 @@ export default function AdminLessonDetailPage() {
   const router = useRouter();
   const courseQuery = useAdminCourse(courseId);
   const updateLesson = useUpdateLesson();
+  const publishLesson = usePublishLesson();
+  const unpublishLesson = useUnpublishLesson();
+  const previewLesson = usePreviewLesson();
   const createResource = useCreateResource();
   const deleteResource = useDeleteResource();
 
@@ -85,12 +102,19 @@ export default function AdminLessonDetailPage() {
   const [content, setContent] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [externalUrl, setExternalUrl] = useState('');
-  const [durationSeconds, setDurationSeconds] = useState('');
+  const [durationMinutes, setDurationMinutes] = useState('');
   const [isMandatory, setIsMandatory] = useState(true);
+  const [isPreview, setIsPreview] = useState(false);
   const [resourceTitle, setResourceTitle] = useState('');
   const [resourceUrl, setResourceUrl] = useState('');
 
   const videoUrlError = lessonType === 'VIDEO' ? getVideoUrlError(videoUrl) : null;
+  const externalUrlError =
+    (lessonType === 'EXTERNAL_LINK' || lessonType === 'DOWNLOAD') &&
+    externalUrl.trim() &&
+    !/^https:\/\//i.test(externalUrl.trim())
+      ? 'Must start with https://'
+      : null;
 
   useEffect(() => {
     if (lesson) {
@@ -99,12 +123,24 @@ export default function AdminLessonDetailPage() {
       setContent(lesson.content ?? '');
       setVideoUrl(lesson.videoUrl ?? '');
       setExternalUrl(lesson.externalUrl ?? '');
-      setDurationSeconds(lesson.durationSeconds?.toString() ?? '');
+      setDurationMinutes(
+        lesson.durationSeconds !== null && lesson.durationSeconds !== undefined
+          ? Math.round(lesson.durationSeconds / 60).toString()
+          : '',
+      );
       setIsMandatory(lesson.isMandatory);
+      setIsPreview(lesson.isPreview);
     }
   }, [lesson]);
 
   async function handleSave() {
+    if (!title.trim() || videoUrlError || externalUrlError) return;
+    const parsedMinutes = durationMinutes.trim() ? Number(durationMinutes) : undefined;
+    const durationSeconds =
+      parsedMinutes !== undefined && !Number.isNaN(parsedMinutes) && parsedMinutes >= 0
+        ? Math.round(parsedMinutes * 60)
+        : null;
+
     try {
       await updateLesson.mutateAsync({
         courseId,
@@ -116,14 +152,41 @@ export default function AdminLessonDetailPage() {
             content: content.trim() || null,
             videoUrl: videoUrl.trim() || null,
             externalUrl: externalUrl.trim() || null,
-            durationSeconds: durationSeconds ? Number(durationSeconds) : null,
+            durationSeconds,
             isMandatory,
           },
         ],
       });
+
+      if (lesson && isPreview !== lesson.isPreview) {
+        await previewLesson.mutateAsync({
+          courseId,
+          args: [lessonId, isPreview],
+        });
+      }
+
       toast.success('Lesson updated');
-    } catch {
-      toast.error('Could not update this lesson');
+    } catch (error) {
+      const message = extractErrorMessage(error, 'Could not update this lesson');
+      toast.error('Could not update this lesson', message);
+    }
+  }
+
+  const isPublished = Boolean(lesson?.isPublished || lesson?.publishedAt);
+
+  async function handleTogglePublish() {
+    if (!lesson) return;
+    try {
+      if (isPublished) {
+        await unpublishLesson.mutateAsync({ courseId, args: [lessonId] });
+        toast.success('Lesson unpublished');
+      } else {
+        await publishLesson.mutateAsync({ courseId, args: [lessonId] });
+        toast.success('Lesson published');
+      }
+    } catch (error) {
+      const message = extractErrorMessage(error, 'Could not update publication status');
+      toast.error('Could not update publication status', message);
     }
   }
 
@@ -144,8 +207,9 @@ export default function AdminLessonDetailPage() {
       toast.success('Resource added');
       setResourceTitle('');
       setResourceUrl('');
-    } catch {
-      toast.error('Could not add this resource');
+    } catch (error) {
+      const message = extractErrorMessage(error, 'Could not add this resource');
+      toast.error('Could not add this resource', message);
     }
   }
 
@@ -153,8 +217,9 @@ export default function AdminLessonDetailPage() {
     try {
       await deleteResource.mutateAsync({ courseId, args: [resourceId] });
       toast.success('Resource removed');
-    } catch {
-      toast.error('Could not remove this resource');
+    } catch (error) {
+      const message = extractErrorMessage(error, 'Could not remove this resource');
+      toast.error('Could not remove this resource', message);
     }
   }
 
@@ -185,7 +250,49 @@ export default function AdminLessonDetailPage() {
           { label: lesson?.title ?? 'Lesson' },
         ]}
       />
-      <PageHeader title={lesson?.title ?? 'Lesson details'} description={course?.title} />
+      <PageHeader
+        title={lesson?.title ?? 'Lesson details'}
+        description={course ? `Course: ${course.title}` : undefined}
+        actions={
+          lesson && (
+            <div className="flex items-center gap-2">
+              <Badge variant={isPublished ? 'success' : 'secondary'}>
+                {isPublished ? 'Published' : 'Draft'}
+              </Badge>
+              {isPublished ? (
+                <Can permission="lessons.unpublish">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={handleTogglePublish}
+                    disabled={unpublishLesson.isPending}
+                  >
+                    {unpublishLesson.isPending && (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    )}
+                    Unpublish
+                  </Button>
+                </Can>
+              ) : (
+                <Can permission="lessons.publish">
+                  <Button
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={handleTogglePublish}
+                    disabled={publishLesson.isPending}
+                  >
+                    {publishLesson.isPending && (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    )}
+                    Publish Lesson
+                  </Button>
+                </Can>
+              )}
+            </div>
+          )
+        }
+      />
 
       {courseQuery.isLoading || !lesson ? (
         <Skeleton className="h-96" />
@@ -193,16 +300,16 @@ export default function AdminLessonDetailPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Content</CardTitle>
+              <CardTitle className="text-base">Lesson Content & Configuration</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="lesson-title">Title</Label>
-                <Input id="lesson-title" value={title} onChange={(e) => setTitle(e.target.value)} />
+                <Label htmlFor="lesson-title">Lesson Title</Label>
+                <Input id="lesson-title" value={title} onChange={(e) => setTitle(e.target.value)} required />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="lesson-type">Type</Label>
+                  <Label htmlFor="lesson-type">Lesson Type</Label>
                   <Select value={lessonType} onValueChange={(v) => setLessonType(v as LessonType)}>
                     <SelectTrigger id="lesson-type">
                       <SelectValue />
@@ -217,14 +324,24 @@ export default function AdminLessonDetailPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="duration">Duration (seconds)</Label>
+                  <Label htmlFor="duration" className="flex items-center gap-1.5">
+                    <Clock className="size-3.5 text-muted-foreground" />
+                    Estimated Duration (minutes)
+                  </Label>
                   <Input
                     id="duration"
                     type="number"
                     min="0"
-                    value={durationSeconds}
-                    onChange={(e) => setDurationSeconds(e.target.value)}
+                    step="1"
+                    placeholder="e.g. 15"
+                    value={durationMinutes}
+                    onChange={(e) => setDurationMinutes(e.target.value)}
                   />
+                  {durationMinutes && Number(durationMinutes) > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      = {Math.round(Number(durationMinutes) * 60)} seconds
+                    </p>
+                  )}
                 </div>
               </div>
               {lessonType === 'VIDEO' && (
@@ -232,7 +349,7 @@ export default function AdminLessonDetailPage() {
                   <Label htmlFor="video-url">Video URL</Label>
                   <Input
                     id="video-url"
-                    placeholder="https://example.com/lessons/intro.mp4"
+                    placeholder="https://www.youtube.com/watch?v=... or direct .mp4 URL"
                     value={videoUrl}
                     onChange={(e) => setVideoUrl(e.target.value)}
                     aria-invalid={Boolean(videoUrlError)}
@@ -242,48 +359,92 @@ export default function AdminLessonDetailPage() {
                   ) : (
                     <p className="text-xs text-muted-foreground">
                       A YouTube link (watch, youtu.be, or embed), or a direct HTTPS link to a video
-                      file (.mp4, .webm, .ogg, .mov). There is no file upload for lesson video yet.
+                      file (.mp4, .webm, .ogg, .mov).
                     </p>
                   )}
                 </div>
               )}
-              {lessonType === 'EXTERNAL_LINK' && (
+              {(lessonType === 'EXTERNAL_LINK' || lessonType === 'DOWNLOAD') && (
                 <div className="space-y-2">
-                  <Label htmlFor="external-url">External URL</Label>
+                  <Label htmlFor="external-url">External Resource URL</Label>
                   <Input
                     id="external-url"
                     value={externalUrl}
                     onChange={(e) => setExternalUrl(e.target.value)}
+                    placeholder="https://..."
+                    aria-invalid={Boolean(externalUrlError)}
                   />
+                  {externalUrlError && (
+                    <p className="text-xs text-destructive">{externalUrlError}</p>
+                  )}
                 </div>
               )}
               {(lessonType === 'TEXT' || lessonType === 'DOCUMENT') && (
                 <div className="space-y-2">
-                  <Label htmlFor="content">Content</Label>
+                  <Label htmlFor="content" className="flex items-center gap-1.5">
+                    <FileText className="size-3.5 text-muted-foreground" />
+                    Content / Notes
+                  </Label>
                   <Textarea
                     id="content"
                     rows={8}
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
+                    placeholder="Write your lesson notes, article, or documentation here..."
                   />
                 </div>
               )}
-              <label className="flex items-center gap-2 text-sm">
-                <Checkbox
-                  checked={isMandatory}
-                  onCheckedChange={(v) => setIsMandatory(Boolean(v))}
-                />
-                Mandatory for course completion
-              </label>
-              <Can permission="lessons.update">
-                <Button
-                  onClick={handleSave}
-                  disabled={!title.trim() || Boolean(videoUrlError) || updateLesson.isPending}
-                >
-                  {updateLesson.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-                  Save changes
-                </Button>
-              </Can>
+
+              <div className="rounded-lg border border-border bg-card/50 p-3.5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="lesson-mandatory" className="font-medium cursor-pointer">
+                      Mandatory Lesson
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Required for students to achieve 100% course completion.
+                    </p>
+                  </div>
+                  <Switch
+                    id="lesson-mandatory"
+                    checked={isMandatory}
+                    onCheckedChange={setIsMandatory}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between border-t border-border/60 pt-3">
+                  <div>
+                    <Label htmlFor="lesson-preview" className="font-medium cursor-pointer">
+                      Free Preview
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Allows prospective students to view this lesson before enrolling.
+                    </p>
+                  </div>
+                  <Switch
+                    id="lesson-preview"
+                    checked={isPreview}
+                    onCheckedChange={setIsPreview}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <Can permission="lessons.update">
+                  <Button
+                    onClick={handleSave}
+                    disabled={
+                      !title.trim() ||
+                      Boolean(videoUrlError) ||
+                      Boolean(externalUrlError) ||
+                      updateLesson.isPending
+                    }
+                  >
+                    {updateLesson.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+                    Save changes
+                  </Button>
+                </Can>
+              </div>
             </CardContent>
           </Card>
 
@@ -301,7 +462,9 @@ export default function AdminLessonDetailPage() {
                     className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-sm"
                   >
                     <div className="min-w-0">
-                      <p className="truncate font-medium text-foreground">{resource.title}</p>
+                      <p className="truncate font-medium text-foreground">
+                        {resource.title || resource.label || 'Attached Resource'}
+                      </p>
                       {resource.fileSize && (
                         <p className="text-xs text-muted-foreground">
                           {formatFileSize(resource.fileSize)}
