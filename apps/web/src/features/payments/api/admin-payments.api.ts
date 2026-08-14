@@ -10,7 +10,7 @@ import type {
   PaymentActivityEntry,
   PaymentActivityParams,
 } from '../types/admin-payment.types';
-import type { PaymentReceiptUrl } from '../types/payment.types';
+import type { PaymentCount, PaymentReceiptUrl } from '../types/payment.types';
 
 const cleanParams = <T extends object>(params: T) =>
   Object.fromEntries(
@@ -21,6 +21,11 @@ const liveAdminPaymentsApi = {
   list: async (params: AdminPaymentListParams = {}) =>
     unwrap<AdminPaymentListResult>(
       await authClient.get('/admin/payments', { params: cleanParams(params) }),
+    ),
+
+  count: async (params: AdminPaymentListParams = {}) =>
+    unwrap<PaymentCount>(
+      await authClient.get('/admin/payments/count', { params: cleanParams(params) }),
     ),
 
   detail: async (paymentId: string) =>

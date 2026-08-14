@@ -49,6 +49,8 @@ import {
 import { useAdminCourses } from '@/features/catalog/hooks/use-admin-courses';
 import { usePaymentMethods } from '@/features/payment-methods/hooks/use-payment-methods';
 import type { PaymentStatus } from '@/features/payments/types/payment.types';
+import { PaymentAmountBreakdown } from '@/features/payments/components/payment-amount-breakdown';
+import { approveErrorMessage, declineErrorMessage } from '@/features/payments/lib/review-errors';
 import { formatCurrency } from '@/lib/format';
 import { formatDateTime, formatDate } from '@/lib/date';
 import { toast } from '@/lib/toast';
@@ -131,8 +133,8 @@ function PaymentDetailSheet({
         },
       });
       toast.success('Payment approved');
-    } catch {
-      toast.error('Could not approve this payment');
+    } catch (error) {
+      toast.error('Payment not approved', approveErrorMessage(error));
     }
   }
 
@@ -142,8 +144,8 @@ function PaymentDetailSheet({
       await declinePayment.mutateAsync({ paymentId, input: { reason: declineReason } });
       toast.success('Payment declined');
       setDeclineReason('');
-    } catch {
-      toast.error('Could not decline this payment');
+    } catch (error) {
+      toast.error('Payment not declined', declineErrorMessage(error));
     }
   }
 
@@ -188,24 +190,30 @@ function PaymentDetailSheet({
                 <dd className="font-medium text-foreground">#{payment.attemptNumber}</dd>
               </div>
               <div className="flex items-center justify-between">
-                <dt className="text-muted-foreground">Amount submitted</dt>
-                <dd className="font-medium text-foreground">
-                  {formatCurrency(payment.submittedAmount, payment.currency)}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between">
-                <dt className="text-muted-foreground">Expected amount</dt>
-                <dd className="font-medium text-foreground">
-                  {formatCurrency(payment.expectedAmount, payment.currency)}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between">
                 <dt className="text-muted-foreground">Submitted</dt>
                 <dd className="font-medium text-foreground">
                   {formatDateTime(payment.submittedAt)}
                 </dd>
               </div>
             </dl>
+
+            <PaymentAmountBreakdown
+              submittedAmount={payment.submittedAmount}
+              expectedAmount={payment.expectedAmount}
+              currency={payment.currency}
+              promo={
+                payment.promoCode
+                  ? {
+                      code: payment.promoCode,
+                      discountType: payment.promoDiscountType,
+                      discountValue: payment.promoDiscountValue,
+                      originalAmount: payment.promoOriginalAmount,
+                      discountAmount: payment.promoDiscountAmount,
+                      finalAmount: payment.promoFinalAmount,
+                    }
+                  : null
+              }
+            />
 
             {payment.amountMismatch && (
               <p className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/5 px-3 py-2 text-sm text-warning">
@@ -580,6 +588,11 @@ export default function AdminPaymentsPage() {
                         className="ml-1.5 inline size-3.5 text-warning"
                         aria-label="Amount mismatch"
                       />
+                    )}
+                    {payment.promoCode && (
+                      <span className="ml-1.5 inline-block rounded-full bg-success/10 px-1.5 py-0.5 text-xs font-medium text-success">
+                        {payment.promoCode}
+                      </span>
                     )}
                   </TableCell>
                   <TableCell>

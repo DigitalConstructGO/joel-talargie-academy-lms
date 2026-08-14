@@ -3,6 +3,7 @@ import { CATALOG_DATA_SOURCE } from '@/config/data-source.config';
 import { mockPaymentsApi } from '../data/mock-payments.api';
 import type {
   Payment,
+  PaymentCount,
   PaymentInstructions,
   PaymentListParams,
   PaymentListResult,
@@ -51,6 +52,11 @@ const livePaymentsApi = {
   listMine: async (params: PaymentListParams = {}) =>
     unwrap<PaymentListResult>(
       await authClient.get('/me/payments', { params: cleanParams(params) }),
+    ),
+
+  countMine: async (params: PaymentListParams = {}) =>
+    unwrap<PaymentCount>(
+      await authClient.get('/me/payments/count', { params: cleanParams(params) }),
     ),
 
   detail: async (paymentId: string) =>

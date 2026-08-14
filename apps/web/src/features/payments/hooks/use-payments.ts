@@ -12,6 +12,15 @@ export function useMyPayments(params: PaymentListParams = {}) {
   });
 }
 
+/** Number of the student's payments awaiting admin review - drives the sidebar Payments badge. */
+export function useMyPendingPaymentsCount() {
+  return useQuery({
+    queryKey: paymentKeys.count({ status: 'PENDING' }),
+    queryFn: () => paymentsApi.countMine({ status: 'PENDING' }),
+    select: (data) => data.count,
+  });
+}
+
 export function usePayment(paymentId: string) {
   return useQuery({
     queryKey: paymentKeys.detail(paymentId),

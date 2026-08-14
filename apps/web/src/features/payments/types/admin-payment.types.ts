@@ -28,6 +28,12 @@ export interface AdminPayment {
   reviewerId: string | null;
   submittedAt: string;
   reviewedAt: string | null;
+  promoCode: string | null;
+  promoDiscountType: 'PERCENTAGE' | 'FIXED' | 'FREE' | null;
+  promoDiscountValue: string | null;
+  promoOriginalAmount: string | null;
+  promoDiscountAmount: string | null;
+  promoFinalAmount: string | null;
 }
 
 /** `GET /admin/payments` returns a bare array - no `total` - same "load more" shape as the student side. */

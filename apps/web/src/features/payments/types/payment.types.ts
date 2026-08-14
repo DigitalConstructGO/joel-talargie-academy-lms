@@ -23,6 +23,12 @@ export interface Payment {
   declineReason: string | null;
   submittedAt: string;
   reviewedAt: string | null;
+  promoCode: string | null;
+  promoDiscountType: 'PERCENTAGE' | 'FIXED' | 'FREE' | null;
+  promoDiscountValue: string | null;
+  promoOriginalAmount: string | null;
+  promoDiscountAmount: string | null;
+  promoFinalAmount: string | null;
 }
 
 export interface PaymentListParams {
@@ -37,6 +43,11 @@ export interface PaymentListParams {
 
 /** `GET /me/payments` returns a bare array - no `total` - see the load-more pattern used on the Payments page. */
 export type PaymentListResult = Payment[];
+
+/** `GET /me/payments/count` - an unfiltered/status-filtered count, used for the sidebar badge. */
+export interface PaymentCount {
+  count: number;
+}
 
 export interface PaymentInstructions {
   enrollmentId: string;

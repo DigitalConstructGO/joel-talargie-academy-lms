@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { and, count, desc, eq, sql, schema } from '@joel-academy/database';
+import { and, count, desc, eq, or, sql, schema } from '@joel-academy/database';
 import { DatabaseService } from '../../../common/database/database.service';
 import type {
   PaymentActivityQueryDto,
@@ -177,12 +177,12 @@ export class PaymentsRepository {
     });
   }
 
-  async listMine(
+  private mineConditions(
     studentId: string,
     query: PaymentListQueryDto,
     enrollmentId?: string,
   ) {
-    const conditions = [
+    return [
       eq(schema.enrollments.studentId, studentId),
       enrollmentId ? eq(schema.payments.enrollmentId, enrollmentId) : undefined,
       query.status ? eq(schema.payments.status, query.status) : undefined,
@@ -196,11 +196,34 @@ export class PaymentsRepository {
         ? sql`${schema.payments.submittedAt} <= ${new Date(query.submittedTo)}`
         : undefined,
     ];
+  }
+
+  async listMine(
+    studentId: string,
+    query: PaymentListQueryDto,
+    enrollmentId?: string,
+  ) {
     return this.paymentSelect()
-      .where(and(...conditions))
+      .where(and(...this.mineConditions(studentId, query, enrollmentId)))
       .orderBy(desc(schema.payments.submittedAt), desc(schema.payments.id))
       .limit(query.pageSize)
       .offset((query.page - 1) * query.pageSize);
+  }
+
+  async countMine(
+    studentId: string,
+    query: PaymentListQueryDto,
+    enrollmentId?: string,
+  ) {
+    const [row] = await this.db
+      .select({ value: count() })
+      .from(schema.payments)
+      .innerJoin(
+        schema.enrollments,
+        eq(schema.enrollments.id, schema.payments.enrollmentId),
+      )
+      .where(and(...this.mineConditions(studentId, query, enrollmentId)));
+    return Number(row?.value ?? 0);
   }
 
   mine(studentId: string, paymentId: string) {
@@ -215,8 +238,8 @@ export class PaymentsRepository {
       .then((rows) => rows[0] ?? null);
   }
 
-  async listAdmin(query: PaymentListQueryDto) {
-    const conditions = [
+  private adminConditions(query: PaymentListQueryDto) {
+    return [
       query.status ? eq(schema.payments.status, query.status) : undefined,
       query.courseId
         ? eq(schema.enrollments.courseId, query.courseId)
@@ -234,11 +257,35 @@ export class PaymentsRepository {
         ? sql`(${schema.payments.transactionIdNormalized} ILIKE ${`%${query.search.toUpperCase()}%`} OR ${schema.users.emailNormalized} ILIKE ${`%${query.search.toLowerCase()}%`} OR ${schema.courses.title} ILIKE ${`%${query.search}%`})`
         : undefined,
     ];
+  }
+
+  async listAdmin(query: PaymentListQueryDto) {
     return this.adminSelect()
-      .where(and(...conditions))
+      .where(and(...this.adminConditions(query)))
       .orderBy(desc(schema.payments.submittedAt), desc(schema.payments.id))
       .limit(query.pageSize)
       .offset((query.page - 1) * query.pageSize);
+  }
+
+  async countAdmin(query: PaymentListQueryDto) {
+    const [row] = await this.db
+      .select({ value: count() })
+      .from(schema.payments)
+      .innerJoin(
+        schema.enrollments,
+        eq(schema.enrollments.id, schema.payments.enrollmentId),
+      )
+      .innerJoin(schema.users, eq(schema.users.id, schema.enrollments.studentId))
+      .innerJoin(
+        schema.courses,
+        eq(schema.courses.id, schema.enrollments.courseId),
+      )
+      .leftJoin(
+        schema.userProfiles,
+        eq(schema.userProfiles.userId, schema.enrollments.studentId),
+      )
+      .where(and(...this.adminConditions(query)));
+    return Number(row?.value ?? 0);
   }
 
   admin(paymentId: string) {
@@ -275,20 +322,24 @@ export class PaymentsRepository {
 
   actorHasPermission(actorId: string, code: string) {
     return this.db
-      .select({ id: schema.permissions.id })
+      .select({ id: schema.userRoles.userId })
       .from(schema.userRoles)
-      .innerJoin(
+      .innerJoin(schema.roles, eq(schema.roles.id, schema.userRoles.roleId))
+      .leftJoin(
         schema.rolePermissions,
         eq(schema.rolePermissions.roleId, schema.userRoles.roleId),
       )
-      .innerJoin(
+      .leftJoin(
         schema.permissions,
         eq(schema.permissions.id, schema.rolePermissions.permissionId),
       )
       .where(
         and(
           eq(schema.userRoles.userId, actorId),
-          eq(schema.permissions.code, code),
+          or(
+            eq(schema.roles.code, 'ADMINISTRATOR'),
+            eq(schema.permissions.code, code),
+          ),
         ),
       )
       .limit(1)
@@ -422,6 +473,12 @@ export class PaymentsRepository {
         paymentMethodName: schema.paymentMethods.name,
         paymentMethodCode: schema.paymentMethods.code,
         paymentMethodType: schema.paymentMethods.type,
+        promoCode: schema.promoCodes.code,
+        promoDiscountType: schema.promoCodes.discountType,
+        promoDiscountValue: schema.promoCodes.discountValue,
+        promoOriginalAmount: schema.promoRedemptions.originalPrice,
+        promoDiscountAmount: schema.promoRedemptions.discountAmount,
+        promoFinalAmount: schema.promoRedemptions.finalPrice,
       })
       .from(schema.payments)
       .innerJoin(
@@ -435,6 +492,14 @@ export class PaymentsRepository {
       .leftJoin(
         schema.paymentMethods,
         eq(schema.paymentMethods.id, schema.payments.paymentMethodId),
+      )
+      .leftJoin(
+        schema.promoRedemptions,
+        eq(schema.promoRedemptions.enrollmentId, schema.enrollments.id),
+      )
+      .leftJoin(
+        schema.promoCodes,
+        eq(schema.promoCodes.id, schema.promoRedemptions.codeId),
       );
   }
 
@@ -468,6 +533,12 @@ export class PaymentsRepository {
         paymentMethodName: schema.paymentMethods.name,
         paymentMethodCode: schema.paymentMethods.code,
         paymentMethodType: schema.paymentMethods.type,
+        promoCode: schema.promoCodes.code,
+        promoDiscountType: schema.promoCodes.discountType,
+        promoDiscountValue: schema.promoCodes.discountValue,
+        promoOriginalAmount: schema.promoRedemptions.originalPrice,
+        promoDiscountAmount: schema.promoRedemptions.discountAmount,
+        promoFinalAmount: schema.promoRedemptions.finalPrice,
       })
       .from(schema.payments)
       .innerJoin(
@@ -489,6 +560,14 @@ export class PaymentsRepository {
       .leftJoin(
         schema.paymentMethods,
         eq(schema.paymentMethods.id, schema.payments.paymentMethodId),
+      )
+      .leftJoin(
+        schema.promoRedemptions,
+        eq(schema.promoRedemptions.enrollmentId, schema.enrollments.id),
+      )
+      .leftJoin(
+        schema.promoCodes,
+        eq(schema.promoCodes.id, schema.promoRedemptions.codeId),
       );
   }
 }

@@ -52,7 +52,7 @@ export const MOCK_ROLES: RoleDetail[] = [
     archivedAt: null,
     createdAt: '2026-03-05T09:00:00.000Z',
     updatedAt: '2026-03-05T09:00:00.000Z',
-    permissionCount: 4,
+    permissionCount: 12,
     userCount: 0,
     permissions: MOCK_PERMISSIONS.filter((permission) =>
       ['payments', 'promotions'].includes(permission.module),

@@ -59,6 +59,7 @@ const PERMISSION_CODES = [
   'payments.view_receipts',
   'payments.view_activity',
   'payments.approve',
+  'payments.approve_amount_mismatch',
   'payments.decline',
   'promotions.read',
   'promotions.create',

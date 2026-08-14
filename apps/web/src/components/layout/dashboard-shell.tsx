@@ -5,7 +5,7 @@ import { AppSidebar } from '@/components/layout/app-sidebar';
 import { SiteHeader } from '@/components/layout/site-header';
 import { useCommandPaletteState } from '@/components/dashboard/command-palette';
 import { DashboardPageTransition } from '@/components/dashboard/dashboard-page-transition';
-import type { NavSection } from '@/types';
+import type { NavBadge, NavItem, NavSection } from '@/types';
 
 export interface DashboardShellProps {
   sections: NavSection[];
@@ -17,6 +17,8 @@ export interface DashboardShellProps {
   title?: string;
   /** Drives `AppSidebar`'s permission-based nav filtering - defaults to allowing everything. */
   hasPermission?: (permission: string) => boolean;
+  /** Computes live nav badges (e.g. counts) - passed through to AppSidebar. */
+  badgeFor?: (item: NavItem) => NavBadge | undefined;
   children: React.ReactNode;
 }
 
@@ -28,6 +30,7 @@ export function DashboardShell({
   breadcrumb,
   title,
   hasPermission,
+  badgeFor,
   children,
 }: DashboardShellProps) {
   const { open, setOpen } = useCommandPaletteState();
@@ -39,6 +42,7 @@ export function DashboardShell({
         portalLabel={portalLabel}
         rootHref={rootHref}
         hasPermission={hasPermission}
+        badgeFor={badgeFor}
       />
       <SidebarInset>
         <SiteHeader

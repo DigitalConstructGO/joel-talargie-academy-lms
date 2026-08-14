@@ -3,6 +3,7 @@ import { MOCK_PAYMENT_METHODS } from '@/features/payment-methods/data/mock-payme
 import { MOCK_PAYMENTS } from './mock-payments.data';
 import type {
   Payment,
+  PaymentCount,
   PaymentInstructions,
   PaymentListParams,
   PaymentListResult,
@@ -115,6 +116,12 @@ export const mockPaymentsApi = {
       declineReason: null,
       submittedAt: new Date().toISOString(),
       reviewedAt: null,
+      promoCode: null,
+      promoDiscountType: null,
+      promoDiscountValue: null,
+      promoOriginalAmount: null,
+      promoDiscountAmount: null,
+      promoFinalAmount: null,
     };
     store = [payment, ...store];
     return delay({
@@ -133,6 +140,9 @@ export const mockPaymentsApi = {
     const start = (page - 1) * pageSize;
     return delay(filtered.slice(start, start + pageSize));
   },
+
+  countMine: async (params: PaymentListParams = {}): Promise<PaymentCount> =>
+    delay({ count: filterPayments(params).length }),
 
   detail: async (paymentId: string): Promise<Payment> => {
     const payment = store.find((entry) => entry.id === paymentId);

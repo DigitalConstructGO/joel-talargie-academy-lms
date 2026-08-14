@@ -212,6 +212,10 @@ export class PaymentsService {
     return this.repository.listMine(userId, query);
   }
 
+  async mineCount(userId: string, query: PaymentListQueryDto) {
+    return { count: await this.repository.countMine(userId, query) };
+  }
+
   enrollmentPayments(
     userId: string,
     enrollmentId: string,
@@ -237,6 +241,10 @@ export class PaymentsService {
 
   adminList(query: PaymentListQueryDto) {
     return this.repository.listAdmin(query);
+  }
+
+  async adminCount(query: PaymentListQueryDto) {
+    return { count: await this.repository.countAdmin(query) };
   }
 
   async adminDetail(paymentId: string) {

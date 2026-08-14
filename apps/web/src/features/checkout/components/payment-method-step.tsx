@@ -12,7 +12,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { FileUpload } from '@/components/common/file-upload';
 import { Skeleton } from '@/components/ui/skeleton';
-import { extractFieldErrors } from '@/lib/api/api-error';
+import {
+  extractErrorCode,
+  extractErrorMessage,
+  extractFieldErrors,
+} from '@/lib/api/api-error';
 import { useSubmitPayment } from '@/features/payments/hooks/use-payments';
 import type {
   PaymentInstructions,
@@ -32,6 +36,16 @@ const METHOD_ICONS: Record<PaymentMethodType, typeof Smartphone> = {
   OTHER: Wrench,
 };
 
+function toLocalISODate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/** Latest selectable payment date (local time) - future dates are invalid. */
+const TODAY = toLocalISODate(new Date());
+
 const paymentFormSchema = z.object({
   transactionId: z.string().trim().min(3, 'Enter the transaction ID from your payment.'),
   submittedAmount: z
@@ -39,9 +53,32 @@ const paymentFormSchema = z.object({
     .trim()
     .min(1, 'Enter the amount you paid.')
     .refine((value) => Number(value) > 0, 'Enter a valid amount.'),
-  paymentDate: z.string().optional(),
+  paymentDate: z
+    .string()
+    .optional()
+    .refine((value) => !value || value <= TODAY, {
+      message: "The payment date can't be in the future. Choose today or an earlier date.",
+    }),
   studentNote: z.string().optional(),
 });
+
+/** Backend error codes -> plain-language messages shown when submitting a payment. */
+const PAYMENT_SUBMIT_ERROR_MESSAGES: Record<string, string> = {
+  RECEIPT_REQUIRED: 'Please attach a copy of your payment receipt.',
+  RECEIPT_EMPTY: 'The receipt file appears to be empty. Please choose another file.',
+  RECEIPT_TOO_LARGE: 'Your receipt is larger than 12 MB. Please compress it and try again.',
+  INVALID_PAYMENT_AMOUNT: "The amount you entered isn't valid. Please check it and try again.",
+  PAYMENT_CURRENCY_MISMATCH:
+    "The currency doesn't match this course. Please refresh the page and try again.",
+  INVALID_PAYMENT_DATE:
+    "The payment date can't be in the future. Choose today or an earlier date.",
+  PAYMENT_REVIEW_ALREADY_PENDING:
+    'A payment for this course is already under review. Please wait for it to be processed.',
+  PAYMENT_PENDING_ALREADY_EXISTS:
+    'A payment for this course is already under review. Please wait for it to be processed.',
+  PAYMENT_NOT_REQUIRED: "Payment isn't required for this course.",
+  ENROLLMENT_NOT_PAID: 'This course is free, so no payment is needed.',
+};
 
 type PaymentFormValues = z.infer<typeof paymentFormSchema>;
 
@@ -143,7 +180,14 @@ export function PaymentMethodStep({
           setError(field as keyof PaymentFormValues, { message });
         }
       }
-      toast.error('Could not submit your payment.', 'Please check the details and try again.');
+      const code = extractErrorCode(error);
+      const message =
+        (code && PAYMENT_SUBMIT_ERROR_MESSAGES[code]) ||
+        extractErrorMessage(
+          error,
+          'Could not submit your payment. Please check the details and try again.',
+        );
+      toast.error('Payment not submitted', message);
     }
   }
 
@@ -277,7 +321,10 @@ export function PaymentMethodStep({
             </div>
             <div className="space-y-2">
               <Label htmlFor="paymentDate">Payment date (optional)</Label>
-              <Input id="paymentDate" type="date" {...register('paymentDate')} />
+              <Input id="paymentDate" type="date" max={TODAY} {...register('paymentDate')} />
+              {errors.paymentDate && (
+                <p className="text-sm text-destructive">{errors.paymentDate.message}</p>
+              )}
             </div>
           </div>
 

@@ -13,6 +13,7 @@ const adminPaymentKeys = {
   all: ['admin-payments'] as const,
   lists: () => [...adminPaymentKeys.all, 'list'] as const,
   list: (params: AdminPaymentListParams) => [...adminPaymentKeys.lists(), params] as const,
+  count: (params: AdminPaymentListParams = {}) => [...adminPaymentKeys.all, 'count', params] as const,
   detail: (paymentId: string) => [...adminPaymentKeys.all, 'detail', paymentId] as const,
   receipt: (paymentId: string) => [...adminPaymentKeys.all, 'receipt', paymentId] as const,
   activity: (paymentId: string, params: PaymentActivityParams) =>
@@ -24,6 +25,15 @@ export function useAdminPayments(params: AdminPaymentListParams = {}) {
     queryKey: adminPaymentKeys.list(params),
     queryFn: () => adminPaymentsApi.list(params),
     placeholderData: (previous) => previous,
+  });
+}
+
+/** Number of payments awaiting review - drives the sidebar "Payments" badge. */
+export function usePendingPaymentsCount() {
+  return useQuery({
+    queryKey: adminPaymentKeys.count({ status: 'PENDING' }),
+    queryFn: () => adminPaymentsApi.count({ status: 'PENDING' }),
+    select: (data) => data.count,
   });
 }
 
@@ -50,6 +60,7 @@ export function useApprovePayment() {
       adminPaymentsApi.approve(paymentId, input),
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: adminPaymentKeys.lists() });
+      void queryClient.invalidateQueries({ queryKey: adminPaymentKeys.count() });
       void queryClient.invalidateQueries({
         queryKey: adminPaymentKeys.detail(variables.paymentId),
       });
@@ -64,6 +75,7 @@ export function useDeclinePayment() {
       adminPaymentsApi.decline(paymentId, input),
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: adminPaymentKeys.lists() });
+      void queryClient.invalidateQueries({ queryKey: adminPaymentKeys.count() });
       void queryClient.invalidateQueries({
         queryKey: adminPaymentKeys.detail(variables.paymentId),
       });

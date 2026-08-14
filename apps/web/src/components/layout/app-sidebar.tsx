@@ -27,7 +27,7 @@ import { siteConfig } from '@/config/site.config';
 import { SidebarUserFooter } from '@/components/layout/sidebar-user-footer';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { NavItem, NavSection } from '@/types';
+import type { NavBadge, NavItem, NavSection } from '@/types';
 
 export interface AppSidebarProps {
   sections: NavSection[];
@@ -36,6 +36,8 @@ export interface AppSidebarProps {
   rootHref: string;
   /** Returns whether the current user may see a nav item guarded by `item.permission`. Defaults to allowing everything - wire up real RBAC once it exists. */
   hasPermission?: (permission: string) => boolean;
+  /** Computes a live badge (e.g. a count) for a nav item at render time - merged over any static `item.badge`. */
+  badgeFor?: (item: NavItem) => NavBadge | undefined;
 }
 
 /**
@@ -112,11 +114,22 @@ function SidebarMobileCloseButton() {
   );
 }
 
+function SidebarItemBadge({ badge }: { badge: NavBadge }) {
+  return (
+    <SidebarMenuBadge className="top-1.5">
+      <Badge variant={badge.variant ?? 'secondary'} className="text-[10px]">
+        {badge.label}
+      </Badge>
+    </SidebarMenuBadge>
+  );
+}
+
 export function AppSidebar({
   sections,
   portalLabel,
   rootHref,
   hasPermission = () => true,
+  badgeFor,
 }: AppSidebarProps) {
   const pathname = usePathname();
 
@@ -148,8 +161,9 @@ export function AppSidebar({
               )}
               <SidebarGroupContent>
                 <SidebarMenu className="gap-2">
-                  {items.map((item) =>
-                    item.items?.length ? (
+                  {items.map((item) => {
+                    const badge = item.badge ?? badgeFor?.(item);
+                    return item.items?.length ? (
                       <Collapsible
                         key={item.href}
                         defaultOpen={isItemActive(pathname, item, rootHref)}
@@ -165,20 +179,24 @@ export function AppSidebar({
                           </CollapsibleTrigger>
                           <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
                             <SidebarMenuSub>
-                              {item.items.map((child) => (
-                                <SidebarMenuSubItem key={child.href}>
-                                  <SidebarMenuSubButton
-                                    asChild
-                                    isActive={isItemActive(pathname, child, rootHref)}
-                                    className={navItemClassName}
-                                  >
-                                    <Link href={child.href}>
-                                      {child.icon && <child.icon />}
-                                      <span className={navLabelClassName}>{child.label}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
+                              {item.items.map((child) => {
+                                const badge = child.badge ?? badgeFor?.(child);
+                                return (
+                                  <SidebarMenuSubItem key={child.href} className="relative">
+                                    <SidebarMenuSubButton
+                                      asChild
+                                      isActive={isItemActive(pathname, child, rootHref)}
+                                      className={navItemClassName}
+                                    >
+                                      <Link href={child.href}>
+                                        {child.icon && <child.icon />}
+                                        <span className={navLabelClassName}>{child.label}</span>
+                                      </Link>
+                                    </SidebarMenuSubButton>
+                                    {badge && <SidebarItemBadge badge={badge} />}
+                                  </SidebarMenuSubItem>
+                                );
+                              })}
                             </SidebarMenuSub>
                           </CollapsibleContent>
                         </SidebarMenuItem>
@@ -196,16 +214,7 @@ export function AppSidebar({
                           {item.icon && <item.icon />}
                           <span className={navLabelClassName}>{item.label}</span>
                         </SidebarMenuButton>
-                        {item.badge && (
-                          <SidebarMenuBadge>
-                            <Badge
-                              variant={item.badge.variant ?? 'secondary'}
-                              className="text-[10px]"
-                            >
-                              {item.badge.label}
-                            </Badge>
-                          </SidebarMenuBadge>
-                        )}
+                        {badge && <SidebarItemBadge badge={badge} />}
                       </SidebarMenuItem>
                     ) : (
                       <SidebarMenuItem key={item.href}>
@@ -220,10 +229,10 @@ export function AppSidebar({
                             <span className={navLabelClassName}>{item.label}</span>
                           </Link>
                         </SidebarMenuButton>
-                        {item.badge && <SidebarMenuBadge>{item.badge.label}</SidebarMenuBadge>}
+                        {badge && <SidebarItemBadge badge={badge} />}
                       </SidebarMenuItem>
-                    ),
-                  )}
+                    );
+                  })}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>

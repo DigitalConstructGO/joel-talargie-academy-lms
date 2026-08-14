@@ -95,6 +95,16 @@ export class StudentPaymentsController {
     return this.payments.mine(user.id, query);
   }
 
+  // Declared before `me/payments/:paymentId` so "count" is not captured as a
+  // payment id.
+  @Get('me/payments/count')
+  @ApiOperation({
+    summary: 'Count the authenticated Student payments (optionally by status)',
+  })
+  count(@CurrentUser() user: AuthUser, @Query() query: PaymentListQueryDto) {
+    return this.payments.mineCount(user.id, query);
+  }
+
   @Get('me/payments/:paymentId/receipt')
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @ApiOperation({

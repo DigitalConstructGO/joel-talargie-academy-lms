@@ -8,6 +8,7 @@ import type {
   PaymentActivityEntry,
   PaymentActivityParams,
 } from '../types/admin-payment.types';
+import type { PaymentCount } from '../types/payment.types';
 
 function delay<T>(value: T, ms = 150): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms));
@@ -21,34 +22,41 @@ function notFound(message: string): never {
 
 const store: AdminPayment[] = MOCK_ADMIN_PAYMENTS.map((entry) => ({ ...entry }));
 
+function filterAdminPayments(params: AdminPaymentListParams) {
+  return store.filter((payment) => {
+    if (params.status && payment.status !== params.status) return false;
+    if (params.courseId && payment.courseId !== params.courseId) return false;
+    if (params.paymentMethodId && payment.paymentMethodId !== params.paymentMethodId)
+      return false;
+    if (params.amountMismatch !== undefined && payment.amountMismatch !== params.amountMismatch)
+      return false;
+    if (params.duplicateOnly && payment.duplicateTransactionCount === 0) return false;
+    if (params.submittedFrom && payment.submittedAt < params.submittedFrom) return false;
+    if (params.submittedTo && payment.submittedAt > params.submittedTo) return false;
+    if (params.search) {
+      const needle = params.search.toLowerCase();
+      if (
+        !payment.transactionId.toLowerCase().includes(needle) &&
+        !payment.studentEmail.toLowerCase().includes(needle) &&
+        !payment.courseTitle.toLowerCase().includes(needle)
+      )
+        return false;
+    }
+    return true;
+  });
+}
+
 export const mockAdminPaymentsApi = {
   list: async (params: AdminPaymentListParams = {}): Promise<AdminPaymentListResult> => {
-    const filtered = store.filter((payment) => {
-      if (params.status && payment.status !== params.status) return false;
-      if (params.courseId && payment.courseId !== params.courseId) return false;
-      if (params.paymentMethodId && payment.paymentMethodId !== params.paymentMethodId)
-        return false;
-      if (params.amountMismatch !== undefined && payment.amountMismatch !== params.amountMismatch)
-        return false;
-      if (params.duplicateOnly && payment.duplicateTransactionCount === 0) return false;
-      if (params.submittedFrom && payment.submittedAt < params.submittedFrom) return false;
-      if (params.submittedTo && payment.submittedAt > params.submittedTo) return false;
-      if (params.search) {
-        const needle = params.search.toLowerCase();
-        if (
-          !payment.transactionId.toLowerCase().includes(needle) &&
-          !payment.studentEmail.toLowerCase().includes(needle) &&
-          !payment.courseTitle.toLowerCase().includes(needle)
-        )
-          return false;
-      }
-      return true;
-    });
+    const filtered = filterAdminPayments(params);
     const page = params.page ?? 1;
     const pageSize = params.pageSize ?? 20;
     const start = (page - 1) * pageSize;
     return delay(filtered.slice(start, start + pageSize));
   },
+
+  count: async (params: AdminPaymentListParams = {}): Promise<PaymentCount> =>
+    delay({ count: filterAdminPayments(params).length }),
 
   detail: async (paymentId: string): Promise<AdminPayment> => {
     const payment = store.find((entry) => entry.id === paymentId);

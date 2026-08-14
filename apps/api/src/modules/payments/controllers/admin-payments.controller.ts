@@ -34,6 +34,17 @@ export class AdminPaymentsController {
     return this.payments.adminList(query);
   }
 
+  // Declared before `:paymentId` routes so "count" is not captured as a
+  // payment id.
+  @Get('count')
+  @RequirePermissions('payments.read')
+  @ApiOperation({
+    summary: 'Count payments matching the review-queue filters (e.g. status=PENDING)',
+  })
+  count(@Query() query: PaymentListQueryDto) {
+    return this.payments.adminCount(query);
+  }
+
   @Get(':paymentId/receipt')
   @RequirePermissions('payments.view_receipts')
   @ApiOperation({ summary: 'Get a short-lived private receipt URL' })

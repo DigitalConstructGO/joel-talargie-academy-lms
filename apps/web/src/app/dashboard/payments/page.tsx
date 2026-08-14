@@ -43,6 +43,7 @@ import {
   usePaymentReceipt,
 } from '@/features/payments/hooks/use-payments';
 import type { PaymentStatus } from '@/features/payments/types/payment.types';
+import { PaymentAmountBreakdown } from '@/features/payments/components/payment-amount-breakdown';
 import { formatCurrency } from '@/lib/format';
 import { formatDate, formatDateTime } from '@/lib/date';
 
@@ -124,18 +125,6 @@ function PaymentDetailSheet({
                 <dt className="text-muted-foreground">Attempt</dt>
                 <dd className="font-medium text-foreground">#{payment.attemptNumber}</dd>
               </div>
-              <div className="flex items-center justify-between">
-                <dt className="text-muted-foreground">Amount submitted</dt>
-                <dd className="font-medium text-foreground">
-                  {formatCurrency(payment.submittedAmount, payment.currency)}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between">
-                <dt className="text-muted-foreground">Expected amount</dt>
-                <dd className="font-medium text-foreground">
-                  {formatCurrency(payment.expectedAmount, payment.currency)}
-                </dd>
-              </div>
               {payment.paymentDate && (
                 <div className="flex items-center justify-between">
                   <dt className="text-muted-foreground">Payment date</dt>
@@ -157,6 +146,24 @@ function PaymentDetailSheet({
                 </div>
               )}
             </dl>
+
+            <PaymentAmountBreakdown
+              submittedAmount={payment.submittedAmount}
+              expectedAmount={payment.expectedAmount}
+              currency={payment.currency}
+              promo={
+                payment.promoCode
+                  ? {
+                      code: payment.promoCode,
+                      discountType: payment.promoDiscountType,
+                      discountValue: payment.promoDiscountValue,
+                      originalAmount: payment.promoOriginalAmount,
+                      discountAmount: payment.promoDiscountAmount,
+                      finalAmount: payment.promoFinalAmount,
+                    }
+                  : null
+              }
+            />
 
             {payment.amountMismatch && (
               <p className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/5 px-3 py-2 text-sm text-warning">

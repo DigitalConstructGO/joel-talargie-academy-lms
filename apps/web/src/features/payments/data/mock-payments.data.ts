@@ -79,6 +79,12 @@ function buildPayment(seed: PaymentSeed, index: number): Payment | null {
     declineReason: seed.declineReason ?? null,
     submittedAt: daysAgo(seed.daysAgoSubmitted),
     reviewedAt: seed.daysAgoReviewed !== undefined ? daysAgo(seed.daysAgoReviewed) : null,
+    promoCode: null,
+    promoDiscountType: null,
+    promoDiscountValue: null,
+    promoOriginalAmount: null,
+    promoDiscountAmount: null,
+    promoFinalAmount: null,
   };
 }
 
