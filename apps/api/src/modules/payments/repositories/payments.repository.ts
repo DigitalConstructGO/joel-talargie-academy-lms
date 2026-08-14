@@ -140,6 +140,7 @@ export class PaymentsRepository {
           currency: input.currency,
           paymentDate: input.paymentDate,
           studentNote: input.studentNote,
+          paymentMethodId: input.paymentMethodId,
           status: 'PENDING',
           amountMismatch,
           duplicateTransactionCount: Number(duplicateCount),
@@ -219,6 +220,9 @@ export class PaymentsRepository {
       query.status ? eq(schema.payments.status, query.status) : undefined,
       query.courseId
         ? eq(schema.enrollments.courseId, query.courseId)
+        : undefined,
+      query.paymentMethodId
+        ? eq(schema.payments.paymentMethodId, query.paymentMethodId)
         : undefined,
       query.amountMismatch === undefined
         ? undefined
@@ -414,6 +418,10 @@ export class PaymentsRepository {
         declineReason: schema.payments.declineReason,
         submittedAt: schema.payments.submittedAt,
         reviewedAt: schema.payments.reviewedAt,
+        paymentMethodId: schema.payments.paymentMethodId,
+        paymentMethodName: schema.paymentMethods.name,
+        paymentMethodCode: schema.paymentMethods.code,
+        paymentMethodType: schema.paymentMethods.type,
       })
       .from(schema.payments)
       .innerJoin(
@@ -423,6 +431,10 @@ export class PaymentsRepository {
       .innerJoin(
         schema.courses,
         eq(schema.courses.id, schema.enrollments.courseId),
+      )
+      .leftJoin(
+        schema.paymentMethods,
+        eq(schema.paymentMethods.id, schema.payments.paymentMethodId),
       );
   }
 
@@ -433,6 +445,7 @@ export class PaymentsRepository {
         enrollmentId: schema.payments.enrollmentId,
         studentId: schema.enrollments.studentId,
         studentEmail: schema.users.email,
+        studentName: schema.userProfiles.firstName,
         courseId: schema.enrollments.courseId,
         courseTitle: schema.courses.title,
         attemptNumber: schema.payments.attemptNumber,
@@ -451,6 +464,10 @@ export class PaymentsRepository {
         reviewerId: schema.payments.reviewerId,
         submittedAt: schema.payments.submittedAt,
         reviewedAt: schema.payments.reviewedAt,
+        paymentMethodId: schema.payments.paymentMethodId,
+        paymentMethodName: schema.paymentMethods.name,
+        paymentMethodCode: schema.paymentMethods.code,
+        paymentMethodType: schema.paymentMethods.type,
       })
       .from(schema.payments)
       .innerJoin(
@@ -464,6 +481,14 @@ export class PaymentsRepository {
       .innerJoin(
         schema.courses,
         eq(schema.courses.id, schema.enrollments.courseId),
+      )
+      .leftJoin(
+        schema.userProfiles,
+        eq(schema.userProfiles.userId, schema.enrollments.studentId),
+      )
+      .leftJoin(
+        schema.paymentMethods,
+        eq(schema.paymentMethods.id, schema.payments.paymentMethodId),
       );
   }
 }

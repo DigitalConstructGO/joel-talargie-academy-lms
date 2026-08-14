@@ -4,34 +4,32 @@ import { useEffect, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { AlertTriangle, Building2, Landmark, Loader2, Smartphone, Wallet } from 'lucide-react';
+import { AlertTriangle, Landmark, Loader2, Smartphone, Wallet, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { FileUpload } from '@/components/common/file-upload';
+import { Skeleton } from '@/components/ui/skeleton';
 import { extractFieldErrors } from '@/lib/api/api-error';
 import { useSubmitPayment } from '@/features/payments/hooks/use-payments';
 import type {
   PaymentInstructions,
   SubmitPaymentResult,
 } from '@/features/payments/types/payment.types';
+import type { PaymentMethodType } from '@/features/payment-methods/types/payment-method.types';
 import { formatCurrency } from '@/lib/format';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 import { buildMethodContent } from '../constants/payment-method-content';
-import {
-  PAYMENT_METHODS,
-  type PaymentMethodId,
-  type SubmittedPaymentSummary,
-} from '../types/checkout.types';
+import type { SubmittedPaymentSummary } from '../types/checkout.types';
 
-const METHOD_ICONS: Record<PaymentMethodId, typeof Smartphone> = {
-  TELEBIRR: Smartphone,
-  CBE_BIRR: Landmark,
-  CHAPA: Wallet,
-  BANK_TRANSFER: Building2,
+const METHOD_ICONS: Record<PaymentMethodType, typeof Smartphone> = {
+  MOBILE_MONEY: Smartphone,
+  BANK_TRANSFER: Landmark,
+  CARD: Wallet,
+  OTHER: Wrench,
 };
 
 const paymentFormSchema = z.object({
@@ -62,7 +60,8 @@ export function PaymentMethodStep({
   onSubmitted,
   onBack,
 }: PaymentMethodStepProps) {
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethodId>('TELEBIRR');
+  const methods = useMemo(() => instructions?.paymentMethods ?? [], [instructions]);
+  const [selectedMethodId, setSelectedMethodId] = useState<string | null>(methods[0]?.id ?? null);
   const [receiptFiles, setReceiptFiles] = useState<File[]>([]);
   const [receiptError, setReceiptError] = useState<string | null>(null);
   const submitPayment = useSubmitPayment();
@@ -88,21 +87,33 @@ export function PaymentMethodStep({
       reset((current) => ({ ...current, submittedAmount: instructions.expectedAmount }));
   }, [instructions, reset]);
 
+  // Default to the first (highest sort order) method once instructions arrive.
+  useEffect(() => {
+    if (methods.length > 0 && !methods.some((method) => method.id === selectedMethodId)) {
+      const first = methods[0];
+      if (first) setSelectedMethodId(first.id);
+    }
+  }, [methods, selectedMethodId]);
+
+  const selectedMethod = methods.find((method) => method.id === selectedMethodId) ?? methods[0];
   const content = useMemo(
-    () => (instructions ? buildMethodContent(selectedMethod, instructions) : null),
+    () =>
+      instructions && selectedMethod ? buildMethodContent(selectedMethod, instructions) : null,
     [selectedMethod, instructions],
   );
 
   async function onSubmit(values: PaymentFormValues) {
     const receipt = receiptFiles[0];
+    if (!selectedMethod) return;
     if (!receipt) {
       setReceiptError('Upload your payment receipt to continue.');
       return;
     }
     setReceiptError(null);
 
-    const methodLabel = PAYMENT_METHODS.find((method) => method.id === selectedMethod)?.label ?? '';
-    const studentNote = [`[${methodLabel}]`, values.studentNote?.trim()].filter(Boolean).join(' ');
+    const studentNote = [`[${selectedMethod.name}]`, values.studentNote?.trim()]
+      .filter(Boolean)
+      .join(' ');
 
     try {
       const result = await submitPayment.mutateAsync({
@@ -111,6 +122,7 @@ export function PaymentMethodStep({
           transactionId: values.transactionId.trim(),
           submittedAmount: values.submittedAmount.trim(),
           currency: instructions?.currency ?? 'ETB',
+          paymentMethodId: selectedMethod.id,
           paymentDate: values.paymentDate || undefined,
           studentNote: studentNote || undefined,
           receipt,
@@ -121,7 +133,7 @@ export function PaymentMethodStep({
         submittedAmount: values.submittedAmount.trim(),
         currency: instructions?.currency ?? 'ETB',
         paymentDate: values.paymentDate || undefined,
-        methodLabel,
+        methodName: selectedMethod.name,
         receiptFileName: receipt.name,
       });
     } catch (error) {
@@ -135,12 +147,17 @@ export function PaymentMethodStep({
     }
   }
 
-  if (isLoadingInstructions || !instructions || !content) {
+  if (isLoadingInstructions || !instructions || !content || !selectedMethod) {
     return (
       <div className="space-y-4">
         <div className="h-6 w-48 animate-pulse rounded-full bg-primary/10" />
-        <div className="h-40 animate-pulse rounded-xl bg-primary/10" />
-        <div className="h-64 animate-pulse rounded-xl bg-primary/10" />
+        <div className="grid gap-3 sm:grid-cols-2">
+          {Array.from({ length: 4 }, (_, index) => (
+            <Skeleton key={index} className="h-20 rounded-xl" />
+          ))}
+        </div>
+        <Skeleton className="h-56 rounded-xl" />
+        <Skeleton className="h-72 rounded-xl" />
       </div>
     );
   }
@@ -156,14 +173,14 @@ export function PaymentMethodStep({
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        {PAYMENT_METHODS.map((method) => {
-          const Icon = METHOD_ICONS[method.id];
-          const isSelected = selectedMethod === method.id;
+        {methods.map((method) => {
+          const Icon = METHOD_ICONS[method.type];
+          const isSelected = selectedMethod.id === method.id;
           return (
             <button
               key={method.id}
               type="button"
-              onClick={() => setSelectedMethod(method.id)}
+              onClick={() => setSelectedMethodId(method.id)}
               className={cn(
                 'flex items-center gap-3 rounded-xl border-2 p-4 text-left transition-colors',
                 isSelected
@@ -180,7 +197,14 @@ export function PaymentMethodStep({
               >
                 <Icon className="size-5" />
               </span>
-              <span className="text-sm font-semibold text-foreground">{method.label}</span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-foreground">{method.name}</span>
+                {method.instructions.tagline && (
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {method.instructions.tagline}
+                  </span>
+                )}
+              </span>
             </button>
           );
         })}
@@ -190,7 +214,7 @@ export function PaymentMethodStep({
         <CardContent className="space-y-4 p-5">
           <div>
             <h3 className="text-sm font-bold text-foreground">
-              {PAYMENT_METHODS.find((method) => method.id === selectedMethod)?.label} instructions
+              {selectedMethod.name} instructions
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">{content.tagline}</p>
           </div>
@@ -207,9 +231,6 @@ export function PaymentMethodStep({
           <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
             {content.tips.map((tip) => (
               <li key={tip}>{tip}</li>
-            ))}
-            {instructions.instructions.map((line) => (
-              <li key={line}>{line}</li>
             ))}
           </ul>
 

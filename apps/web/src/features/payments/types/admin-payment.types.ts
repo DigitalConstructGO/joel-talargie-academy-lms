@@ -1,3 +1,4 @@
+import type { PaymentMethodType } from '@/features/payment-methods/types/payment-method.types';
 import type { PaymentStatus } from './payment.types';
 
 export interface AdminPayment {
@@ -12,6 +13,10 @@ export interface AdminPayment {
   submittedAmount: string;
   expectedAmount: string;
   currency: string;
+  paymentMethodId: string | null;
+  paymentMethodName: string | null;
+  paymentMethodCode: string | null;
+  paymentMethodType: PaymentMethodType | null;
   paymentDate: string | null;
   studentNote: string | null;
   status: PaymentStatus;
@@ -33,6 +38,7 @@ export interface AdminPaymentListParams {
   pageSize?: number;
   status?: PaymentStatus;
   courseId?: string;
+  paymentMethodId?: string;
   search?: string;
   submittedFrom?: string;
   submittedTo?: string;

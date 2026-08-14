@@ -41,6 +41,7 @@ export class SubmitPaymentDto {
 
   @IsOptional() @IsDateString() paymentDate?: string;
   @IsOptional() @IsString() @MaxLength(500) studentNote?: string;
+  @IsOptional() @IsUUID() paymentMethodId?: string;
 }
 
 export class PaymentListQueryDto {
@@ -48,6 +49,7 @@ export class PaymentListQueryDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100) pageSize = 20;
   @IsOptional() @IsEnum(PaymentStatus) status?: PaymentStatus;
   @IsOptional() @IsUUID() courseId?: string;
+  @IsOptional() @IsUUID() paymentMethodId?: string;
   @IsOptional() @IsString() @MaxLength(100) search?: string;
   @IsOptional() @IsDateString() submittedFrom?: string;
   @IsOptional() @IsDateString() submittedTo?: string;

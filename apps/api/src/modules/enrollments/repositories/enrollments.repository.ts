@@ -178,6 +178,9 @@ export class EnrollmentsRepository {
     const conditions = [
       eq(schema.enrollments.studentId, studentId),
       query.status ? eq(schema.enrollments.status, query.status) : undefined,
+      query.enrollmentStatuses?.length
+        ? inArray(schema.enrollments.status, query.enrollmentStatuses)
+        : undefined,
       query.categoryId
         ? eq(schema.courses.categoryId, query.categoryId)
         : undefined,

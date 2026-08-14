@@ -110,11 +110,18 @@ export function CouponTargetingFields({
                   : categories.map((category) => {
                       const checked = selectedCategoryIds.includes(category.id);
                       return (
-                        <button
-                          type="button"
+                        <div
                           key={category.id}
+                          role="button"
+                          tabIndex={0}
                           onClick={() => onCategoryIdsChange(toggleId(selectedCategoryIds, category.id))}
-                          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted"
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              onCategoryIdsChange(toggleId(selectedCategoryIds, category.id));
+                            }
+                          }}
+                          className="flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted"
                         >
                           <Checkbox
                             checked={checked}
@@ -126,7 +133,7 @@ export function CouponTargetingFields({
                           <span className={checked ? 'font-medium text-foreground' : 'text-foreground'}>
                             {category.name}
                           </span>
-                        </button>
+                        </div>
                       );
                     })}
               </div>
@@ -163,11 +170,18 @@ export function CouponTargetingFields({
                   : visibleCourses.map((course) => {
                       const checked = selectedCourseIds.includes(course.id);
                       return (
-                        <button
-                          type="button"
+                        <div
                           key={course.id}
+                          role="button"
+                          tabIndex={0}
                           onClick={() => onCourseIdsChange(toggleId(selectedCourseIds, course.id))}
-                          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted"
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              onCourseIdsChange(toggleId(selectedCourseIds, course.id));
+                            }
+                          }}
+                          className="flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted"
                         >
                           <Checkbox
                             checked={checked}
@@ -182,7 +196,7 @@ export function CouponTargetingFields({
                           <Badge variant="outline" className="shrink-0">
                             {course.accessType === 'FREE' ? 'Free' : 'Paid'}
                           </Badge>
-                        </button>
+                        </div>
                       );
                     })}
                 {!coursesQuery.isLoading && visibleCourses.length === 0 && (

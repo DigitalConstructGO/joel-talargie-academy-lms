@@ -47,6 +47,7 @@ import {
   useDeclinePayment,
 } from '@/features/payments/hooks/use-admin-payments';
 import { useAdminCourses } from '@/features/catalog/hooks/use-admin-courses';
+import { usePaymentMethods } from '@/features/payment-methods/hooks/use-payment-methods';
 import type { PaymentStatus } from '@/features/payments/types/payment.types';
 import { formatCurrency } from '@/lib/format';
 import { formatDateTime, formatDate } from '@/lib/date';
@@ -59,6 +60,7 @@ interface PaymentsFilters {
   [key: string]: string | undefined;
   status: 'ALL' | PaymentStatus;
   courseId: string | undefined;
+  paymentMethodId: string | undefined;
   submittedFrom: string | undefined;
   submittedTo: string | undefined;
   amountMismatch: 'true' | undefined;
@@ -69,6 +71,7 @@ interface PaymentsFilters {
 const DEFAULT_FILTERS: PaymentsFilters = {
   status: 'ALL',
   courseId: undefined,
+  paymentMethodId: undefined,
   submittedFrom: undefined,
   submittedTo: undefined,
   amountMismatch: undefined,
@@ -174,6 +177,12 @@ function PaymentDetailSheet({
                 <dt className="text-muted-foreground">Transaction ID</dt>
                 <dd className="font-medium text-foreground">{payment.transactionId}</dd>
               </div>
+              {payment.paymentMethodName && (
+                <div className="flex items-center justify-between">
+                  <dt className="text-muted-foreground">Payment method</dt>
+                  <dd className="font-medium text-foreground">{payment.paymentMethodName}</dd>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <dt className="text-muted-foreground">Attempt</dt>
                 <dd className="font-medium text-foreground">#{payment.attemptNumber}</dd>
@@ -339,8 +348,16 @@ export default function AdminPaymentsPage() {
       defaults: DEFAULT_FILTERS,
       pageSize: PAGE_SIZE,
     });
-  const { status, courseId, submittedFrom, submittedTo, amountMismatch, duplicateOnly, search } =
-    filters;
+  const {
+    status,
+    courseId,
+    paymentMethodId,
+    submittedFrom,
+    submittedTo,
+    amountMismatch,
+    duplicateOnly,
+    search,
+  } = filters;
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const coursesQuery = useAdminCourses({ pageSize: 100 });
@@ -349,11 +366,17 @@ export default function AdminPaymentsPage() {
     value: course.id,
   }));
 
+  const paymentMethodsQuery = usePaymentMethods({ pageSize: 100 });
+  const paymentMethodOptions = (paymentMethodsQuery.data?.items ?? [])
+    .filter((method) => method.isActive)
+    .map((method) => ({ label: method.name, value: method.id }));
+
   const paymentsQuery = useAdminPayments({
     page: 1,
     pageSize,
     status: status === 'ALL' ? undefined : status,
     courseId: courseId || undefined,
+    paymentMethodId: paymentMethodId || undefined,
     submittedFrom: submittedFrom || undefined,
     submittedTo: submittedTo || undefined,
     amountMismatch: amountMismatch === 'true' || undefined,
@@ -374,6 +397,7 @@ export default function AdminPaymentsPage() {
   const hasActiveFilters =
     status !== 'ALL' ||
     Boolean(courseId) ||
+    Boolean(paymentMethodId) ||
     Boolean(submittedFrom) ||
     Boolean(submittedTo) ||
     Boolean(amountMismatch) ||
@@ -407,6 +431,16 @@ export default function AdminPaymentsPage() {
                       },
                     ]
                   : []),
+                ...(paymentMethodId
+                  ? [
+                      {
+                        key: 'paymentMethodId',
+                        label:
+                          paymentMethodOptions.find((option) => option.value === paymentMethodId)
+                            ?.label ?? 'Payment method',
+                      },
+                    ]
+                  : []),
                 ...(submittedFrom || submittedTo
                   ? [
                       {
@@ -424,6 +458,7 @@ export default function AdminPaymentsPage() {
               onRemove={(key) => {
                 if (key === 'status') setFilter('status', 'ALL');
                 if (key === 'courseId') setFilter('courseId', undefined);
+                if (key === 'paymentMethodId') setFilter('paymentMethodId', undefined);
                 if (key === 'dateRange')
                   setFilters({ submittedFrom: undefined, submittedTo: undefined });
                 if (key === 'amountMismatch') setFilter('amountMismatch', undefined);
@@ -452,6 +487,13 @@ export default function AdminPaymentsPage() {
           value={courseId}
           onChange={(value) => setFilter('courseId', value)}
           options={courseOptions}
+        />
+        <SelectFilter
+          label="Payment method"
+          value={paymentMethodId}
+          onChange={(value) => setFilter('paymentMethodId', value)}
+          options={paymentMethodOptions}
+          placeholder="All methods"
         />
         <DateRangeFilter
           value={dateRange}
@@ -525,7 +567,10 @@ export default function AdminPaymentsPage() {
                   <TableCell>
                     <div className="min-w-0">
                       <p className="truncate font-medium text-foreground">{payment.courseTitle}</p>
-                      <p className="text-xs text-muted-foreground">{payment.transactionId}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {payment.transactionId}
+                        {payment.paymentMethodName && ` · ${payment.paymentMethodName}`}
+                      </p>
                     </div>
                   </TableCell>
                   <TableCell className="whitespace-nowrap font-medium text-foreground">

@@ -10,6 +10,12 @@ interface PaymentSeed {
   daysAgoSubmitted: number;
   daysAgoReviewed?: number;
   declineReason?: string;
+  paymentMethod?: {
+    id: string;
+    name: string;
+    code: string;
+    type: NonNullable<Payment['paymentMethodType']>;
+  };
 }
 
 const PAYMENT_SEEDS: PaymentSeed[] = [
@@ -19,6 +25,12 @@ const PAYMENT_SEEDS: PaymentSeed[] = [
     status: 'APPROVED',
     daysAgoSubmitted: 20,
     daysAgoReviewed: 19,
+    paymentMethod: {
+      id: 'method-telebirr',
+      name: 'Telebirr',
+      code: 'TELEBIRR',
+      type: 'MOBILE_MONEY',
+    },
   },
   {
     courseIndex: 10,
@@ -26,8 +38,20 @@ const PAYMENT_SEEDS: PaymentSeed[] = [
     status: 'APPROVED',
     daysAgoSubmitted: 60,
     daysAgoReviewed: 58,
+    paymentMethod: {
+      id: 'method-bank-transfer',
+      name: 'Bank Transfer',
+      code: 'BANK_TRANSFER',
+      type: 'BANK_TRANSFER',
+    },
   },
-  { courseIndex: 8, enrollmentId: 'enrollment-005', status: 'PENDING', daysAgoSubmitted: 2 },
+  {
+    courseIndex: 8,
+    enrollmentId: 'enrollment-005',
+    status: 'PENDING',
+    daysAgoSubmitted: 2,
+    paymentMethod: { id: 'method-chapa', name: 'Chapa', code: 'CHAPA', type: 'CARD' },
+  },
 ];
 
 function buildPayment(seed: PaymentSeed, index: number): Payment | null {
@@ -44,6 +68,10 @@ function buildPayment(seed: PaymentSeed, index: number): Payment | null {
     submittedAmount: amount,
     expectedAmount: amount,
     currency: record.currency,
+    paymentMethodId: seed.paymentMethod?.id ?? null,
+    paymentMethodName: seed.paymentMethod?.name ?? null,
+    paymentMethodCode: seed.paymentMethod?.code ?? null,
+    paymentMethodType: seed.paymentMethod?.type ?? null,
     paymentDate: daysAgo(seed.daysAgoSubmitted),
     studentNote: null,
     status: seed.status,

@@ -40,6 +40,8 @@ export interface EnrollmentListParams {
   page?: number;
   pageSize?: number;
   status?: EnrollmentStatus;
+  /** Restrict results to these statuses (e.g. only learning-status enrollments for "My Courses"). */
+  enrollmentStatuses?: EnrollmentStatus[];
   search?: string;
   categoryId?: string;
 }

@@ -1,4 +1,5 @@
 import { MOCK_ENROLLMENTS } from '@/features/enrollments/data/mock-enrollments.data';
+import { MOCK_PAYMENT_METHODS } from '@/features/payment-methods/data/mock-payment-methods.data';
 import { MOCK_PAYMENTS } from './mock-payments.data';
 import type {
   Payment,
@@ -53,6 +54,17 @@ export const mockPaymentsApi = {
       course: { id: enrollment.courseId, title: enrollment.courseTitle },
       expectedAmount: amount,
       currency: enrollment.currencySnapshot,
+      paymentMethods: MOCK_PAYMENT_METHODS.filter((entry) => entry.isActive)
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map(({ id, code, name, description, type, sortOrder, instructions }) => ({
+          id,
+          code,
+          name,
+          description,
+          type,
+          sortOrder,
+          instructions,
+        })),
       bank: {
         name: 'Joel Talargie Academy Bank',
         accountName: 'Joel Talargie Academy',
@@ -91,6 +103,10 @@ export const mockPaymentsApi = {
       submittedAmount: input.submittedAmount,
       expectedAmount: enrollment.discountSnapshot ?? enrollment.priceSnapshot,
       currency: input.currency,
+      paymentMethodId: input.paymentMethodId,
+      paymentMethodName: null,
+      paymentMethodCode: null,
+      paymentMethodType: null,
       paymentDate: input.paymentDate ?? null,
       studentNote: input.studentNote?.trim() || null,
       status: 'PENDING',

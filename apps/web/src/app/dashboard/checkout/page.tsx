@@ -18,7 +18,6 @@ import { OrderSummaryCard } from '@/features/checkout/components/order-summary-c
 import { CourseSummaryStep } from '@/features/checkout/components/course-summary-step';
 import { PromoCodeStep } from '@/features/checkout/components/promo-code-step';
 import { PaymentMethodStep } from '@/features/checkout/components/payment-method-step';
-import { PaymentReceiptStep } from '@/features/checkout/components/payment-receipt-step';
 import { ConfirmationStep } from '@/features/checkout/components/confirmation-step';
 import type {
   CheckoutStepId,
@@ -47,7 +46,7 @@ function CheckoutSkeleton() {
         <Skeleton className="h-4 w-64" />
       </div>
       <div className="mt-6 flex items-center justify-between gap-2">
-        {Array.from({ length: 5 }).map((_, index) => (
+        {Array.from({ length: 3 }).map((_, index) => (
           <Skeleton key={index} className="size-8 rounded-full" />
         ))}
       </div>
@@ -146,12 +145,8 @@ export default function CheckoutPage() {
     if (!hydrated) return;
     if (step >= 3 && !enrollmentId) {
       setStep(2);
-      return;
     }
-    if (step >= 4 && !isFreeEnrollment && (!paymentResult || !paymentSummary)) {
-      setStep(3);
-    }
-  }, [hydrated, step, enrollmentId, paymentResult, paymentSummary, isFreeEnrollment]);
+  }, [hydrated, step, enrollmentId]);
 
   async function handlePromoNext() {
     if (!courseQuery.data) return;
@@ -163,7 +158,7 @@ export default function CheckoutPage() {
       setEnrollmentId(result.enrollment.id);
       if (result.enrollment.status === 'ENROLLED') {
         setIsFreeEnrollment(true);
-        setStep(5);
+        setStep(3);
       } else {
         setStep(3);
       }
@@ -240,38 +235,32 @@ export default function CheckoutPage() {
             />
           )}
 
-          {step === 3 && enrollmentId && (
-            <PaymentMethodStep
-              enrollmentId={enrollmentId}
-              instructions={instructionsQuery.data}
-              isLoadingInstructions={instructionsQuery.isLoading}
-              onSubmitted={(result, summary) => {
-                setPaymentResult(result);
-                setPaymentSummary(summary);
-                setStep(4);
-              }}
-              onBack={() => setStep(2)}
-            />
-          )}
-
-          {step === 4 && paymentResult && paymentSummary && (
-            <PaymentReceiptStep
-              result={paymentResult}
-              summary={paymentSummary}
-              onNext={() => setStep(5)}
-            />
-          )}
-
-          {step === 5 && (
-            <ConfirmationStep
-              courseTitle={course.title}
-              isFreeEnrollment={isFreeEnrollment}
-              methodLabel={paymentSummary?.methodLabel}
-            />
-          )}
+          {step === 3 &&
+            enrollmentId &&
+            (isFreeEnrollment || (paymentResult && paymentSummary) ? (
+              <ConfirmationStep
+                courseTitle={course.title}
+                isFreeEnrollment={isFreeEnrollment}
+                result={paymentResult}
+                summary={paymentSummary}
+              />
+            ) : (
+              <PaymentMethodStep
+                enrollmentId={enrollmentId}
+                instructions={instructionsQuery.data}
+                isLoadingInstructions={instructionsQuery.isLoading}
+                onSubmitted={(result, summary) => {
+                  setPaymentResult(result);
+                  setPaymentSummary(summary);
+                }}
+                onBack={() => setStep(2)}
+              />
+            ))}
         </div>
 
-        {step < 5 && <OrderSummaryCard course={course} redemption={redemption} />}
+        {(step < 3 || (step === 3 && !isFreeEnrollment && !paymentResult)) && (
+          <OrderSummaryCard course={course} redemption={redemption} />
+        )}
       </div>
     </ContentContainer>
   );

@@ -26,10 +26,15 @@ describe('PaymentsService', () => {
     getSignedUrl: jest.fn(),
   };
   const notifications = { notify: jest.fn().mockResolvedValue(null) };
+  const paymentMethods = {
+    listActive: jest.fn().mockResolvedValue([]),
+    requireActiveById: jest.fn().mockResolvedValue({ id: 'method' }),
+  };
   const service = new PaymentsService(
     repository as never,
     storage,
     notifications as never,
+    paymentMethods as never,
   );
   const user = {
     id: 'student',

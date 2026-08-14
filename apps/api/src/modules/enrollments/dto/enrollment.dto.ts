@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsDateString,
   IsEnum,
@@ -33,6 +33,17 @@ export class EnrollmentPaginationDto {
 }
 export class ListMyEnrollmentsDto extends EnrollmentPaginationDto {
   @IsOptional() @IsEnum(EnrollmentStatus) status?: EnrollmentStatus;
+  @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string'
+      ? value
+          .split(',')
+          .map((entry) => entry.trim().toUpperCase())
+          .filter(Boolean)
+      : value,
+  )
+  @IsEnum(EnrollmentStatus, { each: true })
+  enrollmentStatuses?: EnrollmentStatus[];
   @IsOptional() @IsString() @MaxLength(100) search?: string;
   @IsOptional() @IsUUID() categoryId?: string;
 }

@@ -24,6 +24,11 @@ function filterEnrollments(params: EnrollmentListParams) {
   return store
     .filter((enrollment) => {
       if (params.status && enrollment.status !== params.status) return false;
+      if (
+        params.enrollmentStatuses?.length &&
+        !params.enrollmentStatuses.includes(enrollment.status)
+      )
+        return false;
       if (params.categoryId && enrollment.categoryId !== params.categoryId) return false;
       if (params.search) {
         const needle = params.search.toLowerCase();

@@ -24,6 +24,7 @@ import type {
 } from '../dto/payments.dto';
 import { PaymentsRepository } from '../repositories/payments.repository';
 import { NotificationsService } from '../../notifications/services/notifications.service';
+import { PaymentMethodsService } from '../../payment-methods/services/payment-methods.service';
 
 const RECEIPT_TYPES: Record<
   string,
@@ -57,6 +58,7 @@ export class PaymentsService {
     private readonly repository: PaymentsRepository,
     @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
     private readonly notifications: NotificationsService,
+    private readonly paymentMethods: PaymentMethodsService,
   ) {}
 
   async instructions(user: AuthUser, enrollmentId: string) {
@@ -69,6 +71,7 @@ export class PaymentsService {
     const settings = Object.fromEntries(
       (await this.repository.settings()).map((row) => [row.key, row.value]),
     );
+    const paymentMethods = await this.paymentMethods.listActive();
     return {
       enrollmentId,
       course: { id: enrollment.courseId, title: enrollment.courseTitle },
@@ -77,6 +80,7 @@ export class PaymentsService {
         enrollment.discountSnapshot,
       ),
       currency: enrollment.currencySnapshot,
+      paymentMethods,
       bank: {
         name: settings['payment.bank_name'] ?? 'Configured Bank',
         accountName:
@@ -136,6 +140,13 @@ export class PaymentsService {
         code: 'INVALID_PAYMENT_DATE',
         message: 'Payment date cannot be in the future',
       });
+    let paymentMethodId: string | null = null;
+    if (dto.paymentMethodId) {
+      const method = await this.paymentMethods.requireActiveById(
+        dto.paymentMethodId,
+      );
+      paymentMethodId = method.id;
+    }
     try {
       await this.storage.upload({
         key: receipt.key,
@@ -161,6 +172,7 @@ export class PaymentsService {
           currency: dto.currency,
           paymentDate,
           studentNote: dto.studentNote?.trim() || null,
+          paymentMethodId,
         },
         receipt,
         expectedAmount,
@@ -291,11 +303,23 @@ export class PaymentsService {
         .notify({
           userId: payment.studentId,
           recipientEmail: payment.studentEmail,
-          recipientName: 'Student',
+          recipientName: payment.studentName ?? 'Student',
           templateCode: 'PAYMENT_APPROVED',
           variables: {
-            recipientName: 'Student',
+            recipientName: payment.studentName ?? 'Student',
             courseTitle: payment.courseTitle,
+            currency: payment.currency,
+            amountPaid: this.formatMoney(
+              payment.submittedAmount ?? payment.expectedAmount,
+            ),
+            amountOriginal: this.formatMoney(payment.expectedAmount),
+            amountDiscount: this.formatMoney(
+              Math.max(
+                0,
+                Number(payment.expectedAmount) -
+                  Number(payment.submittedAmount ?? payment.expectedAmount),
+              ),
+            ),
             approvedAt: new Date().toISOString(),
             dashboardUrl: `${process.env.EMAIL_PUBLIC_APP_URL ?? 'http://localhost:3000'}/dashboard/my-courses`,
             academyName: 'Joel Talargie Academy',
@@ -332,10 +356,10 @@ export class PaymentsService {
         .notify({
           userId: payment.studentId,
           recipientEmail: payment.studentEmail,
-          recipientName: 'Student',
+          recipientName: payment.studentName ?? 'Student',
           templateCode: 'PAYMENT_DECLINED',
           variables: {
-            recipientName: 'Student',
+            recipientName: payment.studentName ?? 'Student',
             courseTitle: payment.courseTitle,
             declineReason: dto.reason.trim(),
             paymentUrl: `${process.env.EMAIL_PUBLIC_APP_URL ?? 'http://localhost:3000'}/dashboard/payments`,
@@ -479,6 +503,10 @@ export class PaymentsService {
     return normalizedDiscount !== '0.00'
       ? normalizedDiscount
       : this.money(price, false);
+  }
+
+  private formatMoney(value: string | number) {
+    return Number(value).toFixed(2);
   }
 
   private money(value: string, positive: boolean) {

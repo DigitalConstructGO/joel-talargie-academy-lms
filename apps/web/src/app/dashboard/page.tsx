@@ -43,7 +43,10 @@ export default function DashboardPage() {
   const user = useAuthStore((state) => state.user);
   const firstName = user?.firstName ?? 'there';
 
-  const enrollmentsQuery = useMyEnrollments({ pageSize: 100 });
+  const enrollmentsQuery = useMyEnrollments({
+    pageSize: 100,
+    enrollmentStatuses: ['ENROLLED', 'IN_PROGRESS', 'COMPLETED'],
+  });
   const coursesQuery = useCourses({ pageSize: 100 });
   const unreadQuery = useUnreadNotificationsCount();
   const certificatesQuery = useMyCertificates({ pageSize: 100 });

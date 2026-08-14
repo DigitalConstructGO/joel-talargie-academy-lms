@@ -21,6 +21,7 @@ function toFormData(input: SubmitPaymentInput): FormData {
   form.set('transactionId', input.transactionId);
   form.set('submittedAmount', input.submittedAmount);
   form.set('currency', input.currency);
+  form.set('paymentMethodId', input.paymentMethodId);
   if (input.paymentDate) form.set('paymentDate', input.paymentDate);
   if (input.studentNote) form.set('studentNote', input.studentNote);
   form.set('receipt', input.receipt);
@@ -41,7 +42,9 @@ const livePaymentsApi = {
       await authClient.post(
         `/me/enrollments/${encodeURIComponent(enrollmentId)}/payments`,
         toFormData(input),
-        { headers: { 'Content-Type': 'multipart/form-data' } },
+        {
+          headers: { 'Content-Type': undefined },
+        },
       ),
     ),
 

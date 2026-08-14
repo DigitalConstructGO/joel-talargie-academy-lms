@@ -1,14 +1,16 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import type { DateRange } from 'react-day-picker';
-import { AlertTriangle, Download, FileText, Loader2 } from 'lucide-react';
+import { AlertTriangle, Clock, Download, FileText, Loader2 } from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
 import { PageHeader } from '@/components/common/page-header';
 import { SearchBar } from '@/components/common/search-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { ROUTES } from '@/constants/routes';
 import {
   Table,
   TableBody,
@@ -112,6 +114,12 @@ function PaymentDetailSheet({
                 <dt className="text-muted-foreground">Transaction ID</dt>
                 <dd className="font-medium text-foreground">{payment.transactionId}</dd>
               </div>
+              {payment.paymentMethodName && (
+                <div className="flex items-center justify-between">
+                  <dt className="text-muted-foreground">Payment method</dt>
+                  <dd className="font-medium text-foreground">{payment.paymentMethodName}</dd>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <dt className="text-muted-foreground">Attempt</dt>
                 <dd className="font-medium text-foreground">#{payment.attemptNumber}</dd>
@@ -157,10 +165,23 @@ function PaymentDetailSheet({
               </p>
             )}
 
+            {payment.status === 'PENDING' && (
+              <p className="rounded-lg border border-warning/40 bg-warning/5 px-3 py-2 text-sm text-warning">
+                Your payment is being reviewed by the academy. You&apos;ll be notified once
+                it&apos;s approved and your course access is unlocked.
+              </p>
+            )}
+
             {payment.status === 'DECLINED' && payment.declineReason && (
               <p className="rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
                 {payment.declineReason}
               </p>
+            )}
+
+            {payment.status === 'APPROVED' && (
+              <Button asChild className="w-full">
+                <Link href={ROUTES.dashboard.learn(payment.enrollmentId)}>Go to Course</Link>
+              </Button>
             )}
 
             {payment.studentNote && (
@@ -220,6 +241,7 @@ export default function StudentPaymentsPage() {
 
   const payments = paymentsQuery.data ?? [];
   const hasMore = payments.length === pageSize;
+  const hasPending = payments.some((payment) => payment.status === 'PENDING');
   const hasActiveFilters =
     status !== 'ALL' || Boolean(search) || Boolean(submittedFrom) || Boolean(submittedTo);
 
@@ -234,6 +256,13 @@ export default function StudentPaymentsPage() {
   return (
     <ContentContainer>
       <PageHeader title="Payments" description="Your payment history and receipts." />
+
+      {hasPending && (
+        <p className="flex items-center gap-2 rounded-xl border border-warning/40 bg-warning/5 px-4 py-3 text-sm text-warning">
+          <Clock className="size-4 shrink-0" />
+          You have a payment awaiting review. Course access unlocks once an admin approves it.
+        </p>
+      )}
 
       <FilterBar
         chips={

@@ -80,6 +80,12 @@ export const ROUTES = {
     financialPayments: '/admin/financial/payments',
     financialPromoCodes: '/admin/financial/promo-codes',
     financialPromoCodeDetail: (codeId: string) => `/admin/financial/promo-codes/${codeId}`,
+    financialPaymentMethods: '/admin/financial/payment-methods',
+    financialPaymentMethodCreate: '/admin/financial/payment-methods/create',
+    financialPaymentMethodDetail: (paymentMethodId: string) =>
+      `/admin/financial/payment-methods/${paymentMethodId}`,
+    financialPaymentMethodEdit: (paymentMethodId: string) =>
+      `/admin/financial/payment-methods/${paymentMethodId}/edit`,
     certificates: '/admin/certificates',
     certificateDetail: (certificateId: string) => `/admin/certificates/${certificateId}`,
     verifyCertificate: '/admin/verify-certificate',

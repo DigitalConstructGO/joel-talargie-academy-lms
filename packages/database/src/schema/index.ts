@@ -68,6 +68,12 @@ export const progressStatus = pgEnum('progress_status', [
   'COMPLETED',
 ]);
 export const paymentStatus = pgEnum('payment_status', ['PENDING', 'APPROVED', 'DECLINED']);
+export const paymentMethodType = pgEnum('payment_method_type', [
+  'MOBILE_MONEY',
+  'BANK_TRANSFER',
+  'CARD',
+  'OTHER',
+]);
 export const certificateStatus = pgEnum('certificate_status', [
   'PENDING',
   'GENERATED',
@@ -610,6 +616,27 @@ export const lessonProgress = pgTable(
   ],
 );
 
+export const paymentMethods = pgTable(
+  'payment_methods',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    code: text('code').notNull().unique(),
+    name: text('name').notNull(),
+    description: text('description'),
+    type: paymentMethodType('type').notNull().default('OTHER'),
+    instructions: jsonb('instructions').notNull().default({}),
+    config: jsonb('config').notNull().default({}),
+    isActive: boolean('is_active').notNull().default(true),
+    sortOrder: integer('sort_order').notNull().default(0),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    ...timestamps,
+  },
+  (table) => [
+    index('payment_methods_active_sort_idx').on(table.isActive, table.sortOrder, table.name),
+    index('payment_methods_type_idx').on(table.type),
+  ],
+);
+
 export const payments = pgTable(
   'payments',
   {
@@ -617,6 +644,9 @@ export const payments = pgTable(
     enrollmentId: uuid('enrollment_id')
       .notNull()
       .references(() => enrollments.id, { onDelete: 'restrict' }),
+    paymentMethodId: uuid('payment_method_id').references(() => paymentMethods.id, {
+      onDelete: 'restrict',
+    }),
     reviewerId: uuid('reviewer_id').references(() => users.id, { onDelete: 'restrict' }),
     attemptNumber: integer('attempt_number').notNull(),
     transactionId: text('transaction_id'),
@@ -652,6 +682,7 @@ export const payments = pgTable(
       table.id,
     ),
     index('payments_status_submitted_idx').on(table.status, table.submittedAt.desc(), table.id),
+    index('payments_payment_method_idx').on(table.paymentMethodId),
     uniqueIndex('payments_one_pending_per_enrollment_uq')
       .on(table.enrollmentId)
       .where(sql`${table.status} = 'PENDING'`),
@@ -1367,6 +1398,7 @@ export const schema = {
   enrollments,
   lessonProgress,
   payments,
+  paymentMethods,
   paymentReceipts,
   certificateTemplates,
   certificates,

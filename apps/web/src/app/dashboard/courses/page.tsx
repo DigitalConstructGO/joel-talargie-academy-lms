@@ -72,6 +72,7 @@ export default function CoursesPage() {
     page,
     pageSize: PAGE_SIZE,
     status: status === 'ALL' ? undefined : status,
+    enrollmentStatuses: ['ENROLLED', 'IN_PROGRESS', 'COMPLETED'],
     categoryId,
     search: search || undefined,
   });

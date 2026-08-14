@@ -10,7 +10,9 @@ import type {
 
 const cleanParams = <T extends object>(params: T) =>
   Object.fromEntries(
-    Object.entries(params).filter(([, value]) => value !== undefined && value !== ''),
+    Object.entries(params)
+      .filter(([, value]) => value !== undefined && value !== '' && value !== null)
+      .map(([key, value]) => [key, Array.isArray(value) ? value.join(',') : value]),
   );
 
 export interface EnrollmentByCourseResult {

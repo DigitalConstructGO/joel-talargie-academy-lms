@@ -390,10 +390,16 @@ export const EMAIL_TEMPLATE_CONTENT: Record<EmailTemplateCode, EmailTemplateCont
         paragraph(
           'Hi {{recipientName}}, your payment for <strong>{{courseTitle}}</strong> was approved on {{approvedAt}}. You are all set!',
         ) +
+        noticeBox(
+          '<strong>Payment summary</strong><br/>' +
+            'Amount paid: <strong>{{currency}} {{amountPaid}}</strong><br/>' +
+            'Discount applied: <strong>{{currency}} {{amountDiscount}}</strong>',
+          COLOR.green,
+        ) +
         button('Start Learning', '{{dashboardUrl}}'),
     ),
     text: shellText(
-      'Hi {{recipientName}},\n\nYour payment for {{courseTitle}} was approved on {{approvedAt}}. You are all set!\n{{dashboardUrl}}',
+      'Hi {{recipientName}},\n\nYour payment for {{courseTitle}} was approved on {{approvedAt}}.\nAmount paid: {{currency}} {{amountPaid}}\nDiscount applied: {{currency}} {{amountDiscount}}\n\nStart learning:\n{{dashboardUrl}}',
     ),
   },
   PAYMENT_DECLINED: {

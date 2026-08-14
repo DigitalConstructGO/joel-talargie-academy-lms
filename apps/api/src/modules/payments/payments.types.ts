@@ -16,4 +16,5 @@ export interface PaymentSubmission {
   currency: string;
   paymentDate: Date | null;
   studentNote: string | null;
+  paymentMethodId: string | null;
 }

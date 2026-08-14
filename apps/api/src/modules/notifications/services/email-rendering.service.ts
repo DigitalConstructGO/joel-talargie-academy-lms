@@ -50,6 +50,9 @@ export const TEMPLATE_PLACEHOLDERS: Record<string, readonly string[]> = {
   PAYMENT_APPROVED: [
     'recipientName',
     'courseTitle',
+    'amountPaid',
+    'amountDiscount',
+    'currency',
     'approvedAt',
     'dashboardUrl',
     'academyName',

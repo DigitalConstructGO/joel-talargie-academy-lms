@@ -22,6 +22,7 @@ import { CatalogModule } from './modules/catalog/catalog.module';
 import { EnrollmentsModule } from './modules/enrollments/enrollments.module';
 import { LearningModule } from './modules/learning/learning.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { PaymentMethodsModule } from './modules/payment-methods/payment-methods.module';
 import { CertificatesModule } from './modules/certificates/certificates.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AdministrationModule } from './modules/administration/administration.module';
@@ -55,6 +56,7 @@ import { PromotionsModule } from './modules/promotions/promotions.module';
     EnrollmentsModule,
     LearningModule,
     PaymentsModule,
+    PaymentMethodsModule,
     CertificatesModule,
     NotificationsModule,
     AdministrationModule,

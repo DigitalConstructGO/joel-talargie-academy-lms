@@ -1,3 +1,5 @@
+import type { PaymentMethodType } from '@/features/payment-methods/types/payment-method.types';
+
 export type PaymentStatus = 'PENDING' | 'APPROVED' | 'DECLINED';
 
 export interface Payment {
@@ -10,6 +12,10 @@ export interface Payment {
   submittedAmount: string;
   expectedAmount: string;
   currency: string;
+  paymentMethodId: string | null;
+  paymentMethodName: string | null;
+  paymentMethodCode: string | null;
+  paymentMethodType: PaymentMethodType | null;
   paymentDate: string | null;
   studentNote: string | null;
   status: PaymentStatus;
@@ -37,6 +43,21 @@ export interface PaymentInstructions {
   course: { id: string; title: string };
   expectedAmount: string;
   currency: string;
+  paymentMethods: {
+    id: string;
+    name: string;
+    code: string;
+    type: PaymentMethodType;
+    sortOrder: number;
+    description?: string | null;
+    instructions: {
+      tagline?: string;
+      tips?: string[];
+      securityNotice?: string;
+      transactionIdLabel?: string;
+      transactionIdPlaceholder?: string;
+    };
+  }[];
   bank: { name: string; accountName: string; accountNumber: string; branch: string };
   instructions: string[];
   referenceInstructions: string | null;
@@ -49,6 +70,7 @@ export interface SubmitPaymentInput {
   transactionId: string;
   submittedAmount: string;
   currency: string;
+  paymentMethodId: string;
   paymentDate?: string;
   studentNote?: string;
   receipt: File;

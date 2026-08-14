@@ -15,7 +15,7 @@ export const adminStorageApi = {
     form.set('file', file);
     return unwrap<StorageUploadResult>(
       await authClient.post('/storage/course-thumbnails', form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: { 'Content-Type': undefined },
       }),
     );
   },
@@ -25,7 +25,7 @@ export const adminStorageApi = {
     form.set('file', file);
     return unwrap<StorageUploadResult>(
       await authClient.post('/storage/lesson-resources', form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: { 'Content-Type': undefined },
       }),
     );
   },

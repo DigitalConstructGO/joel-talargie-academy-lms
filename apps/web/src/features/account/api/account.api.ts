@@ -40,7 +40,7 @@ const liveAccountApi = {
     form.set('file', file);
     return unwrap<AvatarUploadResult>(
       await authClient.post('/storage/avatar', form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: { 'Content-Type': undefined },
       }),
     );
   },

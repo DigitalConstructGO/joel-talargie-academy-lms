@@ -1,6 +1,6 @@
 'use client';
 
-import { CreditCard, Tag, Wallet } from 'lucide-react';
+import { CreditCard, Landmark, Tag, Wallet } from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
 import { PageHeader } from '@/components/common/page-header';
 import { Reveal } from '@/components/common/reveal';
@@ -22,6 +22,12 @@ const QUICK_LINKS = [
     label: 'Promo Codes',
     description: 'Manage discount coupon codes',
     href: ROUTES.admin.financialPromoCodes,
+  },
+  {
+    icon: Landmark,
+    label: 'Payment Methods',
+    description: 'Configure methods students can pay with',
+    href: ROUTES.admin.financialPaymentMethods,
   },
 ];
 

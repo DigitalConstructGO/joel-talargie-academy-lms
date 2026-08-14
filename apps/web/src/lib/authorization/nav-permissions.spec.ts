@@ -101,6 +101,7 @@ describe('ADMIN_NAV regression: no invented permission strings', () => {
       'lessons',
       'notifications',
       'payments',
+      'payment_methods',
       'permissions',
       'promotions',
       'reports',
