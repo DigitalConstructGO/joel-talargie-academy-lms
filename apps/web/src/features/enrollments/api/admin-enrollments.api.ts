@@ -1,6 +1,4 @@
 import { authClient, unwrap } from '@/lib/api/auth-client';
-import { CATALOG_DATA_SOURCE } from '@/config/data-source.config';
-import { mockAdminEnrollmentsApi } from '../data/mock-admin-enrollments.api';
 import type {
   AdminEnrollment,
   AdminEnrollmentDetail,
@@ -15,7 +13,8 @@ const cleanParams = <T extends object>(params: T) =>
     Object.entries(params).filter(([, value]) => value !== undefined && value !== ''),
   );
 
-const liveAdminEnrollmentsApi = {
+/** Talks to the real backend's admin enrollment endpoints. */
+export const adminEnrollmentsApi = {
   list: async (params: AdminEnrollmentListParams = {}) =>
     unwrap<AdminEnrollmentListResult>(
       await authClient.get('/admin/enrollments', { params: cleanParams(params) }),
@@ -48,7 +47,3 @@ const liveAdminEnrollmentsApi = {
       }),
     ),
 };
-
-/** Same mock/live switch as `catalogApi` - flips with `NEXT_PUBLIC_CATALOG_DATA_SOURCE`. */
-export const adminEnrollmentsApi =
-  CATALOG_DATA_SOURCE === 'live' ? liveAdminEnrollmentsApi : mockAdminEnrollmentsApi;

@@ -1,7 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
-/** Mirrors `features/instructors/components/instructor-card.tsx` / `instructor-profile-card.tsx`. */
+/** Mirrors `features/instructors/components/instructor-card.tsx`. */
 export function InstructorCardSkeleton() {
   return (
     <Card className="flex flex-col items-center gap-3 p-6 text-center">

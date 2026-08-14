@@ -30,7 +30,9 @@ const DEFAULT_FILTERS: InstructorsFilters = { search: undefined };
  * free-text `presenterName`. This derives a real, non-fabricated listing
  * from published course data via `deriveInstructors` (already used by the
  * public `/instructors` page) rather than inventing bios/ratings/avatars
- * that don't exist in the schema.
+ * that don't exist in the schema. Search is delegated to the backend's
+ * course search (the DB search vector indexes `presenter_name`), so the
+ * frontend never filters the full dataset itself.
  */
 export default function AdminInstructorsPage() {
   const { filters, setFilter } = useQueryFilters<InstructorsFilters>({
@@ -38,14 +40,12 @@ export default function AdminInstructorsPage() {
   });
   const { search } = filters;
 
-  const coursesQuery = useCourses({ pageSize: 100, sort: 'newest' });
+  const coursesQuery = useCourses({ pageSize: 100, sort: 'newest', search });
 
-  const instructors = useMemo(() => {
-    const all = deriveInstructors(coursesQuery.data?.items ?? []);
-    if (!search) return all;
-    const needle = search.toLowerCase();
-    return all.filter((instructor) => instructor.name.toLowerCase().includes(needle));
-  }, [coursesQuery.data, search]);
+  const instructors = useMemo(
+    () => deriveInstructors(coursesQuery.data?.items ?? []),
+    [coursesQuery.data],
+  );
 
   return (
     <ContentContainer>

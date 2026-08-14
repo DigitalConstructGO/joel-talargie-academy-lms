@@ -1,4 +1,3 @@
-import { MOCK_ENROLLMENTS } from '@/features/enrollments/data/mock-enrollments.data';
 import { MOCK_COURSE_RECORDS } from '@/features/catalog/data/build-mock-courses';
 import type { CourseLesson, CourseSection } from '@/features/catalog/types/catalog.types';
 import { mockLessonTextContent, MOCK_LESSON_VIDEO_URL } from './mock-learning.data';
@@ -21,6 +20,47 @@ function notFound(message: string): never {
   error.response = { status: 404 };
   throw error;
 }
+
+interface DemoLearningEnrollment {
+  id: string;
+  courseId: string;
+  status: 'ENROLLED' | 'IN_PROGRESS' | 'COMPLETED';
+  progressPercentage: number;
+  startedAt: string | null;
+  completedAt: string | null;
+}
+
+function demoEnrollment(
+  courseIndex: number,
+  id: string,
+  status: DemoLearningEnrollment['status'],
+  progressPercentage: number,
+  startedDaysAgo: number,
+  completedDaysAgo: number | null,
+): DemoLearningEnrollment | null {
+  const record = MOCK_COURSE_RECORDS[courseIndex];
+  if (!record) return null;
+  return {
+    id,
+    courseId: record.id,
+    status,
+    progressPercentage,
+    startedAt: progressPercentage > 0 ? new Date(Date.now() - startedDaysAgo * 86_400_000).toISOString() : null,
+    completedAt: status === 'COMPLETED' && completedDaysAgo !== null
+      ? new Date(Date.now() - completedDaysAgo * 86_400_000).toISOString()
+      : null,
+  };
+}
+
+const DEMO_ENROLLMENTS: DemoLearningEnrollment[] = [
+  demoEnrollment(0, 'enrollment-001', 'IN_PROGRESS', 72, 34, null),
+  demoEnrollment(2, 'enrollment-002', 'IN_PROGRESS', 18, 6, null),
+  demoEnrollment(4, 'enrollment-003', 'COMPLETED', 100, 90, 20),
+  demoEnrollment(6, 'enrollment-004', 'ENROLLED', 0, 1, null),
+  demoEnrollment(8, 'enrollment-005', 'IN_PROGRESS', 45, 15, null),
+  demoEnrollment(10, 'enrollment-006', 'COMPLETED', 100, 150, 60),
+  demoEnrollment(12, 'enrollment-007', 'COMPLETED', 100, 80, 10),
+].filter((entry): entry is DemoLearningEnrollment => entry !== null);
 
 interface ProgressEntry {
   status: LessonProgressStatus;
@@ -49,7 +89,7 @@ function findCourse(courseId: string) {
 }
 
 function findEnrollment(enrollmentId: string) {
-  const enrollment = MOCK_ENROLLMENTS.find((entry) => entry.id === enrollmentId);
+  const enrollment = DEMO_ENROLLMENTS.find((entry) => entry.id === enrollmentId);
   if (!enrollment) notFound('Enrollment not found');
   return enrollment;
 }

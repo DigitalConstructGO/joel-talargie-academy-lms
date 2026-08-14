@@ -1,5 +1,8 @@
-import { MOCK_ENROLLMENTS } from '@/features/enrollments/data/mock-enrollments.data';
-import { MOCK_CERTIFICATE_SEEDS, type CertificateSeed } from './mock-certificates.data';
+import {
+  MOCK_CERTIFICATE_ENROLLMENTS,
+  MOCK_CERTIFICATE_SEEDS,
+  type CertificateSeed,
+} from './mock-certificates.data';
 import type {
   Certificate,
   CertificateDownload,
@@ -75,7 +78,7 @@ export const mockCertificatesApi = {
         certificate: { id: existing.certificate.id, status: existing.certificate.status },
       });
     }
-    const enrollment = MOCK_ENROLLMENTS.find((item) => item.id === enrollmentId);
+    const enrollment = MOCK_CERTIFICATE_ENROLLMENTS.find((item) => item.id === enrollmentId);
     if (!enrollment) notFound('Enrollment not found');
     if (enrollment.status !== 'COMPLETED' || enrollment.progressPercentage !== 100) {
       const error = new Error('Certificate not eligible') as Error & {

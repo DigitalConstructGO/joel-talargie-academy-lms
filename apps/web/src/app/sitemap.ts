@@ -2,8 +2,6 @@ import type { MetadataRoute } from 'next';
 import { ROUTES } from '@/constants/routes';
 import { siteConfig } from '@/config/site.config';
 import { catalogApi } from '@/features/catalog/api/catalog.api';
-import { CATALOG_DATA_SOURCE } from '@/config/data-source.config';
-import { MOCK_INSTRUCTORS } from '@/features/instructors/data/mock-instructors.data';
 import { deriveInstructors } from '@/features/instructors/utils/derive-instructors';
 
 const STATIC_PATHS = [
@@ -48,12 +46,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-    const instructorSlugs =
-      CATALOG_DATA_SOURCE === 'mock'
-        ? MOCK_INSTRUCTORS.map((instructor) => instructor.slug)
-        : deriveInstructors(coursesResult.items).map((instructor) =>
-            encodeURIComponent(instructor.name),
-          );
+    const instructorSlugs = deriveInstructors(coursesResult.items).map((instructor) =>
+      encodeURIComponent(instructor.name),
+    );
 
     const instructorEntries: MetadataRoute.Sitemap = instructorSlugs.map((slug) => ({
       url: url(ROUTES.instructors.detail(slug)),

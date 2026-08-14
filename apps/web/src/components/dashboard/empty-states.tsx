@@ -41,7 +41,7 @@ export function NoCoursesEmptyState(props: PresetProps) {
     <EmptyState
       icon={BookOpen}
       title="No courses yet"
-      description="Courses you interact with will show up here."
+      description="You haven't enrolled in any courses yet."
       {...props}
     />
   );

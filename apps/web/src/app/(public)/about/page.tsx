@@ -2,9 +2,6 @@ import type { Metadata } from 'next';
 import { Award, BookOpen, Compass, Handshake, Heart, Lightbulb, Target, Users } from 'lucide-react';
 import { Reveal } from '@/components/common/reveal';
 import { catalogApi } from '@/features/catalog/api/catalog.api';
-import { CATALOG_DATA_SOURCE } from '@/config/data-source.config';
-import { computePlatformStats } from '@/features/home/utils/compute-platform-stats';
-import { MOCK_INSTRUCTORS } from '@/features/instructors/data/mock-instructors.data';
 import { StatsSection } from '@/features/home/components/stats-section';
 import { CtaBannerSection } from '@/features/home/components/cta-banner-section';
 import { FeatureCard } from '@/components/marketing/feature-card';
@@ -74,25 +71,15 @@ const TIMELINE = [
 ];
 
 async function loadStats() {
-  try {
-    const [categories, courseSample] = await Promise.all([
-      catalogApi.listCategories({ pageSize: 1 }),
-      catalogApi.listCourses({ pageSize: 100 }),
-    ]);
-    const isMock = CATALOG_DATA_SOURCE === 'mock';
-    const instructorCount = isMock
-      ? MOCK_INSTRUCTORS.length
-      : new Set(courseSample.items.map((course) => course.presenterName)).size;
-    const platformStats = isMock ? computePlatformStats() : null;
-    return {
-      totalCourses: courseSample.total,
-      totalCategories: categories.total,
-      instructorCount,
-      ...(platformStats ?? {}),
-    };
-  } catch {
-    return { totalCourses: 0, totalCategories: 0, instructorCount: 0 };
-  }
+  const [categories, courseSample] = await Promise.all([
+    catalogApi.listCategories({ pageSize: 1 }),
+    catalogApi.listCourses({ pageSize: 100 }),
+  ]);
+  return {
+    totalCourses: courseSample.total,
+    totalCategories: categories.total,
+    instructorCount: new Set(courseSample.items.map((course) => course.presenterName)).size,
+  };
 }
 
 export default async function AboutPage() {

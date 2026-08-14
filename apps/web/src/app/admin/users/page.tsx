@@ -31,7 +31,7 @@ import type { ManagedUser, ManagedUserStatus } from '@/features/users/types/user
 import { ROUTES } from '@/constants/routes';
 import { formatDate } from '@/lib/date';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 interface UsersFilters {
   [key: string]: string | undefined;
@@ -92,7 +92,7 @@ export default function AdminUsersPage() {
     provider: provider === 'ALL' ? undefined : provider,
     role: role || undefined,
     search: search || undefined,
-    includeArchived: status === 'ARCHIVED' || undefined,
+    includeArchived: true,
   });
 
   const hasActiveFilters =

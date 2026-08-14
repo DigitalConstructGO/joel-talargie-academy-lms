@@ -1,6 +1,4 @@
 import { authClient, unwrap } from '@/lib/api/auth-client';
-import { CATALOG_DATA_SOURCE } from '@/config/data-source.config';
-import { mockAdminCategoriesApi } from '../data/mock-admin-categories.api';
 import type {
   AdminCategory,
   AdminCategoryDetail,
@@ -16,7 +14,8 @@ const cleanParams = <T extends object>(params: T) =>
     Object.entries(params).filter(([, value]) => value !== undefined && value !== ''),
   );
 
-const liveAdminCategoriesApi = {
+/** Talks to the real backend's admin category endpoints. */
+export const adminCategoriesApi = {
   list: async (params: AdminCategoryListParams = {}) =>
     unwrap<AdminCategoryListResult>(
       await authClient.get('/admin/categories', { params: cleanParams(params) }),
@@ -41,7 +40,3 @@ const liveAdminCategoriesApi = {
   reorder: async (input: ReorderCategoriesInput) =>
     unwrap<void>(await authClient.put('/admin/categories/reorder', input)),
 };
-
-/** Same mock/live switch as `catalogApi` - flips with `NEXT_PUBLIC_CATALOG_DATA_SOURCE`. */
-export const adminCategoriesApi =
-  CATALOG_DATA_SOURCE === 'live' ? liveAdminCategoriesApi : mockAdminCategoriesApi;

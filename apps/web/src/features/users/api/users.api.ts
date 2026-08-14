@@ -1,6 +1,4 @@
 import { authClient, unwrap } from '@/lib/api/auth-client';
-import { CATALOG_DATA_SOURCE } from '@/config/data-source.config';
-import { mockUsersApi } from '../data/mock-users.api';
 import type {
   ManagedUser,
   ManagedUserDetail,
@@ -17,7 +15,8 @@ const cleanParams = <T extends object>(params: T) =>
     Object.entries(params).filter(([, value]) => value !== undefined && value !== ''),
   );
 
-const liveUsersApi = {
+/** Talks to the real backend's admin user-management endpoints. */
+export const usersApi = {
   list: async (params: UserListParams = {}) =>
     unwrap<UserListResult>(await authClient.get('/admin/users', { params: cleanParams(params) })),
 
@@ -78,6 +77,3 @@ const liveUsersApi = {
       ),
     ),
 };
-
-/** Same mock/live switch as `catalogApi` - flips with `NEXT_PUBLIC_CATALOG_DATA_SOURCE`. */
-export const usersApi = CATALOG_DATA_SOURCE === 'live' ? liveUsersApi : mockUsersApi;

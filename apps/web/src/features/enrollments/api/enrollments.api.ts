@@ -1,6 +1,4 @@
 import { authClient, unwrap } from '@/lib/api/auth-client';
-import { CATALOG_DATA_SOURCE } from '@/config/data-source.config';
-import { mockEnrollmentsApi } from '../data/mock-enrollments.api';
 import type {
   Enrollment,
   EnrollmentCreateResult,
@@ -22,7 +20,7 @@ export interface EnrollmentByCourseResult {
 }
 
 /** Talks to the real backend's authenticated `/me/enrollments` endpoints. */
-const liveEnrollmentsApi = {
+export const enrollmentsApi = {
   listMine: async (params: EnrollmentListParams = {}) =>
     unwrap<EnrollmentListResult>(
       await authClient.get('/me/enrollments', { params: cleanParams(params) }),
@@ -38,7 +36,3 @@ const liveEnrollmentsApi = {
       await authClient.post('/enrollments', { courseId, redemptionId }),
     ),
 };
-
-/** Same mock/live switch as `catalogApi` - flips with `NEXT_PUBLIC_CATALOG_DATA_SOURCE`. */
-export const enrollmentsApi =
-  CATALOG_DATA_SOURCE === 'live' ? liveEnrollmentsApi : mockEnrollmentsApi;

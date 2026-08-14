@@ -1,4 +1,4 @@
-import { MOCK_ENROLLMENTS } from '@/features/enrollments/data/mock-enrollments.data';
+import { MOCK_COURSE_RECORDS } from '@/features/catalog/data/build-mock-courses';
 import { MOCK_PAYMENT_METHODS } from '@/features/payment-methods/data/mock-payment-methods.data';
 import { MOCK_PAYMENTS } from './mock-payments.data';
 import type {
@@ -21,6 +21,34 @@ function notFound(message: string): never {
   error.response = { status: 404 };
   throw error;
 }
+
+interface DemoPaymentEnrollment {
+  id: string;
+  courseId: string;
+  courseTitle: string;
+  priceSnapshot: string;
+  discountSnapshot: string | null;
+  currencySnapshot: string;
+}
+
+function demoEnrollment(courseIndex: number, id: string): DemoPaymentEnrollment | null {
+  const record = MOCK_COURSE_RECORDS[courseIndex];
+  if (!record) return null;
+  return {
+    id,
+    courseId: record.id,
+    courseTitle: record.title,
+    priceSnapshot: record.price,
+    discountSnapshot: record.discountPrice,
+    currencySnapshot: record.currency,
+  };
+}
+
+const DEMO_ENROLLMENTS: DemoPaymentEnrollment[] = [
+  demoEnrollment(4, 'enrollment-003'),
+  demoEnrollment(10, 'enrollment-006'),
+  demoEnrollment(8, 'enrollment-005'),
+].filter((entry): entry is DemoPaymentEnrollment => entry !== null);
 
 let store: Payment[] = MOCK_PAYMENTS.map((payment) => ({ ...payment }));
 
@@ -46,7 +74,7 @@ function filterPayments(params: PaymentListParams) {
 
 export const mockPaymentsApi = {
   instructions: async (enrollmentId: string): Promise<PaymentInstructions> => {
-    const enrollment = MOCK_ENROLLMENTS.find((entry) => entry.id === enrollmentId);
+    const enrollment = DEMO_ENROLLMENTS.find((entry) => entry.id === enrollmentId);
     if (!enrollment) notFound('Enrollment not found');
     const amount = enrollment.discountSnapshot ?? enrollment.priceSnapshot;
     const latest = store.find((payment) => payment.enrollmentId === enrollmentId) ?? null;
@@ -90,7 +118,7 @@ export const mockPaymentsApi = {
   },
 
   submit: async (enrollmentId: string, input: SubmitPaymentInput): Promise<SubmitPaymentResult> => {
-    const enrollment = MOCK_ENROLLMENTS.find((entry) => entry.id === enrollmentId);
+    const enrollment = DEMO_ENROLLMENTS.find((entry) => entry.id === enrollmentId);
     if (!enrollment) notFound('Enrollment not found');
     const attemptNumber =
       store.filter((payment) => payment.enrollmentId === enrollmentId).length + 1;

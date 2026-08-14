@@ -116,11 +116,27 @@ function EnrollmentDetailSheet({
           <SheetDescription>Student progress, payment, and access status.</SheetDescription>
         </SheetHeader>
 
-        {enrollmentQuery.isLoading || !enrollment ? (
+        {enrollmentQuery.isLoading ? (
           <div className="mt-6 space-y-3">
             {Array.from({ length: 6 }).map((_, index) => (
               <Skeleton key={index} className="h-5 w-full" />
             ))}
+          </div>
+        ) : enrollmentQuery.isError ? (
+          <div className="mt-6">
+            <ErrorState
+              title="Enrollment not found"
+              description="This enrollment may have been removed or you may not have access to it."
+              onRetry={() => enrollmentQuery.refetch()}
+            />
+          </div>
+        ) : !enrollment ? (
+          <div className="mt-6">
+            <ErrorState
+              title="Enrollment not found"
+              description="This enrollment may have been removed or you may not have access to it."
+              onRetry={() => enrollmentQuery.refetch()}
+            />
           </div>
         ) : (
           <div className="mt-6 space-y-5">

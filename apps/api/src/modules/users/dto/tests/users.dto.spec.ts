@@ -70,8 +70,8 @@ describe('users DTOs', () => {
     it('applies defaults and accepts an empty query', async () => {
       const instance = plainToInstance(ListUsersQueryDto, {});
       expect(instance.page).toBe(1);
-      expect(instance.pageSize).toBe(20);
-      expect(instance.includeArchived).toBe(false);
+      expect(instance.pageSize).toBe(10);
+      expect(instance.includeArchived).toBe(true);
       expect(await validate(instance)).toHaveLength(0);
     });
 

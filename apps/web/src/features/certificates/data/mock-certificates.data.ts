@@ -1,5 +1,4 @@
-import { MOCK_ENROLLMENTS } from '@/features/enrollments/data/mock-enrollments.data';
-import type { Enrollment } from '@/features/enrollments/types/enrollment.types';
+import { MOCK_COURSE_RECORDS } from '@/features/catalog/data/build-mock-courses';
 import type { Certificate } from '../types/certificate.types';
 
 function daysAgo(days: number): string {
@@ -12,7 +11,38 @@ export interface CertificateSeed {
   certificate: Certificate;
 }
 
-function issuedCertificate(enrollment: Enrollment): CertificateSeed {
+export interface DemoCertificateEnrollment {
+  id: string;
+  courseTitle: string;
+  courseId: string;
+  completedAt: string | null;
+  status: 'COMPLETED';
+  progressPercentage: 100;
+}
+
+function demoEnrollment(
+  courseIndex: number,
+  id: string,
+  completedDaysAgo: number,
+): DemoCertificateEnrollment | null {
+  const record = MOCK_COURSE_RECORDS[courseIndex];
+  if (!record) return null;
+  return {
+    id,
+    courseTitle: record.title,
+    courseId: record.id,
+    completedAt: daysAgo(completedDaysAgo),
+    status: 'COMPLETED',
+    progressPercentage: 100,
+  };
+}
+
+export const MOCK_CERTIFICATE_ENROLLMENTS: DemoCertificateEnrollment[] = [
+  demoEnrollment(10, 'enrollment-006', 60),
+  demoEnrollment(12, 'enrollment-007', 10),
+].filter((entry): entry is DemoCertificateEnrollment => entry !== null);
+
+function issuedCertificate(enrollment: DemoCertificateEnrollment): CertificateSeed {
   return {
     enrollmentId: enrollment.id,
     certificate: {
@@ -35,7 +65,7 @@ function issuedCertificate(enrollment: Enrollment): CertificateSeed {
   };
 }
 
-function pendingCertificate(enrollment: Enrollment): CertificateSeed {
+function pendingCertificate(enrollment: DemoCertificateEnrollment): CertificateSeed {
   return {
     enrollmentId: enrollment.id,
     certificate: {
@@ -57,8 +87,8 @@ function pendingCertificate(enrollment: Enrollment): CertificateSeed {
   };
 }
 
-const iosEnrollment = MOCK_ENROLLMENTS.find((entry) => entry.id === 'enrollment-006');
-const pythonEnrollment = MOCK_ENROLLMENTS.find((entry) => entry.id === 'enrollment-007');
+const iosEnrollment = MOCK_CERTIFICATE_ENROLLMENTS.find((entry) => entry.id === 'enrollment-006');
+const pythonEnrollment = MOCK_CERTIFICATE_ENROLLMENTS.find((entry) => entry.id === 'enrollment-007');
 
 export const MOCK_CERTIFICATE_SEEDS: CertificateSeed[] = [
   iosEnrollment ? issuedCertificate(iosEnrollment) : null,
