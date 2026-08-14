@@ -119,8 +119,19 @@ function PaymentDetailSheet({
   }, [paymentId]);
 
   const canApproveMismatch = !payment?.amountMismatch || can('payments.approve_amount_mismatch');
+  const duplicateCount = Number(payment?.duplicateTransactionCount ?? 0);
   const needsMismatchReason = Boolean(payment?.amountMismatch) && !mismatchReason.trim();
-  const needsDuplicateAck = Boolean(payment?.duplicateTransactionCount) && !acknowledgedDuplicate;
+  const needsDuplicateAck = duplicateCount > 0 && !acknowledgedDuplicate;
+
+  const approveDisabledHint = approvePayment.isPending
+    ? undefined
+    : !canApproveMismatch
+      ? "You don't have permission to approve a payment with a mismatched amount. Ask an admin with the enhanced mismatch-approval permission to review it."
+      : needsMismatchReason
+        ? 'Enter a reason for approving the mismatched amount to enable Approve.'
+        : needsDuplicateAck
+          ? 'Confirm the duplicate-transaction warning to enable Approve.'
+          : undefined;
 
   async function handleApprove() {
     if (!paymentId || !payment) return;
@@ -129,7 +140,7 @@ function PaymentDetailSheet({
         paymentId,
         input: {
           mismatchApprovalReason: payment.amountMismatch ? mismatchReason.trim() : undefined,
-          acknowledgeDuplicate: payment.duplicateTransactionCount > 0 ? true : undefined,
+          acknowledgeDuplicate: duplicateCount > 0 ? true : undefined,
         },
       });
       toast.success('Payment approved');
@@ -221,10 +232,10 @@ function PaymentDetailSheet({
                 The submitted amount doesn&apos;t match the expected price.
               </p>
             )}
-            {payment.duplicateTransactionCount > 0 && (
+            {duplicateCount > 0 && (
               <p className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/5 px-3 py-2 text-sm text-warning">
                 <Copy className="mt-0.5 size-4 shrink-0" />
-                This transaction ID matches {payment.duplicateTransactionCount} other payment(s).
+                This transaction ID matches {duplicateCount} other payment(s).
               </p>
             )}
             {payment.status === 'DECLINED' && payment.declineReason && (
@@ -263,12 +274,6 @@ function PaymentDetailSheet({
 
             {payment.status === 'PENDING' && (
               <>
-                {payment.amountMismatch && !canApproveMismatch && (
-                  <p className="rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-                    You don&apos;t have permission to approve a payment with a mismatched amount.
-                    Ask an admin with the enhanced mismatch-approval permission to review it.
-                  </p>
-                )}
                 {payment.amountMismatch && canApproveMismatch && (
                   <div className="space-y-2">
                     <Label htmlFor="mismatch-reason">
@@ -282,7 +287,7 @@ function PaymentDetailSheet({
                     />
                   </div>
                 )}
-                {payment.duplicateTransactionCount > 0 && (
+                {duplicateCount > 0 && (
                   <label className="flex items-start gap-2 text-sm text-foreground">
                     <Checkbox
                       checked={acknowledgedDuplicate}
@@ -297,6 +302,7 @@ function PaymentDetailSheet({
                     <Button
                       className="gap-2"
                       onClick={handleApprove}
+                      title={approveDisabledHint}
                       disabled={
                         approvePayment.isPending ||
                         !canApproveMismatch ||
@@ -341,6 +347,9 @@ function PaymentDetailSheet({
                     </ConfirmDialog>
                   </Can>
                 </div>
+                {approveDisabledHint && (
+                  <p className="mt-2 text-xs text-muted-foreground">{approveDisabledHint}</p>
+                )}
               </>
             )}
           </div>

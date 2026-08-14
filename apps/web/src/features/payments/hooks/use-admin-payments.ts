@@ -9,15 +9,17 @@ import type {
   PaymentActivityParams,
 } from '../types/admin-payment.types';
 
+const ADMIN_PAYMENTS_ROOT = ['admin-payments'] as const;
+
 const adminPaymentKeys = {
-  all: ['admin-payments'] as const,
-  lists: () => [...adminPaymentKeys.all, 'list'] as const,
-  list: (params: AdminPaymentListParams) => [...adminPaymentKeys.lists(), params] as const,
-  count: (params: AdminPaymentListParams = {}) => [...adminPaymentKeys.all, 'count', params] as const,
-  detail: (paymentId: string) => [...adminPaymentKeys.all, 'detail', paymentId] as const,
-  receipt: (paymentId: string) => [...adminPaymentKeys.all, 'receipt', paymentId] as const,
+  all: ADMIN_PAYMENTS_ROOT,
+  lists: () => [...ADMIN_PAYMENTS_ROOT, 'list'] as const,
+  list: (params: AdminPaymentListParams) => [...ADMIN_PAYMENTS_ROOT, 'list', params] as const,
+  count: (params: AdminPaymentListParams = {}) => [...ADMIN_PAYMENTS_ROOT, 'count', params] as const,
+  detail: (paymentId: string) => [...ADMIN_PAYMENTS_ROOT, 'detail', paymentId] as const,
+  receipt: (paymentId: string) => [...ADMIN_PAYMENTS_ROOT, 'receipt', paymentId] as const,
   activity: (paymentId: string, params: PaymentActivityParams) =>
-    [...adminPaymentKeys.all, 'activity', paymentId, params] as const,
+    [...ADMIN_PAYMENTS_ROOT, 'activity', paymentId, params] as const,
 };
 
 export function useAdminPayments(params: AdminPaymentListParams = {}) {

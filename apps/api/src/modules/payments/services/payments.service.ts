@@ -266,7 +266,9 @@ export class PaymentsService {
     const payment = await this.adminDetail(paymentId);
     const normalized =
       payment.transactionId?.replace(/\s+/g, '').toUpperCase() ?? '';
-    return normalized ? this.repository.duplicates(normalized, paymentId) : [];
+    return normalized
+      ? this.repository.duplicates(normalized, paymentId, payment.enrollmentId)
+      : [];
   }
 
   async approve(actorId: string, paymentId: string, dto: ApprovePaymentDto) {

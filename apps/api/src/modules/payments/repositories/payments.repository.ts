@@ -122,9 +122,12 @@ export class PaymentsRepository {
         .select({ duplicateCount: count() })
         .from(schema.payments)
         .where(
-          eq(
-            schema.payments.transactionIdNormalized,
-            input.transactionIdNormalized,
+          and(
+            eq(
+              schema.payments.transactionIdNormalized,
+              input.transactionIdNormalized,
+            ),
+            eq(schema.payments.enrollmentId, enrollmentId),
           ),
         );
       const amountMismatch = input.amount !== expectedAmount;
@@ -251,7 +254,7 @@ export class PaymentsRepository {
         ? undefined
         : eq(schema.payments.amountMismatch, query.amountMismatch),
       query.duplicateOnly
-        ? sql`(SELECT count(*) FROM payments duplicate_payment WHERE duplicate_payment.transaction_id_normalized = ${schema.payments.transactionIdNormalized}) > 1`
+        ? sql`(SELECT count(*) FROM payments duplicate_payment WHERE duplicate_payment.transaction_id_normalized = ${schema.payments.transactionIdNormalized} AND duplicate_payment.enrollment_id = ${schema.payments.enrollmentId}) > 1`
         : undefined,
       query.search
         ? sql`(${schema.payments.transactionIdNormalized} ILIKE ${`%${query.search.toUpperCase()}%`} OR ${schema.users.emailNormalized} ILIKE ${`%${query.search.toLowerCase()}%`} OR ${schema.courses.title} ILIKE ${`%${query.search}%`})`
@@ -301,7 +304,7 @@ export class PaymentsRepository {
     });
   }
 
-  duplicates(normalized: string, paymentId: string) {
+  duplicates(normalized: string, paymentId: string, enrollmentId: string) {
     return this.db
       .select({
         id: schema.payments.id,
@@ -313,6 +316,7 @@ export class PaymentsRepository {
       .where(
         and(
           eq(schema.payments.transactionIdNormalized, normalized),
+          eq(schema.payments.enrollmentId, enrollmentId),
           sql`${schema.payments.id} <> ${paymentId}`,
         ),
       )
@@ -522,7 +526,7 @@ export class PaymentsRepository {
         studentNote: schema.payments.studentNote,
         status: schema.payments.status,
         amountMismatch: schema.payments.amountMismatch,
-        duplicateTransactionCount: sql<number>`greatest((SELECT count(*) FROM payments duplicate_payment WHERE duplicate_payment.transaction_id_normalized = ${schema.payments.transactionIdNormalized}) - 1, 0)`,
+        duplicateTransactionCount: sql<number>`greatest((SELECT count(*) FROM payments duplicate_payment WHERE duplicate_payment.transaction_id_normalized = ${schema.payments.transactionIdNormalized} AND duplicate_payment.enrollment_id = ${schema.payments.enrollmentId}) - 1, 0)::int`,
         declineReason: schema.payments.declineReason,
         reviewNote: schema.payments.reviewNote,
         mismatchApprovalReason: schema.payments.mismatchApprovalReason,

@@ -1,12 +1,14 @@
 import type { PaymentListParams } from '../types/payment.types';
 
+const PAYMENTS_ROOT = ['payments'] as const;
+
 export const paymentKeys = {
-  all: ['payments'] as const,
-  lists: () => [...paymentKeys.all, 'list'] as const,
-  list: (params: PaymentListParams) => [...paymentKeys.lists(), params] as const,
-  count: (params: PaymentListParams = {}) => [...paymentKeys.all, 'count', params] as const,
-  detail: (paymentId: string) => [...paymentKeys.all, 'detail', paymentId] as const,
-  receipt: (paymentId: string) => [...paymentKeys.all, 'receipt', paymentId] as const,
+  all: PAYMENTS_ROOT,
+  lists: () => [...PAYMENTS_ROOT, 'list'] as const,
+  list: (params: PaymentListParams) => [...PAYMENTS_ROOT, 'list', params] as const,
+  count: (params: PaymentListParams = {}) => [...PAYMENTS_ROOT, 'count', params] as const,
+  detail: (paymentId: string) => [...PAYMENTS_ROOT, 'detail', paymentId] as const,
+  receipt: (paymentId: string) => [...PAYMENTS_ROOT, 'receipt', paymentId] as const,
   instructions: (enrollmentId: string) =>
-    [...paymentKeys.all, 'instructions', enrollmentId] as const,
+    [...PAYMENTS_ROOT, 'instructions', enrollmentId] as const,
 };
