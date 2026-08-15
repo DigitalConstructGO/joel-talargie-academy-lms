@@ -42,7 +42,12 @@ export function CertificateCard({ certificate, href, className }: CertificateCar
           <h3 className="line-clamp-2 text-sm font-semibold text-foreground">
             {certificate.courseTitle}
           </h3>
-          <p className="mt-1 text-xs text-muted-foreground">{certificate.certificateNumber}</p>
+          {certificate.studentName && (
+            <p className="mt-0.5 text-xs text-muted-foreground">{certificate.studentName}</p>
+          )}
+          <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+            {certificate.certificateNumber}
+          </p>
         </div>
         <p className="mt-auto text-xs text-muted-foreground">
           {certificate.issuedAt ? `Issued ${formatDate(certificate.issuedAt)}` : 'Not yet issued'}

@@ -1,9 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckCircle2, ChevronDown, ChevronRight, Circle, PlayCircle } from 'lucide-react';
+import Link from 'next/link';
+import { Award, Check, CheckCircle2, ChevronDown, ChevronRight, Circle, Clock, PlayCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatDurationSeconds } from '@/lib/format';
+import { ROUTES } from '@/constants/routes';
 import type { CurriculumSection } from '../types/learning.types';
 
 interface LessonSidebarProps {
@@ -71,6 +74,9 @@ export function LessonSidebar({
           const completedCount = section.lessons.filter(
             (lesson) => lesson.progressStatus === 'COMPLETED',
           ).length;
+          const isSectionComplete =
+            section.lessons.length > 0 && completedCount === section.lessons.length;
+
           return (
             <div key={section.id} className="mb-1">
               <button
@@ -87,9 +93,16 @@ export function LessonSidebar({
                   )}
                   <span className="truncate">{section.title}</span>
                 </span>
-                <span className="shrink-0 rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-sidebar-foreground/60">
-                  {completedCount}/{section.lessons.length}
-                </span>
+                {isSectionComplete ? (
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand/20 px-2 py-0.5 text-[10px] font-medium text-brand">
+                    <Check className="size-3" />
+                    <span>Completed</span>
+                  </span>
+                ) : (
+                  <span className="shrink-0 rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-sidebar-foreground/60">
+                    {completedCount}/{section.lessons.length}
+                  </span>
+                )}
               </button>
               {!collapsed && (
                 <div className="space-y-0.5">
@@ -109,7 +122,9 @@ export function LessonSidebar({
                         )}
                       >
                         {lesson.progressStatus === 'COMPLETED' ? (
-                          <CheckCircle2 className="size-4 shrink-0 text-sidebar-primary" />
+                          <CheckCircle2 className="size-4 shrink-0 text-brand" />
+                        ) : lesson.progressStatus === 'IN_PROGRESS' ? (
+                          <Clock className="size-4 shrink-0 text-amber-400" />
                         ) : isActive ? (
                           <PlayCircle className="size-4 shrink-0 text-sidebar-primary" />
                         ) : (
@@ -130,6 +145,20 @@ export function LessonSidebar({
           );
         })}
       </nav>
+
+      {overallProgress === 100 && (
+        <div className="border-t border-sidebar-border p-4">
+          <Button
+            className="w-full gap-2 bg-gradient-to-r from-amber-500 to-emerald-600 font-semibold text-white shadow-md hover:from-amber-600 hover:to-emerald-700"
+            asChild
+          >
+            <Link href={ROUTES.dashboard.certificates}>
+              <Award className="size-4" />
+              <span>View Certificate</span>
+            </Link>
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

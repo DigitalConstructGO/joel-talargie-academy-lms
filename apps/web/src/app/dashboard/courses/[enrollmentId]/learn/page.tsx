@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowRight,
+  Award,
   ChevronLeft,
   ChevronRight,
   FileText,
@@ -121,7 +122,26 @@ export default function LessonPlayerPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run when the active lesson itself changes
   }, [activeLessonId]);
 
-  const currentIndex = flatLessons.findIndex((lesson) => lesson.id === activeLessonId);
+  const activeLesson = flatLessons.find((item) => item.id === activeLessonId);
+  const lesson = lessonQuery.data;
+
+  const isLessonVideo = lesson?.lessonType === 'VIDEO';
+  const isLessonAlreadyCompleted = activeLesson?.progressStatus === 'COMPLETED';
+  const [videoFinishedLocally, setVideoFinishedLocally] = useState(false);
+
+  // Reset local video finished state when switching lessons
+  useEffect(() => {
+    setVideoFinishedLocally(false);
+  }, [activeLessonId]);
+
+  const isCourseCompleted =
+    overview?.progressPercentage === 100 ||
+    (flatLessons.length > 0 &&
+      flatLessons.every((item) => item.progressStatus === 'COMPLETED'));
+
+  const canComplete = !isLessonVideo || isLessonAlreadyCompleted || videoFinishedLocally;
+
+  const currentIndex = flatLessons.findIndex((lessonItem) => lessonItem.id === activeLessonId);
   const previousLesson = currentIndex > 0 ? flatLessons[currentIndex - 1] : undefined;
   const nextLesson =
     currentIndex >= 0 && currentIndex < flatLessons.length - 1
@@ -130,17 +150,29 @@ export default function LessonPlayerPage() {
 
   async function handleComplete() {
     if (!activeLessonId) return;
+    if (!canComplete) {
+      toast.error('Watch Video to Complete', 'Please finish watching the video before completing this lesson.');
+      return;
+    }
     try {
       const result = await completeLesson.mutateAsync(activeLessonId);
       if (result.courseCompleted) {
-        toast.success('Course completed!', "Great work - you've finished every mandatory lesson.");
-        router.push(ROUTES.dashboard.courses);
+        toast.success(
+          'Course completed!',
+          "Congratulations! You've finished all required lessons and earned your certificate.",
+        );
+        router.push(ROUTES.dashboard.certificates);
         return;
       }
       toast.success('Lesson completed');
       if (nextLesson) goToLesson(nextLesson.id);
-    } catch {
-      toast.error('Could not mark this lesson complete', 'Please try again.');
+    } catch (error) {
+      const code = extractErrorCode(error);
+      if (code === 'VIDEO_NOT_COMPLETED') {
+        toast.error('Watch Video to Complete', 'Please watch the video lesson to completion before marking it complete.');
+      } else {
+        toast.error('Could not mark this lesson complete', 'Please try again.');
+      }
     }
   }
 
@@ -193,11 +225,9 @@ export default function LessonPlayerPage() {
     );
   }
 
-  const activeLesson = flatLessons.find((lesson) => lesson.id === activeLessonId);
   const activeSection = overview.curriculum.find(
     (section) => section.id === activeLesson?.sectionId,
   );
-  const lesson = lessonQuery.data;
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-sidebar text-sidebar-foreground">
@@ -235,17 +265,31 @@ export default function LessonPlayerPage() {
             <span className="max-w-40 truncate font-medium text-white">{activeLesson?.title}</span>
           </nav>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="shrink-0 gap-2 border-white/20 text-white hover:bg-white/10"
-          asChild
-        >
-          <Link href={ROUTES.dashboard.courses}>
-            <X className="size-4" />
-            <span className="hidden sm:inline">Exit Focus Mode</span>
-          </Link>
-        </Button>
+        <div className="flex items-center gap-3">
+          {isCourseCompleted && (
+            <Button
+              size="sm"
+              className="shrink-0 gap-2 bg-gradient-to-r from-amber-500 to-emerald-600 font-semibold text-white shadow-md hover:from-amber-600 hover:to-emerald-700"
+              asChild
+            >
+              <Link href={ROUTES.dashboard.certificates}>
+                <Award className="size-4" />
+                <span>View Certificate</span>
+              </Link>
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="shrink-0 gap-2 border-white/20 text-white hover:bg-white/10"
+            asChild
+          >
+            <Link href={ROUTES.dashboard.courses}>
+              <X className="size-4" />
+              <span className="hidden sm:inline">Exit Focus Mode</span>
+            </Link>
+          </Button>
+        </div>
       </header>
 
       <div className="relative flex flex-1 overflow-hidden">
@@ -278,22 +322,51 @@ export default function LessonPlayerPage() {
         )}
         <main className="flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-5xl px-4 py-8 pb-28 sm:px-6">
+            {isCourseCompleted && (
+              <div className="mb-6 flex flex-col items-center justify-between gap-4 rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-sidebar/60 to-emerald-950/30 p-4 shadow-lg sm:flex-row">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-11 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/40">
+                    <Award className="size-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-semibold text-white">Course Completed!</h2>
+                    <p className="text-xs text-white/70">
+                      Congratulations! You have completed all lessons and earned your certificate.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  className="shrink-0 gap-2 bg-gradient-to-r from-amber-500 to-emerald-600 font-semibold text-white shadow-md hover:from-amber-600 hover:to-emerald-700"
+                  asChild
+                >
+                  <Link href={ROUTES.dashboard.certificates}>
+                    <Award className="size-4" />
+                    <span>View Certificate</span>
+                    <ArrowRight className="size-4" />
+                  </Link>
+                </Button>
+              </div>
+            )}
+
             {lessonQuery.isLoading || !lesson ? (
               <Skeleton className="aspect-video w-full rounded-xl bg-white/10" />
             ) : lesson.lessonType === 'VIDEO' && lesson.videoUrl ? (
               <LessonPlayer
                 lessonKey={lesson.id}
                 videoUrl={lesson.videoUrl}
-                initialPositionSeconds={activeLesson?.savedPositionSeconds ?? 0}
+                initialPositionSeconds={0}
+                isCompleted={activeLesson?.progressStatus === 'COMPLETED'}
                 onProgress={(seconds) =>
                   savePosition.mutate({ lessonId: lesson.id, positionSeconds: seconds })
                 }
-                onEnded={() =>
+                onEnded={() => {
+                  setVideoFinishedLocally(true);
                   savePosition.mutate({
                     lessonId: lesson.id,
                     positionSeconds: lesson.durationSeconds ?? 0,
-                  })
-                }
+                  });
+                }}
               />
             ) : (
               <div className="flex aspect-video flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-sidebar-border bg-white/5 text-center">
@@ -323,15 +396,32 @@ export default function LessonPlayerPage() {
           <ChevronLeft className="size-4" />
           <span className="hidden sm:inline">Previous Lesson</span>
         </Button>
-        <Button
-          className="gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
-          onClick={handleComplete}
-          disabled={completeLesson.isPending || !activeLessonId}
-        >
-          {completeLesson.isPending && <Loader2 className="size-4 animate-spin" />}
-          Complete &amp; Next
-          <ArrowRight className="size-4" />
-        </Button>
+
+        {isCourseCompleted ? (
+          <Button
+            className="gap-2 bg-gradient-to-r from-amber-500 to-emerald-600 font-semibold text-white shadow-md hover:from-amber-600 hover:to-emerald-700"
+            asChild
+          >
+            <Link href={ROUTES.dashboard.certificates}>
+              <Award className="size-4" />
+              <span>View Certificate</span>
+              <ArrowRight className="size-4" />
+            </Link>
+          </Button>
+        ) : (
+          <Button
+            className={cn(
+              'gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90',
+              !canComplete && 'opacity-60 cursor-not-allowed',
+            )}
+            onClick={handleComplete}
+            disabled={completeLesson.isPending || !activeLessonId || !canComplete}
+          >
+            {completeLesson.isPending && <Loader2 className="size-4 animate-spin" />}
+            {!canComplete && isLessonVideo ? 'Watch to Complete' : 'Complete & Next'}
+            <ArrowRight className="size-4" />
+          </Button>
+        )}
       </div>
     </div>
   );

@@ -43,6 +43,8 @@ export function useCompleteLesson(enrollmentId: string) {
     mutationFn: (lessonId: string) => learningApi.completeLesson(enrollmentId, lessonId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: learningKeys.overview(enrollmentId) });
+      void queryClient.invalidateQueries({ queryKey: ['certificates'] });
+      void queryClient.invalidateQueries({ queryKey: ['enrollments'] });
     },
   });
 }

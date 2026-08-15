@@ -25,6 +25,6 @@ import { CertificateWorkerService } from './workers/certificate-worker.service';
     CertificatesService,
     CertificateWorkerService,
   ],
-  exports: [CertificateWorkerService],
+  exports: [CertificatesService, CertificateWorkerService],
 })
 export class CertificatesModule {}

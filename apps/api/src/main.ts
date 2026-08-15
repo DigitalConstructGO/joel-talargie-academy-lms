@@ -20,6 +20,7 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
 import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
 import { ApiResponseInterceptor } from './common/api/api-response.interceptor';
 import { EmailWorkerService } from './modules/notifications/workers/email-worker.service';
+import { CertificateWorkerService } from './modules/certificates/workers/certificate-worker.service';
 import {
   API_DOCUMENT_VERSION,
   API_PREFIX,
@@ -58,6 +59,40 @@ function startEmailWorkerWhenEnabled(
       } catch (error) {
         logger.error(
           `Email worker tick failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+      await new Promise((resolve) => setTimeout(resolve, poll));
+    }
+  })();
+}
+
+function startCertificateWorkerWhenEnabled(
+  app: INestApplication,
+  config: ConfigService,
+): void {
+  const enabled = config.get<boolean>('CERTIFICATE_WORKER_ENABLED') ?? true;
+  if (!enabled) return;
+  const worker = app.get(CertificateWorkerService);
+  const logger = new Logger('CertificateWorker');
+  const poll = Math.max(
+    config.get<number>('CERTIFICATE_WORKER_POLL_INTERVAL_MS') ?? 3000,
+    1000,
+  );
+  let stopped = false;
+  process.once('SIGTERM', () => {
+    stopped = true;
+  });
+  process.once('SIGINT', () => {
+    stopped = true;
+  });
+  logger.log(`Certificate worker started in-process (poll interval ${poll}ms)`);
+  void (async () => {
+    while (!stopped) {
+      try {
+        await worker.tick();
+      } catch (error) {
+        logger.error(
+          `Certificate worker tick failed: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
       await new Promise((resolve) => setTimeout(resolve, poll));
@@ -160,5 +195,6 @@ async function bootstrap() {
   }
   await app.listen(config.get<number>('API_PORT') ?? 4000);
   startEmailWorkerWhenEnabled(app, config);
+  startCertificateWorkerWhenEnabled(app, config);
 }
 void bootstrap();

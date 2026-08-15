@@ -14,13 +14,18 @@ describe('LearningService', () => {
     open: jest.fn(),
     position: jest.fn(),
     complete: jest.fn(),
+    findLessonProgress: jest.fn(),
     adminProgress: jest.fn(),
     activity: jest.fn(),
   };
   const notifications = { notify: jest.fn().mockResolvedValue(null) };
+  const certificates = { request: jest.fn().mockResolvedValue({ certificate: { id: 'cert-1' } }) };
+  const certificateWorker = { tick: jest.fn().mockResolvedValue(1) };
   const service = new LearningService(
     repository as never,
     notifications as never,
+    certificates as never,
+    certificateWorker as never,
   );
   const student = {
     id: 'student',

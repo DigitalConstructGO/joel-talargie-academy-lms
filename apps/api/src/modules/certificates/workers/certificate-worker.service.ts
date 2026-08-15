@@ -164,11 +164,14 @@ export class CertificateWorkerService {
               eq(schema.certificateFiles.isCurrent, true),
             ),
           );
+        const safeStudent = (data.studentName || 'Student').replace(/[/\\?%*:|"<>]/g, '').trim();
+        const safeCourse = (data.courseTitle || 'Course').replace(/[/\\?%*:|"<>]/g, '').trim();
+        const originalFileName = `${safeStudent} - ${safeCourse} - JOEL TALARGIE ACADEMY.pdf`;
         await tx.insert(schema.certificateFiles).values({
           certificateId: data.id,
           version: data.generationVersion,
           storageKey: key,
-          originalFileName: `${data.number}.pdf`,
+          originalFileName,
           mimeType: 'application/pdf',
           fileSize: pdf.length,
           checksum,

@@ -79,6 +79,10 @@ export function CertificateVerificationResult({ result }: { result: CertificateV
                 <dd className="font-medium text-foreground">{formatDate(result.issuedAt)}</dd>
               </div>
             )}
+            <div className="flex items-center justify-between gap-4">
+              <dt className="text-muted-foreground">Issuer</dt>
+              <dd className="font-medium text-foreground">Joel Talargie Academy</dd>
+            </div>
           </dl>
           {result.state === 'REVOKED' && <Badge variant="warning">Revoked</Badge>}
         </>

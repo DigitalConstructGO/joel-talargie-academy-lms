@@ -311,12 +311,20 @@ export class CertificatesService {
 
   private async download(certificateId: string, inline: boolean) {
     const file = await this.repository.currentFile(certificateId);
+    const certificate = await this.repository.admin(certificateId);
     if (!file)
       throw new NotFoundException({
         code: 'CERTIFICATE_FILE_NOT_FOUND',
         message: 'Certificate file not found',
       });
-    return this.signed(file.storageKey, file.originalFileName, inline);
+    const safeStudent = (certificate?.studentName ?? 'Student')
+      .replace(/[/\\?%*:|"<>]/g, '')
+      .trim();
+    const safeCourse = (certificate?.courseTitle ?? 'Course')
+      .replace(/[/\\?%*:|"<>]/g, '')
+      .trim();
+    const fileName = `${safeStudent} - ${safeCourse} - JOEL TALARGIE ACADEMY.pdf`;
+    return this.signed(file.storageKey, fileName, inline);
   }
 
   private async signed(key: string, fileName: string, inline: boolean) {

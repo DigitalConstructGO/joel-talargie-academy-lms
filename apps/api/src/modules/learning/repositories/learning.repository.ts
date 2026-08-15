@@ -105,6 +105,15 @@ export class LearningRepository {
       .then((rows) => rows[0] ?? null);
   }
 
+  findLessonProgress(enrollmentId: string, lessonId: string) {
+    return this.db.query.lessonProgress.findFirst({
+      where: and(
+        eq(schema.lessonProgress.enrollmentId, enrollmentId),
+        eq(schema.lessonProgress.lessonId, lessonId),
+      ),
+    });
+  }
+
   curriculum(enrollmentId: string, courseId: string) {
     return this.db
       .select({

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, Maximize, Pause, Play, Volume2, VolumeX } from 'lucide-react';
+import { AlertTriangle, Loader2, Maximize, Pause, Play, Volume2, VolumeX } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDurationSeconds } from '@/lib/format';
 
@@ -12,6 +12,7 @@ interface LessonPlayerProps {
   lessonKey: string;
   videoUrl: string;
   initialPositionSeconds: number;
+  isCompleted?: boolean;
   onProgress: (seconds: number) => void;
   onEnded: () => void;
 }
@@ -40,6 +41,8 @@ export function LessonPlayer(props: LessonPlayerProps) {
 
 interface YouTubePlayerInstance {
   getCurrentTime(): number;
+  getDuration(): number;
+  seekTo(seconds: number, allowSeekAhead?: boolean): void;
   destroy(): void;
   unMute(): void;
   setVolume(volume: number): void;
@@ -54,6 +57,7 @@ interface YouTubeIframeApi {
   Player: new (
     element: HTMLElement,
     options: {
+      host?: string;
       videoId: string;
       playerVars?: Record<string, string | number>;
       events?: {
@@ -75,96 +79,142 @@ declare global {
 
 let youtubeApiPromise: Promise<YouTubeIframeApi> | null = null;
 
-/** Loads `https://www.youtube.com/iframe_api` at most once app-wide, chaining onto any previously-registered `onYouTubeIframeAPIReady` callback. */
+/** Loads `https://www.youtube.com/iframe_api` at most once app-wide, with timeout and error fallback. */
 function loadYouTubeIframeApi(): Promise<YouTubeIframeApi> {
-  if (window.YT) return Promise.resolve(window.YT);
-  youtubeApiPromise ??= new Promise((resolve) => {
+  if (typeof window === 'undefined') return Promise.reject(new Error('Window unavailable'));
+  if (window.YT && window.YT.Player) return Promise.resolve(window.YT);
+  if (youtubeApiPromise) return youtubeApiPromise;
+
+  youtubeApiPromise = new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      if (window.YT && window.YT.Player) {
+        resolve(window.YT);
+      } else {
+        youtubeApiPromise = null;
+        reject(new Error('YouTube API load timed out'));
+      }
+    }, 4000);
+
     const previousCallback = window.onYouTubeIframeAPIReady;
     window.onYouTubeIframeAPIReady = () => {
+      clearTimeout(timer);
       previousCallback?.();
       if (window.YT) resolve(window.YT);
     };
+
+    const existing = document.querySelector('script[src="https://www.youtube.com/iframe_api"]');
+    if (existing) {
+      existing.addEventListener('error', () => {
+        clearTimeout(timer);
+        youtubeApiPromise = null;
+        reject(new Error('YouTube API script error'));
+      });
+      return;
+    }
+
     const script = document.createElement('script');
     script.src = 'https://www.youtube.com/iframe_api';
     script.async = true;
+    script.onerror = () => {
+      clearTimeout(timer);
+      youtubeApiPromise = null;
+      reject(new Error('YouTube API network error'));
+    };
     document.head.appendChild(script);
   });
+
   return youtubeApiPromise;
 }
 
 function YouTubeLessonPlayer({
   lessonKey,
   videoId,
-  initialPositionSeconds,
+  isCompleted,
   onProgress,
   onEnded,
 }: {
   lessonKey: string;
   videoId: string;
   initialPositionSeconds: number;
+  isCompleted?: boolean;
   onProgress: (seconds: number) => void;
   onEnded: () => void;
 }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YouTubePlayerInstance | null>(null);
+  const maxWatchedRef = useRef<number>(0);
   const [ready, setReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackError, setPlaybackError] = useState(false);
+  const [useIframeFallback, setUseIframeFallback] = useState(false);
+
+  useEffect(() => {
+    maxWatchedRef.current = 0;
+  }, [lessonKey, isCompleted]);
 
   useEffect(() => {
     let cancelled = false;
     setReady(false);
     setIsPlaying(false);
     setPlaybackError(false);
+    setUseIframeFallback(false);
 
-    // The YouTube IFrame API replaces whatever element it's given with its
-    // own <iframe>, outside React's control. Handing it `mountRef.current`
-    // directly would let it silently swap out a node React still thinks it
-    // owns, causing DOM-reconciliation errors on the next render (and the
-    // stray postMessage warnings seen under StrictMode's mount/unmount/
-    // remount dev cycle). Instead give it a throwaway child div that React
-    // never touches again after this effect creates it.
     const mount = mountRef.current;
     if (!mount) return;
     const target = document.createElement('div');
     target.className = 'size-full';
     mount.appendChild(target);
 
-    loadYouTubeIframeApi().then((YT) => {
-      if (cancelled) return;
-      playerRef.current = new YT.Player(target, {
-        videoId,
-        playerVars: {
-          rel: 0,
-          modestbranding: 1,
-          ...(initialPositionSeconds > 0 ? { start: Math.floor(initialPositionSeconds) } : {}),
-        },
-        events: {
-          onReady: (event) => {
-            // YouTube's embedded player persists a mute/volume preference
-            // per *origin*, not per video - once anything on this origin
-            // is muted, every later YT.Player here inherits that regardless
-            // of the video's own audio. Force an audible starting state
-            // explicitly rather than trusting the saved preference.
-            event.target.unMute();
-            event.target.setVolume(100);
-            setReady(true);
+    const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+
+    loadYouTubeIframeApi()
+      .then((YT) => {
+        if (cancelled) return;
+        playerRef.current = new YT.Player(target, {
+          host: 'https://www.youtube-nocookie.com',
+          videoId,
+          playerVars: {
+            rel: 0,
+            modestbranding: 1,
+            enablejsapi: 1,
+            ...(currentOrigin ? { origin: currentOrigin, widget_referrer: window.location.href } : {}),
+            ...(!isCompleted ? { disablekb: 1 } : {}),
+            start: 0,
           },
-          onError: () => setPlaybackError(true),
-          onStateChange: (event) => {
-            if (event.data === YT.PlayerState.PLAYING) setIsPlaying(true);
-            if (event.data === YT.PlayerState.PAUSED) {
-              setIsPlaying(false);
-              onProgress(Math.floor(event.target.getCurrentTime()));
-            }
-            if (event.data === YT.PlayerState.ENDED) {
-              setIsPlaying(false);
-              onEnded();
-            }
+          events: {
+            onReady: (event) => {
+              event.target.unMute();
+              event.target.setVolume(100);
+              setReady(true);
+            },
+            onError: () => setPlaybackError(true),
+            onStateChange: (event) => {
+              if (event.data === YT.PlayerState.PLAYING) {
+                setIsPlaying(true);
+              }
+              if (event.data === YT.PlayerState.PAUSED) {
+                setIsPlaying(false);
+                const currentTime = event.target.getCurrentTime();
+                if (!isCompleted && currentTime > maxWatchedRef.current + 3) {
+                  event.target.seekTo(maxWatchedRef.current, true);
+                } else {
+                  maxWatchedRef.current = Math.max(maxWatchedRef.current, currentTime);
+                  onProgress(Math.floor(currentTime));
+                }
+              }
+              if (event.data === YT.PlayerState.ENDED) {
+                setIsPlaying(false);
+                onEnded();
+              }
+            },
           },
-        },
+        });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        // Fallback to standard embed iframe if YouTube JavaScript API encounters network error
+        setUseIframeFallback(true);
       });
-    });
 
     return () => {
       cancelled = true;
@@ -172,17 +222,58 @@ function YouTubeLessonPlayer({
       playerRef.current = null;
       target.remove();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-create the player when the lesson itself changes
-  }, [lessonKey, videoId]);
+  }, [lessonKey, videoId, isCompleted]);
 
   useEffect(() => {
     if (!isPlaying) return;
+    // Check completion and update max watched smoothly
     const interval = setInterval(() => {
+      const player = playerRef.current;
+      if (!player) return;
+      const currentTime = player.getCurrentTime();
+      const duration = typeof player.getDuration === 'function' ? player.getDuration() : 0;
+      if (!isCompleted && currentTime > maxWatchedRef.current + 4) {
+        player.seekTo(maxWatchedRef.current, true);
+      } else {
+        maxWatchedRef.current = Math.max(maxWatchedRef.current, currentTime);
+        if (duration > 0 && currentTime >= duration * 0.95) {
+          onEnded();
+        }
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isPlaying, isCompleted, onEnded]);
+
+  useEffect(() => {
+    if (!isPlaying) return;
+    // Periodic progress save every 20 seconds (not every second)
+    const saveInterval = setInterval(() => {
       const player = playerRef.current;
       if (player) onProgress(Math.floor(player.getCurrentTime()));
     }, POSITION_SAVE_INTERVAL_MS);
-    return () => clearInterval(interval);
+    return () => clearInterval(saveInterval);
   }, [isPlaying, onProgress]);
+
+  if (useIframeFallback) {
+    const originParam = typeof window !== 'undefined' ? `&origin=${encodeURIComponent(window.location.origin)}` : '';
+    return (
+      <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-sidebar-border bg-black shadow-2xl">
+        <iframe
+          src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0&enablejsapi=1${originParam}&start=0`}
+          title="YouTube video player"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          referrerPolicy="strict-origin-when-cross-origin"
+          className="size-full border-0"
+          onLoad={() => {
+            setReady(true);
+            onEnded();
+          }}
+          onError={() => setPlaybackError(true)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-sidebar-border bg-black shadow-2xl">
@@ -197,7 +288,10 @@ function YouTubeLessonPlayer({
         </div>
       )}
       {!ready && !playbackError && (
-        <Skeleton className="absolute inset-0 rounded-xl" aria-hidden="true" />
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80">
+          <Loader2 className="size-10 animate-spin text-sidebar-primary" />
+          <span className="text-xs font-medium text-white/80">Loading video...</span>
+        </div>
       )}
     </div>
   );
@@ -206,12 +300,14 @@ function YouTubeLessonPlayer({
 function NativeLessonPlayer({
   lessonKey,
   videoUrl,
-  initialPositionSeconds,
+  isCompleted,
   onProgress,
   onEnded,
 }: LessonPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const maxWatchedRef = useRef<number>(0);
+  const [isLoading, setIsLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -222,24 +318,25 @@ function NativeLessonPlayer({
     setCurrentTime(0);
     setDuration(0);
     setIsPlaying(false);
+    setIsLoading(true);
     setPlaybackError(false);
-  }, [lessonKey]);
+    maxWatchedRef.current = 0;
+  }, [lessonKey, isCompleted]);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
     function handleLoadedMetadata() {
       if (!video) return;
-      if (initialPositionSeconds > 0 && initialPositionSeconds < video.duration) {
-        video.currentTime = initialPositionSeconds;
-        setCurrentTime(initialPositionSeconds);
-      }
       setDuration(video.duration);
+      video.currentTime = 0;
+      setCurrentTime(0);
+      maxWatchedRef.current = 0;
+      setIsLoading(false);
     }
     video.addEventListener('loadedmetadata', handleLoadedMetadata);
     return () => video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-attach when the lesson itself changes
-  }, [lessonKey]);
+  }, [lessonKey, isCompleted]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -270,10 +367,78 @@ function NativeLessonPlayer({
   }
 
   function handleSeek(event: React.ChangeEvent<HTMLInputElement>) {
+    if (!isCompleted) return; // Completely blocked for uncompleted videos
     const video = videoRef.current;
-    const value = Number(event.target.value);
-    if (video) video.currentTime = value;
-    setCurrentTime(value);
+    const requested = Number(event.target.value);
+    if (video) video.currentTime = requested;
+    setCurrentTime(requested);
+  }
+
+  function handleSeeking() {
+    const video = videoRef.current;
+    if (!video) return;
+    // Block any attempt to seek ahead during uncompleted playback
+    if (!isCompleted && video.currentTime > maxWatchedRef.current + 0.5) {
+      video.currentTime = maxWatchedRef.current;
+      setCurrentTime(maxWatchedRef.current);
+    }
+  }
+
+  function handleTimeUpdate(event: React.SyntheticEvent<HTMLVideoElement>) {
+    const video = event.currentTarget;
+    const time = video.currentTime;
+    setCurrentTime(time);
+    if (time > maxWatchedRef.current) {
+      maxWatchedRef.current = time;
+    }
+    if (duration > 0 && time >= duration * 0.95) {
+      onEnded();
+    }
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    // Intercept seeking keys completely when not yet completed
+    if (!isCompleted) {
+      const seekKeys = [
+        'ArrowLeft',
+        'ArrowRight',
+        'ArrowUp',
+        'ArrowDown',
+        'PageUp',
+        'PageDown',
+        'Home',
+        'End',
+        'j',
+        'J',
+        'l',
+        'L',
+        '0',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+        '7',
+        '8',
+        '9',
+      ];
+      if (seekKeys.includes(event.key)) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+    }
+    if (event.key === ' ' || event.key === 'k' || event.key === 'K') {
+      event.preventDefault();
+      togglePlay();
+    } else if (event.key === 'm' || event.key === 'M') {
+      event.preventDefault();
+      toggleMute();
+    } else if (event.key === 'f' || event.key === 'F') {
+      event.preventDefault();
+      toggleFullscreen();
+    }
   }
 
   function toggleMute() {
@@ -292,21 +457,34 @@ function NativeLessonPlayer({
   return (
     <div
       ref={containerRef}
-      className="group relative aspect-video w-full overflow-hidden rounded-xl border border-sidebar-border bg-black shadow-2xl"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      className="group relative aspect-video w-full overflow-hidden rounded-xl border border-sidebar-border bg-black shadow-2xl outline-hidden"
     >
       <video
         ref={videoRef}
         key={lessonKey}
         src={videoUrl}
         className="size-full"
+        onLoadStart={() => setIsLoading(true)}
+        onLoadedData={() => setIsLoading(false)}
+        onCanPlay={() => setIsLoading(false)}
+        onWaiting={() => setIsLoading(true)}
+        onPlaying={() => {
+          setIsLoading(false);
+          setIsPlaying(true);
+        }}
         onPlay={() => setIsPlaying(true)}
         onPause={handlePause}
-        onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
+        onSeeking={handleSeeking}
+        onTimeUpdate={handleTimeUpdate}
         onEnded={() => {
+          setIsLoading(false);
           setIsPlaying(false);
           onEnded();
         }}
         onError={() => {
+          setIsLoading(false);
           setIsPlaying(false);
           setPlaybackError(true);
         }}
@@ -314,6 +492,13 @@ function NativeLessonPlayer({
       >
         <track kind="captions" />
       </video>
+
+      {isLoading && !playbackError && (
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/60 backdrop-blur-xs">
+          <Loader2 className="size-10 animate-spin text-sidebar-primary" />
+          <span className="text-xs font-medium text-white/80">Loading video...</span>
+        </div>
+      )}
 
       {playbackError ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60 px-6 text-center">
@@ -324,7 +509,7 @@ function NativeLessonPlayer({
           </p>
         </div>
       ) : (
-        !isPlaying && (
+        !isPlaying && !isLoading && (
           <button
             type="button"
             onClick={togglePlay}
@@ -343,16 +528,28 @@ function NativeLessonPlayer({
           <span className="w-12 shrink-0 text-right text-xs font-medium text-white">
             {formatDurationSeconds(currentTime)}
           </span>
-          <input
-            type="range"
-            min={0}
-            max={duration || 0}
-            step={1}
-            value={currentTime}
-            onChange={handleSeek}
-            aria-label="Seek"
-            className="h-1 flex-1 cursor-pointer accent-sidebar-primary"
-          />
+          {isCompleted ? (
+            <input
+              type="range"
+              min={0}
+              max={duration || 0}
+              step={1}
+              value={currentTime}
+              onChange={handleSeek}
+              aria-label="Seek"
+              className="h-1 flex-1 cursor-pointer accent-sidebar-primary"
+            />
+          ) : (
+            <div
+              className="relative h-1 flex-1 overflow-hidden rounded-full bg-white/20"
+              title="Seeking is disabled until you complete the lesson"
+            >
+              <div
+                className="h-full bg-sidebar-primary transition-[width] duration-150"
+                style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
+              />
+            </div>
+          )}
           <span className="w-12 shrink-0 text-xs font-medium text-white/70">
             {formatDurationSeconds(duration)}
           </span>

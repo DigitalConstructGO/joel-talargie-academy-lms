@@ -9,12 +9,16 @@ import type { AuthUser } from '../../auth/interfaces/auth-user.interface';
 import type { LearningActivityQueryDto } from '../dto/learning.dto';
 import { LearningRepository } from '../repositories/learning.repository';
 import { NotificationsService } from '../../notifications/services/notifications.service';
+import { CertificatesService } from '../../certificates/services/certificates.service';
+import { CertificateWorkerService } from '../../certificates/workers/certificate-worker.service';
 
 @Injectable()
 export class LearningService {
   constructor(
     private readonly repository: LearningRepository,
     private readonly notifications: NotificationsService,
+    private readonly certificates: CertificatesService,
+    private readonly certificateWorker: CertificateWorkerService,
   ) {}
 
   async overview(user: AuthUser, enrollmentId: string) {
@@ -138,13 +142,29 @@ export class LearningService {
 
   async complete(user: AuthUser, enrollmentId: string, lessonId: string) {
     const access = await this.requireAccess(user, enrollmentId);
-    await this.requireLesson(access.courseId, lessonId);
+    const lesson = await this.requireLesson(access.courseId, lessonId);
+
+    // Validate that the student legitimately watched the video before marking it complete
+    if (lesson.lessonType === 'VIDEO' && lesson.durationSeconds && lesson.durationSeconds > 10) {
+      const progress = await this.repository.findLessonProgress(enrollmentId, lessonId);
+      const minRequiredSeconds = Math.floor(lesson.durationSeconds * 0.85);
+      const watched = progress?.lastPositionSeconds ?? 0;
+      if (progress?.status !== 'COMPLETED' && watched < minRequiredSeconds) {
+        throw new UnprocessableEntityException({
+          code: 'VIDEO_NOT_COMPLETED',
+          message: 'You must watch the video lesson to completion before marking it complete.',
+        });
+      }
+    }
+
     const result = await this.repository.complete(
       user.id,
       enrollmentId,
       lessonId,
     );
-    if (result.courseCompleted)
+
+    let certificateId: string | null = null;
+    if (result.courseCompleted) {
       await this.notifications
         .notify({
           userId: user.id,
@@ -166,7 +186,24 @@ export class LearningService {
           relatedEntityId: enrollmentId,
         })
         .catch(() => null);
-    return result;
+
+      if (access.certificateEnabled) {
+        try {
+          const certResult = await this.certificates.request(user, enrollmentId);
+          if (certResult?.certificate) {
+            certificateId = certResult.certificate.id;
+          }
+          await this.certificateWorker.tick();
+        } catch {
+          // Non-blocking if certificate worker is already processing
+        }
+      }
+    }
+
+    return {
+      ...result,
+      certificateId,
+    };
   }
 
   async adminProgress(enrollmentId: string) {

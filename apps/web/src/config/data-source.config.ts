@@ -7,4 +7,4 @@
 export type CatalogDataSource = 'mock' | 'live';
 
 export const CATALOG_DATA_SOURCE: CatalogDataSource =
-  (process.env.NEXT_PUBLIC_CATALOG_DATA_SOURCE as CatalogDataSource | undefined) ?? 'mock';
+  (process.env.NEXT_PUBLIC_CATALOG_DATA_SOURCE as CatalogDataSource | undefined) ?? 'live';
