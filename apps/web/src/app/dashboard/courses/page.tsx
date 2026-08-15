@@ -28,6 +28,7 @@ import { estimateLessonProgress } from '@/features/enrollments/utils/estimate-le
 import { useCourses } from '@/features/catalog/hooks/use-courses';
 import { useCategories } from '@/features/catalog/hooks/use-categories';
 import { CourseCard } from '@/features/catalog/components/course-card';
+import { useAuthStore } from '@/stores';
 import { CoursesGridSkeleton } from '@/features/catalog/components/course-card-skeleton';
 import type { EnrollmentStatus } from '@/features/enrollments/types/enrollment.types';
 
@@ -66,16 +67,23 @@ export default function CoursesPage() {
   );
   const { presets, savePreset, removePreset } = useSavedFilters<MyCoursesFilters>('my-courses');
 
+  const user = useAuthStore((state) => state.user);
+  const isStudent = user?.roles?.includes('STUDENT') ?? false;
+
+
   const categoriesQuery = useCategories({ pageSize: 100 });
   const coursesQuery = useCourses({ pageSize: 100 });
-  const enrollmentsQuery = useMyEnrollments({
-    page,
-    pageSize: PAGE_SIZE,
-    status: status === 'ALL' ? undefined : status,
-    enrollmentStatuses: ['ENROLLED', 'IN_PROGRESS', 'COMPLETED'],
-    categoryId,
-    search: search || undefined,
-  });
+  const enrollmentsQuery = useMyEnrollments(
+    {
+      page,
+      pageSize: PAGE_SIZE,
+      status: status === 'ALL' ? undefined : status,
+      enrollmentStatuses: ['ENROLLED', 'IN_PROGRESS', 'COMPLETED'],
+      categoryId,
+      search: search || undefined,
+    },
+    isStudent,
+  );
 
   const coursesBySlug = new Map(
     (coursesQuery.data?.items ?? []).map((course) => [course.slug, course]),

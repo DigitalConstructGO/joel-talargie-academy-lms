@@ -94,11 +94,13 @@ function initials(firstName?: string, lastName?: string) {
 export default function ProfilePage() {
   const profileQuery = useProfile();
   const updateProfile = useUpdateProfile();
-  const enrollmentsQuery = useMyEnrollments({ pageSize: 100 });
+  const profile = profileQuery.data;
+  const isStudent = profile?.roles?.includes('STUDENT') ?? false;
+
+  const enrollmentsQuery = useMyEnrollments({ pageSize: 100 }, isStudent);
   const coursesQuery = useCourses({ pageSize: 100 });
   const certificatesQuery = useMyCertificates({ pageSize: 100 });
 
-  const profile = profileQuery.data;
   const avatar = useAvatarImage(profile?.id);
   const uploadAvatar = useUploadAvatar();
   const deleteAvatar = useDeleteAvatar();

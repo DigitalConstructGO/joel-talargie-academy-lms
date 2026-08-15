@@ -5,13 +5,15 @@ import { enrollmentsApi } from '../api/enrollments.api';
 import { enrollmentKeys } from '../api/query-keys';
 import type { EnrollmentListParams } from '../types/enrollment.types';
 
-export function useMyEnrollments(params: EnrollmentListParams = {}) {
+export function useMyEnrollments(params: EnrollmentListParams = {}, enabled = true) {
   return useQuery({
     queryKey: enrollmentKeys.list(params),
     queryFn: () => enrollmentsApi.listMine(params),
     placeholderData: keepPreviousData,
+    enabled,
   });
 }
+
 
 export function useEnrollmentByCourse(courseId: string) {
   return useQuery({

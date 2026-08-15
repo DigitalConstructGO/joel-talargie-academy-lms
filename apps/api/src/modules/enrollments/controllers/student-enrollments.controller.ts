@@ -33,13 +33,13 @@ export class StudentEnrollmentsController {
     return this.enrollments.create(user, dto.courseId, dto.redemptionId);
   }
   @Get('me/enrollments')
-  @Roles('STUDENT')
-  @ApiOperation({ summary: 'List the authenticated Student’s enrollments' })
+  @Roles('STUDENT', 'ADMIN', 'INSTRUCTOR')
+  @ApiOperation({ summary: 'List the authenticated user\'s own enrollments' })
   list(@CurrentUser() user: AuthUser, @Query() query: ListMyEnrollmentsDto) {
     return this.enrollments.mine(user.id, query);
   }
   @Get('me/enrollments/course/:courseId')
-  @Roles('STUDENT')
+  @Roles('STUDENT', 'ADMIN', 'INSTRUCTOR')
   @ApiOperation({ summary: 'Check enrollment state for one course' })
   byCourse(
     @CurrentUser() user: AuthUser,
@@ -48,7 +48,7 @@ export class StudentEnrollmentsController {
     return this.enrollments.mineByCourse(user.id, id);
   }
   @Get('me/enrollments/:enrollmentId')
-  @Roles('STUDENT')
+  @Roles('STUDENT', 'ADMIN', 'INSTRUCTOR')
   @ApiOperation({ summary: 'Get one owned enrollment' })
   detail(
     @CurrentUser() user: AuthUser,
