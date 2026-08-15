@@ -5,6 +5,7 @@ import { LogOut } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuthStore } from '@/stores';
 import { useLogout } from '@/hooks/use-logout';
+import { useAvatarImage } from '@/features/account/hooks/use-avatar';
 import { ROUTES } from '@/constants/routes';
 
 function initials(firstName: string, lastName: string) {
@@ -19,6 +20,8 @@ export interface SidebarUserFooterProps {
 /** Sidebar footer profile block - clickable avatar + name/role on the left linking to unified profile, logout icon-button on the right. */
 export function SidebarUserFooter({ roleLabel, profileHref }: SidebarUserFooterProps) {
   const user = useAuthStore((state) => state.user);
+  const avatar = useAvatarImage(user?.id);
+  const avatarUrl = avatar.url ?? user?.avatarUrl ?? undefined;
   const handleLogout = useLogout();
   const name = user ? `${user.firstName} ${user.lastName}` : 'Account';
   const targetHref =
@@ -31,12 +34,12 @@ export function SidebarUserFooter({ roleLabel, profileHref }: SidebarUserFooterP
     <div className="flex items-center gap-2 px-3 py-1 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-2 group-data-[collapsible=icon]:px-0">
       <Link
         href={targetHref}
-        className="group/user flex min-w-0 flex-1 items-center gap-2.5 rounded-lg p-1.5 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring group-data-[collapsible=icon]:flex-none group-data-[collapsible=icon]:p-1"
+        className="group/user flex min-w-0 flex-1 items-center gap-2.5 rounded-lg p-2 transition-colors bg-sidebar-accent hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring group-data-[collapsible=icon]:flex-none group-data-[collapsible=icon]:p-1"
         title="View profile and account settings"
         aria-label="View profile and account settings"
       >
         <Avatar className="size-8 shrink-0 ring-2 ring-sidebar-primary/80 transition-transform group-hover/user:scale-105">
-          <AvatarImage src={user?.avatarUrl ?? undefined} alt={name} />
+          <AvatarImage src={avatarUrl} alt={name} />
           <AvatarFallback className="bg-sidebar-primary text-xs font-semibold text-sidebar-primary-foreground">
             {user ? initials(user.firstName, user.lastName) : 'U'}
           </AvatarFallback>

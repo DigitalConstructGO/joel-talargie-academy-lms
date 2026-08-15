@@ -77,19 +77,16 @@
   --chart-8: 84 81% 44%;  /* Lime Green #84cc16 */
 
   /*
-   * radius-md drives buttons/badges/inputs at their default heights
-   * (h-8/h-9/h-10) - 1.25rem exceeds half of every one of those heights,
-   * so they render as true pills, matching the reference exactly.
-   * radius-xl drives Card - large enough to read as generously rounded
-   * without looking like a stadium shape on a tall container.
+   * Sleek, modern border radius scale with subtle, elegant curves.
    */
-  --radius: 1rem;
-  --radius-sm: 0.625rem;
-  --radius-md: 1.25rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.25rem;
-  --radius-2xl: 1.5rem;
-  --radius-3xl: 2rem;
+  --radius: 0.5rem;
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.25rem;
 
   --sidebar: 226 74% 15%;
   --sidebar-foreground: 229 87% 85%;
@@ -98,10 +95,9 @@
   --sidebar-accent: 226 40% 22%;
   --sidebar-accent-foreground: 0 0% 100%;
   --sidebar-border: 226 40% 22%;
-  --sidebar-ring: 94 65% 45%;
-  /* Active nav item: a light green chip (not a solid brand-colored pill) with dark green text/icon. */
-  --sidebar-active-background: 97 57% 93%;
-  --sidebar-active-foreground: 91 100% 21%;
+  /* Active nav item: rich vibrant brand green background with crisp pure white text and icon */
+  --sidebar-active-background: 94 65% 45%;
+  --sidebar-active-foreground: 0 0% 100%;
 
   /* Soft pastel wash behind the auth card, per the login reference. */
   --auth-gradient-from: 261 60% 97%;
