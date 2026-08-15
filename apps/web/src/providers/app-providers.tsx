@@ -25,7 +25,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(createQueryClient);
   const content = (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} themes={['light', 'dark']} disableTransitionOnChange>
         {/* Makes every framer-motion animation site-wide (Reveal, page transitions, etc.) honor the OS-level reduced-motion preference, not just new usages. */}
         <MotionConfig reducedMotion="user">
           <TooltipProvider delayDuration={200}>

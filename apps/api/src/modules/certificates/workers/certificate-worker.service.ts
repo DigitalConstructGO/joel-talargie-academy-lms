@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { and, eq, sql, schema } from '@joel-academy/database';
+import { and, eq, lt, sql, schema } from '@joel-academy/database';
 import { DatabaseService } from '../../../common/database/database.service';
 import {
   STORAGE_SERVICE,
@@ -301,7 +301,7 @@ export class CertificateWorkerService {
         and(
           eq(schema.backgroundJobs.jobType, 'GENERATE_CERTIFICATE'),
           eq(schema.backgroundJobs.status, 'RUNNING'),
-          sql`${schema.backgroundJobs.lockedAt} < ${new Date(Date.now() - timeout)}`,
+          lt(schema.backgroundJobs.lockedAt, new Date(Date.now() - timeout)),
         ),
       );
   }

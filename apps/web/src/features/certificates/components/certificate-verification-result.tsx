@@ -157,7 +157,7 @@ export function CertificateVerificationResult({
                 <dt className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Certificate ID
                 </dt>
-                <dd className="mt-0.5 font-mono text-xs font-bold tracking-wide text-foreground">
+                <dd className="mt-0.5 font-mono text-xs font-bold tracking-wide text-foreground break-all">
                   {result.certificateNumber}
                 </dd>
               </div>

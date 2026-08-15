@@ -8,8 +8,12 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import sharp from 'sharp';
+import { ConfigService } from '@nestjs/config';
+import { eq, schema } from '@joel-academy/database';
 import { API_PREFIX, API_VERSION } from '../../common/constants/api.constants';
+import { DatabaseService } from '../../common/database/database.service';
 import type { AuthUser } from '../auth/interfaces/auth-user.interface';
+import { generateCertificatePdf } from '../certificates/generators/certificate.generator';
 import {
   AVATAR_DIMENSIONS,
   COURSE_THUMBNAIL_DIMENSIONS,
@@ -40,6 +44,8 @@ export class StorageService {
   constructor(
     private readonly local: LocalStorageProvider,
     private readonly repository: StorageRepository,
+    private readonly database: DatabaseService,
+    private readonly config: ConfigService,
   ) {
     this.avatarBaseUrl = `/${API_PREFIX}/v${API_VERSION}/storage/avatar`;
   }
@@ -301,11 +307,95 @@ export class StorageService {
       );
       return { ...descriptor, disposition: verification.payload.disposition };
     } catch {
+      if (verification.payload.key.startsWith('certificates/')) {
+        try {
+          const match = verification.payload.key.match(
+            /^certificates\/([0-9a-fA-F-]{36})/,
+          );
+          if (match?.[1]) {
+            const certId = match[1];
+            const healed = await this.healCertificateFile(
+              certId,
+              verification.payload.key,
+            );
+            if (healed) {
+              const descriptor = await this.local.readDescriptor(
+                verification.payload.key,
+              );
+              return {
+                ...descriptor,
+                disposition: verification.payload.disposition,
+              };
+            }
+          }
+        } catch {
+          // Fall through to 404
+        }
+      }
       throw new NotFoundException({
         code: 'FILE_NOT_FOUND',
         message: 'File not found',
       });
     }
+  }
+
+  private async healCertificateFile(
+    certId: string,
+    storageKey: string,
+  ): Promise<boolean> {
+    const [certData] = await this.database.client
+      .select({
+        id: schema.certificates.id,
+        status: schema.certificates.status,
+        number: schema.certificates.certificateNumber,
+        token: schema.certificates.verificationToken,
+        studentName: schema.certificates.studentNameAtIssue,
+        courseTitle: schema.certificates.courseTitleAtIssue,
+        completionDate: schema.certificates.completionDateSnapshot,
+        templateConfiguration: schema.certificateTemplates.configuration,
+      })
+      .from(schema.certificates)
+      .leftJoin(
+        schema.certificateTemplates,
+        eq(schema.certificateTemplates.id, schema.certificates.templateId),
+      )
+      .where(eq(schema.certificates.id, certId));
+
+    if (!certData || !certData.number) return false;
+
+    const config = (certData.templateConfiguration ?? {}) as Record<
+      string,
+      unknown
+    >;
+    const pdf = await generateCertificatePdf({
+      academyName: String(config.academyName ?? 'Joel Talargie Academy'),
+      title: String(config.title ?? 'Certificate of Completion'),
+      studentName: certData.studentName,
+      courseTitle: certData.courseTitle,
+      completionDate: certData.completionDate
+        ? new Date(certData.completionDate)
+        : new Date(),
+      certificateNumber: certData.number,
+      verificationUrl: `${(this.config.get<string>('CERTIFICATE_PUBLIC_BASE_URL') ?? 'http://localhost:3000/certificates/verify').replace(/\/$/, '')}/${certData.token}`,
+      primaryColor:
+        typeof config.primaryColor === 'string'
+          ? config.primaryColor
+          : undefined,
+      accentColor:
+        typeof config.accentColor === 'string'
+          ? config.accentColor
+          : undefined,
+      footerText:
+        typeof config.footerText === 'string' ? config.footerText : undefined,
+    });
+
+    await this.local.upload({
+      key: storageKey,
+      body: pdf,
+      contentType: 'application/pdf',
+    });
+
+    return true;
   }
 
   private async readHeaderBytes(path: string, length: number): Promise<Buffer> {

@@ -161,7 +161,11 @@ export default function LessonPlayerPage() {
           'Course completed!',
           "Congratulations! You've finished all required lessons and earned your certificate.",
         );
-        router.push(ROUTES.dashboard.certificates);
+        if (result.certificateId) {
+          router.push(`${ROUTES.dashboard.certificates}/${result.certificateId}`);
+        } else {
+          router.push(ROUTES.dashboard.certificates);
+        }
         return;
       }
       toast.success('Lesson completed');

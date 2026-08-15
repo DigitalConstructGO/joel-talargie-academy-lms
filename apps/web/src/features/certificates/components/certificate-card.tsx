@@ -45,7 +45,7 @@ export function CertificateCard({ certificate, href, className }: CertificateCar
           {certificate.studentName && (
             <p className="mt-0.5 text-xs text-muted-foreground">{certificate.studentName}</p>
           )}
-          <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+          <p className="mt-1 font-mono text-[11px] text-muted-foreground truncate">
             {certificate.certificateNumber}
           </p>
         </div>

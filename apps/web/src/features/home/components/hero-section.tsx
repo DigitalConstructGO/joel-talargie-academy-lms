@@ -9,9 +9,21 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/constants/routes';
 
-export function HeroSection() {
+import type { HeroSettings } from '@/features/settings/types/settings.types';
+
+export function HeroSection({ hero }: { hero?: HeroSettings }) {
   const router = useRouter();
   const [query, setQuery] = useState('');
+
+  const heading = hero?.heading || 'Engineer Your Next Career Move.';
+  const description =
+    hero?.description ||
+    'Learn directly from the source. Elite industry experts meticulously designed our structured, self-paced curriculum to deliver elite results with zero fluff. You are not just buying a course; you are investing in a masterclass.';
+  const primaryCtaText = hero?.primaryCtaText || 'View Curriculum';
+  const primaryCtaUrl = hero?.primaryCtaUrl || ROUTES.courses.list;
+  const secondaryCtaText = hero?.secondaryCtaText || 'Create free account';
+  const secondaryCtaUrl = hero?.secondaryCtaUrl || ROUTES.auth.register;
+  const heroImage = hero?.heroImageUrl || '/images/hero/network-abstract.jpg';
 
   function handleSearch(event: React.FormEvent) {
     event.preventDefault();
@@ -32,13 +44,9 @@ export function HeroSection() {
             Learn with purpose
           </span>
           <h1 className="text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl">
-            Engineer Your Next Career Move.
+            {heading}
           </h1>
-          <p className="max-w-lg text-lg text-muted-foreground">
-            Learn directly from the source. Elite industry experts meticulously designed our
-            structured, self-paced curriculum to deliver elite results with zero fluff. You are not
-            just buying a course; you are investing in a masterclass.
-          </p>
+          <p className="max-w-lg text-lg text-muted-foreground">{description}</p>
 
           <form onSubmit={handleSearch} className="flex w-full max-w-md items-center gap-2">
             <Input
@@ -55,25 +63,23 @@ export function HeroSection() {
 
           <div className="flex flex-wrap items-center gap-3">
             <Button asChild size="lg">
-              <Link href={ROUTES.courses.list}>
-                View Curriculum
+              <Link href={primaryCtaUrl}>
+                {primaryCtaText}
                 <ArrowRight className="size-4" />
               </Link>
             </Button>
             <Button variant="outline" size="lg" asChild>
-              <Link href={ROUTES.auth.register}>Create free account</Link>
+              <Link href={secondaryCtaUrl}>{secondaryCtaText}</Link>
             </Button>
           </div>
         </div>
 
         <div className="relative aspect-4/3 w-full overflow-hidden rounded-3xl bg-surface-dark lg:aspect-square">
-          <Image
-            src="/images/hero/network-abstract.jpg"
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={heroImage}
             alt="Abstract digital network visualization"
-            fill
-            priority
-            sizes="(min-width: 1024px) 50vw, 100vw"
-            className="object-cover"
+            className="size-full object-cover"
           />
           <div
             className="absolute inset-0 opacity-60 mix-blend-multiply"

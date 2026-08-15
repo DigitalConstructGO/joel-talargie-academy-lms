@@ -138,17 +138,16 @@ async function bootstrap() {
   const allowedOrigins = [...new Set([webUrl, ...additionalOrigins])];
   app.use(
     helmet({
+      xFrameOptions: false,
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
       contentSecurityPolicy: {
-        // Same split-origin case CORS handles below: the API and web app
-        // run on different origins (e.g. :4000/:3000 in local dev), so the
-        // default `frame-ancestors: 'self'` would block the web app from
-        // embedding API-served content in an iframe (e.g. the certificate
-        // preview streamed from `storage/files/:token`). Add the allowed
-        // web origins as legitimate frame-ancestors rather than disabling
-        // the directive.
         directives: {
           ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-          'frame-ancestors': ["'self'", ...allowedOrigins],
+          'frame-ancestors': [
+            "'self'",
+            ...allowedOrigins,
+            'https://*.vercel.app',
+          ],
         },
       },
     }),
@@ -158,7 +157,20 @@ async function bootstrap() {
     requestLoggerMiddleware.use.bind(requestLoggerMiddleware),
   );
   app.enableCors({
-    origin: allowedOrigins,
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        /\.vercel\.app$/.test(origin)
+      ) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
     credentials: true,
   });
   app.useGlobalPipes(

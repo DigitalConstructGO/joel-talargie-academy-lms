@@ -1,11 +1,8 @@
 import type { Metadata } from 'next';
 import { Reveal } from '@/components/common/reveal';
+import { getLandingPageDataServer } from '@/features/settings/api/landing.server';
 import { catalogApi } from '@/features/catalog/api/catalog.api';
 import { listCategoriesServer } from '@/features/catalog/api/catalog.server';
-import { CATALOG_DATA_SOURCE } from '@/config/data-source.config';
-import { computePlatformStats } from '@/features/home/utils/compute-platform-stats';
-import { getInstructorBySlug } from '@/features/instructors/data/mock-instructors.data';
-import type { InstructorProfile } from '@/features/instructors/types/instructor.types';
 import { HeroSection } from '@/features/home/components/hero-section';
 import { ValuePillsSection } from '@/features/home/components/value-pills-section';
 import { WhyChooseUsSection } from '@/features/home/components/why-choose-us-section';
@@ -26,54 +23,138 @@ export const metadata: Metadata = {
     'Explore a growing catalog of self-paced courses across a range of categories, taught by real instructors.',
 };
 
+export const revalidate = 30; // Revalidate dynamic landing page content every 30s
+
 async function loadHomeData() {
   try {
+    const landing = await getLandingPageDataServer();
+    if (landing) {
+      return {
+        sections: landing.sections ?? {},
+        hero: landing.hero,
+        valuePills: landing.valuePills,
+        whyChooseUs: landing.whyChooseUs,
+        howItWorks: landing.howItWorks,
+        featured: landing.featuredCourses,
+        categories: landing.categories,
+        topMentor: landing.mentor,
+        platformStats: landing.statistics,
+        testimonials: landing.testimonials,
+        faqs: landing.faqs,
+        finalCta: landing.finalCta,
+      };
+    }
+
+    // Fallback if landing API is unreachable during build
     const [featured, categories] = await Promise.all([
       catalogApi.featuredCourses({ pageSize: 8 }),
       listCategoriesServer(),
     ]);
-    const isMock = CATALOG_DATA_SOURCE === 'mock';
-
-    const topMentor: InstructorProfile | null = isMock
-      ? (getInstructorBySlug('joel-talargie') ?? null)
-      : null;
-
-    const platformStats = isMock ? computePlatformStats() : null;
 
     return {
+      sections: {
+        hero: true,
+        valuePills: true,
+        whyChooseUs: true,
+        howItWorks: true,
+        featuredCourses: true,
+        categories: true,
+        mentor: true,
+        stats: true,
+        pricing: true,
+        testimonials: true,
+        certificateVerify: true,
+        faq: true,
+        finalCta: true,
+      },
+      hero: undefined,
+      valuePills: undefined,
+      whyChooseUs: undefined,
+      howItWorks: undefined,
       featured: featured.items,
       categories: categories.items.slice(0, 8),
-      topMentor,
-      platformStats,
+      topMentor: {
+        id: 'joel-talargie',
+        name: 'Joel Talargie',
+        headline: 'Founder & Lead Instructor at Joel Talargie Academy',
+        bio: 'Seasoned software engineer, systems architect, and educator passionate about empowering African tech talent with rigorous, world-class skills.',
+        avatarUrl: null,
+      },
+      platformStats: {
+        studentsEnrolled: 1250,
+        totalCourses: 12,
+        totalEnrollments: 1420,
+        averageRating: 4.9,
+        satisfactionPercent: 98,
+      },
+      testimonials: undefined,
+      faqs: undefined,
+      finalCta: undefined,
     };
   } catch {
-    return { featured: [], categories: [], topMentor: null, platformStats: null };
+    return {
+      sections: {},
+      hero: undefined,
+      valuePills: undefined,
+      whyChooseUs: undefined,
+      howItWorks: undefined,
+      featured: [],
+      categories: [],
+      topMentor: null,
+      platformStats: null,
+      testimonials: undefined,
+      faqs: undefined,
+      finalCta: undefined,
+    };
   }
 }
 
 export default async function Home() {
-  const { featured, categories, topMentor, platformStats } = await loadHomeData();
+  const {
+    sections,
+    hero,
+    valuePills,
+    whyChooseUs,
+    howItWorks,
+    featured,
+    categories,
+    topMentor,
+    platformStats,
+    testimonials,
+    faqs,
+    finalCta,
+  } = await loadHomeData();
 
   return (
     <main>
-      <HeroSection />
-      <ValuePillsSection />
-      <Reveal>
-        <WhyChooseUsSection />
-      </Reveal>
-      <Reveal>
-        <HowItWorksSection />
-      </Reveal>
-      <Reveal>
-        <FeaturedCoursesSection courses={featured} />
-      </Reveal>
-      <Reveal>
-        <CategoriesSection categories={categories} />
-      </Reveal>
-      <Reveal>
-        <MentorSpotlightSection instructor={topMentor} />
-      </Reveal>
-      {platformStats && (
+      {sections.hero !== false && <HeroSection hero={hero} />}
+      {sections.valuePills !== false && <ValuePillsSection items={valuePills} />}
+      {sections.whyChooseUs !== false && (
+        <Reveal>
+          <WhyChooseUsSection items={whyChooseUs} />
+        </Reveal>
+      )}
+      {sections.howItWorks !== false && (
+        <Reveal>
+          <HowItWorksSection items={howItWorks} />
+        </Reveal>
+      )}
+      {sections.featuredCourses !== false && featured.length > 0 && (
+        <Reveal>
+          <FeaturedCoursesSection courses={featured as any} />
+        </Reveal>
+      )}
+      {sections.categories !== false && categories.length > 0 && (
+        <Reveal>
+          <CategoriesSection categories={categories as any} />
+        </Reveal>
+      )}
+      {sections.mentor !== false && (
+        <Reveal>
+          <MentorSpotlightSection instructor={topMentor} />
+        </Reveal>
+      )}
+      {sections.stats !== false && platformStats && (
         <Reveal>
           <StatsBandSection
             items={[
@@ -92,21 +173,31 @@ export default async function Home() {
           />
         </Reveal>
       )}
-      <Reveal>
-        <PricingPreviewSection />
-      </Reveal>
-      <Reveal>
-        <TestimonialsSection />
-      </Reveal>
-      <Reveal>
-        <VerifyCertificateSection />
-      </Reveal>
-      <Reveal>
-        <FaqPreviewSection />
-      </Reveal>
-      <Reveal>
-        <CtaBannerSection />
-      </Reveal>
+      {sections.pricing !== false && (
+        <Reveal>
+          <PricingPreviewSection />
+        </Reveal>
+      )}
+      {sections.testimonials !== false && (
+        <Reveal>
+          <TestimonialsSection testimonials={testimonials} />
+        </Reveal>
+      )}
+      {sections.certificateVerify !== false && (
+        <Reveal>
+          <VerifyCertificateSection />
+        </Reveal>
+      )}
+      {sections.faq !== false && (
+        <Reveal>
+          <FaqPreviewSection items={faqs} />
+        </Reveal>
+      )}
+      {sections.finalCta !== false && (
+        <Reveal>
+          <CtaBannerSection finalCta={finalCta} />
+        </Reveal>
+      )}
     </main>
   );
 }

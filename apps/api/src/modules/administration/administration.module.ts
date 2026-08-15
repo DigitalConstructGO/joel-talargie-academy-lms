@@ -6,6 +6,7 @@ import { AdminReportsController } from './reports/controllers/admin-reports.cont
 import { AdminReportExportsController } from './reports/controllers/admin-report-exports.controller';
 import { AdminAuditLogsController } from './audit/admin-audit-logs.controller';
 import { AdminSettingsController } from './settings/admin-settings.controller';
+import { PublicLandingController } from './settings/public-landing.controller';
 import { ReportRepository } from './reports/repositories/report.repository';
 import { ReportsService } from './reports/services/reports.service';
 import { ReportPrivacyService } from './reports/services/report-privacy.service';
@@ -25,6 +26,7 @@ import { PlatformSettingsService } from './settings/platform-settings.service';
     AdminReportExportsController,
     AdminAuditLogsController,
     AdminSettingsController,
+    PublicLandingController,
   ],
   providers: [
     ReportRepository,

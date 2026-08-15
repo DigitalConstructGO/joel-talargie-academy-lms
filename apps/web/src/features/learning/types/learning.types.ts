@@ -86,4 +86,5 @@ export interface ResumeTarget {
 export interface CompleteLessonResult {
   progressPercentage: number;
   courseCompleted: boolean;
+  certificateId?: string | null;
 }

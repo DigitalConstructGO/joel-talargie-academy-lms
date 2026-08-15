@@ -60,25 +60,26 @@ function PreviewPanel({
 }) {
   if (status === 'PENDING') {
     return (
-      <div className="flex aspect-[297/210] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-muted/30 text-center">
-        <Loader2 className="size-8 animate-spin text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Your certificate is being generated.</p>
+      <div className="flex aspect-[297/210] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-muted/30 p-8 text-center shadow-xs">
+        <Loader2 className="size-8 animate-spin text-brand" />
+        <p className="text-sm font-medium text-foreground">Your certificate is being generated...</p>
+        <p className="text-xs text-muted-foreground">Rendering tamper-evident credentials and security seal.</p>
       </div>
     );
   }
   if (status === 'FAILED') {
     return (
-      <div className="flex aspect-[297/210] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-destructive/30 bg-destructive/5 text-center">
+      <div className="flex aspect-[297/210] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-destructive/30 bg-destructive/5 p-8 text-center">
         <AlertTriangle className="size-8 text-destructive" />
-        <p className="text-sm text-destructive">
-          Certificate generation failed. Contact academy support for help.
+        <p className="text-sm font-medium text-destructive">
+          Certificate generation failed. Please contact academy support for help.
         </p>
       </div>
     );
   }
   if (status === 'REVOKED') {
     return (
-      <div className="flex aspect-[297/210] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-muted/30 text-center">
+      <div className="flex aspect-[297/210] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-muted/30 p-8 text-center">
         <Ban className="size-8 text-muted-foreground" />
         <p className="text-sm text-muted-foreground">This certificate has been revoked.</p>
       </div>
@@ -87,7 +88,7 @@ function PreviewPanel({
   if (isError) {
     return (
       <ErrorState
-        className="aspect-[297/210] w-full rounded-xl"
+        className="aspect-[297/210] w-full rounded-2xl"
         title="Couldn't load the preview"
         description="The certificate file link may have expired. Try again."
         onRetry={onRetry}
@@ -95,11 +96,15 @@ function PreviewPanel({
     );
   }
   if (isLoading || !fileUrl) {
-    return <Skeleton className="aspect-[297/210] w-full rounded-xl" />;
+    return <Skeleton className="aspect-[297/210] w-full rounded-2xl" />;
   }
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-muted/20">
-      <iframe src={fileUrl} title="Certificate preview" className="aspect-[297/210] w-full" />
+    <div className="relative aspect-[297/210] w-full overflow-hidden rounded-2xl border border-border bg-slate-900 shadow-sm">
+      <iframe
+        src={`${fileUrl}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`}
+        title="Official Certificate Preview"
+        className="size-full border-0"
+      />
     </div>
   );
 }
@@ -182,11 +187,11 @@ export default function CertificateDetailPage() {
           <Skeleton className="h-7 w-64" />
           <Skeleton className="h-4 w-40" />
         </div>
-        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-          <Skeleton className="aspect-[297/210] w-full rounded-xl" />
+        <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+          <Skeleton className="aspect-[297/210] w-full rounded-2xl" />
           <div className="space-y-4">
-            <Skeleton className="h-56 w-full rounded-xl" />
-            <Skeleton className="h-32 w-full rounded-xl" />
+            <Skeleton className="h-56 w-full rounded-2xl" />
+            <Skeleton className="h-32 w-full rounded-2xl" />
           </div>
         </div>
       </ContentContainer>
@@ -210,7 +215,7 @@ export default function CertificateDetailPage() {
     <ContentContainer>
       <PageHeader
         title={certificate.courseTitle}
-        description={`Certificate ${certificate.certificateNumber}`}
+        description={`Official Credential • ${certificate.certificateNumber}`}
         actions={
           <Badge variant={STATUS_VARIANT[certificate.status]}>
             {STATUS_LABEL[certificate.status]}
@@ -218,7 +223,7 @@ export default function CertificateDetailPage() {
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px] lg:items-start">
+      <div className="grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
         <PreviewPanel
           status={certificate.status}
           fileUrl={fileQuery.data?.url}
@@ -234,68 +239,70 @@ export default function CertificateDetailPage() {
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand">
                   <Award className="size-5" />
                 </span>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{certificate.studentName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {course?.presenterName ?? 'Instructor unavailable'}
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-foreground">{certificate.studentName}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {course?.presenterName ?? 'Joel Talargie Academy'}
                   </p>
                 </div>
               </div>
 
               <Separator />
 
-              <dl className="space-y-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <dt className="text-muted-foreground">Certificate ID</dt>
-                  <dd className="font-medium text-foreground">{certificate.certificateNumber}</dd>
+              <dl className="space-y-3.5 text-xs sm:text-sm">
+                <div className="space-y-1">
+                  <dt className="text-xs font-medium text-muted-foreground">Certificate ID</dt>
+                  <dd className="font-mono text-xs font-semibold text-foreground break-all rounded-lg border border-border bg-muted/40 p-2 leading-relaxed">
+                    {certificate.certificateNumber}
+                  </dd>
                 </div>
+
                 {certificate.completionDate && (
                   <div className="flex items-center justify-between">
-                    <dt className="text-muted-foreground">Completion date</dt>
+                    <dt className="text-muted-foreground">Completion Date</dt>
                     <dd className="font-medium text-foreground">
                       {formatDate(certificate.completionDate)}
                     </dd>
                   </div>
                 )}
+
                 {certificate.issuedAt && (
                   <div className="flex items-center justify-between">
-                    <dt className="text-muted-foreground">Issue date</dt>
+                    <dt className="text-muted-foreground">Issue Date</dt>
                     <dd className="font-medium text-foreground">
                       {formatDate(certificate.issuedAt)}
                     </dd>
                   </div>
                 )}
-              </dl>
 
-              {verificationCode && (
-                <>
-                  <Separator />
-                  <div>
-                    <p className="mb-1.5 text-xs font-semibold text-muted-foreground">
-                      Verification code
-                    </p>
-                    <button
-                      type="button"
-                      onClick={handleCopyCode}
-                      className="flex w-full items-center justify-between gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-left text-xs font-medium text-foreground hover:bg-muted/50"
-                    >
+                {verificationCode && (
+                  <div className="space-y-1.5 pt-1">
+                    <dt className="text-xs font-medium text-muted-foreground">Verification Code</dt>
+                    <dd className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-2.5 py-1.5 font-mono text-xs text-foreground">
                       <span className="truncate">{verificationCode}</span>
-                      {copied ? (
-                        <Check className="size-3.5 shrink-0 text-success" />
-                      ) : (
-                        <Copy className="size-3.5 shrink-0 text-muted-foreground" />
-                      )}
-                    </button>
+                      <button
+                        type="button"
+                        onClick={handleCopyCode}
+                        className="inline-flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+                        title="Copy verification code"
+                      >
+                        {copied ? (
+                          <Check className="size-3.5 text-emerald-600" />
+                        ) : (
+                          <Copy className="size-3.5" />
+                        )}
+                      </button>
+                    </dd>
                   </div>
-                </>
-              )}
+                )}
+              </dl>
             </CardContent>
           </Card>
 
           <Card>
             <CardContent className="space-y-2 p-5">
               <Button
-                className="w-full gap-2"
+                className="w-full gap-2 font-medium"
                 onClick={handleDownload}
                 disabled={!certificate.downloadAvailable || downloadCertificate.isPending}
               >
@@ -304,7 +311,7 @@ export default function CertificateDetailPage() {
                 ) : (
                   <Download className="size-4" />
                 )}
-                Download
+                Download Certificate
               </Button>
               <Button
                 variant="outline"
@@ -313,7 +320,7 @@ export default function CertificateDetailPage() {
                 disabled={!certificate.downloadAvailable || !fileQuery.data}
               >
                 <Printer className="size-4" />
-                Print
+                Print / Open in Tab
               </Button>
               <Button
                 variant="outline"
@@ -322,7 +329,7 @@ export default function CertificateDetailPage() {
                 disabled={!certificate.verificationUrl}
               >
                 <Share2 className="size-4" />
-                Share
+                Share Credential
               </Button>
             </CardContent>
           </Card>

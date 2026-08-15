@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 export type SettingCategory =
   | 'academy'
+  | 'landing'
   | 'registration'
   | 'payment'
   | 'learning'
@@ -14,7 +15,7 @@ export type SettingCategory =
 export interface SettingDefinition {
   key: string;
   category: SettingCategory;
-  type: 'STRING' | 'BOOLEAN' | 'INTEGER' | 'EMAIL' | 'ENUM' | 'UUID';
+  type: 'STRING' | 'BOOLEAN' | 'INTEGER' | 'EMAIL' | 'ENUM' | 'UUID' | 'JSON' | 'OBJECT' | 'ARRAY';
   defaultValue: unknown;
   permission: string;
   editable: boolean;
@@ -37,6 +38,358 @@ const defs: (Omit<
     category: 'academy',
     type: 'STRING',
     defaultValue: 'JTA',
+  },
+  {
+    key: 'academy.general',
+    category: 'academy',
+    type: 'OBJECT',
+    defaultValue: {
+      academyName: 'Joel Talargie Academy',
+      shortDescription: 'Engineer Your Next Career Move',
+      description:
+        'Learn directly from the source. Elite industry experts meticulously designed our structured, self-paced curriculum.',
+      contactEmail: 'contact@joeltalargie.com',
+      contactPhone: '+251 900 000 000',
+      website: 'https://joeltalargie.com',
+      address: 'Addis Ababa, Ethiopia',
+      socialLinks: {
+        twitter: 'https://twitter.com',
+        linkedin: 'https://linkedin.com',
+        github: 'https://github.com',
+        youtube: 'https://youtube.com',
+        facebook: 'https://facebook.com',
+      },
+    },
+  },
+  {
+    key: 'academy.branding',
+    category: 'academy',
+    type: 'OBJECT',
+    defaultValue: {
+      logoUrl: '/brand/logo.svg',
+      faviconUrl: '/favicon.ico',
+      primaryColor: '#1F4700',
+      secondaryColor: '#C5A059',
+      accentColor: '#10B981',
+      heroBackgroundUrl: '/images/hero/network-abstract.jpg',
+    },
+  },
+  {
+    key: 'landing.sections',
+    category: 'landing',
+    type: 'OBJECT',
+    defaultValue: {
+      hero: true,
+      valuePills: true,
+      whyChooseUs: true,
+      howItWorks: true,
+      featuredCourses: true,
+      categories: true,
+      mentor: true,
+      stats: true,
+      pricing: true,
+      testimonials: true,
+      certificateVerify: true,
+      faq: true,
+      finalCta: true,
+    },
+  },
+  {
+    key: 'landing.hero',
+    category: 'landing',
+    type: 'OBJECT',
+    defaultValue: {
+      heading: 'Engineer Your Next Career Move.',
+      description:
+        'Learn directly from the source. Elite industry experts meticulously designed our structured, self-paced curriculum to deliver elite results with zero fluff. You are not just buying a course; you are investing in a masterclass.',
+      primaryCtaText: 'Explore Courses',
+      primaryCtaUrl: '/courses',
+      secondaryCtaText: 'Create Account',
+      secondaryCtaUrl: '/auth/register',
+      heroImageUrl: '/images/hero/network-abstract.jpg',
+      isActive: true,
+    },
+  },
+  {
+    key: 'landing.value_pills',
+    category: 'landing',
+    type: 'ARRAY',
+    defaultValue: [
+      {
+        id: 'pill-1',
+        title: 'Self-Paced Learning',
+        description:
+          'Study on your own schedule with lifetime access to every course you enroll in.',
+        icon: 'Clock',
+        displayOrder: 1,
+        isActive: true,
+      },
+      {
+        id: 'pill-2',
+        title: 'Real Instructors',
+        description:
+          'Courses taught by working professionals, not narrators reading slides.',
+        icon: 'Users',
+        displayOrder: 2,
+        isActive: true,
+      },
+      {
+        id: 'pill-3',
+        title: 'Verified Credentials',
+        description:
+          'Finish a certificate-eligible course and show what you learned to employers.',
+        icon: 'Award',
+        displayOrder: 3,
+        isActive: true,
+      },
+    ],
+  },
+  {
+    key: 'landing.why_choose_us',
+    category: 'landing',
+    type: 'ARRAY',
+    defaultValue: [
+      {
+        id: 'why-1',
+        title: 'Learn at your own pace',
+        description:
+          'Courses are self-paced with full lifetime access, so you can learn on your schedule.',
+        icon: 'Clock',
+        displayOrder: 1,
+        isActive: true,
+      },
+      {
+        id: 'why-2',
+        title: 'Earn certificates',
+        description:
+          'Complete eligible courses to earn a certificate of completion you can share.',
+        icon: 'Award',
+        displayOrder: 2,
+        isActive: true,
+      },
+      {
+        id: 'why-3',
+        title: 'Vetted instructors',
+        description:
+          'Every course is reviewed before publishing to keep quality high.',
+        icon: 'ShieldCheck',
+        displayOrder: 3,
+        isActive: true,
+      },
+      {
+        id: 'why-4',
+        title: 'Learn anywhere',
+        description:
+          'A fully responsive experience across desktop, tablet, and mobile.',
+        icon: 'Smartphone',
+        displayOrder: 4,
+        isActive: true,
+      },
+    ],
+  },
+  {
+    key: 'landing.how_it_works',
+    category: 'landing',
+    type: 'ARRAY',
+    defaultValue: [
+      {
+        id: 'step-1',
+        stepNumber: '01',
+        title: 'Create an account',
+        description: 'Sign up free in under a minute.',
+        icon: 'UserPlus',
+        displayOrder: 1,
+        isActive: true,
+      },
+      {
+        id: 'step-2',
+        stepNumber: '02',
+        title: 'Find a course',
+        description: 'Browse the catalog or search for a topic.',
+        icon: 'Search',
+        displayOrder: 2,
+        isActive: true,
+      },
+      {
+        id: 'step-3',
+        stepNumber: '03',
+        title: 'Start learning',
+        description: 'Work through lessons at your own pace.',
+        icon: 'PlayCircle',
+        displayOrder: 3,
+        isActive: true,
+      },
+      {
+        id: 'step-4',
+        stepNumber: '04',
+        title: 'Get certified',
+        description: 'Finish the course and earn your certificate.',
+        icon: 'Award',
+        displayOrder: 4,
+        isActive: true,
+      },
+    ],
+  },
+  {
+    key: 'landing.featured_courses',
+    category: 'landing',
+    type: 'OBJECT',
+    defaultValue: {
+      enabled: true,
+      limit: 8,
+    },
+  },
+  {
+    key: 'landing.categories',
+    category: 'landing',
+    type: 'OBJECT',
+    defaultValue: {
+      enabled: true,
+      limit: 8,
+      ordering: 'courseCount',
+    },
+  },
+  {
+    key: 'landing.mentor',
+    category: 'landing',
+    type: 'OBJECT',
+    defaultValue: {
+      enabled: true,
+      featuredInstructorId: null,
+    },
+  },
+  {
+    key: 'landing.statistics',
+    category: 'landing',
+    type: 'OBJECT',
+    defaultValue: {
+      enabled: true,
+      items: [
+        {
+          key: 'students',
+          label: 'Students enrolled',
+          displayOrder: 1,
+          isEnabled: true,
+        },
+        {
+          key: 'courses',
+          label: 'Active courses',
+          displayOrder: 2,
+          isEnabled: true,
+        },
+        {
+          key: 'rating',
+          label: 'Average course rating',
+          displayOrder: 3,
+          isEnabled: true,
+        },
+        {
+          key: 'satisfaction',
+          label: 'Student satisfaction',
+          displayOrder: 4,
+          isEnabled: true,
+        },
+      ],
+    },
+  },
+  {
+    key: 'landing.testimonials',
+    category: 'landing',
+    type: 'ARRAY',
+    defaultValue: [
+      {
+        id: 'test-1',
+        studentName: 'Abebe Kebede',
+        avatarUrl: '',
+        testimonial:
+          'The curriculum was straightforward and practical. I was able to apply what I learned in my engineering job within weeks.',
+        rating: 5,
+        courseTitle: 'Full-Stack Web Development',
+        isFeatured: true,
+        displayOrder: 1,
+        isActive: true,
+      },
+      {
+        id: 'test-2',
+        studentName: 'Sara Mohammed',
+        avatarUrl: '',
+        testimonial:
+          'Exceptional instruction and crystal-clear explanations. The certificate verification was seamless.',
+        rating: 5,
+        courseTitle: 'Advanced Cloud Architecture',
+        isFeatured: true,
+        displayOrder: 2,
+        isActive: true,
+      },
+      {
+        id: 'test-3',
+        studentName: 'Dawit Yohannes',
+        avatarUrl: '',
+        testimonial:
+          'By far the best learning experience I have had online. Hands-on exercises and great support.',
+        rating: 5,
+        courseTitle: 'System Design & DevOps',
+        isFeatured: true,
+        displayOrder: 3,
+        isActive: true,
+      },
+    ],
+  },
+  {
+    key: 'landing.faqs',
+    category: 'landing',
+    type: 'ARRAY',
+    defaultValue: [
+      {
+        id: 'faq-1',
+        question: 'Are the courses self-paced?',
+        answer:
+          'Yes, all courses offer lifetime access so you can study at your own pace whenever and wherever you want.',
+        category: 'General',
+        displayOrder: 1,
+        isActive: true,
+      },
+      {
+        id: 'faq-2',
+        question: 'Do I get a certificate upon completion?',
+        answer:
+          'Yes, once you complete all required lessons and assessments in a course, you receive a verified digital certificate with QR authentication.',
+        category: 'Certificates',
+        displayOrder: 2,
+        isActive: true,
+      },
+      {
+        id: 'faq-3',
+        question: 'What payment methods are supported?',
+        answer:
+          'We support multiple payment methods including mobile money, bank transfers, and standard credit/debit cards.',
+        category: 'Payments',
+        displayOrder: 3,
+        isActive: true,
+      },
+      {
+        id: 'faq-4',
+        question: 'Can I access the platform on mobile devices?',
+        answer:
+          'Absolutely. The academy is completely responsive and works smoothly on smartphones, tablets, laptops, and desktop computers.',
+        category: 'General',
+        displayOrder: 4,
+        isActive: true,
+      },
+    ],
+  },
+  {
+    key: 'landing.final_cta',
+    category: 'landing',
+    type: 'OBJECT',
+    defaultValue: {
+      heading: 'Ready to Start?',
+      description:
+        'Join for free and get access to our full course catalog today - no credit card required.',
+      ctaText: 'Start Learning Today',
+      ctaUrl: '/auth/register',
+      isActive: true,
+    },
   },
   {
     key: 'academy.support_email',
@@ -271,6 +624,10 @@ export class SettingRegistryService {
       (!Number.isInteger(value) || Number(value) <= 0)
     )
       throw new BadRequestException('Expected positive integer');
+    if (d.type === 'OBJECT' && (typeof value !== 'object' || value === null || Array.isArray(value)))
+      throw new BadRequestException('Expected object');
+    if (d.type === 'ARRAY' && !Array.isArray(value))
+      throw new BadRequestException('Expected array');
     if (
       ['STRING', 'EMAIL', 'ENUM'].includes(d.type) &&
       typeof value !== 'string'

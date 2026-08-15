@@ -44,6 +44,15 @@ export class AdminSettingsController {
     const a = this.auth(r);
     return this.service.batch(u.id, d.items, d.reason, a.permissions, a.admin);
   }
+  @Get('academy-structured')
+  @RequirePermissions('settings.read')
+  @ApiOperation({
+    summary: 'Get structured academy general, branding, and landing page settings',
+  })
+  academyStructured() {
+    return this.service.getStructuredAcademySettings();
+  }
+
   @Get(':key/history')
   @RequirePermissions('settings.view_history')
   @ApiOperation({ summary: 'View immutable setting-change history' })

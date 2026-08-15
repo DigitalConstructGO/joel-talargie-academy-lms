@@ -1,10 +1,13 @@
 import { authClient, unwrap } from '@/lib/api/auth-client';
-import { CATALOG_DATA_SOURCE } from '@/config/data-source.config';
-import { mockSettingsApi } from '../data/mock-settings.api';
 import type {
+  AcademyGeneralSettings,
+  AcademyBrandingSettings,
   PlatformSetting,
+  PublicLandingData,
+  PublicSettings,
   SettingHistoryEntry,
   SettingsListParams,
+  StructuredAcademySettings,
   UpdateSettingsBatchInput,
 } from '../types/settings.types';
 
@@ -13,7 +16,7 @@ const cleanParams = <T extends object>(params: T) =>
     Object.entries(params).filter(([, value]) => value !== undefined && value !== ''),
   );
 
-const liveSettingsApi = {
+export const settingsApi = {
   list: async (params: SettingsListParams = {}) =>
     unwrap<PlatformSetting[]>(
       await authClient.get('/admin/settings', { params: cleanParams(params) }),
@@ -26,7 +29,17 @@ const liveSettingsApi = {
     unwrap<SettingHistoryEntry[]>(
       await authClient.get(`/admin/settings/${encodeURIComponent(key)}/history`),
     ),
-};
 
-/** Same mock/live switch as `catalogApi` - flips with `NEXT_PUBLIC_CATALOG_DATA_SOURCE`. */
-export const settingsApi = CATALOG_DATA_SOURCE === 'live' ? liveSettingsApi : mockSettingsApi;
+  getStructured: async () =>
+    unwrap<StructuredAcademySettings>(await authClient.get('/admin/settings/academy-structured')),
+
+  getPublicLanding: async () =>
+    unwrap<PublicLandingData>(await authClient.get('/public/landing')),
+
+  getPublicAcademyInfo: async () =>
+    unwrap<{
+      general: AcademyGeneralSettings;
+      branding: AcademyBrandingSettings;
+      publicSettings: PublicSettings;
+    }>(await authClient.get('/public/academy-info')),
+};

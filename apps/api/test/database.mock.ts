@@ -13,6 +13,7 @@ export {
   ilike,
   inArray,
   isNull,
+  lt,
   lte,
   ne,
   or,
