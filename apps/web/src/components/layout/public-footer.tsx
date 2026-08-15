@@ -12,6 +12,7 @@ const FOOTER_SECTIONS = [
       { label: 'Categories', href: ROUTES.categories.list },
       { label: 'Instructors', href: ROUTES.instructors.list },
       { label: 'Pricing', href: ROUTES.pricing },
+      { label: 'Verify certificate', href: ROUTES.certificates.verifyLookup },
     ],
   },
   {

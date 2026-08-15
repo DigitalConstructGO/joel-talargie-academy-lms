@@ -78,7 +78,6 @@ export async function generateCertificatePdf(
     const gold = '#C5A059'; // Metallic gold accent
     const lightGreen = input.accentColor ?? '#529E1B';
     const darkInk = '#0F172A';
-    const bodyInk = '#334155';
     const mutedInk = '#64748B';
     const cardBg = '#F8FAF6';
     const borderGold = '#DFC68E';

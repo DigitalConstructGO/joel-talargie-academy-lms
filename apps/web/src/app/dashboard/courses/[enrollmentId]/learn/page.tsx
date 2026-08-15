@@ -266,29 +266,17 @@ export default function LessonPlayerPage() {
           </nav>
         </div>
         <div className="flex items-center gap-3">
-          {isCourseCompleted && (
             <Button
+              variant="ghost"
               size="sm"
-              className="shrink-0 gap-2 bg-gradient-to-r from-amber-500 to-emerald-600 font-semibold text-white shadow-md hover:from-amber-600 hover:to-emerald-700"
+              className="shrink-0 gap-1.5 text-xs text-sidebar-foreground/70 hover:bg-white/10 hover:text-white"
               asChild
             >
-              <Link href={ROUTES.dashboard.certificates}>
-                <Award className="size-4" />
-                <span>View Certificate</span>
+              <Link href={ROUTES.dashboard.courses}>
+                <ChevronLeft className="size-4" />
+                <span>Back to Courses</span>
               </Link>
             </Button>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            className="shrink-0 gap-2 border-white/20 text-white hover:bg-white/10"
-            asChild
-          >
-            <Link href={ROUTES.dashboard.courses}>
-              <X className="size-4" />
-              <span className="hidden sm:inline">Exit Focus Mode</span>
-            </Link>
-          </Button>
         </div>
       </header>
 
@@ -322,33 +310,6 @@ export default function LessonPlayerPage() {
         )}
         <main className="flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-5xl px-4 py-8 pb-28 sm:px-6">
-            {isCourseCompleted && (
-              <div className="mb-6 flex flex-col items-center justify-between gap-4 rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-sidebar/60 to-emerald-950/30 p-4 shadow-lg sm:flex-row">
-                <div className="flex items-center gap-3">
-                  <div className="flex size-11 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/40">
-                    <Award className="size-6" />
-                  </div>
-                  <div>
-                    <h2 className="text-base font-semibold text-white">Course Completed!</h2>
-                    <p className="text-xs text-white/70">
-                      Congratulations! You have completed all lessons and earned your certificate.
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  className="shrink-0 gap-2 bg-gradient-to-r from-amber-500 to-emerald-600 font-semibold text-white shadow-md hover:from-amber-600 hover:to-emerald-700"
-                  asChild
-                >
-                  <Link href={ROUTES.dashboard.certificates}>
-                    <Award className="size-4" />
-                    <span>View Certificate</span>
-                    <ArrowRight className="size-4" />
-                  </Link>
-                </Button>
-              </div>
-            )}
-
             {lessonQuery.isLoading || !lesson ? (
               <Skeleton className="aspect-video w-full rounded-xl bg-white/10" />
             ) : lesson.lessonType === 'VIDEO' && lesson.videoUrl ? (

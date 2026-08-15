@@ -17,6 +17,7 @@ import { StatsBandSection } from '@/features/home/components/stats-band-section'
 import { PricingPreviewSection } from '@/features/home/components/pricing-preview-section';
 import { TestimonialsSection } from '@/features/testimonials/components/testimonials-section';
 import { FaqPreviewSection } from '@/features/home/components/faq-preview-section';
+import { VerifyCertificateSection } from '@/features/home/components/verify-certificate-section';
 import { CtaBannerSection } from '@/features/home/components/cta-banner-section';
 
 export const metadata: Metadata = {
@@ -96,6 +97,9 @@ export default async function Home() {
       </Reveal>
       <Reveal>
         <TestimonialsSection />
+      </Reveal>
+      <Reveal>
+        <VerifyCertificateSection />
       </Reveal>
       <Reveal>
         <FaqPreviewSection />

@@ -37,27 +37,33 @@ function demoEnrollment(
   };
 }
 
-export const MOCK_CERTIFICATE_ENROLLMENTS: DemoCertificateEnrollment[] = [
-  demoEnrollment(10, 'enrollment-006', 60),
-  demoEnrollment(12, 'enrollment-007', 10),
-].filter((entry): entry is DemoCertificateEnrollment => entry !== null);
+export const MOCK_CERTIFICATE_ENROLLMENTS: DemoCertificateEnrollment[] = MOCK_COURSE_RECORDS.map(
+  (record, index) => ({
+    id: `enrollment-00${index + 1}`,
+    courseTitle: record.title,
+    courseId: record.id,
+    completedAt: daysAgo(index * 3 + 1),
+    status: 'COMPLETED' as const,
+    progressPercentage: 100 as const,
+  }),
+);
 
-function issuedCertificate(enrollment: DemoCertificateEnrollment): CertificateSeed {
+function issuedCertificate(enrollment: DemoCertificateEnrollment, index: number): CertificateSeed {
   return {
     enrollmentId: enrollment.id,
     certificate: {
-      id: 'certificate-001',
-      certificateNumber: 'JTA-2025-8F3C2A91B7D4E650',
+      id: `certificate-00${index + 1}`,
+      certificateNumber: `JTA-${new Date().getUTCFullYear()}-${(index + 1).toString().padStart(2, '0')}${enrollment.id.replace('enrollment-', '').toUpperCase()}8F3C2A91`,
       status: 'GENERATED',
-      studentName: 'Demo Student',
+      studentName: 'Joel Talargie',
       courseTitle: enrollment.courseTitle,
       courseId: enrollment.courseId,
       completionDate: enrollment.completedAt,
-      issuedAt: daysAgo(55),
-      generatedAt: daysAgo(55),
+      issuedAt: enrollment.completedAt,
+      generatedAt: enrollment.completedAt,
       revokedAt: null,
       generationVersion: 1,
-      createdAt: daysAgo(60),
+      createdAt: enrollment.completedAt ?? daysAgo(1),
       downloadAvailable: true,
       verificationUrl:
         'http://localhost:3000/certificates/verify/mockVerificationToken0000000000000000000001',
@@ -65,32 +71,6 @@ function issuedCertificate(enrollment: DemoCertificateEnrollment): CertificateSe
   };
 }
 
-function pendingCertificate(enrollment: DemoCertificateEnrollment): CertificateSeed {
-  return {
-    enrollmentId: enrollment.id,
-    certificate: {
-      id: 'certificate-002',
-      certificateNumber: 'JTA-2026-1A2B3C4D5E6F7089',
-      status: 'PENDING',
-      studentName: 'Demo Student',
-      courseTitle: enrollment.courseTitle,
-      courseId: enrollment.courseId,
-      completionDate: enrollment.completedAt,
-      issuedAt: null,
-      generatedAt: null,
-      revokedAt: null,
-      generationVersion: 1,
-      createdAt: daysAgo(5),
-      downloadAvailable: false,
-      verificationUrl: null,
-    },
-  };
-}
-
-const iosEnrollment = MOCK_CERTIFICATE_ENROLLMENTS.find((entry) => entry.id === 'enrollment-006');
-const pythonEnrollment = MOCK_CERTIFICATE_ENROLLMENTS.find((entry) => entry.id === 'enrollment-007');
-
-export const MOCK_CERTIFICATE_SEEDS: CertificateSeed[] = [
-  iosEnrollment ? issuedCertificate(iosEnrollment) : null,
-  pythonEnrollment ? pendingCertificate(pythonEnrollment) : null,
-].filter((seed): seed is CertificateSeed => seed !== null);
+export const MOCK_CERTIFICATE_SEEDS: CertificateSeed[] = MOCK_CERTIFICATE_ENROLLMENTS.map(
+  (enrollment, index) => issuedCertificate(enrollment, index),
+);

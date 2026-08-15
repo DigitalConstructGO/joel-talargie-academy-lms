@@ -45,6 +45,18 @@ const liveCertificatesApi = {
     ),
 };
 
-/** Same mock/live switch as `catalogApi` - flips with `NEXT_PUBLIC_CATALOG_DATA_SOURCE`. */
-export const certificatesApi =
-  CATALOG_DATA_SOURCE === 'live' ? liveCertificatesApi : mockCertificatesApi;
+/** Live or mock backend API for certificates and public verification. */
+export const certificatesApi = {
+  ...liveCertificatesApi,
+  verify: async (tokenOrCode: string): Promise<CertificateVerification> => {
+    if (CATALOG_DATA_SOURCE === 'mock') {
+      return mockCertificatesApi.verify(tokenOrCode);
+    }
+    try {
+      return await liveCertificatesApi.verify(tokenOrCode);
+    } catch {
+      return { state: 'INVALID' };
+    }
+  },
+};
+

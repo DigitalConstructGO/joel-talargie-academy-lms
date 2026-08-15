@@ -145,20 +145,6 @@ export function LessonSidebar({
           );
         })}
       </nav>
-
-      {overallProgress === 100 && (
-        <div className="border-t border-sidebar-border p-4">
-          <Button
-            className="w-full gap-2 bg-gradient-to-r from-amber-500 to-emerald-600 font-semibold text-white shadow-md hover:from-amber-600 hover:to-emerald-700"
-            asChild
-          >
-            <Link href={ROUTES.dashboard.certificates}>
-              <Award className="size-4" />
-              <span>View Certificate</span>
-            </Link>
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

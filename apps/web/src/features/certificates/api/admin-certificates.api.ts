@@ -61,6 +61,5 @@ const liveAdminCertificatesApi = {
     ),
 };
 
-/** Same mock/live switch as `catalogApi` - flips with `NEXT_PUBLIC_CATALOG_DATA_SOURCE`. */
-export const adminCertificatesApi =
-  CATALOG_DATA_SOURCE === 'live' ? liveAdminCertificatesApi : mockAdminCertificatesApi;
+/** Live backend API for admin certificates. */
+export const adminCertificatesApi = liveAdminCertificatesApi;

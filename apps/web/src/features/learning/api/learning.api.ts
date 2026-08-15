@@ -50,5 +50,5 @@ const liveLearningApi = {
     ),
 };
 
-/** Same mock/live switch as `catalogApi` - flips with `NEXT_PUBLIC_CATALOG_DATA_SOURCE`. */
-export const learningApi = CATALOG_DATA_SOURCE === 'live' ? liveLearningApi : mockLearningApi;
+/** Live backend API for learning endpoints. */
+export const learningApi = liveLearningApi;

@@ -209,8 +209,8 @@ describe('CertificatesService', () => {
   });
 
   describe('verify', () => {
-    it('returns INVALID for a malformed token', async () => {
-      await expect(service.verify('short')).resolves.toEqual({
+    it('returns INVALID for a malformed token or code', async () => {
+      await expect(service.verify('a!')).resolves.toEqual({
         state: 'INVALID',
       });
       expect(repository.verify).not.toHaveBeenCalled();
@@ -224,18 +224,20 @@ describe('CertificatesService', () => {
       });
     });
 
-    it('returns VALID for a GENERATED certificate', async () => {
-      const token = 'a'.repeat(60);
+    it('returns VALID for a GENERATED certificate by token or certificate code', async () => {
+      const code = 'JTA-2026-000001';
       repository.verify.mockResolvedValueOnce({
         status: 'GENERATED',
-        certificateNumber: 'JTA-1',
-        studentName: 'Ada',
+        certificateNumber: 'JTA-2026-000001',
+        studentName: 'Ada Lovelace',
         courseTitle: 'CS101',
         completionDate: new Date('2026-01-01'),
         issuedAt: new Date('2026-01-02'),
       });
-      const result = await service.verify(token);
+      const result = await service.verify(code);
       expect(result.state).toBe('VALID');
+      expect(result.certificateNumber).toBe('JTA-2026-000001');
+      expect(result.studentName).toBe('Ada Lovelace');
     });
 
     it('returns REVOKED for a revoked certificate', async () => {

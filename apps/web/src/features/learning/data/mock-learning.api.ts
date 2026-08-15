@@ -1,5 +1,6 @@
 import { MOCK_COURSE_RECORDS } from '@/features/catalog/data/build-mock-courses';
 import type { CourseLesson, CourseSection } from '@/features/catalog/types/catalog.types';
+import { mockCertificatesApi } from '@/features/certificates/data/mock-certificates.api';
 import { mockLessonTextContent, MOCK_LESSON_VIDEO_URL } from './mock-learning.data';
 import type {
   CompleteLessonResult,
@@ -284,9 +285,15 @@ export const mockLearningApi = {
     const progressPercentage = mandatory.length
       ? Math.floor((completed * 100) / mandatory.length)
       : 0;
+
+    const courseCompleted = mandatory.length > 0 && completed >= mandatory.length;
+    if (courseCompleted) {
+      void mockCertificatesApi.request(enrollmentId).catch(() => null);
+    }
+
     return delay({
       progressPercentage,
-      courseCompleted: mandatory.length > 0 && completed >= mandatory.length,
+      courseCompleted,
     });
   },
 };

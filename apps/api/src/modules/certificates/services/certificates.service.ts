@@ -77,9 +77,11 @@ export class CertificatesService {
     return this.download(certificateId, inline);
   }
 
-  async verify(token: string) {
-    if (!/^[A-Za-z0-9_-]{43,128}$/.test(token)) return { state: 'INVALID' };
-    const certificate = await this.repository.verify(token);
+  async verify(tokenOrCode: string) {
+    const trimmed = (tokenOrCode ?? '').trim();
+    if (!trimmed || !/^[A-Za-z0-9_.-]{3,128}$/.test(trimmed))
+      return { state: 'INVALID' };
+    const certificate = await this.repository.verify(trimmed);
     if (!certificate || !['GENERATED', 'REVOKED'].includes(certificate.status))
       return { state: 'INVALID' };
     return {

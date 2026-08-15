@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { and, count, desc, eq, sql, schema } from '@joel-academy/database';
+import { and, count, desc, eq, ilike, or, sql, schema } from '@joel-academy/database';
 import { DatabaseService } from '../../../common/database/database.service';
 import type {
   CertificateListDto,
@@ -206,7 +206,7 @@ export class CertificatesRepository {
       .then((rows) => rows[0] ?? null);
   }
 
-  verify(token: string) {
+  verify(tokenOrCode: string) {
     return this.db
       .select({
         status: schema.certificates.status,
@@ -217,7 +217,13 @@ export class CertificatesRepository {
         issuedAt: schema.certificates.issuedAt,
       })
       .from(schema.certificates)
-      .where(eq(schema.certificates.verificationToken, token))
+      .where(
+        or(
+          eq(schema.certificates.verificationToken, tokenOrCode),
+          ilike(schema.certificates.certificateNumber, tokenOrCode),
+          eq(schema.certificates.certificateNumber, tokenOrCode),
+        ),
+      )
       .limit(1)
       .then((rows) => rows[0] ?? null);
   }

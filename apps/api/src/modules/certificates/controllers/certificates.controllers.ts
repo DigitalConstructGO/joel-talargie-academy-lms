@@ -78,10 +78,26 @@ export class PublicCertificatesController {
 
   @Public()
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @Get('verify')
+  @ApiOperation({
+    summary:
+      'Verify a certificate by query parameter (token or certificate code)',
+  })
+  verifyQuery(
+    @Query('token') token?: string,
+    @Query('code') code?: string,
+    @Query('q') q?: string,
+  ) {
+    const identifier = token || code || q || '';
+    return this.certificates.verify(identifier);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Get('verify/:verificationToken')
   @ApiOperation({
     summary:
-      'Verify one high-entropy certificate token without exposing private data',
+      'Verify one certificate token or certificate code without exposing private data',
   })
   verify(@Param('verificationToken') token: string) {
     return this.certificates.verify(token);

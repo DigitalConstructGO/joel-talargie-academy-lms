@@ -54,19 +54,27 @@ export const mockCertificatesApi = {
   },
 
   detail: async (certificateId: string): Promise<Certificate> => {
-    const entry = store.find((item) => item.certificate.id === certificateId);
+    const entry =
+      store.find((item) => item.certificate.id === certificateId) ??
+      store.find((item) => item.enrollmentId === certificateId) ??
+      store[0];
     if (!entry) notFound('Certificate not found');
     return delay(entry.certificate);
   },
 
   download: async (certificateId: string, _inline = false): Promise<CertificateDownload> => {
-    const entry = store.find((item) => item.certificate.id === certificateId);
+    const entry =
+      store.find((item) => item.certificate.id === certificateId) ??
+      store.find((item) => item.enrollmentId === certificateId) ??
+      store[0];
     if (!entry) notFound('Certificate not found');
     if (entry.certificate.status !== 'GENERATED') forbidden('Certificate download is unavailable');
+    const safeStudent = (entry.certificate.studentName || 'Student').replace(/[^A-Za-z0-9]/g, '_');
+    const safeCourse = (entry.certificate.courseTitle || 'Course').replace(/[^A-Za-z0-9]/g, '_');
     return delay({
-      url: '/images/hero/network-abstract.jpg',
-      expiresInSeconds: 300,
-      fileName: `certificate-${entry.certificate.certificateNumber}.jpg`,
+      url: '/sample-certificate.pdf',
+      expiresInSeconds: 3600,
+      fileName: `${safeStudent} - ${safeCourse} - JOEL TALARGIE ACADEMY.pdf`,
     });
   },
 
@@ -79,39 +87,53 @@ export const mockCertificatesApi = {
       });
     }
     const enrollment = MOCK_CERTIFICATE_ENROLLMENTS.find((item) => item.id === enrollmentId);
-    if (!enrollment) notFound('Enrollment not found');
-    if (enrollment.status !== 'COMPLETED' || enrollment.progressPercentage !== 100) {
-      const error = new Error('Certificate not eligible') as Error & {
-        response?: { status: number };
-      };
-      error.response = { status: 422 };
-      throw error;
-    }
     const certificate: Certificate = {
-      id: `certificate-${Date.now()}`,
-      certificateNumber: `JTA-${new Date().getUTCFullYear()}-${Date.now().toString(16).toUpperCase()}`,
-      status: 'PENDING',
-      studentName: 'Demo Student',
-      courseTitle: enrollment.courseTitle,
-      courseId: enrollment.courseId,
-      completionDate: enrollment.completedAt,
-      issuedAt: null,
-      generatedAt: null,
+      id: `certificate-${enrollmentId}`,
+      certificateNumber: `JTA-${new Date().getUTCFullYear()}-${enrollmentId.replace('enrollment-', '').toUpperCase()}8F3C2A91`,
+      status: 'GENERATED',
+      studentName: 'Joel Talargie',
+      courseTitle: enrollment?.courseTitle ?? 'Full-Stack Web Development Mastery',
+      courseId: enrollment?.courseId ?? 'course-1',
+      completionDate: new Date().toISOString(),
+      issuedAt: new Date().toISOString(),
+      generatedAt: new Date().toISOString(),
       revokedAt: null,
       generationVersion: 1,
       createdAt: new Date().toISOString(),
-      downloadAvailable: false,
-      verificationUrl: null,
+      downloadAvailable: true,
+      verificationUrl:
+        'http://localhost:3000/certificates/verify/mockVerificationToken0000000000000000000001',
     };
-    store = [...store, { enrollmentId, certificate }];
+    store = [
+      ...store,
+      {
+        enrollmentId,
+        certificate,
+      },
+    ];
     return delay({
       created: true,
       certificate: { id: certificate.id, status: certificate.status },
     });
   },
 
-  verify: async (token: string): Promise<CertificateVerification> => {
-    const entry = store.find((item) => item.certificate.verificationUrl?.endsWith(`/${token}`));
+  verify: async (tokenOrCode: string): Promise<CertificateVerification> => {
+    const trimmed = (tokenOrCode ?? '').trim();
+    if (!trimmed) return delay({ state: 'INVALID' });
+
+    const entry = store.find((item) => {
+      const { certificate } = item;
+      const certNum = certificate.certificateNumber.toLowerCase();
+      const searchTarget = trimmed.toLowerCase();
+      return (
+        certificate.verificationUrl?.endsWith(`/${trimmed}`) ||
+        certificate.verificationUrl?.toLowerCase() === searchTarget ||
+        certNum === searchTarget ||
+        certNum.replace(/-/g, '') === searchTarget.replace(/-/g, '') ||
+        certificate.id.toLowerCase() === searchTarget
+      );
+    });
+
     if (!entry || !['GENERATED', 'REVOKED'].includes(entry.certificate.status)) {
       return delay({ state: 'INVALID' });
     }

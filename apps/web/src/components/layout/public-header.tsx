@@ -22,6 +22,7 @@ const NAV_LINKS = [
   { label: 'Instructors', href: ROUTES.instructors.list },
   { label: 'Pricing', href: ROUTES.pricing },
   { label: 'About', href: ROUTES.about },
+  { label: 'Verify Certificate', href: ROUTES.certificates.verifyLookup },
   { label: 'Contact', href: ROUTES.contact },
 ];
 
