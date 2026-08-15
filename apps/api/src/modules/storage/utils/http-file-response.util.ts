@@ -15,8 +15,10 @@ export function writeFileResponse(
   response.setHeader('Cache-Control', 'private, no-store');
   response.setHeader('ETag', descriptor.etag);
   response.setHeader('Last-Modified', descriptor.lastModified.toUTCString());
-  response.removeHeader('X-Frame-Options');
-  response.removeHeader('x-frame-options');
+  if (typeof response.removeHeader === 'function') {
+    response.removeHeader('X-Frame-Options');
+    response.removeHeader('x-frame-options');
+  }
   response.status(200);
   descriptor.stream.pipe(response);
 }
