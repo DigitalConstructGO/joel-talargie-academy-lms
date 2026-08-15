@@ -91,6 +91,20 @@ function renderIcon(iconName: string, className = 'size-4') {
   return <IconComp className={className} />;
 }
 
+type CmsTab =
+  | 'sections'
+  | 'hero'
+  | 'valuePills'
+  | 'whyChooseUs'
+  | 'howItWorks'
+  | 'featured'
+  | 'categories'
+  | 'mentor'
+  | 'stats'
+  | 'testimonials'
+  | 'faq'
+  | 'finalCta';
+
 export function LandingCmsManager({
   initialData,
   disabled = false,
@@ -132,20 +146,7 @@ export function LandingCmsManager({
   const [finalCta, setFinalCta] = useState<FinalCtaSettings>(initialData.finalCta);
 
   // Dialog & Form States
-  const [activeTab, setActiveTab] = useState<
-    | 'sections'
-    | 'hero'
-    | 'valuePills'
-    | 'whyChooseUs'
-    | 'howItWorks'
-    | 'featured'
-    | 'categories'
-    | 'mentor'
-    | 'stats'
-    | 'testimonials'
-    | 'faq'
-    | 'finalCta'
-  >('sections');
+  const [activeTab, setActiveTab] = useState<CmsTab>('sections');
 
   // Value Pill Modal State
   const [editingPill, setEditingPill] = useState<ValuePillItem | null>(null);
