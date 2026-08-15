@@ -3,6 +3,7 @@ import { Reveal } from '@/components/common/reveal';
 import { getLandingPageDataServer } from '@/features/settings/api/landing.server';
 import { catalogApi } from '@/features/catalog/api/catalog.api';
 import { listCategoriesServer } from '@/features/catalog/api/catalog.server';
+import type { CategoryListItem, CourseSummary } from '@/features/catalog/types/catalog.types';
 import { HeroSection } from '@/features/home/components/hero-section';
 import { ValuePillsSection } from '@/features/home/components/value-pills-section';
 import { WhyChooseUsSection } from '@/features/home/components/why-choose-us-section';
@@ -141,12 +142,12 @@ export default async function Home() {
       )}
       {sections.featuredCourses !== false && featured.length > 0 && (
         <Reveal>
-          <FeaturedCoursesSection courses={featured as any} />
+          <FeaturedCoursesSection courses={featured as CourseSummary[]} />
         </Reveal>
       )}
       {sections.categories !== false && categories.length > 0 && (
         <Reveal>
-          <CategoriesSection categories={categories as any} />
+          <CategoriesSection categories={categories as CategoryListItem[]} />
         </Reveal>
       )}
       {sections.mentor !== false && (

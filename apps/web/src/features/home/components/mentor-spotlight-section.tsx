@@ -4,7 +4,6 @@ import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ROUTES } from '@/constants/routes';
-import type { InstructorProfile } from '@/features/instructors/types/instructor.types';
 
 export function MentorSpotlightSection({
   instructor,

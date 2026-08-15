@@ -1,12 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { Award, Check, CheckCircle2, ChevronDown, ChevronRight, Circle, Clock, PlayCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Check, CheckCircle2, ChevronDown, ChevronRight, Circle, Clock, PlayCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDurationSeconds } from '@/lib/format';
-import { ROUTES } from '@/constants/routes';
 import type { CurriculumSection } from '../types/learning.types';
 
 interface LessonSidebarProps {

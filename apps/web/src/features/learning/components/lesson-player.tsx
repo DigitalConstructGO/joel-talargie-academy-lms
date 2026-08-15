@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Loader2, Maximize, Pause, Play, Volume2, VolumeX } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
 import { formatDurationSeconds } from '@/lib/format';
 
 const POSITION_SAVE_INTERVAL_MS = 20_000;

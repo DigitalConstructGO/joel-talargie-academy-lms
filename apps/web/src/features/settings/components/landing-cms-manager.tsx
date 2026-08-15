@@ -12,8 +12,6 @@ import {
   ListOrdered,
   Loader2,
   MessageSquare,
-  MoveDown,
-  MoveUp,
   Pencil,
   Plus,
   PlayCircle,
@@ -315,7 +313,7 @@ export function LandingCmsManager({
               type="button"
               variant={isSelected ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as CmsTab)}
               className="gap-1.5"
             >
               <Icon className="size-3.5" />
@@ -731,7 +729,7 @@ export function LandingCmsManager({
             <CardDescription>
               Controls presentation limits. Courses displayed are sourced directly from the database
               where <code className="text-brand">isFeatured = true</code> and{' '}
-              <code className="text-brand">visibility = 'PUBLIC'</code>.
+              <code className="text-brand">visibility = &apos;PUBLIC&apos;</code>.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -983,7 +981,7 @@ export function LandingCmsManager({
                           )}
                         </div>
                         <p className="text-xs font-medium text-brand">{item.courseTitle}</p>
-                        <p className="text-xs text-muted-foreground italic">"{item.testimonial}"</p>
+                        <p className="text-xs text-muted-foreground italic">&ldquo;{item.testimonial}&rdquo;</p>
                         <p className="text-[10px] text-muted-foreground">Order: {item.displayOrder}</p>
                       </div>
                       <div className="flex items-center gap-1">

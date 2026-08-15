@@ -1,6 +1,4 @@
 import { authClient, unwrap } from '@/lib/api/auth-client';
-import { CATALOG_DATA_SOURCE } from '@/config/data-source.config';
-import { mockAdminCertificatesApi } from '../data/mock-admin-certificates.api';
 import type {
   AdminCertificate,
   AdminCertificateListParams,
