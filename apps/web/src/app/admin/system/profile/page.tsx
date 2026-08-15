@@ -27,7 +27,7 @@ import {
 } from '@/features/account/hooks/use-avatar';
 import { useUserActivity } from '@/features/users/hooks/use-users';
 import { usePermissions } from '@/hooks/use-permissions';
-import { useAuthStore } from '@/stores';
+import { useAuthStore } from '@/stores/auth.store';
 import { ROUTES } from '@/constants/routes';
 import { formatDateTime } from '@/lib/date';
 import { toast } from '@/lib/toast';

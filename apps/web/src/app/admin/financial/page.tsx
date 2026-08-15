@@ -45,7 +45,7 @@ export default function AdminFinancialPage() {
             icon={CreditCard}
             label="Pending payments"
             value={
-              overviewQuery.data?.kpis.payments.waitingForReview ??
+              overviewQuery.data?.kpis?.payments?.waitingForReview ??
               (overviewQuery.isLoading ? '—' : 0)
             }
             tone="warning"

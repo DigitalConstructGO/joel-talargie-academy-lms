@@ -1,5 +1,6 @@
 import type {
   DashboardDistribution,
+  DashboardFilterOptions,
   DashboardOverview,
   DashboardTrendKind,
   DashboardTrendResult,
@@ -21,12 +22,22 @@ function last14Days(seed: number): { period: string; count: number }[] {
 function last14DaysWithAmount(seed: number): TrendPoint[] {
   return last14Days(seed).map((point) => ({
     ...point,
-    currency: 'USD',
-    amount: (point.count * 19.99).toFixed(2),
+    currency: 'ETB',
+    amount: (point.count * 1900).toFixed(2),
   }));
 }
 
 export const MOCK_DASHBOARD_OVERVIEW: DashboardOverview = {
+  scope: 'GLOBAL',
+  permissions: {
+    viewCourses: true,
+    viewEnrollments: true,
+    viewRevenue: true,
+    viewUsers: true,
+    viewCertificates: true,
+    viewActivity: true,
+    viewHealth: true,
+  },
   range: {
     preset: 'LAST_30_DAYS',
     from: new Date(Date.now() - 30 * 86400000).toISOString(),
@@ -37,9 +48,10 @@ export const MOCK_DASHBOARD_OVERVIEW: DashboardOverview = {
     students: { total: 5, active: 4, pendingVerification: 1, newDuringPeriod: 2 },
     courses: { total: 2, published: 1, draft: 1 },
     enrollments: { total: 3, active: 1, pendingPayment: 0, completed: 1, newDuringPeriod: 3 },
+    completionRate: 33.33,
     payments: { waitingForReview: 2 },
     certificates: { generated: 1, attention: 1 },
-    revenue: [{ currency: 'USD', amount: '49.99' }],
+    revenue: [{ currency: 'ETB', amount: '4999.00' }],
     comparisons: {
       newStudents: {
         current: 2,
@@ -57,10 +69,10 @@ export const MOCK_DASHBOARD_OVERVIEW: DashboardOverview = {
       },
       revenue: [
         {
-          currency: 'USD',
-          current: 49.99,
-          previous: 39.99,
-          change: 10,
+          currency: 'ETB',
+          current: 4999.0,
+          previous: 3999.0,
+          change: 1000,
           changePercentage: '25.01',
           direction: 'UP',
         },
@@ -71,7 +83,9 @@ export const MOCK_DASHBOARD_OVERVIEW: DashboardOverview = {
     registrations: last14Days(6),
     enrollments: last14Days(5),
     payments: last14Days(4),
+    revenue: last14DaysWithAmount(4),
     completions: last14Days(2),
+    certificates: last14Days(1),
   },
   previews: {
     pendingPayments: [
@@ -80,13 +94,13 @@ export const MOCK_DASHBOARD_OVERVIEW: DashboardOverview = {
         enrollmentId: 'enrollment-1',
         student: { id: 'user-1', name: 'Abebe Kebede' },
         course: { id: 'course-1', title: 'Modern React Development' },
-        currency: 'USD',
+        currency: 'ETB',
         amountMismatch: false,
         duplicateTransactionWarning: false,
         submittedAt: '2026-02-01T09:05:00.000Z',
         waitingSeconds: 3600,
-        submittedAmount: '39.99',
-        expectedAmount: '39.99',
+        submittedAmount: '3999.00',
+        expectedAmount: '3999.00',
       },
     ],
     recentStudents: [
@@ -125,26 +139,39 @@ export const MOCK_DASHBOARD_OVERVIEW: DashboardOverview = {
   topCourses: [
     {
       id: 'course-1',
+      courseId: 'course-1',
       title: 'Modern React Development',
       status: 'PUBLISHED',
       access_type: 'PAID',
+      totalEnrollments: 2,
       total_enrollments: 2,
       new_enrollments: 2,
       completed_enrollments: 1,
+      completions: 1,
+      averageProgress: 72.5,
       average_progress: '72.50',
+      completionRate: 50.0,
       completion_rate: '50.00',
-      revenue: '49.99',
+      revenue: '4999.00',
+      currency: 'ETB',
     },
     {
       id: 'course-2',
+      courseId: 'course-2',
       title: 'Introduction to Data Science',
       status: 'DRAFT',
       access_type: 'FREE',
+      totalEnrollments: 1,
       total_enrollments: 1,
       new_enrollments: 1,
       completed_enrollments: 0,
+      completions: 0,
+      averageProgress: 0.0,
       average_progress: '0.00',
+      completionRate: 0.0,
       completion_rate: null,
+      revenue: '0.00',
+      currency: 'ETB',
     },
   ],
   recentActivity: [
@@ -183,10 +210,42 @@ export const MOCK_DISTRIBUTION: DashboardDistribution = {
 export const MOCK_LOW_COMPLETION_COURSES: LowCompletionCourse[] = [
   {
     id: 'course-2',
+    course_id: 'course-2',
     title: 'Introduction to Data Science',
+    course_title: 'Introduction to Data Science',
+    slug: 'intro-data-science',
     relevant_enrollments: 6,
+    total_enrollments: 6,
     completed_enrollments: 1,
-    completion_rate: '16.67',
-    average_progress: '22.00',
+    completions: 1,
+    completion_rate: 16.67,
+    average_progress: 22.0,
   },
 ];
+
+export const MOCK_FILTER_OPTIONS: DashboardFilterOptions = {
+  scope: 'GLOBAL',
+  courses: [
+    {
+      id: 'course-1',
+      title: 'Modern React Development',
+      slug: 'modern-react-development',
+      categoryId: 'cat-1',
+      categoryName: 'Web Development',
+    },
+    {
+      id: 'course-2',
+      title: 'Introduction to Data Science',
+      slug: 'intro-to-data-science',
+      categoryId: 'cat-2',
+      categoryName: 'Data Science',
+    },
+  ],
+  categories: [
+    { id: 'cat-1', name: 'Web Development', slug: 'web-development' },
+    { id: 'cat-2', name: 'Data Science', slug: 'data-science' },
+  ],
+  instructors: [
+    { id: 'user-2', name: 'Sara Tesfaye', email: 'instructor@example.com' },
+  ],
+};

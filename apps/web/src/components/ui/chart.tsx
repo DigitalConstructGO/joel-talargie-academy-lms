@@ -79,7 +79,10 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
 ${prefix} [data-chart=${id}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
-    const color = itemConfig.theme?.[theme as keyof typeof itemConfig.theme] || itemConfig.color;
+    let color = itemConfig.theme?.[theme as keyof typeof itemConfig.theme] || itemConfig.color;
+    if (color && color.startsWith('var(--chart-')) {
+      color = `hsl(${color})`;
+    }
     return color ? `  --color-${key}: ${color};` : null;
   })
   .join('\n')}

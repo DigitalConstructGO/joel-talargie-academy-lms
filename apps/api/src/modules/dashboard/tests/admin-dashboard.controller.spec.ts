@@ -4,6 +4,7 @@ describe('AdminDashboardController', () => {
   const dashboard = {
     overview: jest.fn(),
     kpis: jest.fn(),
+    filterOptions: jest.fn(),
     trend: jest.fn(),
     pendingPayments: jest.fn(),
     recentStudents: jest.fn(),
@@ -18,37 +19,78 @@ describe('AdminDashboardController', () => {
   };
   const controller = new AdminDashboardController(dashboard as never);
 
-  function request(permissions: string[] = []) {
-    return { authorization: { permissions } } as never;
+  function request(permissions: string[] = [], roles: string[] = ['ADMINISTRATOR'], userId = 'user-1') {
+    return {
+      authorization: {
+        userId,
+        status: 'ACTIVE',
+        roles,
+        permissions,
+        isAdministrator: roles.includes('ADMINISTRATOR'),
+      },
+    } as never;
   }
 
   beforeEach(() => jest.clearAllMocks());
 
-  it('extracts the authorization-context permissions for overview and kpis', () => {
+  it('extracts the authorization-context for overview and kpis', () => {
     controller.overview({} as never, request(['dashboard.read']));
-    expect(dashboard.overview).toHaveBeenCalledWith({}, ['dashboard.read']);
+    expect(dashboard.overview).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ permissions: ['dashboard.read'] }),
+    );
     controller.kpis({} as never, request(['dashboard.read']));
-    expect(dashboard.kpis).toHaveBeenCalledWith({}, ['dashboard.read']);
+    expect(dashboard.kpis).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ permissions: ['dashboard.read'] }),
+    );
   });
 
-  it('defaults to an empty permission list when the request has no authorization context', () => {
-    controller.overview({} as never, {} as never);
-    expect(dashboard.overview).toHaveBeenCalledWith({}, []);
+  it('delegates filterOptions with caller authorization context', () => {
+    controller.filterOptions(request(['dashboard.read']));
+    expect(dashboard.filterOptions).toHaveBeenCalledWith(
+      expect.objectContaining({ permissions: ['dashboard.read'] }),
+    );
   });
 
-  it('routes each trend endpoint to its named metric', () => {
-    controller.registrations({} as never);
-    expect(dashboard.trend).toHaveBeenCalledWith('registrations', {});
-    controller.enrollments({} as never);
-    expect(dashboard.trend).toHaveBeenCalledWith('enrollments', {});
-    controller.payments({} as never);
-    expect(dashboard.trend).toHaveBeenCalledWith('payments', {});
-    controller.revenue({} as never);
-    expect(dashboard.trend).toHaveBeenCalledWith('revenue', {});
-    controller.completions({} as never);
-    expect(dashboard.trend).toHaveBeenCalledWith('completions', {});
-    controller.certificates({} as never);
-    expect(dashboard.trend).toHaveBeenCalledWith('certificates', {});
+  it('routes each trend endpoint to its named metric with auth context', () => {
+    const req = request(['dashboard.read', 'dashboard.read_financial']);
+    controller.registrations({} as never, req);
+    expect(dashboard.trend).toHaveBeenCalledWith(
+      'registrations',
+      {},
+      expect.objectContaining({ permissions: ['dashboard.read', 'dashboard.read_financial'] }),
+    );
+    controller.enrollments({} as never, req);
+    expect(dashboard.trend).toHaveBeenCalledWith(
+      'enrollments',
+      {},
+      expect.objectContaining({ permissions: ['dashboard.read', 'dashboard.read_financial'] }),
+    );
+    controller.payments({} as never, req);
+    expect(dashboard.trend).toHaveBeenCalledWith(
+      'payments',
+      {},
+      expect.objectContaining({ permissions: ['dashboard.read', 'dashboard.read_financial'] }),
+    );
+    controller.revenue({} as never, req);
+    expect(dashboard.trend).toHaveBeenCalledWith(
+      'revenue',
+      {},
+      expect.objectContaining({ permissions: ['dashboard.read', 'dashboard.read_financial'] }),
+    );
+    controller.completions({} as never, req);
+    expect(dashboard.trend).toHaveBeenCalledWith(
+      'completions',
+      {},
+      expect.objectContaining({ permissions: ['dashboard.read', 'dashboard.read_financial'] }),
+    );
+    controller.certificates({} as never, req);
+    expect(dashboard.trend).toHaveBeenCalledWith(
+      'certificates',
+      {},
+      expect.objectContaining({ permissions: ['dashboard.read', 'dashboard.read_financial'] }),
+    );
   });
 
   it('gates pending-payments financial detail on dashboard.read_financial', () => {
@@ -56,9 +98,17 @@ describe('AdminDashboardController', () => {
       { limit: 5 } as never,
       request(['dashboard.read_financial']),
     );
-    expect(dashboard.pendingPayments).toHaveBeenCalledWith(5, true);
+    expect(dashboard.pendingPayments).toHaveBeenCalledWith(
+      5,
+      true,
+      expect.objectContaining({ permissions: ['dashboard.read_financial'] }),
+    );
     controller.pendingPayments({ limit: 5 } as never, request([]));
-    expect(dashboard.pendingPayments).toHaveBeenCalledWith(5, false);
+    expect(dashboard.pendingPayments).toHaveBeenCalledWith(
+      5,
+      false,
+      expect.objectContaining({ permissions: [] }),
+    );
   });
 
   it('gates recent-students sensitive detail on dashboard.read_sensitive', () => {
@@ -66,9 +116,17 @@ describe('AdminDashboardController', () => {
       { limit: 5 } as never,
       request(['dashboard.read_sensitive']),
     );
-    expect(dashboard.recentStudents).toHaveBeenCalledWith(5, true);
+    expect(dashboard.recentStudents).toHaveBeenCalledWith(
+      5,
+      true,
+      expect.objectContaining({ permissions: ['dashboard.read_sensitive'] }),
+    );
     controller.recentStudents({ limit: 5 } as never, request([]));
-    expect(dashboard.recentStudents).toHaveBeenCalledWith(5, false);
+    expect(dashboard.recentStudents).toHaveBeenCalledWith(
+      5,
+      false,
+      expect.objectContaining({ permissions: [] }),
+    );
   });
 
   it('gates recent-enrollments and course-performance financial detail on dashboard.read_financial', () => {
@@ -76,35 +134,38 @@ describe('AdminDashboardController', () => {
       { limit: 5 } as never,
       request(['dashboard.read_financial']),
     );
-    expect(dashboard.recentEnrollments).toHaveBeenCalledWith(5, true);
+    expect(dashboard.recentEnrollments).toHaveBeenCalledWith(
+      5,
+      true,
+      expect.objectContaining({ permissions: ['dashboard.read_financial'] }),
+    );
     controller.coursePerformance(
       {} as never,
       request(['dashboard.read_financial']),
     );
-    expect(dashboard.coursePerformance).toHaveBeenCalledWith({}, true);
-    controller.topCourses({} as never, request([]));
-    expect(dashboard.coursePerformance).toHaveBeenCalledWith({}, false);
-  });
-
-  it('delegates simple limit-scoped and filter-scoped endpoints', () => {
-    controller.recentCompletions({ limit: 3 } as never);
-    expect(dashboard.recentCompletions).toHaveBeenCalledWith(3);
-    controller.recentCertificates({ limit: 3 } as never);
-    expect(dashboard.recentCertificates).toHaveBeenCalledWith(3);
-    controller.lowCompletion({} as never);
-    expect(dashboard.lowCompletion).toHaveBeenCalledWith({});
-    controller.distribution({} as never);
-    expect(dashboard.distribution).toHaveBeenCalledWith({});
-  });
-
-  it('gates recent-activity sensitive detail on dashboard.read_sensitive', () => {
-    controller.recentActivity(
-      { limit: 5 } as never,
-      request(['dashboard.read_sensitive']),
+    expect(dashboard.coursePerformance).toHaveBeenCalledWith(
+      {},
+      true,
+      expect.objectContaining({ permissions: ['dashboard.read_financial'] }),
     );
-    expect(dashboard.recentActivity).toHaveBeenCalledWith(5, true);
-    controller.recentActivity({ limit: 5 } as never, request([]));
-    expect(dashboard.recentActivity).toHaveBeenCalledWith(5, false);
+    controller.topCourses({} as never, request([]));
+    expect(dashboard.coursePerformance).toHaveBeenCalledWith(
+      {},
+      false,
+      expect.objectContaining({ permissions: [] }),
+    );
+  });
+
+  it('delegates scoped endpoints', () => {
+    const req = request(['dashboard.read']);
+    controller.recentCompletions({ limit: 3 } as never, req);
+    expect(dashboard.recentCompletions).toHaveBeenCalledWith(3, expect.any(Object));
+    controller.recentCertificates({ limit: 3 } as never, req);
+    expect(dashboard.recentCertificates).toHaveBeenCalledWith(3, expect.any(Object));
+    controller.lowCompletion({} as never, req);
+    expect(dashboard.lowCompletion).toHaveBeenCalledWith({}, expect.any(Object));
+    controller.distribution({} as never, req);
+    expect(dashboard.distribution).toHaveBeenCalledWith({}, expect.any(Object));
   });
 
   it('reports operational health with no arguments', () => {

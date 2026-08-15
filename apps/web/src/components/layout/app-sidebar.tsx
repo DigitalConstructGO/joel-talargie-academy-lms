@@ -49,14 +49,33 @@ export interface AppSidebarProps {
  * its own page matches OR any descendant does, so a collapsible section
  * still expands/highlights for its child routes.
  */
-function isItemActive(pathname: string | null, item: NavItem, rootHref: string): boolean {
+function isItemActive(
+  pathname: string | null,
+  item: NavItem,
+  rootHref: string,
+  siblings: NavItem[] = [],
+): boolean {
+  if (!pathname || item.href === '#') return false;
+  if (pathname === item.href) return true;
+
+  // If another sibling item has an exact match or a more specific prefix match, this item is not active
+  const hasBetterSiblingMatch = siblings.some((sibling) => {
+    if (sibling === item || sibling.href === '#' || !sibling.href) return false;
+    if (pathname === sibling.href) return true;
+    if (pathname.startsWith(`${sibling.href}/`) && sibling.href.length > item.href.length) {
+      return true;
+    }
+    return false;
+  });
+
+  if (hasBetterSiblingMatch) return false;
+
   const isSectionRoot = item.href === rootHref;
-  const ownMatch =
-    item.href !== '#' &&
-    (pathname === item.href ||
-      (!isSectionRoot && (pathname?.startsWith(`${item.href}/`) ?? false)));
-  const childMatch = item.items?.some((child) => isItemActive(pathname, child, rootHref)) ?? false;
-  return ownMatch || childMatch;
+  const ownPrefixMatch = !isSectionRoot && pathname.startsWith(`${item.href}/`);
+  const childMatch =
+    item.items?.some((child) => isItemActive(pathname, child, rootHref, item.items)) ?? false;
+
+  return ownPrefixMatch || childMatch;
 }
 
 function filterByPermission(
@@ -166,7 +185,7 @@ export function AppSidebar({
                     return item.items?.length ? (
                       <Collapsible
                         key={item.href}
-                        defaultOpen={isItemActive(pathname, item, rootHref)}
+                        defaultOpen={isItemActive(pathname, item, rootHref, items)}
                         className="group/collapsible"
                       >
                         <SidebarMenuItem>
@@ -185,7 +204,7 @@ export function AppSidebar({
                                   <SidebarMenuSubItem key={child.href} className="relative">
                                     <SidebarMenuSubButton
                                       asChild
-                                      isActive={isItemActive(pathname, child, rootHref)}
+                                      isActive={isItemActive(pathname, child, rootHref, item.items)}
                                       className={navItemClassName}
                                     >
                                       <Link href={child.href}>
@@ -220,7 +239,7 @@ export function AppSidebar({
                       <SidebarMenuItem key={item.href}>
                         <SidebarMenuButton
                           asChild
-                          isActive={isItemActive(pathname, item, rootHref)}
+                          isActive={isItemActive(pathname, item, rootHref, items)}
                           tooltip={item.label}
                           className={navItemClassName}
                         >
@@ -240,7 +259,14 @@ export function AppSidebar({
         })}
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border pt-2">
-        <SidebarUserFooter roleLabel={portalLabel} />
+        <SidebarUserFooter
+          roleLabel={portalLabel}
+          profileHref={
+            pathname.startsWith('/admin')
+              ? ROUTES.admin.systemProfile
+              : ROUTES.dashboard.profile
+          }
+        />
         <SidebarMenu></SidebarMenu>
       </SidebarFooter>
       <SidebarRail />

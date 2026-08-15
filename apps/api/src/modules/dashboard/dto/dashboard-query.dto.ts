@@ -44,6 +44,26 @@ export class DashboardQueryDto {
   @Min(1)
   @Max(10)
   previewLimit = 5;
+
+  @ApiPropertyOptional({ description: 'Filter analytics to a specific course' })
+  @IsOptional()
+  @IsString()
+  courseId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Filter analytics to a specific instructor (Administrators only)',
+  })
+  @IsOptional()
+  @IsString()
+  instructorId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter analytics to a specific category',
+  })
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
 }
 export class DashboardTrendQueryDto extends DashboardQueryDto {
   @ApiPropertyOptional({ enum: DASHBOARD_GRANULARITIES, default: 'DAY' })

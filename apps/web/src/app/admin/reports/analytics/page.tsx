@@ -21,6 +21,9 @@ import {
   CalendarRange,
   CreditCard,
   GraduationCap,
+  Percent,
+  ShieldCheck,
+  UserCheck,
   UserPlus,
   Users,
 } from 'lucide-react';
@@ -58,16 +61,14 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart';
-import { Can } from '@/components/auth/can';
-import { usePermissions } from '@/hooks/use-permissions';
 import {
   useCoursePerformance,
+  useDashboardFilterOptions,
   useDashboardOverview,
   useDashboardTrend,
   useLowCompletionCourses,
 } from '@/features/dashboard/hooks/use-dashboard';
 import type { DashboardRangePreset } from '@/features/dashboard/types/dashboard.types';
-import { useAdminCourses } from '@/features/catalog/hooks/use-admin-courses';
 import { useRoles } from '@/features/roles/hooks/use-roles';
 import { useAdminPromotionAnalytics } from '@/features/promotions/hooks/use-admin-promotion-analytics';
 import { useQueryFilters } from '@/hooks/use-query-filters';
@@ -87,76 +88,88 @@ const PERIOD_OPTIONS: { label: string; value: DashboardRangePreset }[] = [
   { label: 'Custom range', value: 'CUSTOM' },
 ];
 
+const VIBRANT_PALETTE = [
+  '#10b981', // Emerald Green
+  '#3b82f6', // Electric Sky Blue
+  '#f59e0b', // Radiant Sun Yellow / Amber
+  '#8b5cf6', // Royal Purple
+  '#ec4899', // Vivid Rose Pink
+  '#06b6d4', // Ocean Cyan / Aqua
+  '#f97316', // Sunset Orange
+  '#84cc16', // Lime Green
+  '#14b8a6', // Bright Teal
+  '#6366f1', // Electric Indigo
+];
+
+const COMPLETION_WARNING_PALETTE = [
+  '#ef4444', // Crimson Red
+  '#f97316', // Sunset Orange
+  '#f59e0b', // Amber
+  '#eab308', // Yellow
+  '#ec4899', // Rose Pink
+];
+
 const REGISTRATIONS_CONFIG = {
-  registrations: { label: 'New students', color: 'var(--chart-1)' },
+  registrations: { label: 'New students', color: '#3b82f6' },
 } satisfies ChartConfig;
 
 const ENROLLMENTS_CONFIG = {
-  enrollments: { label: 'New enrollments', color: 'var(--chart-2)' },
+  enrollments: { label: 'New enrollments', color: '#10b981' },
 } satisfies ChartConfig;
 
 const PAYMENTS_CONFIG = {
-  payments: { label: 'Payments submitted', color: 'var(--chart-3)' },
+  payments: { label: 'Payments submitted', color: '#f97316' },
 } satisfies ChartConfig;
 
 const COMPLETIONS_CONFIG = {
-  completions: { label: 'Course completions', color: 'var(--chart-4)' },
+  completions: { label: 'Course completions', color: '#f59e0b' },
 } satisfies ChartConfig;
 
 const REVENUE_CONFIG = {
-  amount: { label: 'Revenue', color: 'var(--chart-5)' },
+  amount: { label: 'Revenue', color: '#8b5cf6' },
 } satisfies ChartConfig;
 
 const REVENUE_TREND_CONFIG = {
-  amount: { label: 'Revenue', color: 'var(--chart-1)' },
+  amount: { label: 'Revenue', color: '#8b5cf6' },
 } satisfies ChartConfig;
 
 const CERTIFICATES_CONFIG = {
-  count: { label: 'Certificates issued', color: 'var(--chart-2)' },
+  count: { label: 'Certificates issued', color: '#06b6d4' },
 } satisfies ChartConfig;
 
 const ENROLLMENT_STATUS_CONFIG = {
-  active: { label: 'Active', color: 'var(--chart-1)' },
-  completed: { label: 'Completed', color: 'var(--chart-2)' },
-  pendingPayment: { label: 'Pending payment', color: 'var(--chart-3)' },
-  other: { label: 'Other (cancelled / revoked)', color: 'var(--chart-4)' },
+  active: { label: 'Active', color: '#10b981' },
+  completed: { label: 'Completed', color: '#f59e0b' },
+  pendingPayment: { label: 'Pending payment', color: '#3b82f6' },
+  other: { label: 'Other (cancelled / revoked)', color: '#94a3b8' },
 } satisfies ChartConfig;
 
 const COURSE_STATUS_CONFIG = {
-  published: { label: 'Published', color: 'var(--chart-1)' },
-  draft: { label: 'Draft', color: 'var(--chart-2)' },
-  archived: { label: 'Archived', color: 'var(--chart-3)' },
+  published: { label: 'Published', color: '#10b981' },
+  draft: { label: 'Draft', color: '#8b5cf6' },
+  archived: { label: 'Archived', color: '#64748b' },
 } satisfies ChartConfig;
 
 const COURSE_REVENUE_CONFIG = {
-  revenue: { label: 'Revenue', color: 'var(--chart-1)' },
+  revenue: { label: 'Revenue', color: '#10b981' },
 } satisfies ChartConfig;
 
 const LOW_COMPLETION_CONFIG = {
-  rate: { label: 'Completion rate', color: 'var(--chart-4)' },
+  rate: { label: 'Completion rate', color: '#ef4444' },
 } satisfies ChartConfig;
 
 const CATEGORY_CONFIG = {
-  count: { label: 'Courses', color: 'var(--chart-2)' },
+  count: { label: 'Courses', color: '#6366f1' },
 } satisfies ChartConfig;
 
 const ROLE_CONFIG = {
-  count: { label: 'Users', color: 'var(--chart-3)' },
+  count: { label: 'Users', color: '#ec4899' },
 } satisfies ChartConfig;
 
 const CODES_CONFIG = {
-  redemptions: { label: 'Redemptions', color: 'var(--chart-5)' },
+  redemptions: { label: 'Redemptions', color: '#14b8a6' },
 } satisfies ChartConfig;
 
-const SLICE_COLORS = [
-  'var(--chart-1)',
-  'var(--chart-2)',
-  'var(--chart-3)',
-  'var(--chart-4)',
-  'var(--chart-5)',
-];
-
-/** Matches `ChartSkeleton`'s card shape so a failed chart doesn't shift layout. */
 function ChartErrorCard({ title, onRetry }: { title: string; onRetry: () => void }) {
   return (
     <Card>
@@ -188,61 +201,37 @@ interface AnalyticsFilters {
   period: DashboardRangePreset;
   from: string | undefined;
   to: string | undefined;
+  courseId: string | undefined;
+  categoryId: string | undefined;
 }
 
 export default function AdminAnalyticsPage() {
-  const { can, canAny, isAdministrator } = usePermissions();
-  const canReadCourses =
-    isAdministrator ||
-    canAny([
-      'courses.read',
-      'enrollments.read',
-      'enrollments.view_activity',
-      'learning.view_student_progress',
-      'learning.view_activity',
-    ]);
-  const canReadUsers =
-    isAdministrator ||
-    canAny([
-      'users.read',
-      'users.update',
-      'users.activate',
-      'users.suspend',
-      'users.archive',
-      'users.restore',
-      'users.view_activity',
-      'users.view_sessions',
-    ]);
-  const canReadPayments =
-    isAdministrator ||
-    canAny([
-      'payments.read',
-      'payments.view_receipts',
-      'payments.read_sensitive',
-      'payments.approve',
-      'payments.decline',
-      'payments.view_activity',
-    ]);
-  const canReadCertificates =
-    isAdministrator ||
-    canAny([
-      'certificates.read',
-      'certificates.generate',
-      'certificates.revoke',
-      'certificates.view_activity',
-    ]);
-
   const { filters, setFilters } = useQueryFilters<AnalyticsFilters>({
-    defaults: { period: 'LAST_30_DAYS', from: undefined, to: undefined },
+    defaults: {
+      period: 'LAST_30_DAYS',
+      from: undefined,
+      to: undefined,
+      courseId: undefined,
+      categoryId: undefined,
+    },
   });
-  const { period, from, to } = filters;
+
+  const { period, from, to, courseId, categoryId } = filters;
   const isCustom = period === 'CUSTOM';
   const customRangeReady = !isCustom || Boolean(from && to);
-  const rangeParams = isCustom ? { range: period, from, to } : { range: period };
+  const rangeParams = {
+    ...(isCustom ? { range: period, from, to } : { range: period }),
+    courseId: courseId || undefined,
+    categoryId: categoryId || undefined,
+  };
+
   const dateRange: DateRange | undefined =
     from || to
       ? { from: from ? new Date(from) : undefined, to: to ? new Date(to) : undefined }
       : undefined;
+
+  const filterOptionsQuery = useDashboardFilterOptions();
+  const filterOptions = filterOptionsQuery.data;
 
   const overviewQuery = useDashboardOverview(
     { ...rangeParams, previewLimit: 10 },
@@ -250,34 +239,45 @@ export default function AdminAnalyticsPage() {
   );
   const data = overviewQuery.data;
 
+  const isGlobal = data?.scope === 'GLOBAL';
+  const canReadRevenue = Boolean(data?.permissions?.viewRevenue);
+  const canReadUsers = Boolean(data?.permissions?.viewUsers && isGlobal);
+  const canReadCertificates = Boolean(data?.permissions?.viewCertificates);
+  const canReadCourses = Boolean(data?.permissions?.viewCourses !== false);
+
   const revenueTrendQuery = useDashboardTrend('revenue', rangeParams, {
-    enabled: customRangeReady && canReadPayments,
+    enabled: customRangeReady && canReadRevenue,
   });
+
   const certificatesTrendQuery = useDashboardTrend('certificates', rangeParams, {
     enabled: customRangeReady && canReadCertificates,
   });
+
   const coursesByRevenueQuery = useCoursePerformance(
     { ...rangeParams, sort: 'REVENUE', limit: 8 },
-    { enabled: customRangeReady && canReadPayments },
+    { enabled: customRangeReady && canReadRevenue },
   );
+
   const lowCompletionQuery = useLowCompletionCourses(
     { ...rangeParams, limit: 8 },
     { enabled: customRangeReady && canReadCourses },
   );
-  const coursesQuery = useAdminCourses({ pageSize: 200 });
+
   const rolesQuery = useRoles({ pageSize: 100 });
+
   const promotionAnalyticsQuery = useAdminPromotionAnalytics({ limit: 8 });
 
   const categoryDistribution = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const course of coursesQuery.data?.items ?? []) {
-      counts.set(course.categoryName, (counts.get(course.categoryName) ?? 0) + 1);
+    for (const course of filterOptions?.courses ?? []) {
+      const catName = course.categoryName || 'General';
+      counts.set(catName, (counts.get(catName) ?? 0) + 1);
     }
     return Array.from(counts.entries())
       .map(([category, count]) => ({ category, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
-  }, [coursesQuery.data]);
+  }, [filterOptions?.courses]);
 
   const roleDistribution = (rolesQuery.data?.items ?? [])
     .filter((role) => role.userCount > 0)
@@ -293,46 +293,128 @@ export default function AdminAnalyticsPage() {
           { label: 'Analytics' },
         ]}
       />
-      <PageHeader
-        title="Analytics"
-        description="A deeper look at platform growth, revenue, and course performance."
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Select
-              value={period}
-              onValueChange={(value) =>
-                setFilters({
-                  period: value as DashboardRangePreset,
-                  ...(value !== 'CUSTOM' ? { from: undefined, to: undefined } : {}),
-                })
-              }
-            >
-              <SelectTrigger className="w-44" aria-label="Period">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PERIOD_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {isCustom && (
-              <DateRangeFilter
-                value={dateRange}
-                onChange={(range) =>
+
+      <div className="flex flex-col gap-4">
+        <PageHeader
+          title="Analytics"
+          description={
+            data?.scope === 'INSTRUCTOR'
+              ? 'Showing course performance and student progress scoped strictly to your courses.'
+              : 'Platform-wide operational analytics, revenue, and learning progress.'
+          }
+          actions={
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Course Selector Filter */}
+              {filterOptions && filterOptions.courses.length > 1 && (
+                <Select
+                  value={courseId || 'ALL'}
+                  onValueChange={(val) =>
+                    setFilters({ courseId: val === 'ALL' ? undefined : val })
+                  }
+                >
+                  <SelectTrigger className="w-48" aria-label="Course Filter">
+                    <SelectValue placeholder="All Courses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All Authorized Courses</SelectItem>
+                    {filterOptions.courses.map((course) => (
+                      <SelectItem key={course.id} value={course.id}>
+                        {course.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {/* Category Selector Filter */}
+              {filterOptions && filterOptions.categories.length > 1 && (
+                <Select
+                  value={categoryId || 'ALL'}
+                  onValueChange={(val) =>
+                    setFilters({ categoryId: val === 'ALL' ? undefined : val })
+                  }
+                >
+                  <SelectTrigger className="w-44" aria-label="Category Filter">
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All Categories</SelectItem>
+                    {filterOptions.categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {/* Period Filter */}
+              <Select
+                value={period}
+                onValueChange={(value) =>
                   setFilters({
-                    from: range?.from ? range.from.toISOString().slice(0, 10) : undefined,
-                    to: range?.to ? range.to.toISOString().slice(0, 10) : undefined,
+                    period: value as DashboardRangePreset,
+                    ...(value !== 'CUSTOM' ? { from: undefined, to: undefined } : {}),
                   })
                 }
-                placeholder="Select a date range"
-              />
+              >
+                <SelectTrigger className="w-40" aria-label="Period">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PERIOD_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {isCustom && (
+                <DateRangeFilter
+                  value={dateRange}
+                  onChange={(range) =>
+                    setFilters({
+                      from: range?.from ? range.from.toISOString().slice(0, 10) : undefined,
+                      to: range?.to ? range.to.toISOString().slice(0, 10) : undefined,
+                    })
+                  }
+                  placeholder="Select a date range"
+                />
+              )}
+            </div>
+          }
+        />
+
+        {/* Scope Indicator Banner */}
+        {data && (
+          <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/40 px-3.5 py-2 text-xs text-muted-foreground">
+            {data.scope === 'INSTRUCTOR' ? (
+              <>
+                <UserCheck className="h-4 w-4 text-primary" />
+                <span>
+                  <strong className="font-semibold text-foreground">Instructor Scope:</strong> Data is
+                  strictly calculated from the courses you own and manage.
+                </span>
+                <Badge variant="outline" className="ml-auto font-mono text-[10px]">
+                  INSTRUCTOR
+                </Badge>
+              </>
+            ) : (
+              <>
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                <span>
+                  <strong className="font-semibold text-foreground">Platform Scope:</strong> Showing
+                  organization-wide aggregate statistics across all platform resources.
+                </span>
+                <Badge variant="secondary" className="ml-auto font-mono text-[10px]">
+                  PLATFORM ADMIN
+                </Badge>
+              </>
             )}
           </div>
-        }
-      />
+        )}
+      </div>
 
       {!customRangeReady ? (
         <EmptyState
@@ -345,46 +427,52 @@ export default function AdminAnalyticsPage() {
       ) : overviewQuery.isError || !data ? (
         <ErrorState
           onRetry={() => overviewQuery.refetch()}
-          description="Unable to load analytics."
+          description="Unable to load analytics data. Please ensure you have sufficient permissions."
         />
       ) : (
-        <div className="space-y-8">
-          {/* Section 1: KPIs - gated by permission */}
+        <div className="space-y-8 mt-6">
+          {/* Section 1: Permission & Data-Scoped KPI Cards */}
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-            {canReadUsers && (
-              <StatCard
-                icon={Users}
-                label="Active Students"
-                value={data.kpis.students.active}
-                tone="primary"
-              />
-            )}
-            {canReadCourses && (
+            {data.kpis?.courses && (
               <StatCard
                 icon={BookOpen}
-                label="Published Courses"
+                label={data.scope === 'INSTRUCTOR' ? 'My Courses' : 'Published Courses'}
                 value={data.kpis.courses.published}
                 suffix={`/ ${data.kpis.courses.total}`}
                 tone="info"
               />
             )}
-            {canReadCourses && (
+
+            {data.kpis?.enrollments && (
               <StatCard
                 icon={GraduationCap}
-                label="Active Enrollments"
+                label={data.scope === 'INSTRUCTOR' ? 'Course Enrollments' : 'Active Enrollments'}
                 value={data.kpis.enrollments.active}
+                suffix={`/ ${data.kpis.enrollments.total}`}
                 tone="teal"
               />
             )}
-            {canReadPayments && (
+
+            {data.kpis?.students && (
               <StatCard
-                icon={CreditCard}
-                label="Pending Payments"
-                value={data.kpis.payments.waitingForReview}
-                tone="warning"
+                icon={Users}
+                label={data.scope === 'INSTRUCTOR' ? 'My Students' : 'Active Students'}
+                value={data.kpis.students.active ?? data.kpis.students.total}
+                suffix={data.scope === 'GLOBAL' ? `/ ${data.kpis.students.total}` : undefined}
+                tone="primary"
               />
             )}
-            {canReadCertificates && (
+
+            {data.kpis?.completionRate != null && (
+              <StatCard
+                icon={Percent}
+                label="Completion Rate"
+                value={`${data.kpis.completionRate}%`}
+                tone="teal"
+              />
+            )}
+
+            {data.kpis?.certificates && canReadCertificates && (
               <StatCard
                 icon={Award}
                 label="Certificates Issued"
@@ -392,27 +480,52 @@ export default function AdminAnalyticsPage() {
                 tone="success"
               />
             )}
+
+            {data.kpis?.payments && canReadRevenue && (
+              <StatCard
+                icon={CreditCard}
+                label="Pending Payments"
+                value={data.kpis.payments.waitingForReview}
+                tone="warning"
+              />
+            )}
+
+            {data.kpis?.revenue && canReadRevenue && (
+              data.kpis.revenue.map((rev) => (
+                <StatCard
+                  key={rev.currency}
+                  icon={Banknote}
+                  label={`Revenue (${rev.currency})`}
+                  value={formatCurrency(Number(rev.amount), rev.currency)}
+                  tone="success"
+                />
+              ))
+            )}
           </div>
 
-          {/* Period-over-period comparisons - only present when the backend resolved a previous window */}
-          {data.kpis.comparisons && (
+          {/* Period-over-period comparisons - only if present in response */}
+          {data.kpis?.comparisons && (
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-              <StatCard
-                icon={UserPlus}
-                label="New Students"
-                value={data.kpis.comparisons.newStudents.current}
-                tone="primary"
-                trend={data.kpis.comparisons.newStudents}
-              />
-              <StatCard
-                icon={GraduationCap}
-                label="New Enrollments"
-                value={data.kpis.comparisons.newEnrollments.current}
-                tone="teal"
-                trend={data.kpis.comparisons.newEnrollments}
-              />
-              <Can permission="dashboard.read_financial">
-                {data.kpis.comparisons.revenue?.map((revenue) => (
+              {data.kpis.comparisons.newStudents && canReadUsers && (
+                <StatCard
+                  icon={UserPlus}
+                  label="New Students"
+                  value={data.kpis.comparisons.newStudents.current}
+                  tone="primary"
+                  trend={data.kpis.comparisons.newStudents}
+                />
+              )}
+              {data.kpis.comparisons.newEnrollments && (
+                <StatCard
+                  icon={GraduationCap}
+                  label="New Enrollments"
+                  value={data.kpis.comparisons.newEnrollments.current}
+                  tone="teal"
+                  trend={data.kpis.comparisons.newEnrollments}
+                />
+              )}
+              {canReadRevenue &&
+                data.kpis.comparisons.revenue?.map((revenue) => (
                   <StatCard
                     key={revenue.currency}
                     icon={Banknote}
@@ -422,28 +535,119 @@ export default function AdminAnalyticsPage() {
                     trend={revenue}
                   />
                 ))}
-              </Can>
             </div>
           )}
 
-          {/* Section 2: Growth & revenue trends */}
-          {(canReadUsers || canReadPayments || canReadCertificates) && (
-            <section className="space-y-4">
-              <h2 className="text-sm font-semibold text-foreground">Growth &amp; Revenue</h2>
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                {canReadUsers && (
+          {/* Section 2: Trends */}
+          <section className="space-y-4">
+            <h2 className="text-sm font-semibold text-foreground">Growth &amp; Activity Trends</h2>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              {/* Enrollments Trend */}
+              {data.trends?.enrollments && data.trends.enrollments.length > 0 && (
+                <ChartCard
+                  title="Enrollment Trend"
+                  description="New enrollments over the selected period"
+                  config={ENROLLMENTS_CONFIG}
+                >
+                  <AreaChart
+                    data={data.trends.enrollments.map((p) => ({
+                      period: p.period,
+                      enrollments: p.count,
+                    }))}
+                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="enrollmentGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.45} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/40" />
+                    <XAxis
+                      dataKey="period"
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(v) => formatDate(v)}
+                      tickMargin={8}
+                    />
+                    <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Area
+                      dataKey="enrollments"
+                      type="monotone"
+                      fill="url(#enrollmentGrad)"
+                      stroke="#10b981"
+                      strokeWidth={2.5}
+                      activeDot={{ r: 6, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }}
+                    />
+                  </AreaChart>
+                </ChartCard>
+              )}
+
+              {/* Course Completions Trend */}
+              {data.trends?.completions && data.trends.completions.length > 0 && (
+                <ChartCard
+                  title="Course Completions"
+                  description="Completions over the selected period"
+                  config={COMPLETIONS_CONFIG}
+                >
+                  <BarChart
+                    data={data.trends.completions.map((p) => ({
+                      period: p.period,
+                      completions: p.count,
+                    }))}
+                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="completionGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#fbbf24" />
+                        <stop offset="100%" stopColor="#d97706" />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/40" />
+                    <XAxis
+                      dataKey="period"
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(v) => formatDate(v)}
+                      tickMargin={8}
+                    />
+                    <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="completions" fill="url(#completionGrad)" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ChartCard>
+              )}
+
+              {/* Revenue Trend - only if permitted and data present */}
+              {canReadRevenue &&
+                (revenueTrendQuery.isLoading ? (
+                  <ChartSkeleton />
+                ) : revenueTrendQuery.isError ? (
+                  <ChartErrorCard
+                    title="Revenue Trend"
+                    onRetry={() => revenueTrendQuery.refetch()}
+                  />
+                ) : revenueTrendQuery.data && revenueTrendQuery.data.points.length > 0 ? (
                   <ChartCard
-                    title="New Registrations"
-                    description="User growth over the selected period"
-                    config={REGISTRATIONS_CONFIG}
+                    title={data.scope === 'INSTRUCTOR' ? 'Course Revenue Trend' : 'Platform Revenue Trend'}
+                    description="Approved payment revenue over the selected period"
+                    config={REVENUE_TREND_CONFIG}
                   >
                     <AreaChart
-                      data={data.trends.registrations.map((p) => ({
+                      data={revenueTrendQuery.data.points.map((p) => ({
                         period: p.period,
-                        registrations: p.count,
+                        amount: Number(p.amount ?? 0),
                       }))}
+                      margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
                     >
-                      <CartesianGrid vertical={false} />
+                      <defs>
+                        <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.45} />
+                          <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/40" />
                       <XAxis
                         dataKey="period"
                         tickLine={false}
@@ -451,97 +655,33 @@ export default function AdminAnalyticsPage() {
                         tickFormatter={(v) => formatDate(v)}
                         tickMargin={8}
                       />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Area
-                        dataKey="registrations"
-                        type="monotone"
-                        fill="var(--color-registrations)"
-                        stroke="var(--color-registrations)"
-                        fillOpacity={0.2}
-                      />
-                    </AreaChart>
-                  </ChartCard>
-                )}
-
-                {canReadCourses && (
-                  <ChartCard
-                    title="New Enrollments"
-                    description="Enrollment growth over the selected period"
-                    config={ENROLLMENTS_CONFIG}
-                  >
-                    <AreaChart
-                      data={data.trends.enrollments.map((p) => ({
-                        period: p.period,
-                        enrollments: p.count,
-                      }))}
-                    >
-                      <CartesianGrid vertical={false} />
-                      <XAxis
-                        dataKey="period"
+                      <YAxis
                         tickLine={false}
                         axisLine={false}
-                        tickFormatter={(v) => formatDate(v)}
                         tickMargin={8}
+                        tickFormatter={(v) => `${v}`}
                       />
                       <ChartTooltip content={<ChartTooltipContent />} />
                       <Area
-                        dataKey="enrollments"
+                        dataKey="amount"
                         type="monotone"
-                        fill="var(--color-enrollments)"
-                        stroke="var(--color-enrollments)"
-                        fillOpacity={0.2}
+                        fill="url(#revenueGrad)"
+                        stroke="#8b5cf6"
+                        strokeWidth={2.5}
+                        activeDot={{ r: 6, fill: '#8b5cf6', stroke: '#fff', strokeWidth: 2 }}
                       />
                     </AreaChart>
                   </ChartCard>
-                )}
+                ) : (
+                  <ChartEmptyCard
+                    title="Revenue Trend"
+                    description="No revenue data recorded for this period."
+                  />
+                ))}
 
-                <Can permission="dashboard.read_financial">
-                  {revenueTrendQuery.isLoading ? (
-                    <ChartSkeleton />
-                  ) : revenueTrendQuery.isError ? (
-                    <ChartErrorCard
-                      title="Revenue Trend"
-                      onRetry={() => revenueTrendQuery.refetch()}
-                    />
-                  ) : revenueTrendQuery.data && revenueTrendQuery.data.points.length > 0 ? (
-                    <ChartCard
-                      title="Revenue Trend"
-                      description="Approved payment revenue over the selected period"
-                      config={REVENUE_TREND_CONFIG}
-                    >
-                      <AreaChart
-                        data={revenueTrendQuery.data.points.map((p) => ({
-                          period: p.period,
-                          amount: Number(p.amount ?? 0),
-                        }))}
-                      >
-                        <CartesianGrid vertical={false} />
-                        <XAxis
-                          dataKey="period"
-                          tickLine={false}
-                          axisLine={false}
-                          tickFormatter={(v) => formatDate(v)}
-                          tickMargin={8}
-                        />
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                        <Area
-                          dataKey="amount"
-                          type="monotone"
-                          fill="var(--color-amount)"
-                          stroke="var(--color-amount)"
-                          fillOpacity={0.2}
-                        />
-                      </AreaChart>
-                    </ChartCard>
-                  ) : (
-                    <ChartEmptyCard
-                      title="Revenue Trend"
-                      description="No revenue data for this period."
-                    />
-                  )}
-                </Can>
-
-                {certificatesTrendQuery.isLoading ? (
+              {/* Certificate Issuance Trend */}
+              {canReadCertificates &&
+                (certificatesTrendQuery.isLoading ? (
                   <ChartSkeleton />
                 ) : certificatesTrendQuery.isError ? (
                   <ChartErrorCard
@@ -559,8 +699,15 @@ export default function AdminAnalyticsPage() {
                         period: p.period,
                         count: p.count,
                       }))}
+                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                     >
-                      <CartesianGrid vertical={false} />
+                      <defs>
+                        <linearGradient id="certGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#22d3ee" />
+                          <stop offset="100%" stopColor="#0284c7" />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/40" />
                       <XAxis
                         dataKey="period"
                         tickLine={false}
@@ -568,8 +715,9 @@ export default function AdminAnalyticsPage() {
                         tickFormatter={(v) => formatDate(v)}
                         tickMargin={8}
                       />
+                      <YAxis tickLine={false} axisLine={false} tickMargin={8} />
                       <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="count" fill="var(--color-count)" radius={4} />
+                      <Bar dataKey="count" fill="url(#certGrad)" radius={[6, 6, 0, 0]} />
                     </BarChart>
                   </ChartCard>
                 ) : (
@@ -577,54 +725,29 @@ export default function AdminAnalyticsPage() {
                     title="Certificate Issuance"
                     description="No certificates issued in this period."
                   />
-                )}
-              </div>
-            </section>
-          )}
+                ))}
 
-          {/* Section 3: Payments & completions */}
-          {(canReadPayments || canReadCourses) && (
-            <section className="space-y-4">
-              <h2 className="text-sm font-semibold text-foreground">Payments &amp; Completions</h2>
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <Can permission="dashboard.read_financial">
-                  <ChartCard
-                    title="Payment Trends"
-                    description="Payments submitted over the selected period"
-                    config={PAYMENTS_CONFIG}
-                  >
-                    <BarChart
-                      data={data.trends.payments.map((p) => ({
-                        period: p.period,
-                        payments: p.count,
-                      }))}
-                    >
-                      <CartesianGrid vertical={false} />
-                      <XAxis
-                        dataKey="period"
-                        tickLine={false}
-                        axisLine={false}
-                        tickFormatter={(v) => formatDate(v)}
-                        tickMargin={8}
-                      />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="payments" fill="var(--color-payments)" radius={4} />
-                    </BarChart>
-                  </ChartCard>
-                </Can>
-
+              {/* Registrations Trend - Global only */}
+              {isGlobal && canReadUsers && data.trends?.registrations && data.trends.registrations.length > 0 && (
                 <ChartCard
-                  title="Course Completions"
-                  description="Completions over the selected period"
-                  config={COMPLETIONS_CONFIG}
+                  title="New Registrations"
+                  description="User growth over the selected period"
+                  config={REGISTRATIONS_CONFIG}
                 >
-                  <BarChart
-                    data={data.trends.completions.map((p) => ({
+                  <AreaChart
+                    data={data.trends.registrations.map((p) => ({
                       period: p.period,
-                      completions: p.count,
+                      registrations: p.count,
                     }))}
+                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                   >
-                    <CartesianGrid vertical={false} />
+                    <defs>
+                      <linearGradient id="regGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.45} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/40" />
                     <XAxis
                       dataKey="period"
                       tickLine={false}
@@ -632,204 +755,226 @@ export default function AdminAnalyticsPage() {
                       tickFormatter={(v) => formatDate(v)}
                       tickMargin={8}
                     />
+                    <YAxis tickLine={false} axisLine={false} tickMargin={8} />
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="completions" fill="var(--color-completions)" radius={4} />
+                    <Area
+                      dataKey="registrations"
+                      type="monotone"
+                      fill="url(#regGrad)"
+                      stroke="#3b82f6"
+                      strokeWidth={2.5}
+                      activeDot={{ r: 6, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }}
+                    />
+                  </AreaChart>
+                </ChartCard>
+              )}
+
+              {/* Payment Count Trend - if revenue permitted */}
+              {canReadRevenue && data.trends?.payments && data.trends.payments.length > 0 && (
+                <ChartCard
+                  title="Payment Activity"
+                  description="Payments submitted over the selected period"
+                  config={PAYMENTS_CONFIG}
+                >
+                  <BarChart
+                    data={data.trends.payments.map((p) => ({
+                      period: p.period,
+                      payments: p.count,
+                    }))}
+                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="paymentGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#fb923c" />
+                        <stop offset="100%" stopColor="#ea580c" />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/40" />
+                    <XAxis
+                      dataKey="period"
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(v) => formatDate(v)}
+                      tickMargin={8}
+                    />
+                    <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="payments" fill="url(#paymentGrad)" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ChartCard>
-              </div>
-            </section>
-          )}
+              )}
+            </div>
+          </section>
 
-          {/* Section 4: Distribution */}
-          {(canReadCourses || canReadPayments) && (
-            <section className="space-y-4">
-              <h2 className="text-sm font-semibold text-foreground">Distribution</h2>
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                {canReadCourses && (
-                  <ChartCard
-                    title="Enrollment Status"
-                    description="Where enrollments stand right now"
-                    config={ENROLLMENT_STATUS_CONFIG}
-                  >
-                    <PieChart>
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <ChartLegend content={<ChartLegendContent />} />
-                      <Pie
-                        data={[
-                          { key: 'active', name: 'Active', value: data.kpis.enrollments.active },
-                          {
-                            key: 'completed',
-                            name: 'Completed',
-                            value: data.kpis.enrollments.completed,
-                          },
-                          {
-                            key: 'pendingPayment',
-                            name: 'Pending payment',
-                            value: data.kpis.enrollments.pendingPayment,
-                          },
-                          {
-                            key: 'other',
-                            name: 'Other (cancelled / revoked)',
-                            value: Math.max(
-                              0,
-                              data.kpis.enrollments.total -
-                                data.kpis.enrollments.active -
-                                data.kpis.enrollments.completed -
-                                data.kpis.enrollments.pendingPayment,
-                            ),
-                          },
-                        ]}
-                        dataKey="value"
-                        nameKey="name"
-                        innerRadius={50}
-                      >
-                        {['active', 'completed', 'pendingPayment', 'other'].map((key) => (
-                          <Cell key={key} fill={`var(--color-${key})`} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ChartCard>
-                )}
-
-                {canReadCourses && (
-                  <ChartCard
-                    title="Course Status"
-                    description="Published vs. draft vs. archived"
-                    config={COURSE_STATUS_CONFIG}
-                  >
-                    <PieChart>
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <ChartLegend content={<ChartLegendContent />} />
-                      <Pie
-                        data={[
-                          {
-                            key: 'published',
-                            name: 'Published',
-                            value: data.kpis.courses.published,
-                          },
-                          { key: 'draft', name: 'Draft', value: data.kpis.courses.draft },
-                          {
-                            key: 'archived',
-                            name: 'Archived',
-                            value: Math.max(
-                              0,
-                              data.kpis.courses.total -
-                                data.kpis.courses.published -
-                                data.kpis.courses.draft,
-                            ),
-                          },
-                        ]}
-                        dataKey="value"
-                        nameKey="name"
-                        innerRadius={50}
-                      >
-                        {['published', 'draft', 'archived'].map((key) => (
-                          <Cell key={key} fill={`var(--color-${key})`} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ChartCard>
-                )}
-
-                <Can permission="dashboard.read_financial">
-                  {data.kpis.revenue && data.kpis.revenue.length > 0 && (
-                    <ChartCard
-                      title="Revenue by Currency"
-                      description="Approved payment revenue for the selected period"
-                      config={REVENUE_CONFIG}
+          {/* Section 3: Distribution */}
+          <section className="space-y-4">
+            <h2 className="text-sm font-semibold text-foreground">Distribution</h2>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+              {data.kpis?.enrollments && (
+                <ChartCard
+                  title="Enrollment Status"
+                  description="Where enrollments stand right now"
+                  config={ENROLLMENT_STATUS_CONFIG}
+                >
+                  <PieChart>
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartLegend content={<ChartLegendContent />} />
+                    <Pie
+                      data={[
+                        { key: 'active', name: 'Active', value: data.kpis.enrollments.active, fill: '#10b981' },
+                        {
+                          key: 'completed',
+                          name: 'Completed',
+                          value: data.kpis.enrollments.completed,
+                          fill: '#f59e0b',
+                        },
+                        {
+                          key: 'pendingPayment',
+                          name: 'Pending payment',
+                          value: data.kpis.enrollments.pendingPayment,
+                          fill: '#3b82f6',
+                        },
+                        {
+                          key: 'other',
+                          name: 'Other (cancelled / revoked)',
+                          value: Math.max(
+                            0,
+                            data.kpis.enrollments.total -
+                              data.kpis.enrollments.active -
+                              data.kpis.enrollments.completed -
+                              data.kpis.enrollments.pendingPayment,
+                          ),
+                          fill: '#94a3b8',
+                        },
+                      ]}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={55}
+                      outerRadius={85}
+                      paddingAngle={3}
+                      cornerRadius={4}
                     >
-                      <PieChart>
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                        <Pie
-                          data={data.kpis.revenue.map((r) => ({
-                            name: r.currency,
-                            amount: Number(r.amount),
-                          }))}
-                          dataKey="amount"
-                          nameKey="name"
-                          innerRadius={50}
-                          fill="var(--color-amount)"
-                        />
-                      </PieChart>
-                    </ChartCard>
-                  )}
-                </Can>
-              </div>
-            </section>
-          )}
+                      {[
+                        { key: 'active', color: '#10b981' },
+                        { key: 'completed', color: '#f59e0b' },
+                        { key: 'pendingPayment', color: '#3b82f6' },
+                        { key: 'other', color: '#94a3b8' },
+                      ].map((item) => (
+                        <Cell key={item.key} fill={item.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ChartCard>
+              )}
 
-          {/* Section 5: Course performance */}
-          {canReadCourses && (
-            <section className="space-y-4">
-              <h2 className="text-sm font-semibold text-foreground">Course Performance</h2>
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <Can permission="dashboard.read_financial">
-                  {coursesByRevenueQuery.isLoading ? (
-                    <ChartSkeleton />
-                  ) : coursesByRevenueQuery.isError ? (
-                    <ChartErrorCard
-                      title="Top Courses by Revenue"
-                      onRetry={() => coursesByRevenueQuery.refetch()}
-                    />
-                  ) : coursesByRevenueQuery.data && coursesByRevenueQuery.data.length > 0 ? (
-                    <ChartCard
-                      title="Top Courses by Revenue"
-                      description="Highest-earning courses in the selected period"
-                      config={COURSE_REVENUE_CONFIG}
+              {data.kpis?.courses && (
+                <ChartCard
+                  title="Course Status"
+                  description="Published vs. draft vs. archived"
+                  config={COURSE_STATUS_CONFIG}
+                >
+                  <PieChart>
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartLegend content={<ChartLegendContent />} />
+                    <Pie
+                      data={[
+                        {
+                          key: 'published',
+                          name: 'Published',
+                          value: data.kpis.courses.published,
+                          fill: '#10b981',
+                        },
+                        { key: 'draft', name: 'Draft', value: data.kpis.courses.draft, fill: '#8b5cf6' },
+                        {
+                          key: 'archived',
+                          name: 'Archived',
+                          value: Math.max(
+                            0,
+                            data.kpis.courses.total -
+                              data.kpis.courses.published -
+                              data.kpis.courses.draft,
+                          ),
+                          fill: '#64748b',
+                        },
+                      ]}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={55}
+                      outerRadius={85}
+                      paddingAngle={3}
+                      cornerRadius={4}
                     >
-                      <BarChart
-                        layout="vertical"
-                        data={coursesByRevenueQuery.data.map((course) => ({
-                          title: course.title,
-                          revenue: Number(course.revenue ?? 0),
-                        }))}
-                      >
-                        <CartesianGrid horizontal={false} />
-                        <XAxis type="number" tickLine={false} axisLine={false} />
-                        <YAxis
-                          type="category"
-                          dataKey="title"
-                          tickLine={false}
-                          axisLine={false}
-                          width={140}
-                          tickFormatter={(value: string) =>
-                            value.length > 20 ? `${value.slice(0, 20)}…` : value
-                          }
-                        />
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                        <Bar dataKey="revenue" fill="var(--color-revenue)" radius={4} />
-                      </BarChart>
-                    </ChartCard>
-                  ) : (
-                    <ChartEmptyCard
-                      title="Top Courses by Revenue"
-                      description="No revenue data for this period."
-                    />
-                  )}
-                </Can>
+                      {[
+                        { key: 'published', color: '#10b981' },
+                        { key: 'draft', color: '#8b5cf6' },
+                        { key: 'archived', color: '#64748b' },
+                      ].map((item) => (
+                        <Cell key={item.key} fill={item.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ChartCard>
+              )}
 
-                {lowCompletionQuery.isLoading ? (
+              {canReadRevenue && data.kpis?.revenue && data.kpis.revenue.length > 0 && (
+                <ChartCard
+                  title="Revenue by Currency"
+                  description="Approved payment revenue for the selected period"
+                  config={REVENUE_CONFIG}
+                >
+                  <PieChart>
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Pie
+                      data={data.kpis.revenue.map((r, index) => ({
+                        name: r.currency,
+                        amount: Number(r.amount),
+                        fill: VIBRANT_PALETTE[index % VIBRANT_PALETTE.length],
+                      }))}
+                      dataKey="amount"
+                      nameKey="name"
+                      innerRadius={55}
+                      outerRadius={85}
+                      paddingAngle={3}
+                      cornerRadius={4}
+                    >
+                      {data.kpis.revenue.map((r, index) => (
+                        <Cell key={r.currency} fill={VIBRANT_PALETTE[index % VIBRANT_PALETTE.length]} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ChartCard>
+              )}
+            </div>
+          </section>
+
+          {/* Section 4: Course Performance Rankings */}
+          <section className="space-y-4">
+            <h2 className="text-sm font-semibold text-foreground">Course Performance Insights</h2>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              {canReadRevenue &&
+                (coursesByRevenueQuery.isLoading ? (
                   <ChartSkeleton />
-                ) : lowCompletionQuery.isError ? (
+                ) : coursesByRevenueQuery.isError ? (
                   <ChartErrorCard
-                    title="Lowest Completion Rates"
-                    onRetry={() => lowCompletionQuery.refetch()}
+                    title="Top Courses by Revenue"
+                    onRetry={() => coursesByRevenueQuery.refetch()}
                   />
-                ) : lowCompletionQuery.data && lowCompletionQuery.data.length > 0 ? (
+                ) : coursesByRevenueQuery.data && coursesByRevenueQuery.data.length > 0 ? (
                   <ChartCard
-                    title="Lowest Completion Rates"
-                    description="Courses that may need attention"
-                    config={LOW_COMPLETION_CONFIG}
+                    title="Top Courses by Revenue"
+                    description="Highest-earning courses in the selected period"
+                    config={COURSE_REVENUE_CONFIG}
                   >
                     <BarChart
                       layout="vertical"
-                      data={lowCompletionQuery.data.map((course) => ({
+                      data={coursesByRevenueQuery.data.map((course) => ({
                         title: course.title,
-                        rate: Number(course.completion_rate ?? 0),
+                        revenue: Number(course.revenue ?? 0),
                       }))}
+                      margin={{ top: 10, right: 20, left: 10, bottom: 0 }}
                     >
-                      <CartesianGrid horizontal={false} />
-                      <XAxis type="number" tickLine={false} axisLine={false} unit="%" />
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} className="stroke-border/40" />
+                      <XAxis type="number" tickLine={false} axisLine={false} />
                       <YAxis
                         type="category"
                         dataKey="title"
@@ -837,110 +982,164 @@ export default function AdminAnalyticsPage() {
                         axisLine={false}
                         width={140}
                         tickFormatter={(value: string) =>
-                          value.length > 20 ? `${value.slice(0, 20)}…` : value
+                          value.length > 18 ? `${value.slice(0, 18)}…` : value
                         }
                       />
                       <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="rate" fill="var(--color-rate)" radius={4} />
+                      <Bar dataKey="revenue" radius={[0, 6, 6, 0]}>
+                        {coursesByRevenueQuery.data.map((_, index) => (
+                          <Cell key={index} fill={VIBRANT_PALETTE[index % VIBRANT_PALETTE.length]} />
+                        ))}
+                      </Bar>
                     </BarChart>
                   </ChartCard>
                 ) : (
                   <ChartEmptyCard
-                    title="Lowest Completion Rates"
-                    description="No completion data for this period."
+                    title="Top Courses by Revenue"
+                    description="No revenue recorded for courses in this period."
                   />
-                )}
-              </div>
-            </section>
-          )}
+                ))}
 
-          {/* Section 6: Catalog & team */}
-          {(canReadCourses || canReadUsers) && (
-            <section className="space-y-4">
-              <h2 className="text-sm font-semibold text-foreground">Catalog &amp; Team</h2>
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                {canReadCourses &&
-                  (coursesQuery.isLoading ? (
-                    <ChartSkeleton />
-                  ) : coursesQuery.isError ? (
-                    <ChartErrorCard
-                      title="Courses by Category"
-                      onRetry={() => coursesQuery.refetch()}
+              {lowCompletionQuery.isLoading ? (
+                <ChartSkeleton />
+              ) : lowCompletionQuery.isError ? (
+                <ChartErrorCard
+                  title="Lowest Completion Rates"
+                  onRetry={() => lowCompletionQuery.refetch()}
+                />
+              ) : lowCompletionQuery.data && lowCompletionQuery.data.length > 0 ? (
+                <ChartCard
+                  title="Lowest Completion Rates"
+                  description="Courses that may need student engagement attention"
+                  config={LOW_COMPLETION_CONFIG}
+                >
+                  <BarChart
+                    layout="vertical"
+                    data={lowCompletionQuery.data.map((course) => ({
+                      title: course.title ?? course.course_title ?? 'Course',
+                      rate: Number(course.completion_rate ?? 0),
+                    }))}
+                    margin={{ top: 10, right: 20, left: 10, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} className="stroke-border/40" />
+                    <XAxis type="number" tickLine={false} axisLine={false} unit="%" />
+                    <YAxis
+                      type="category"
+                      dataKey="title"
+                      tickLine={false}
+                      axisLine={false}
+                      width={140}
+                      tickFormatter={(value: string) =>
+                        value.length > 18 ? `${value.slice(0, 18)}…` : value
+                      }
                     />
-                  ) : categoryDistribution.length > 0 ? (
-                    <ChartCard
-                      title="Courses by Category"
-                      description="Where course content is concentrated"
-                      config={CATEGORY_CONFIG}
-                    >
-                      <BarChart data={categoryDistribution}>
-                        <CartesianGrid vertical={false} />
-                        <XAxis
-                          dataKey="category"
-                          tickLine={false}
-                          axisLine={false}
-                          tickMargin={8}
-                          tickFormatter={(value: string) =>
-                            value.length > 12 ? `${value.slice(0, 12)}…` : value
-                          }
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="rate" radius={[0, 6, 6, 0]}>
+                      {lowCompletionQuery.data.map((_, index) => (
+                        <Cell
+                          key={index}
+                          fill={COMPLETION_WARNING_PALETTE[index % COMPLETION_WARNING_PALETTE.length]}
                         />
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                        <Bar dataKey="count" fill="var(--color-count)" radius={4} />
-                      </BarChart>
-                    </ChartCard>
-                  ) : (
-                    <ChartEmptyCard
-                      title="Courses by Category"
-                      description="No published courses yet."
-                    />
-                  ))}
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ChartCard>
+              ) : (
+                <ChartEmptyCard
+                  title="Lowest Completion Rates"
+                  description="No course completion issues detected for this period."
+                />
+              )}
+            </div>
+          </section>
 
-                {canReadUsers &&
-                  (rolesQuery.isLoading ? (
-                    <ChartSkeleton />
-                  ) : rolesQuery.isError ? (
-                    <ChartErrorCard
-                      title="Role Distribution"
-                      onRetry={() => rolesQuery.refetch()}
+          {/* Section 5: Catalog & Team Breakdown */}
+          <section className="space-y-4">
+            <h2 className="text-sm font-semibold text-foreground">Content &amp; Team Breakdown</h2>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              {categoryDistribution.length > 0 ? (
+                <ChartCard
+                  title="Courses by Category"
+                  description="Where your course content is concentrated"
+                  config={CATEGORY_CONFIG}
+                >
+                  <BarChart data={categoryDistribution} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/40" />
+                    <XAxis
+                      dataKey="category"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      tickFormatter={(value: string) =>
+                        value.length > 12 ? `${value.slice(0, 12)}…` : value
+                      }
                     />
-                  ) : roleDistribution.length > 0 ? (
-                    <ChartCard
-                      title="Role Distribution"
-                      description="Users grouped by assigned role"
-                      config={ROLE_CONFIG}
-                    >
-                      <PieChart>
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                        <ChartLegend content={<ChartLegendContent />} />
-                        <Pie
-                          data={roleDistribution.map((role) => ({
-                            name: role.name,
-                            count: role.userCount,
-                          }))}
-                          dataKey="count"
-                          nameKey="name"
-                          innerRadius={50}
-                        >
-                          {roleDistribution.map((role, index) => (
-                            <Cell key={role.id} fill={SLICE_COLORS[index % SLICE_COLORS.length]} />
-                          ))}
-                        </Pie>
-                      </PieChart>
-                    </ChartCard>
-                  ) : (
-                    <ChartEmptyCard
-                      title="Role Distribution"
-                      description="No users have been assigned a role yet."
-                    />
-                  ))}
-              </div>
-            </section>
-          )}
+                    <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                      {categoryDistribution.map((_, index) => (
+                        <Cell key={index} fill={VIBRANT_PALETTE[index % VIBRANT_PALETTE.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ChartCard>
+              ) : (
+                <ChartEmptyCard
+                  title="Courses by Category"
+                  description="No courses available in this scope."
+                />
+              )}
 
-          {/* Section 7: Promotions */}
-          <Can permission="promotions.view_analytics">
+              {isGlobal && canReadUsers && (
+                rolesQuery.isLoading ? (
+                  <ChartSkeleton />
+                ) : rolesQuery.isError ? (
+                  <ChartErrorCard
+                    title="Role Distribution"
+                    onRetry={() => rolesQuery.refetch()}
+                  />
+                ) : roleDistribution.length > 0 ? (
+                  <ChartCard
+                    title="Role Distribution"
+                    description="Users grouped by assigned role"
+                    config={ROLE_CONFIG}
+                  >
+                    <PieChart>
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <ChartLegend content={<ChartLegendContent />} />
+                      <Pie
+                        data={roleDistribution.map((role, index) => ({
+                          name: role.name,
+                          count: role.userCount,
+                          fill: VIBRANT_PALETTE[index % VIBRANT_PALETTE.length],
+                        }))}
+                        dataKey="count"
+                        nameKey="name"
+                        innerRadius={55}
+                        outerRadius={85}
+                        paddingAngle={3}
+                        cornerRadius={4}
+                      >
+                        {roleDistribution.map((role, index) => (
+                          <Cell key={role.id} fill={VIBRANT_PALETTE[index % VIBRANT_PALETTE.length]} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ChartCard>
+                ) : (
+                  <ChartEmptyCard
+                    title="Role Distribution"
+                    description="No users assigned to roles yet."
+                  />
+                )
+              )}
+            </div>
+          </section>
+
+          {/* Section 6: Promotions (Admins only) */}
+          {isGlobal && (
             <section className="space-y-4">
-              <h2 className="text-sm font-semibold text-foreground">Promotions</h2>
+              <h2 className="text-sm font-semibold text-foreground">Promotions &amp; Marketing</h2>
               {promotionAnalyticsQuery.isLoading ? (
                 <ChartSkeleton />
               ) : promotionAnalyticsQuery.isError ? (
@@ -960,8 +1159,9 @@ export default function AdminAnalyticsPage() {
                       name: c.code,
                       redemptions: c.redemptions,
                     }))}
+                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                   >
-                    <CartesianGrid vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/40" />
                     <XAxis
                       dataKey="name"
                       tickLine={false}
@@ -971,28 +1171,35 @@ export default function AdminAnalyticsPage() {
                         value.length > 12 ? `${value.slice(0, 12)}…` : value
                       }
                     />
+                    <YAxis tickLine={false} axisLine={false} tickMargin={8} />
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="redemptions" fill="var(--color-redemptions)" radius={4} />
+                    <Bar dataKey="redemptions" radius={[6, 6, 0, 0]}>
+                      {promotionAnalyticsQuery.data.topCodes.map((_, index) => (
+                        <Cell key={index} fill={VIBRANT_PALETTE[(index + 3) % VIBRANT_PALETTE.length]} />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ChartCard>
               ) : (
                 <ChartEmptyCard
                   title="Top Promo Codes by Redemptions"
-                  description="No coupon redemptions yet."
+                  description="No coupon redemptions recorded."
                 />
               )}
             </section>
-          </Can>
+          )}
 
-          {/* Section 8: Course performance table */}
-          {canReadCourses && (
+          {/* Section 7: Course Performance Detail Table */}
+          {data.topCourses && (
             <Card>
               <CardHeader>
-                <CardTitle>Course Performance</CardTitle>
+                <CardTitle>
+                  {data.scope === 'INSTRUCTOR' ? 'My Courses Performance' : 'Course Performance'}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 {data.topCourses.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No course performance data yet.</p>
+                  <p className="text-sm text-muted-foreground">No course performance data available.</p>
                 ) : (
                   <div className="overflow-x-auto">
                     <Table>
@@ -1001,17 +1208,14 @@ export default function AdminAnalyticsPage() {
                           <TableHead>Course</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Enrollments</TableHead>
-                          <TableHead>New</TableHead>
-                          <TableHead>Completed</TableHead>
+                          <TableHead>Completions</TableHead>
                           <TableHead>Completion Rate</TableHead>
-                          <Can permission="dashboard.read_financial">
-                            <TableHead>Revenue</TableHead>
-                          </Can>
+                          {canReadRevenue && <TableHead>Revenue</TableHead>}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {data.topCourses.map((course) => (
-                          <TableRow key={course.id}>
+                          <TableRow key={course.courseId || course.id || course.title}>
                             <TableCell className="font-medium text-foreground">
                               {course.title}
                             </TableCell>
@@ -1022,15 +1226,24 @@ export default function AdminAnalyticsPage() {
                                 {course.status}
                               </Badge>
                             </TableCell>
-                            <TableCell>{course.total_enrollments}</TableCell>
-                            <TableCell>{course.new_enrollments}</TableCell>
-                            <TableCell>{course.completed_enrollments}</TableCell>
-                            <TableCell>{course.completion_rate ?? '—'}</TableCell>
-                            <Can permission="dashboard.read_financial">
+                            <TableCell>
+                              {course.totalEnrollments ?? course.total_enrollments ?? 0}
+                            </TableCell>
+                            <TableCell>
+                              {course.completions ?? course.completed_enrollments ?? 0}
+                            </TableCell>
+                            <TableCell>
+                              {course.completionRate != null
+                                ? `${course.completionRate}%`
+                                : course.completion_rate != null
+                                  ? `${course.completion_rate}%`
+                                  : '—'}
+                            </TableCell>
+                            {canReadRevenue && (
                               <TableCell>
-                                {course.revenue ? formatCurrency(course.revenue) : '—'}
+                                {course.revenue ? formatCurrency(Number(course.revenue)) : '—'}
                               </TableCell>
-                            </Can>
+                            )}
                           </TableRow>
                         ))}
                       </TableBody>

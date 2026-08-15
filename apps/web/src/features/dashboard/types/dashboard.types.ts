@@ -16,24 +16,25 @@ export interface DashboardComparison {
 }
 
 export interface DashboardKpiComparisons {
-  newStudents: DashboardComparison;
-  newEnrollments: DashboardComparison;
+  newStudents?: DashboardComparison;
+  newEnrollments?: DashboardComparison;
   /** Only present with `dashboard.read_financial`. */
   revenue?: (DashboardComparison & { currency: string })[];
 }
 
 export interface DashboardKpis {
-  students: { total: number; active: number; pendingVerification: number; newDuringPeriod: number };
-  courses: { total: number; published: number; draft: number };
-  enrollments: {
+  students?: { total: number; active: number; pendingVerification: number; newDuringPeriod: number };
+  courses?: { total: number; published: number; draft: number };
+  enrollments?: {
     total: number;
     active: number;
     pendingPayment: number;
     completed: number;
     newDuringPeriod: number;
   };
-  payments: { waitingForReview: number };
-  certificates: { generated: number; attention: number };
+  completionRate?: number | null;
+  payments?: { waitingForReview: number };
+  certificates?: { generated: number; attention: number };
   revenue?: { currency: string; amount: string }[];
   /** Only present when the resolved range has a previous-period window (`DashboardQueryDto.comparison`, default true). */
   comparisons?: DashboardKpiComparisons;
@@ -90,16 +91,23 @@ export interface RecentCertificatePreview {
 }
 
 export interface TopCoursePerformance {
-  id: string;
+  courseId?: string;
+  id?: string;
   title: string;
+  slug?: string;
   status: string;
-  access_type: string;
-  total_enrollments: number;
-  new_enrollments: number;
-  completed_enrollments: number;
-  average_progress: string | null;
-  completion_rate: string | null;
+  access_type?: string;
+  totalEnrollments?: number;
+  total_enrollments?: number;
+  completions?: number;
+  completed_enrollments?: number;
+  new_enrollments?: number;
+  averageProgress?: number;
+  average_progress?: string | number | null;
+  completionRate?: number;
+  completion_rate?: string | number | null;
   revenue?: string;
+  currency?: string;
 }
 
 export interface RecentActivityPreview {
@@ -120,20 +128,34 @@ export interface OperationalAlert {
   actionUrl: string;
 }
 
+export interface DashboardPermissionsScope {
+  viewCourses: boolean;
+  viewEnrollments: boolean;
+  viewRevenue: boolean;
+  viewUsers: boolean;
+  viewCertificates: boolean;
+  viewActivity: boolean;
+  viewHealth: boolean;
+}
+
 export interface DashboardOverview {
+  scope?: 'GLOBAL' | 'INSTRUCTOR';
+  permissions?: DashboardPermissionsScope;
   range: DashboardRange;
   kpis: DashboardKpis;
   trends: {
-    registrations: TrendPoint[];
-    enrollments: TrendPoint[];
-    payments: TrendPoint[];
-    completions: TrendPoint[];
+    registrations?: TrendPoint[];
+    enrollments?: TrendPoint[];
+    payments?: TrendPoint[];
+    revenue?: TrendPoint[];
+    completions?: TrendPoint[];
+    certificates?: TrendPoint[];
   };
   previews: {
-    pendingPayments: PendingPaymentPreview[];
-    recentStudents: RecentStudentPreview[];
-    recentEnrollments: RecentEnrollmentPreview[];
-    recentCertificates: RecentCertificatePreview[];
+    pendingPayments?: PendingPaymentPreview[];
+    recentStudents?: RecentStudentPreview[];
+    recentEnrollments?: RecentEnrollmentPreview[];
+    recentCertificates?: RecentCertificatePreview[];
   };
   topCourses: TopCoursePerformance[];
   recentActivity?: RecentActivityPreview[];
@@ -158,10 +180,18 @@ export interface DashboardOverviewParams {
   /** ISO8601 date - required when `range` is `'CUSTOM'`. */
   to?: string;
   previewLimit?: number;
+  courseId?: string;
+  instructorId?: string;
+  categoryId?: string;
 }
 
 export type DashboardTrendKind =
-  'registrations' | 'enrollments' | 'payments' | 'revenue' | 'completions' | 'certificates';
+  | 'registrations'
+  | 'enrollments'
+  | 'payments'
+  | 'revenue'
+  | 'completions'
+  | 'certificates';
 
 export type DashboardGranularity = 'DAY' | 'WEEK' | 'MONTH';
 
@@ -170,6 +200,9 @@ export interface DashboardTrendParams {
   from?: string;
   to?: string;
   granularity?: DashboardGranularity;
+  courseId?: string;
+  instructorId?: string;
+  categoryId?: string;
 }
 
 export interface DashboardTrendResult {
@@ -187,7 +220,11 @@ export interface DashboardDistribution {
 }
 
 export type CoursePerformanceSort =
-  'ENROLLMENTS' | 'COMPLETIONS' | 'COMPLETION_RATE' | 'AVERAGE_PROGRESS' | 'REVENUE';
+  | 'ENROLLMENTS'
+  | 'COMPLETIONS'
+  | 'COMPLETION_RATE'
+  | 'AVERAGE_PROGRESS'
+  | 'REVENUE';
 
 export interface CoursePerformanceParams {
   range?: DashboardRangePreset;
@@ -195,13 +232,49 @@ export interface CoursePerformanceParams {
   to?: string;
   limit?: number;
   sort?: CoursePerformanceSort;
+  courseId?: string;
+  instructorId?: string;
+  categoryId?: string;
 }
 
 export interface LowCompletionCourse {
+  id?: string;
+  course_id?: string;
+  title?: string;
+  course_title?: string;
+  slug?: string;
+  total_enrollments?: number;
+  relevant_enrollments?: number;
+  completions?: number;
+  completed_enrollments?: number;
+  completion_rate?: string | number | null;
+  average_progress?: string | number | null;
+}
+
+export interface DashboardFilterOptionCourse {
   id: string;
   title: string;
-  relevant_enrollments: number;
-  completed_enrollments: number;
-  completion_rate: string | null;
-  average_progress: string | null;
+  slug: string;
+  categoryId?: string;
+  categoryName?: string;
+  createdBy?: string;
+}
+
+export interface DashboardFilterOptionCategory {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export interface DashboardFilterOptionInstructor {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface DashboardFilterOptions {
+  scope: 'GLOBAL' | 'INSTRUCTOR';
+  courses: DashboardFilterOptionCourse[];
+  categories: DashboardFilterOptionCategory[];
+  instructors: DashboardFilterOptionInstructor[];
 }

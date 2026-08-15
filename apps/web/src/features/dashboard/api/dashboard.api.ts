@@ -4,11 +4,13 @@ import {
   MOCK_DASHBOARD_OVERVIEW,
   MOCK_DASHBOARD_TRENDS,
   MOCK_DISTRIBUTION,
+  MOCK_FILTER_OPTIONS,
   MOCK_LOW_COMPLETION_COURSES,
 } from '../data/mock-dashboard.data';
 import type {
   CoursePerformanceParams,
   DashboardDistribution,
+  DashboardFilterOptions,
   DashboardOverview,
   DashboardOverviewParams,
   DashboardTrendKind,
@@ -25,6 +27,9 @@ function delay<T>(value: T, ms = 150): Promise<T> {
 const liveDashboardApi = {
   overview: async (params: DashboardOverviewParams = {}) =>
     unwrap<DashboardOverview>(await authClient.get('/admin/dashboard/overview', { params })),
+
+  filterOptions: async () =>
+    unwrap<DashboardFilterOptions>(await authClient.get('/admin/dashboard/filter-options')),
 
   trend: async (kind: DashboardTrendKind, params: DashboardTrendParams = {}) =>
     unwrap<DashboardTrendResult>(
@@ -49,6 +54,8 @@ const liveDashboardApi = {
 
 const mockDashboardApi = {
   overview: async (_params: DashboardOverviewParams = {}) => delay(MOCK_DASHBOARD_OVERVIEW),
+
+  filterOptions: async () => delay(MOCK_FILTER_OPTIONS),
 
   trend: async (kind: DashboardTrendKind, _params: DashboardTrendParams = {}) =>
     delay(MOCK_DASHBOARD_TRENDS[kind]),

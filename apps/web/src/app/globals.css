@@ -67,11 +67,14 @@
   /* Lighter than `muted-foreground` - dedicated input placeholder color. */
   --placeholder: 216 17% 65%;
 
-  --chart-1: 94 65% 45%;
-  --chart-2: 217 91% 60%;
-  --chart-3: 44 100% 48%;
-  --chart-4: 262 83% 58%;
-  --chart-5: 4 86% 58%;
+  --chart-1: 152 69% 41%; /* Vibrant Emerald Green #10b981 */
+  --chart-2: 217 91% 60%; /* Electric Sky Blue #3b82f6 */
+  --chart-3: 45 93% 47%;  /* Radiant Sun Yellow / Amber #f59e0b */
+  --chart-4: 262 83% 58%; /* Rich Royal Purple #8b5cf6 */
+  --chart-5: 24 95% 53%;  /* Bright Sunset Orange #f97316 */
+  --chart-6: 187 92% 41%; /* Ocean Cyan / Aqua #06b6d4 */
+  --chart-7: 330 81% 60%; /* Vivid Rose Pink #ec4899 */
+  --chart-8: 84 81% 44%;  /* Lime Green #84cc16 */
 
   /*
    * radius-md drives buttons/badges/inputs at their default heights
@@ -159,11 +162,14 @@
   --tertiary-foreground: 173 100% 10%;
   --placeholder: 220 10% 45%;
 
-  --chart-1: 94 60% 52%;
-  --chart-2: 217 91% 65%;
-  --chart-3: 44 100% 48%;
-  --chart-4: 262 83% 68%;
-  --chart-5: 4 70% 55%;
+  --chart-1: 152 69% 48%; /* Emerald Green */
+  --chart-2: 217 91% 65%; /* Electric Sky Blue */
+  --chart-3: 45 93% 55%;  /* Radiant Sun Yellow / Amber */
+  --chart-4: 262 83% 68%; /* Rich Royal Purple */
+  --chart-5: 24 95% 60%;  /* Bright Sunset Orange */
+  --chart-6: 187 92% 50%; /* Ocean Cyan / Aqua */
+  --chart-7: 330 81% 68%; /* Vivid Rose Pink */
+  --chart-8: 84 81% 52%;  /* Lime Green */
 
   --auth-gradient-from: 261 30% 10%;
   --auth-gradient-via: 230 25% 7%;
@@ -218,6 +224,9 @@
   --color-chart-3: hsl(var(--chart-3));
   --color-chart-4: hsl(var(--chart-4));
   --color-chart-5: hsl(var(--chart-5));
+  --color-chart-6: hsl(var(--chart-6));
+  --color-chart-7: hsl(var(--chart-7));
+  --color-chart-8: hsl(var(--chart-8));
 
   --color-sidebar: hsl(var(--sidebar));
   --color-sidebar-foreground: hsl(var(--sidebar-foreground));

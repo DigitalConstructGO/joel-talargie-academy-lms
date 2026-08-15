@@ -25,6 +25,12 @@ export const metadata: Metadata = {
     template: '%s · Joel Talargie Academy',
   },
   description: 'Digital Construct learning management system',
+  icons: {
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+  },
 };
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

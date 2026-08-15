@@ -15,8 +15,12 @@ export const metadata: Metadata = {
 };
 
 async function loadInstructors() {
-  const { items } = await catalogApi.listCourses({ pageSize: 100, sort: 'newest' });
-  return deriveInstructors(items);
+  try {
+    const { items } = await catalogApi.listCourses({ pageSize: 100, sort: 'newest' });
+    return deriveInstructors(items);
+  } catch {
+    return [];
+  }
 }
 
 export default async function InstructorsPage() {

@@ -57,8 +57,7 @@ export const STUDENT_NAV: NavSection[] = [
   {
     label: 'Settings',
     items: [
-      { label: 'Profile', href: ROUTES.dashboard.profile, icon: UserCircle },
-      { label: 'Security', href: ROUTES.dashboard.security, icon: KeyRound },
+      { label: 'Profile & Security', href: ROUTES.dashboard.profile, icon: UserCircle },
     ],
   },
 ];
@@ -245,11 +244,10 @@ export const ADMIN_NAV: NavSection[] = [
             icon: Settings,
             permission: 'settings.read',
           },
-          // Profile/Security are self-service (any authenticated staff
+          // Profile & Security is self-service (any authenticated staff
           // member manages their own) - no permission gate, same as the
-          // student portal's equivalents.
-          { label: 'Profile', href: ROUTES.admin.systemProfile, icon: UserCircle },
-          { label: 'Security', href: ROUTES.admin.systemSecurity, icon: KeyRound },
+          // student portal's equivalent.
+          { label: 'Profile & Security', href: ROUTES.admin.systemProfile, icon: UserCircle },
         ],
       },
     ],

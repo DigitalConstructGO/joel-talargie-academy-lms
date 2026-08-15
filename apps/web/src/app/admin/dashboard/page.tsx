@@ -66,8 +66,8 @@ const QUICK_ACTIONS = [
 ];
 
 const TREND_CHART_CONFIG = {
-  registrations: { label: 'New students', color: 'var(--chart-1)' },
-  enrollments: { label: 'New enrollments', color: 'var(--chart-2)' },
+  registrations: { label: 'New students', color: '#3b82f6' },
+  enrollments: { label: 'New enrollments', color: '#10b981' },
 } satisfies ChartConfig;
 
 export default function AdminDashboardPage() {
@@ -95,10 +95,10 @@ export default function AdminDashboardPage() {
     );
   }
 
-  const trendData = data.trends.registrations.map((point, index) => ({
+  const trendData = (data.trends?.registrations ?? []).map((point, index) => ({
     period: point.period,
     registrations: point.count,
-    enrollments: data.trends.enrollments[index]?.count ?? 0,
+    enrollments: data.trends?.enrollments?.[index]?.count ?? 0,
   }));
 
   const activityItems: ActivityItem[] = (data.recentActivity ?? []).map((entry) => ({
@@ -112,7 +112,7 @@ export default function AdminDashboardPage() {
       <Reveal>
         <WelcomeBanner
           greeting={`Welcome back, ${firstName} 👋`}
-          description={`${data.kpis.students.active} active students across ${data.kpis.courses.published} published courses.`}
+          description={`${data.kpis?.students?.active ?? 0} active students across ${data.kpis?.courses?.published ?? 0} published courses.`}
           ctaLabel="View Reports"
           ctaHref={ROUTES.admin.reports}
           ctaIcon={BarChart3}
@@ -137,32 +137,40 @@ export default function AdminDashboardPage() {
 
       <Reveal delaySeconds={0.05}>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-          <StatCard
-            icon={Users}
-            label="Active Students"
-            value={data.kpis.students.active}
-            tone="primary"
-          />
-          <StatCard
-            icon={BookOpen}
-            label="Published Courses"
-            value={data.kpis.courses.published}
-            suffix={`/ ${data.kpis.courses.total}`}
-            tone="info"
-          />
-          <StatCard
-            icon={GraduationCap}
-            label="Active Enrollments"
-            value={data.kpis.enrollments.active}
-            tone="teal"
-          />
-          <StatCard
-            icon={CreditCard}
-            label="Pending Payments"
-            value={data.kpis.payments.waitingForReview}
-            tone="warning"
-          />
-          {data.kpis.revenue ? (
+          {data.kpis?.students && (
+            <StatCard
+              icon={Users}
+              label="Active Students"
+              value={data.kpis.students.active}
+              tone="primary"
+            />
+          )}
+          {data.kpis?.courses && (
+            <StatCard
+              icon={BookOpen}
+              label="Published Courses"
+              value={data.kpis.courses.published}
+              suffix={`/ ${data.kpis.courses.total}`}
+              tone="info"
+            />
+          )}
+          {data.kpis?.enrollments && (
+            <StatCard
+              icon={GraduationCap}
+              label="Active Enrollments"
+              value={data.kpis.enrollments.active}
+              tone="teal"
+            />
+          )}
+          {data.kpis?.payments && (
+            <StatCard
+              icon={CreditCard}
+              label="Pending Payments"
+              value={data.kpis.payments.waitingForReview}
+              tone="warning"
+            />
+          )}
+          {data.kpis?.revenue ? (
             <StatCard
               icon={Wallet}
               label="Revenue (period)"
@@ -172,14 +180,14 @@ export default function AdminDashboardPage() {
               )}
               tone="success"
             />
-          ) : (
+          ) : data.kpis?.certificates ? (
             <StatCard
               icon={Award}
               label="Certificates Issued"
               value={data.kpis.certificates.generated}
               tone="success"
             />
-          )}
+          ) : null}
         </div>
       </Reveal>
 
@@ -199,8 +207,18 @@ export default function AdminDashboardPage() {
             config={TREND_CHART_CONFIG}
             className="lg:col-span-2"
           >
-            <BarChart data={trendData}>
-              <CartesianGrid vertical={false} />
+            <BarChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="dashRegGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#60a5fa" />
+                  <stop offset="100%" stopColor="#2563eb" />
+                </linearGradient>
+                <linearGradient id="dashEnrollGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#34d399" />
+                  <stop offset="100%" stopColor="#059669" />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/40" />
               <XAxis
                 dataKey="period"
                 tickLine={false}
@@ -209,8 +227,8 @@ export default function AdminDashboardPage() {
                 tickMargin={8}
               />
               <ChartTooltip content={<ChartTooltipContent />} />
-              <Bar dataKey="registrations" fill="var(--color-registrations)" radius={4} />
-              <Bar dataKey="enrollments" fill="var(--color-enrollments)" radius={4} />
+              <Bar dataKey="registrations" fill="url(#dashRegGrad)" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="enrollments" fill="url(#dashEnrollGrad)" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ChartCard>
 
@@ -240,36 +258,43 @@ export default function AdminDashboardPage() {
                     <TableHead>Status</TableHead>
                     <TableHead>New enrollments</TableHead>
                     <TableHead>Completion rate</TableHead>
-                    {data.kpis.revenue && <TableHead>Revenue</TableHead>}
+                    {data.kpis?.revenue && <TableHead>Revenue</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.topCourses.map((course) => (
-                    <TableRow key={course.id}>
-                      <TableCell>
-                        <Link
-                          href={ROUTES.admin.academicsCourseDetail(course.id)}
-                          className="hover:underline"
-                        >
-                          {course.title}
-                        </Link>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={course.status === 'PUBLISHED' ? 'success' : 'secondary'}>
-                          {course.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{course.new_enrollments}</TableCell>
-                      <TableCell>
-                        {course.completion_rate !== null ? `${course.completion_rate}%` : '—'}
-                      </TableCell>
-                      {data.kpis.revenue && (
+                  {data.topCourses.map((course) => {
+                    const cid = course.courseId || course.id || '';
+                    return (
+                      <TableRow key={cid || course.title}>
                         <TableCell>
-                          {course.revenue ? formatCurrency(course.revenue) : '—'}
+                          <Link
+                            href={ROUTES.admin.academicsCourseDetail(cid)}
+                            className="hover:underline"
+                          >
+                            {course.title}
+                          </Link>
                         </TableCell>
-                      )}
-                    </TableRow>
-                  ))}
+                        <TableCell>
+                          <Badge variant={course.status === 'PUBLISHED' ? 'success' : 'secondary'}>
+                            {course.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{course.new_enrollments ?? course.totalEnrollments ?? 0}</TableCell>
+                        <TableCell>
+                          {course.completion_rate !== null && course.completion_rate !== undefined
+                            ? `${course.completion_rate}%`
+                            : course.completionRate !== null && course.completionRate !== undefined
+                              ? `${course.completionRate}%`
+                              : '—'}
+                        </TableCell>
+                        {data.kpis?.revenue && (
+                          <TableCell>
+                            {course.revenue ? formatCurrency(course.revenue) : '—'}
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -284,10 +309,10 @@ export default function AdminDashboardPage() {
               <CardTitle className="text-base">Pending payments</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {data.previews.pendingPayments.length === 0 ? (
+              {(data.previews?.pendingPayments ?? []).length === 0 ? (
                 <p className="text-sm text-muted-foreground">Nothing waiting for review.</p>
               ) : (
-                data.previews.pendingPayments.map((payment) => (
+                (data.previews?.pendingPayments ?? []).map((payment) => (
                   <Link
                     key={payment.paymentId}
                     href={ROUTES.admin.financialPayments}
@@ -306,10 +331,10 @@ export default function AdminDashboardPage() {
               <CardTitle className="text-base">Recent students</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {data.previews.recentStudents.length === 0 ? (
+              {(data.previews?.recentStudents ?? []).length === 0 ? (
                 <p className="text-sm text-muted-foreground">No new students yet.</p>
               ) : (
-                data.previews.recentStudents.map((student) => (
+                (data.previews?.recentStudents ?? []).map((student) => (
                   <Link
                     key={student.id}
                     href={ROUTES.admin.userDetail(student.id)}
@@ -330,10 +355,10 @@ export default function AdminDashboardPage() {
               <CardTitle className="text-base">Recent certificates</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {data.previews.recentCertificates.length === 0 ? (
+              {(data.previews?.recentCertificates ?? []).length === 0 ? (
                 <p className="text-sm text-muted-foreground">No certificates issued yet.</p>
               ) : (
-                data.previews.recentCertificates.map((certificate) => (
+                (data.previews?.recentCertificates ?? []).map((certificate) => (
                   <div
                     key={certificate.id}
                     className="rounded-lg border border-border px-3 py-2 text-sm"

@@ -20,6 +20,14 @@ export function useDashboardOverview(
   });
 }
 
+export function useDashboardFilterOptions(options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: ['admin-dashboard-filter-options'] as const,
+    queryFn: () => dashboardApi.filterOptions(),
+    enabled: options.enabled,
+  });
+}
+
 export function useDashboardTrend(
   kind: DashboardTrendKind,
   params: DashboardTrendParams = {},
@@ -32,10 +40,14 @@ export function useDashboardTrend(
   });
 }
 
-export function useDashboardDistribution(params: DashboardOverviewParams = {}) {
+export function useDashboardDistribution(
+  params: DashboardOverviewParams = {},
+  options: { enabled?: boolean } = {},
+) {
   return useQuery({
     queryKey: ['admin-dashboard-distribution', params] as const,
     queryFn: () => dashboardApi.distribution(params),
+    enabled: options.enabled,
   });
 }
 
