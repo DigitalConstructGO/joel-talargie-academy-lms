@@ -109,10 +109,10 @@ async function bootstrap() {
     type: VersioningType.URI,
     defaultVersion: API_VERSION,
   });
-  app
-    .getHttpAdapter()
-    .getInstance()
-    .set('trust proxy', config.get<boolean>('TRUST_PROXY') ?? false);
+  const trustProxy =
+    config.get<boolean>('TRUST_PROXY') ??
+    (config.get('NODE_ENV') === 'production' ? 1 : false);
+  app.getHttpAdapter().getInstance().set('trust proxy', trustProxy);
   app.use(json({ limit: config.get<string>('BODY_LIMIT') ?? '1mb' }));
   const correlationMiddleware = new CorrelationIdMiddleware();
   const requestLoggerMiddleware = new RequestLoggerMiddleware();

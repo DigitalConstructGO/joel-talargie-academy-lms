@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { GoogleAuthGuard } from '../guards/google-auth.guard';
+import { createSignedOAuthState } from '../utils/token.util';
 
 describe('GoogleAuthGuard', () => {
   const config = { get: jest.fn() };
@@ -85,19 +86,43 @@ describe('GoogleAuthGuard', () => {
     ).toThrow(UnauthorizedException);
   });
 
-  it('rejects a callback with no state cookie at all', () => {
+  it('rejects a callback with an invalid/unsigned state and no cookie', () => {
     configureCredentials();
     expect(() =>
       guard.canActivate(
         context({
           request: {
             path: '/api/v1/auth/google/callback',
-            query: { state: 'anything' },
+            query: { state: 'invalid-state' },
             cookies: {},
           },
         }),
       ),
     ).toThrow(UnauthorizedException);
+  });
+
+  it('accepts a callback with valid signed HMAC state even when cookie is dropped', () => {
+    configureCredentials();
+    config.get.mockImplementation((key: string) => {
+      if (key === 'GOOGLE_CLIENT_ID' || key === 'GOOGLE_CLIENT_SECRET') return 'configured';
+      if (key === 'JWT_ACCESS_SECRET') return 'test-secret-key';
+      return false;
+    });
+
+    const signedState = createSignedOAuthState('test-secret-key');
+    const response = { clearCookie: jest.fn() };
+    const result = guard.canActivate(
+      context({
+        request: {
+          path: '/api/v1/auth/google/callback',
+          query: { state: signedState },
+          cookies: {},
+        },
+        response,
+      }),
+    );
+    expect(superCanActivate).toHaveBeenCalled();
+    expect(result).toBe(true);
   });
 
   it('accepts a callback whose state matches and clears the cookie', () => {
