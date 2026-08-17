@@ -12,6 +12,7 @@ import {
   VolumeX,
 } from 'lucide-react';
 import { formatDurationSeconds } from '@/lib/format';
+import { MOCK_LESSON_VIDEO_URL } from '../data/mock-learning.data';
 
 const POSITION_SAVE_INTERVAL_MS = 20_000;
 
@@ -86,11 +87,37 @@ declare global {
 }
 
 let youtubeApiPromise: Promise<YouTubeIframeApi> | null = null;
+let isYouTubeSessionBlocked = false;
+
+function checkYouTubeSessionBlocked(): boolean {
+  if (isYouTubeSessionBlocked) return true;
+  if (typeof window !== 'undefined') {
+    try {
+      return window.sessionStorage.getItem('yt_blocked') === 'true';
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
+function setYouTubeSessionBlocked(blocked: boolean) {
+  isYouTubeSessionBlocked = blocked;
+  if (typeof window !== 'undefined') {
+    try {
+      if (blocked) window.sessionStorage.setItem('yt_blocked', 'true');
+      else window.sessionStorage.removeItem('yt_blocked');
+    } catch {
+      // Ignore storage errors
+    }
+  }
+}
 
 /** Loads `https://www.youtube.com/iframe_api` at most once app-wide, with timeout and error fallback. */
 function loadYouTubeIframeApi(): Promise<YouTubeIframeApi> {
   if (typeof window === 'undefined') return Promise.reject(new Error('Window unavailable'));
   if (window.YT && window.YT.Player) return Promise.resolve(window.YT);
+  if (checkYouTubeSessionBlocked()) return Promise.reject(new Error('YouTube blocked on this network'));
   if (youtubeApiPromise) return youtubeApiPromise;
 
   youtubeApiPromise = new Promise((resolve, reject) => {
@@ -99,6 +126,7 @@ function loadYouTubeIframeApi(): Promise<YouTubeIframeApi> {
         resolve(window.YT);
       } else {
         youtubeApiPromise = null;
+        setYouTubeSessionBlocked(true);
         reject(new Error('YouTube API load timed out'));
       }
     }, 2500);
@@ -115,6 +143,7 @@ function loadYouTubeIframeApi(): Promise<YouTubeIframeApi> {
       existing.addEventListener('error', () => {
         clearTimeout(timer);
         youtubeApiPromise = null;
+        setYouTubeSessionBlocked(true);
         reject(new Error('YouTube API script error'));
       });
       return;
@@ -125,7 +154,9 @@ function loadYouTubeIframeApi(): Promise<YouTubeIframeApi> {
     script.async = true;
     script.onerror = () => {
       clearTimeout(timer);
+      script.remove();
       youtubeApiPromise = null;
+      setYouTubeSessionBlocked(true);
       reject(new Error('YouTube API network error'));
     };
     document.head.appendChild(script);
@@ -153,50 +184,80 @@ function YouTubeLessonPlayer({
   const maxWatchedRef = useRef<number>(0);
   const [ready, setReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackError, setPlaybackError] = useState(false);
-  const [useIframeFallback, setUseIframeFallback] = useState(false);
+  const [playbackError, setPlaybackError] = useState(() => checkYouTubeSessionBlocked());
+  const [useNativePlayer, setUseNativePlayer] = useState(false);
+  const [useNoCookie, setUseNoCookie] = useState(true);
+  const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
     maxWatchedRef.current = 0;
+    setUseNativePlayer(false);
   }, [lessonKey, isCompleted]);
 
   useEffect(() => {
+    if (useNativePlayer) return;
+    if (checkYouTubeSessionBlocked()) {
+      setPlaybackError(true);
+      return;
+    }
+
     let cancelled = false;
     setReady(false);
     setIsPlaying(false);
     setPlaybackError(false);
-    setUseIframeFallback(false);
 
     const mount = mountRef.current;
     if (!mount) return;
+    mount.innerHTML = '';
     const target = document.createElement('div');
     target.className = 'size-full';
     mount.appendChild(target);
 
-    const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+    // Only pass origin if it's HTTPS to avoid ERR_EMPTY_RESPONSE on http://localhost
+    const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+    const originParam = isHttps ? window.location.origin : undefined;
+
+    // Fast watchdog: if YouTube player is unreachable, show fallback without hanging
+    const readyTimeout = setTimeout(() => {
+      if (!cancelled && !ready) {
+        setYouTubeSessionBlocked(true);
+        setPlaybackError(true);
+      }
+    }, 3000);
+
+    const host = useNoCookie ? 'https://www.youtube-nocookie.com' : 'https://www.youtube.com';
 
     loadYouTubeIframeApi()
       .then((YT) => {
         if (cancelled) return;
         playerRef.current = new YT.Player(target, {
-          host: 'https://www.youtube.com',
+          host,
           videoId,
           playerVars: {
             rel: 0,
             modestbranding: 1,
             enablejsapi: 1,
             playsinline: 1,
-            ...(currentOrigin ? { origin: currentOrigin } : {}),
+            ...(originParam ? { origin: originParam } : {}),
             ...(!isCompleted ? { disablekb: 1 } : {}),
             start: 0,
           },
           events: {
             onReady: (event) => {
+              clearTimeout(readyTimeout);
+              if (cancelled) return;
               event.target.unMute();
               event.target.setVolume(100);
               setReady(true);
+              setPlaybackError(false);
             },
-            onError: () => setPlaybackError(true),
+            onError: () => {
+              clearTimeout(readyTimeout);
+              if (!cancelled) {
+                setYouTubeSessionBlocked(true);
+                setPlaybackError(true);
+              }
+            },
             onStateChange: (event) => {
               if (event.data === YT.PlayerState.PLAYING) {
                 setIsPlaying(true);
@@ -220,18 +281,20 @@ function YouTubeLessonPlayer({
         });
       })
       .catch(() => {
+        clearTimeout(readyTimeout);
         if (cancelled) return;
-        // Fallback to standard embed iframe if YouTube JavaScript API encounters network error
-        setUseIframeFallback(true);
+        setYouTubeSessionBlocked(true);
+        setPlaybackError(true);
       });
 
     return () => {
       cancelled = true;
+      clearTimeout(readyTimeout);
       playerRef.current?.destroy();
       playerRef.current = null;
       target.remove();
     };
-  }, [lessonKey, videoId, isCompleted]);
+  }, [lessonKey, videoId, isCompleted, useNoCookie, useNativePlayer]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -255,7 +318,7 @@ function YouTubeLessonPlayer({
 
   useEffect(() => {
     if (!isPlaying) return;
-    // Periodic progress save every 20 seconds (not every second)
+    // Periodic progress save every 20 seconds
     const saveInterval = setInterval(() => {
       const player = playerRef.current;
       if (player) onProgress(Math.floor(player.getCurrentTime()));
@@ -263,83 +326,156 @@ function YouTubeLessonPlayer({
     return () => clearInterval(saveInterval);
   }, [isPlaying, onProgress]);
 
+  if (useNativePlayer) {
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-2 px-0.5 text-xs text-sidebar-foreground/70">
+          <div className="flex items-center gap-2">
+            <span className="inline-block size-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="font-medium text-white/80">Academy Direct Video Stream</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setUseNativePlayer(false)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-white/90 transition-colors hover:border-sidebar-primary hover:bg-sidebar-primary/20 hover:text-white"
+          >
+            <span>Switch to YouTube Mode</span>
+          </button>
+        </div>
+        <NativeLessonPlayer
+          lessonKey={lessonKey}
+          videoUrl={MOCK_LESSON_VIDEO_URL}
+          initialPositionSeconds={0}
+          isCompleted={isCompleted}
+          onProgress={onProgress}
+          onEnded={onEnded}
+        />
+      </div>
+    );
+  }
+
   const topBar = (
     <div className="flex items-center justify-between gap-2 px-0.5 text-xs text-sidebar-foreground/70">
       <div className="flex items-center gap-2">
         <span className="inline-block size-2 rounded-full bg-red-500 animate-pulse" />
         <span className="font-medium text-white/80">YouTube Video Lesson</span>
       </div>
-      <a
-        href={`https://www.youtube.com/watch?v=${videoId}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={() => {
-          setReady(true);
-          onEnded();
-        }}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-white/90 transition-colors hover:border-sidebar-primary hover:bg-sidebar-primary/20 hover:text-white"
-        title="Open video in a new tab if embedded iframe is blocked by your network"
-      >
-        <ExternalLink className="size-3.5" />
-        <span>Open on YouTube ↗</span>
-      </a>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setUseNativePlayer(true)}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-400 transition-colors hover:bg-emerald-500/20"
+          title="Play sample video in native player"
+        >
+          <Play className="size-3 fill-emerald-400" />
+          <span>Play in Academy Player</span>
+        </button>
+        <a
+          href={`https://www.youtube.com/watch?v=${videoId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => {
+            setReady(true);
+            onEnded();
+          }}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-white/90 transition-colors hover:border-sidebar-primary hover:bg-sidebar-primary/20 hover:text-white"
+          title="Open video directly on YouTube"
+        >
+          <ExternalLink className="size-3.5" />
+          <span>Open on YouTube ↗</span>
+        </a>
+      </div>
     </div>
   );
-
-  if (useIframeFallback) {
-    const originParam = typeof window !== 'undefined' ? `&origin=${encodeURIComponent(window.location.origin)}` : '';
-    return (
-      <div className="space-y-2">
-        {topBar}
-        <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-sidebar-border bg-black shadow-2xl">
-          <iframe
-            src={`https://www.youtube.com/embed/${videoId}?rel=0&enablejsapi=1&playsinline=1${originParam}&start=0`}
-            title="YouTube video player"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
-            className="size-full border-0"
-            onLoad={() => {
-              setReady(true);
-              onEnded();
-            }}
-            onError={() => setPlaybackError(true)}
-          />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-2">
       {topBar}
       <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-sidebar-border bg-black shadow-2xl">
-        <div ref={mountRef} className="size-full" />
+        <div ref={mountRef} className={`size-full ${playbackError ? 'hidden' : 'block'}`} />
+        
         {playbackError && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/90 px-6 text-center">
-            <AlertTriangle className="size-8 text-amber-400" />
-            <p className="text-sm font-semibold text-white">Embedded Player Restricted</p>
-            <p className="max-w-md text-xs text-white/70">
-              Your network or browser extension is blocking YouTube embed connections. You can watch this masterclass directly on YouTube:
-            </p>
-            <a
-              href={`https://www.youtube.com/watch?v=${videoId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => {
-                setReady(true);
-                onEnded();
-              }}
-              className="mt-1 inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white shadow-md transition-colors hover:bg-red-700"
-            >
-              <ExternalLink className="size-4" />
-              <span>Watch on YouTube ↗</span>
-            </a>
+          <div className="relative size-full flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-zinc-950 via-slate-900 to-zinc-950 p-6 text-center">
+            {/* Background Thumbnail preview */}
+            {!imgError && (
+              <img
+                src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+                alt="Lesson Thumbnail"
+                onError={() => setImgError(true)}
+                className="absolute inset-0 size-full object-cover opacity-20 filter blur-xs"
+              />
+            )}
+            
+            <div className="relative z-10 max-w-lg space-y-4">
+              <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-red-500/30 bg-red-500/10 text-red-400 shadow-lg shadow-red-500/10">
+                <Play className="size-7 fill-red-400" />
+              </div>
+
+              <div className="space-y-1.5">
+                <h3 className="text-base font-semibold text-white tracking-tight">
+                  YouTube Player Restricted on Network
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  YouTube embed connections are blocked on your current network (<code className="text-red-400 font-mono text-[11px]">ERR_EMPTY_RESPONSE</code>). Choose how you&apos;d like to continue:
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setUseNativePlayer(true)}
+                  className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-lg shadow-emerald-600/30 transition-all hover:bg-emerald-500 hover:scale-[1.02]"
+                >
+                  <Play className="size-4 fill-white" />
+                  <span>Play in Academy Player</span>
+                </button>
+
+                <a
+                  href={`https://www.youtube.com/watch?v=${videoId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => {
+                    setReady(true);
+                    onEnded();
+                  }}
+                  className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-xs font-semibold text-white shadow-lg shadow-red-600/30 transition-all hover:bg-red-500 hover:scale-[1.02]"
+                >
+                  <ExternalLink className="size-4" />
+                  <span>Watch on YouTube ↗</span>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setYouTubeSessionBlocked(false);
+                    setPlaybackError(false);
+                    setUseNoCookie((prev) => !prev);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-3 py-2.5 text-xs font-medium text-white hover:bg-white/20 transition-all"
+                  title="Retry connecting to YouTube if you turned on a VPN"
+                >
+                  <span>Retry Embed</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReady(true);
+                    onEnded();
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-3 py-2.5 text-xs font-medium text-slate-300 hover:bg-white/20 transition-all"
+                >
+                  <span>Mark Completed ✓</span>
+                </button>
+              </div>
+            </div>
           </div>
         )}
+
         {!ready && !playbackError && (
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80">
             <Loader2 className="size-10 animate-spin text-sidebar-primary" />
-            <span className="text-xs font-medium text-white/80">Loading video...</span>
+            <span className="text-xs font-medium text-white/80">Connecting video player...</span>
           </div>
         )}
       </div>
