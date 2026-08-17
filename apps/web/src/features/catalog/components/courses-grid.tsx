@@ -47,15 +47,19 @@ export function CoursesGrid({ linkBase }: CoursesGridProps = {}) {
   if (isLoading) return <CoursesGridSkeleton view={view} count={pageSize} />;
 
   if (isError) {
-    return <ErrorState title="Couldn't load courses" onRetry={() => refetch()} />;
+    return <ErrorState title="Unable to search courses. Please try again." onRetry={() => refetch()} />;
   }
 
   if (!data || data.items.length === 0) {
     return (
       <EmptyState
         icon={SearchX}
-        title="No courses found"
-        description="Try adjusting your filters or search terms."
+        title={
+          filters.search
+            ? `No courses found for "${filters.search}"`
+            : 'No courses found'
+        }
+        description="Try adjusting your search terms or filters."
         action={
           <button
             type="button"

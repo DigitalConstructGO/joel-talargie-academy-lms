@@ -236,10 +236,15 @@ if (!markedClient[INTERCEPTORS_REGISTERED]) {
         });
       const refreshed = await refreshing;
       if (refreshed) return authClient(error.config);
-      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/auth')) {
-        window.location.assign(
-          buildLoginRedirect(`${window.location.pathname}${window.location.search}`),
-        );
+      if (typeof window !== 'undefined') {
+        const pathname = window.location.pathname;
+        const isProtectedRoute =
+          pathname.startsWith('/dashboard') || pathname.startsWith('/admin');
+        if (isProtectedRoute) {
+          window.location.assign(
+            buildLoginRedirect(`${pathname}${window.location.search}`),
+          );
+        }
       }
     }
     if (status === 403 && !isAuthFlowRequest(request.url)) {

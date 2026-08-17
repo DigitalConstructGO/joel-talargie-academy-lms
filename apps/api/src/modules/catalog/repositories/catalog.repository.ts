@@ -5,9 +5,11 @@ import {
   count,
   desc,
   eq,
+  ilike,
   inArray,
   isNull,
   ne,
+  or,
   sql,
   schema,
 } from '@joel-academy/database';
@@ -811,6 +813,19 @@ export class CatalogRepository {
   }
 
   async listCourses(query: ListCoursesDto, publicOnly = false) {
+    const searchTerm = query.search?.trim();
+    const searchCondition = searchTerm
+      ? or(
+          sql`${schema.courses.searchVector} @@ websearch_to_tsquery('simple', ${searchTerm})`,
+          ilike(schema.courses.title, `%${searchTerm.replace(/[%_\\]/g, '\\$&')}%`),
+          ilike(schema.courses.shortDescription, `%${searchTerm.replace(/[%_\\]/g, '\\$&')}%`),
+          ilike(schema.courses.description, `%${searchTerm.replace(/[%_\\]/g, '\\$&')}%`),
+          ilike(schema.courses.presenterName, `%${searchTerm.replace(/[%_\\]/g, '\\$&')}%`),
+          ilike(schema.courses.slug, `%${searchTerm.replace(/[%_\\]/g, '\\$&')}%`),
+          ilike(schema.categories.name, `%${searchTerm.replace(/[%_\\]/g, '\\$&')}%`),
+        )
+      : undefined;
+
     const conditions = [
       publicOnly
         ? eq(schema.courses.status, 'PUBLISHED')
@@ -838,9 +853,7 @@ export class CatalogRepository {
       query.featured === undefined
         ? undefined
         : eq(schema.courses.featured, query.featured),
-      query.search
-        ? sql`${schema.courses.searchVector} @@ websearch_to_tsquery('simple', ${query.search})`
-        : undefined,
+      searchCondition,
     ].filter(Boolean);
     const order =
       query.sort === 'oldest'

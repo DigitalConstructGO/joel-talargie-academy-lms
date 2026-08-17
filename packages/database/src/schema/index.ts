@@ -120,6 +120,7 @@ export const uploadCategory = pgEnum('upload_category', [
 ]);
 
 export const promoDiscountType = pgEnum('promo_discount_type', ['PERCENTAGE', 'FIXED', 'FREE']);
+export const newsletterStatus = pgEnum('newsletter_status', ['ACTIVE', 'UNSUBSCRIBED']);
 export const promoCodeType = pgEnum('promo_code_type', [
   'MANUAL',
   'REFERRAL',
@@ -1375,6 +1376,23 @@ export const promoUsageLogs = pgTable(
   ],
 );
 
+export const newsletterSubscribers = pgTable(
+  'newsletter_subscribers',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    email: text('email').notNull().unique(),
+    status: newsletterStatus('status').notNull().default('ACTIVE'),
+    subscribedAt: timestamp('subscribed_at', { withTimezone: true }).notNull().defaultNow(),
+    unsubscribedAt: timestamp('unsubscribed_at', { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    index('newsletter_subscribers_email_idx').on(table.email),
+    index('newsletter_subscribers_status_idx').on(table.status),
+    index('newsletter_subscribers_subscribed_at_idx').on(table.subscribedAt.desc()),
+  ],
+);
+
 export const schema = {
   users,
   userProfiles,
@@ -1421,4 +1439,5 @@ export const schema = {
   promoCodeUserRules,
   promoRedemptions,
   promoUsageLogs,
+  newsletterSubscribers,
 };

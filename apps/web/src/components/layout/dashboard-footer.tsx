@@ -2,11 +2,9 @@
 
 import Link from 'next/link';
 import { Globe, Share2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { ROUTES } from '@/constants/routes';
 import { siteConfig } from '@/config/site.config';
-import { toast } from '@/lib/toast';
+import { NewsletterForm } from '@/components/common/newsletter-form';
 
 const RESOURCE_LINKS = [
   { label: 'Browse Categories', href: ROUTES.categories.list },
@@ -32,12 +30,6 @@ function FooterLink({ href, label }: { href: string; label: string }) {
 
 /** Persistent footer for the authenticated dashboard shell - brand blurb, resource/legal links, and a newsletter signup, in the same dark-navy sidebar palette. */
 export function DashboardFooter() {
-  function handleSubscribe(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    toast.success('Thanks for subscribing!', "We'll keep you posted on new courses.");
-    event.currentTarget.reset();
-  }
-
   return (
     <footer className="w-full shrink-0 bg-sidebar px-4 py-12 sm:px-6">
       <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-10 md:grid-cols-4">
@@ -67,17 +59,7 @@ export function DashboardFooter() {
         </div>
         <div>
           <h4 className="mb-4 font-bold text-white">Join Newsletter</h4>
-          <form onSubmit={handleSubscribe} className="flex gap-2">
-            <Input
-              type="email"
-              required
-              placeholder="Email address"
-              className="border-white/10 bg-white/5 text-white placeholder:text-muted-foreground focus-visible:ring-brand-gradient-from"
-            />
-            <Button type="submit" className="shrink-0">
-              Join
-            </Button>
-          </form>
+          <NewsletterForm />
         </div>
       </div>
       <div className="mx-auto mt-8 flex w-full max-w-7xl flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 md:flex-row">

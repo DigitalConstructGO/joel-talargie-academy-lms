@@ -1,9 +1,9 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Loader2, Search, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/constants/routes';
@@ -13,6 +13,7 @@ import type { HeroSettings } from '@/features/settings/types/settings.types';
 export function HeroSection({ hero }: { hero?: HeroSettings }) {
   const router = useRouter();
   const [query, setQuery] = useState('');
+  const [isPending, startTransition] = useTransition();
 
   const heading = hero?.heading || 'Engineer Your Next Career Move.';
   const description =
@@ -27,11 +28,10 @@ export function HeroSection({ hero }: { hero?: HeroSettings }) {
   function handleSearch(event: React.FormEvent) {
     event.preventDefault();
     const trimmed = query.trim();
-    router.push(
-      trimmed
-        ? `${ROUTES.courses.list}?search=${encodeURIComponent(trimmed)}`
-        : ROUTES.courses.list,
-    );
+    if (!trimmed) return;
+    startTransition(() => {
+      router.push(`${ROUTES.courses.list}?search=${encodeURIComponent(trimmed)}`);
+    });
   }
 
   return (
@@ -48,15 +48,29 @@ export function HeroSection({ hero }: { hero?: HeroSettings }) {
           <p className="max-w-lg text-lg text-muted-foreground">{description}</p>
 
           <form onSubmit={handleSearch} className="flex w-full max-w-md items-center gap-2">
-            <Input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="What do you want to learn?"
-              aria-label="Search courses"
-              className="h-12"
-            />
-            <Button type="submit" size="lg" className="h-12 shrink-0">
-              Search
+            <div className="relative flex-1">
+              <Search
+                className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <Input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="What do you want to learn?"
+                aria-label="Search courses"
+                disabled={isPending}
+                className="h-12 pl-10"
+              />
+            </div>
+            <Button type="submit" size="lg" disabled={isPending} className="h-12 shrink-0">
+              {isPending ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Searching...
+                </>
+              ) : (
+                'Search'
+              )}
             </Button>
           </form>
 

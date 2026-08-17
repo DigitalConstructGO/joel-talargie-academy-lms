@@ -54,7 +54,12 @@ describe('StorageService', () => {
     findActiveAvatar: jest.fn(),
     insert: jest.fn(),
   };
-  const service = new StorageService(local as never, repository as never);
+  const service = new StorageService(
+    local as never,
+    repository as never,
+    {} as never,
+    {} as never,
+  );
   const actor = { id: 'user-1', roles: ['STUDENT'] } as never;
   const admin = { id: 'admin-1', roles: ['ADMINISTRATOR'] } as never;
 

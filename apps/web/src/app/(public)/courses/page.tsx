@@ -6,6 +6,8 @@ import { buildItemListJsonLd } from '@/lib/json-ld';
 import { catalogApi } from '@/features/catalog/api/catalog.api';
 import { CourseFilters } from '@/features/catalog/components/course-filters';
 import { CoursesGrid } from '@/features/catalog/components/courses-grid';
+import { CoursesGridSkeleton } from '@/features/catalog/components/course-card-skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ROUTES } from '@/constants/routes';
 
 export const metadata: Metadata = {
@@ -22,6 +24,15 @@ async function loadItemListEntries() {
   }
 }
 
+function CoursesFallback() {
+  return (
+    <div className="flex flex-col gap-6">
+      <Skeleton className="h-28 w-full rounded-xl" />
+      <CoursesGridSkeleton view="grid" count={12} />
+    </div>
+  );
+}
+
 export default async function CoursesPage() {
   const itemListEntries = await loadItemListEntries();
 
@@ -32,7 +43,7 @@ export default async function CoursesPage() {
         title="Browse courses"
         description="Explore our full catalog and find the course that fits your goals."
       />
-      <Suspense fallback={null}>
+      <Suspense fallback={<CoursesFallback />}>
         <CourseFilters />
         <CoursesGrid />
       </Suspense>
