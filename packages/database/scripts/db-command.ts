@@ -8,11 +8,19 @@ import { getDirectDatabaseUrl } from '../src/config.ts';
 import { schema } from '../src/schema/index.ts';
 import { permissionSeed } from '../src/permission-catalog.ts';
 import { eq } from 'drizzle-orm';
-import { demoDataAlreadySeeded, seedDemoData } from '../src/seed/demo-seed.ts';
+import {
+  demoDataAlreadySeeded,
+  seedCategories,
+  seedCourses,
+  seedDemoData,
+} from '../src/seed/demo-seed.ts';
+import { INSTRUCTOR_PERSON } from '../src/seed/demo-data.ts';
 import {
   EMAIL_TEMPLATE_CONTENT,
   type EmailTemplateCode,
 } from '../src/seed/email-template-content.ts';
+
+const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 loadEnvironment({ path: resolve(scriptDirectory, '../../../.env'), quiet: true });
@@ -150,8 +158,17 @@ async function run(): Promise<void> {
 
       const alreadySeeded = await demoDataAlreadySeeded(database);
       if (alreadySeeded) {
+        await database.transaction(async (tx) => {
+          const instructor = await tx.query.users.findFirst({
+            where: eq(schema.users.emailNormalized, normalizeEmail(INSTRUCTOR_PERSON.email)),
+          });
+          if (instructor) {
+            const categoryBySlug = await seedCategories(tx);
+            await seedCourses(tx, categoryBySlug, instructor.id);
+          }
+        });
         process.stdout.write(
-          'RBAC roles and permission catalog seeded idempotently. Demo dataset already present - skipped.\n',
+          'RBAC roles, categories, and course catalog synced.\n',
         );
         return;
       }

@@ -42,6 +42,10 @@ import {
   useUnpublishLesson,
   useUpdateLesson,
 } from '@/features/catalog/hooks/use-admin-curriculum';
+import {
+  LessonResourceUploader,
+  type UploadedResourceData,
+} from '@/features/catalog/components/lesson-resource-uploader';
 import type {
   LessonType,
   ResourceVisibility,
@@ -105,8 +109,6 @@ export default function AdminLessonDetailPage() {
   const [durationMinutes, setDurationMinutes] = useState('');
   const [isMandatory, setIsMandatory] = useState(true);
   const [isPreview, setIsPreview] = useState(false);
-  const [resourceTitle, setResourceTitle] = useState('');
-  const [resourceUrl, setResourceUrl] = useState('');
 
   const videoUrlError = lessonType === 'VIDEO' ? getVideoUrlError(videoUrl) : null;
   const externalUrlError =
@@ -190,26 +192,28 @@ export default function AdminLessonDetailPage() {
     }
   }
 
-  async function handleAddResource() {
-    if (!resourceTitle.trim() || !resourceUrl.trim()) return;
+  async function handleAddUploadedResource(data: UploadedResourceData) {
     try {
       await createResource.mutateAsync({
         courseId,
         args: [
           lessonId,
           {
-            title: resourceTitle.trim(),
-            externalUrl: resourceUrl.trim(),
+            title: data.title.trim(),
+            storageKey: data.storageKey,
+            externalUrl: data.externalUrl,
+            originalFileName: data.originalFileName,
+            mimeType: data.mimeType,
+            fileSize: data.fileSize,
             visibility: 'ENROLLED_STUDENTS' as ResourceVisibility,
           },
         ],
       });
-      toast.success('Resource added');
-      setResourceTitle('');
-      setResourceUrl('');
+      toast.success('Resource added to lesson');
     } catch (error) {
       const message = extractErrorMessage(error, 'Could not add this resource');
       toast.error('Could not add this resource', message);
+      throw error;
     }
   }
 
@@ -489,32 +493,8 @@ export default function AdminLessonDetailPage() {
                 ))
               )}
               <Can permission="lessons.manage_resources">
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <Input
-                    placeholder="Resource title"
-                    value={resourceTitle}
-                    onChange={(e) => setResourceTitle(e.target.value)}
-                  />
-                  <Input
-                    placeholder="https://..."
-                    value={resourceUrl}
-                    onChange={(e) => setResourceUrl(e.target.value)}
-                  />
-                  <Button
-                    variant="outline"
-                    className="gap-2 whitespace-nowrap"
-                    onClick={handleAddResource}
-                    disabled={
-                      !resourceTitle.trim() || !resourceUrl.trim() || createResource.isPending
-                    }
-                  >
-                    {createResource.isPending ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <Plus className="size-4" />
-                    )}
-                    Add
-                  </Button>
+                <div className="pt-2 border-t border-border">
+                  <LessonResourceUploader onSaveResource={handleAddUploadedResource} />
                 </div>
               </Can>
             </CardContent>

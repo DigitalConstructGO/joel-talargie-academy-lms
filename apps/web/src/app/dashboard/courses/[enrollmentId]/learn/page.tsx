@@ -315,7 +315,14 @@ export default function LessonPlayerPage() {
         <main className="flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-5xl px-4 py-8 pb-28 sm:px-6">
             {lessonQuery.isLoading || !lesson ? (
-              <Skeleton className="aspect-video w-full rounded-xl bg-white/10" />
+              activeLesson?.lessonType === 'VIDEO' ? (
+                <Skeleton className="aspect-video w-full rounded-xl bg-white/10" />
+              ) : (
+                <div className="space-y-4">
+                  <Skeleton className="h-9 w-2/3 rounded-lg bg-white/10" />
+                  <Skeleton className="h-48 w-full rounded-xl bg-white/5" />
+                </div>
+              )
             ) : lesson.lessonType === 'VIDEO' && lesson.videoUrl ? (
               <LessonPlayer
                 lessonKey={lesson.id}
@@ -333,16 +340,9 @@ export default function LessonPlayerPage() {
                   });
                 }}
               />
-            ) : (
-              <div className="flex aspect-video flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-sidebar-border bg-white/5 text-center">
-                <FileText className="size-8 text-sidebar-foreground/40" />
-                <p className="text-sm text-sidebar-foreground/60">
-                  This lesson has no video - see the Description tab below.
-                </p>
-              </div>
-            )}
+            ) : null}
 
-            <h1 className="mt-6 text-2xl font-bold text-white">
+            <h1 className={cn('text-2xl font-bold text-white', lesson?.lessonType === 'VIDEO' ? 'mt-6' : 'mt-0')}>
               {lesson?.title ?? activeLesson?.title}
             </h1>
 

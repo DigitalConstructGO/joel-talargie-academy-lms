@@ -1,4 +1,4 @@
-import type { CourseDifficulty } from '../types/catalog.types';
+import type { CourseDifficulty, CourseSection } from '../types/catalog.types';
 
 export interface CourseSeed {
   title: string;
@@ -19,9 +19,615 @@ export interface CourseSeed {
   studentsCount: number;
   certificateEnabled: boolean;
   featured?: boolean;
+  thumbnailUrl?: string | null;
+  customSections?: CourseSection[];
 }
 
 export const COURSE_SEEDS: CourseSeed[] = [
+  // ---------------------------------------------------------------- Joel Talargie Flagship Courses
+  {
+    title: 'AI & Modern Technology: Orientation & Roadmap',
+    subtitle: 'Your complete starter guide to modern artificial intelligence and digital workflows',
+    shortDescription: 'Get started with modern AI and emerging tech with a guided orientation from Joel Talargie.',
+    description:
+      'A comprehensive orientation and foundation designed to help beginners and ambitious creators navigate the fast-moving world of artificial intelligence and emerging technology. In this course, Joel Talargie introduces the core pillars of modern AI, demonstrates essential account setups across top AI platforms (ChatGPT, Claude, Dala AI, Google AI Studio), and outlines a structured roadmap to transition from passive consumer to empowered AI builder.',
+    outcomes: [
+      'Understand the current generative AI landscape and upcoming technological shifts',
+      'Set up and configure essential AI tool accounts safely and effectively',
+      'Identify high-impact opportunities to leverage AI in your daily work, studies, and business',
+      'Follow a personalized learning roadmap to build real-world AI and no-code skills',
+    ],
+    requirements: [
+      'A computer or smartphone with an internet connection',
+      'No prior coding or technical background required',
+      'Curiosity to learn and experiment with modern AI tools',
+    ],
+    tags: ['Artificial Intelligence', 'Getting Started', 'Productivity', 'Tech Kemsha', 'Joel Talargie'],
+    categorySlug: 'artificial-intelligence',
+    instructorSlug: 'joel-talargie',
+    difficulty: 'BEGINNER',
+    language: 'English & Amharic',
+    priceUsd: 0,
+    durationMinutes: 45,
+    rating: 4.9,
+    studentsCount: 14800,
+    certificateEnabled: true,
+    featured: true,
+    thumbnailUrl: '/images/courses/ai-modern-tech-orientation.jpg',
+    customSections: [
+      {
+        id: 'sec-ai-orient',
+        title: 'Orientation & Modern AI Landscape',
+        description: 'Orientation to the academy and the emerging AI technology ecosystem.',
+        lessons: [
+          {
+            id: 'l-ai-orient-1',
+            title: 'Course Orientation, Account Setup & Modern AI Roadmap',
+            lessonType: 'VIDEO',
+            durationSeconds: 480,
+            isMandatory: true,
+            isPreview: true,
+            videoUrl: 'https://youtu.be/xTz_mlIin5c',
+            content:
+              '<p>Welcome to the <strong>Joel Talargie Academy</strong>! In this opening orientation, lead instructor <strong>Joel Talargie</strong> welcomes you to the academy and provides a complete roadmap of modern generative AI and tech ecosystems.</p><h3>Key Takeaways</h3><ul><li>The shift from traditional computing to AI-accelerated workflows</li><li>Essential accounts to set up: Anthropic Claude, OpenAI ChatGPT, Dala AI Studio, Google AI</li><li>Best practices for data security, privacy, and effective continuous learning</li></ul>',
+            resources: [
+              {
+                id: 'res-ai-orient-1',
+                title: 'Academy Orientation & Tool Setup Guide (PDF)',
+                externalUrl: 'https://preview.mailerlite.io/forms/2549291/194589885305193786/share',
+                originalFileName: 'JoelAcademy-AI-Setup-Guide.pdf',
+                mimeType: 'application/pdf',
+                fileSize: 1024 * 450,
+              },
+              {
+                id: 'res-ai-orient-2',
+                title: 'Joel Talargie Community Links & Socials',
+                externalUrl: 'https://bit.ly/m/Joel-Talargie-community',
+                originalFileName: null,
+                mimeType: null,
+                fileSize: null,
+              },
+            ],
+          },
+          {
+            id: 'l-ai-orient-2',
+            title: 'How to Navigate & Get Certified in Joel Academy',
+            lessonType: 'TEXT',
+            durationSeconds: 300,
+            isMandatory: true,
+            isPreview: true,
+            content:
+              '<p>Learn how to maximize your learning experience inside the Joel Talargie Academy. Track your progress across modules, save timestamped lesson notes, complete hands-on practical exercises, and claim your verified, shareable certificate upon course completion.</p>',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    title: 'AI from A to Z: 13-Minute Complete Free Crash Course',
+    subtitle: 'በ13 ደቂቃ ብቻ! AI በነፃ ከ\'ሀ\' እስከ \'ፐ\' — Complete Free AI Foundations & Productivity',
+    shortDescription: 'Master AI foundations, understand how AI actually works, and explore the best free AI tools in minutes.',
+    description:
+      'Want to master Artificial Intelligence without spending money or wasting hours? In this intensive crash course by Joel Talargie, you will learn the exact foundations of AI from A to Z, discover the top free tools you can start using today, and learn practical ways to automate work and studies with zero technical background.\n\nየአርቲፊሻል ኢንተለጀንስ (AI) ቴክኖሎጂን ከ"ሀ" እስከ "ፐ" በቀላሉ እና በፍጥነት ለመማር የተዘጋጀ ሙሉ የቪዲዮ ኮርስ! የ AI ጽንሰ-ሀሳቦችን፣ ምርጥ ነጻ የ AI ቱሎችን እና በዕለት ተዕለት ስራ ላይ እንዴት ማዋል እንደምትችሉ ደረጃ በደረጃ ይማራሉ።',
+    outcomes: [
+      'Explain what Artificial Intelligence, Neural Networks, and LLMs are in simple terms',
+      'Discover and navigate the top 100% free AI productivity tools available today',
+      'Automate repetitive tasks, writing, research, and study habits with smart prompts',
+      'Apply prompt engineering basics to get exact, high-quality responses every time',
+    ],
+    requirements: [
+      'No prior coding or technical experience needed',
+      'A web browser on PC or mobile phone',
+    ],
+    tags: ['AI Crash Course', 'Free AI', 'Tech Kemsha', 'Learn AI', 'Productivity', 'Ethiopia Tech'],
+    categorySlug: 'artificial-intelligence',
+    instructorSlug: 'joel-talargie',
+    difficulty: 'BEGINNER',
+    language: 'Amharic & English',
+    priceUsd: 0,
+    durationMinutes: 60,
+    rating: 5.0,
+    studentsCount: 28900,
+    certificateEnabled: true,
+    featured: true,
+    thumbnailUrl: '/images/courses/ai-crash-course-a-to-z.jpg',
+    customSections: [
+      {
+        id: 'sec-ai-az',
+        title: 'The 13-Minute AI Masterclass',
+        description: 'Complete breakdown of AI foundations and essential free tools.',
+        lessons: [
+          {
+            id: 'l-ai-az-1',
+            title: 'Master AI in Just 13 Minutes! (Foundations & Best Free Tools)',
+            lessonType: 'VIDEO',
+            durationSeconds: 896,
+            isMandatory: true,
+            isPreview: true,
+            videoUrl: 'https://youtu.be/TQSUjYxJKwo',
+            content:
+              '<p>In this masterclass, Joel Talargie breaks down artificial intelligence into simple, intuitive concepts that anyone can grasp in 13 minutes.</p><h3>What You Will Learn</h3><ul><li>What AI actually is (explained simply from A to Z)</li><li>The best free AI tools you can start using today for writing, research, and analysis</li><li>Practical ways to automate your daily work and academic studies</li><li>How to start learning AI with zero technical background</li></ul>',
+            resources: [
+              {
+                id: 'res-ai-az-1',
+                title: 'Free AI Tools Directory & Beginner Prompt Cheatsheet (PDF)',
+                externalUrl: 'https://preview.mailerlite.io/forms/2549291/194589885305193786/share',
+                originalFileName: 'Free-AI-Tools-Directory-2026.pdf',
+                mimeType: 'application/pdf',
+                fileSize: 1024 * 620,
+              },
+              {
+                id: 'res-ai-az-2',
+                title: 'AI Productivity Starter Cheatsheet',
+                externalUrl: null,
+                originalFileName: 'AI-Productivity-Cheatsheet.pdf',
+                mimeType: 'application/pdf',
+                fileSize: 1024 * 280,
+              },
+            ],
+          },
+          {
+            id: 'l-ai-az-2',
+            title: 'Quick Self-Assessment & Action Plan',
+            lessonType: 'TEXT',
+            durationSeconds: 360,
+            isMandatory: true,
+            isPreview: true,
+            content:
+              '<p>Test your understanding of the core AI tools covered in the lesson and formulate your 7-day automation plan.</p>',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    title: 'Build Anything with No-Code AI: Dala AI Studio Masterclass',
+    subtitle: 'ስራህን በደቂቃ የሚያቀልልህ ድብቁ ነጻ AI! — Build Apps, Websites & Digital Assets with No-Code',
+    shortDescription: 'Build full websites, mobile apps, digital art, and social media videos in minutes with Dala AI Studio.',
+    description:
+      'In this video masterclass, Joel Talargie dives deep into Dala AI Studio—the revolutionary all-in-one no-code AI platform that lets you build literally anything in minutes! Whether you want to create full websites, mobile apps, stunning digital art, or high-converting social media videos, this free AI tool does it all with simple text prompts.\n\nያለምንም የኮዲንግ እውቀት ድረ-ገጾችን (Websites)፣ ሞባይል አፕሊኬሽኖችን (Apps)፣ ዲጂታል ምስሎችን፣ ቪዲዮዎችን እና ሌሎችንም ዲጂታል ስራዎች በደቂቃዎች ውስጥ እንድትሰሩ የሚያስችል ልዩ የቪዲዮ ስልጠና!',
+    outcomes: [
+      'Build and deploy full responsive websites using simple natural language prompts',
+      'Generate mobile applications with interactive UI components without writing code',
+      'Create stunning digital art, product mockups, and social media marketing videos',
+      'Package no-code digital services to launch your own freelance or agency business',
+    ],
+    requirements: [
+      'No coding or graphic design experience required',
+      'Internet access and a free Dala AI account',
+    ],
+    tags: ['Dala AI Studio', 'No Code', 'App Builder', 'Website Builder', 'Digital Art', 'Tech Kemsha'],
+    categorySlug: 'artificial-intelligence',
+    instructorSlug: 'joel-talargie',
+    difficulty: 'BEGINNER',
+    language: 'Amharic & English',
+    priceUsd: 0,
+    durationMinutes: 75,
+    rating: 4.9,
+    studentsCount: 21500,
+    certificateEnabled: true,
+    featured: true,
+    thumbnailUrl: '/images/courses/dala-ai-studio-no-code-mastery.jpg',
+    customSections: [
+      {
+        id: 'sec-dala-mastery',
+        title: 'Dala AI Studio Deep Dive',
+        description: 'Step-by-step masterclass on creating digital products with Dala AI.',
+        lessons: [
+          {
+            id: 'l-dala-1',
+            title: 'Building Websites, Apps & Digital Assets with Dala AI Studio',
+            lessonType: 'VIDEO',
+            durationSeconds: 1141,
+            isMandatory: true,
+            isPreview: true,
+            videoUrl: 'https://youtu.be/4x9jwFxcWMc',
+            content:
+              '<p>Follow along with Joel Talargie as he demonstrates the power of Africa\'s groundbreaking all-in-one AI platform, <strong>Dala AI Studio</strong>.</p><h3>What is covered</h3><ul><li>Creating responsive landing pages and web apps in minutes</li><li>Generating mobile application prototypes</li><li>Creating high-resolution digital artwork and branding assets</li><li>Producing marketing videos from text descriptions</li><li>Monetizing no-code digital creations for clients worldwide</li></ul>',
+            resources: [
+              {
+                id: 'res-dala-1',
+                title: 'Dala AI Studio Official Platform Access',
+                externalUrl: 'https://dala.gebeya.com/ref/eyoel-abrham',
+                originalFileName: null,
+                mimeType: null,
+                fileSize: null,
+              },
+              {
+                id: 'res-dala-2',
+                title: 'Dala AI Studio Prompt Formulas & Asset Templates (PDF)',
+                externalUrl: null,
+                originalFileName: 'Dala-AI-Prompt-Formulas.pdf',
+                mimeType: 'application/pdf',
+                fileSize: 1024 * 512,
+              },
+            ],
+          },
+          {
+            id: 'l-dala-2',
+            title: 'No-Code Project Workflow & Best Practices',
+            lessonType: 'TEXT',
+            durationSeconds: 420,
+            isMandatory: true,
+            isPreview: true,
+            content:
+              '<p>A comprehensive step-by-step checklist on refining generated web code, optimizing asset exports, and connecting custom domain names.</p>',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    title: 'Claude AI Masterclass: Advanced Reasoning & Online Income',
+    subtitle: 'Claude AIን በመጠቀም እንዴት የኦንላይን ስራ መስራት እና ገቢ ማግኘት ይቻላል?',
+    shortDescription: 'Master Anthropic Claude AI\'s advanced reasoning, 200k context window, and monetize your AI skills online.',
+    description:
+      'Anthropic\'s Claude AI represents a massive paradigm shift in artificial intelligence. While everyone is still discussing traditional chatbots, Claude has quietly dropped updates that completely redefine what an AI assistant can achieve.\n\nIn this comprehensive guide, Joel Talargie breaks down why Claude is turning heads across the global tech industry, how its advanced reasoning and 200K+ context window outperform rivals, and how YOU can use its hidden features as a complete beginner with zero tech experience to automate knowledge work, analyze complex data, and earn income online.',
+    outcomes: [
+      'Master Claude 3.5 Sonnet\'s state-of-the-art reasoning and coding capabilities',
+      'Utilize Claude Artifacts to generate live interactive web applications, charts, and documents',
+      'Analyze massive books, financial reports, and datasets using the 200k context window',
+      'Package and deliver high-value freelance services (copywriting, data analysis, automation) on Upwork and Fiverr',
+    ],
+    requirements: [
+      'No prior technical experience required',
+      'Free Claude AI account (claude.ai)',
+    ],
+    tags: ['Claude AI', 'Anthropic', 'Prompt Engineering', 'Online Income', 'Freelancing', 'Tech Kemsha'],
+    categorySlug: 'artificial-intelligence',
+    instructorSlug: 'joel-talargie',
+    difficulty: 'ALL_LEVELS',
+    language: 'Amharic & English',
+    priceUsd: 0,
+    durationMinutes: 90,
+    rating: 5.0,
+    studentsCount: 34200,
+    certificateEnabled: true,
+    featured: true,
+    thumbnailUrl: '/images/courses/claude-ai-mastery-online-income.jpg',
+    customSections: [
+      {
+        id: 'sec-claude-mastery',
+        title: 'Claude AI Comprehensive Guide',
+        description: 'Master Anthropic Claude AI from prompt engineering to online monetization.',
+        lessons: [
+          {
+            id: 'l-claude-1',
+            title: 'Claude AI Deep Dive: Advanced Reasoning, Context & Income Generation',
+            lessonType: 'VIDEO',
+            durationSeconds: 881,
+            isMandatory: true,
+            isPreview: true,
+            videoUrl: 'https://youtu.be/nDW9G05lhlg',
+            content:
+              '<p>Join Joel Talargie on <strong>Tech Kemsha</strong> as we dissect the groundbreaking features of Anthropic\'s Claude AI.</p><h3>Key Topics</h3><ul><li>Why Claude outperforms traditional AI models in deep reasoning and nuanced writing</li><li>How to take advantage of the massive 200K context window to analyze entire books and codebases</li><li>Building instant web apps and visualizations with Claude Artifacts</li><li>Real-world strategies to land freelance clients and generate income using Claude</li></ul>',
+            resources: [
+              {
+                id: 'res-claude-1',
+                title: 'Claude Advanced Prompting Framework & Blueprint (PDF)',
+                externalUrl: null,
+                originalFileName: 'Claude-Advanced-Prompting-Framework.pdf',
+                mimeType: 'application/pdf',
+                fileSize: 1024 * 740,
+              },
+              {
+                id: 'res-claude-2',
+                title: 'Online AI Freelancing & Client Outreach Kit',
+                externalUrl: null,
+                originalFileName: 'AI-Freelancing-Outreach-Kit.pdf',
+                mimeType: 'application/pdf',
+                fileSize: 1024 * 380,
+              },
+            ],
+          },
+          {
+            id: 'l-claude-2',
+            title: 'The Claude Artifacts Playbook',
+            lessonType: 'TEXT',
+            durationSeconds: 480,
+            isMandatory: true,
+            isPreview: true,
+            content:
+              '<p>Learn how to prompt Claude to produce interactive React components, SVG illustrations, HTML prototypes, and comprehensive research reports inside the Artifacts window.</p>',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    title: 'ChatGPT & Systematic Prompt Engineering for Productivity',
+    subtitle: 'Master structured prompt frameworks, Custom GPTs, and advanced workplace automation',
+    shortDescription: 'Master ChatGPT prompt frameworks, custom GPTs, and advanced workflows for 10x productivity.',
+    description:
+      'Move far beyond basic questions. Learn the systematic prompt engineering frameworks used by top professionals to extract accurate, nuanced, and repeatable results from ChatGPT for business analysis, software development, research, and executive communication.',
+    outcomes: [
+      'Apply the RTCF (Role, Task, Context, Format) and Chain-of-Thought prompting frameworks',
+      'Build and deploy custom GPTs tailored to your exact business workflows',
+      'Automate complex research, data synthesis, and email management',
+      'Prevent hallucinations and verify AI generated outputs reliably',
+    ],
+    requirements: [
+      'Familiarity with basic ChatGPT interface',
+    ],
+    tags: ['ChatGPT', 'OpenAI', 'Prompt Engineering', 'Custom GPTs', 'Productivity', 'Joel Talargie'],
+    categorySlug: 'artificial-intelligence',
+    instructorSlug: 'joel-talargie',
+    difficulty: 'INTERMEDIATE',
+    language: 'English',
+    priceUsd: 29.99,
+    discountUsd: 19.99,
+    durationMinutes: 90,
+    rating: 4.9,
+    studentsCount: 19800,
+    certificateEnabled: true,
+    featured: false,
+    thumbnailUrl: '/images/courses/chatgpt-prompt-engineering-mastery.jpg',
+    customSections: [
+      {
+        id: 'sec-chatgpt-mastery',
+        title: 'Systematic Prompt Engineering',
+        description: 'Advanced prompt frameworks and custom GPT architecture.',
+        lessons: [
+          {
+            id: 'l-chatgpt-1',
+            title: 'Structured Prompt Frameworks & Custom GPT Architecture',
+            lessonType: 'VIDEO',
+            durationSeconds: 900,
+            isMandatory: true,
+            isPreview: true,
+            videoUrl: 'https://youtu.be/TQSUjYxJKwo',
+            content:
+              '<p>Learn how to architect high-performance prompts and construct custom GPTs with knowledge files and instructions.</p>',
+            resources: [
+              {
+                id: 'res-chatgpt-1',
+                title: 'ChatGPT Master Prompt Library (100+ Production Prompts)',
+                externalUrl: null,
+                originalFileName: 'ChatGPT-Master-Prompt-Library.pdf',
+                mimeType: 'application/pdf',
+                fileSize: 1024 * 850,
+              },
+            ],
+          },
+          {
+            id: 'l-chatgpt-2',
+            title: 'Custom GPTs in Practice',
+            lessonType: 'TEXT',
+            durationSeconds: 480,
+            isMandatory: true,
+            isPreview: true,
+            content:
+              '<p>Hands-on guide to configuring custom instructions, actions, and persistent knowledge bases for your custom GPTs.</p>',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    title: 'AI-Driven Digital Marketing & Content Creation Engine',
+    subtitle: 'Scale your audience with AI short-form videos, viral copywriting, and automated funnels',
+    shortDescription: 'Create high-converting social media content, viral short-form videos, and SEO copy using AI.',
+    description:
+      'Learn how to construct a scalable digital content machine. Use cutting-edge generative AI for video creation, voice synthesis, thumbnail ideation, copy generation, and SEO optimization to rapidly grow your brand and revenue.',
+    outcomes: [
+      'Design multi-channel content marketing calendars in minutes',
+      'Generate viral short-form video scripts, voiceovers, and visual b-roll with AI',
+      'Write high-converting ad copy and email marketing campaigns',
+      'Optimize blog posts and landing pages to rank on search engines',
+    ],
+    requirements: [
+      'Basic understanding of social media platforms (YouTube, TikTok, Instagram, LinkedIn)',
+    ],
+    tags: ['Digital Marketing', 'Content Creation', 'Shorts', 'TikTok', 'Video AI', 'SEO'],
+    categorySlug: 'digital-marketing',
+    instructorSlug: 'joel-talargie',
+    difficulty: 'BEGINNER',
+    language: 'English',
+    priceUsd: 39.99,
+    discountUsd: 24.99,
+    durationMinutes: 105,
+    rating: 4.8,
+    studentsCount: 16200,
+    certificateEnabled: true,
+    featured: false,
+    thumbnailUrl: '/images/courses/ai-digital-marketing-content-creation.jpg',
+    customSections: [
+      {
+        id: 'sec-ai-marketing',
+        title: 'The AI Content Machine',
+        description: 'Automated video generation, scripting, and social media distribution.',
+        lessons: [
+          {
+            id: 'l-aim-1',
+            title: 'Building an Automated Social Media & Video Content Engine',
+            lessonType: 'VIDEO',
+            durationSeconds: 1020,
+            isMandatory: true,
+            isPreview: true,
+            videoUrl: 'https://youtu.be/4x9jwFxcWMc',
+            content:
+              '<p>Master the end-to-end process of generating viral video concepts, automated scripts, voiceovers, and high-CTR thumbnails using generative AI tools.</p>',
+            resources: [
+              {
+                id: 'res-aim-1',
+                title: 'AI Content Marketing Calendar & Video Production Kit',
+                externalUrl: null,
+                originalFileName: 'AI-Content-Calendar-Template.pdf',
+                mimeType: 'application/pdf',
+                fileSize: 1024 * 610,
+              },
+            ],
+          },
+          {
+            id: 'l-aim-2',
+            title: 'Copywriting Formulas that Convert',
+            lessonType: 'TEXT',
+            durationSeconds: 420,
+            isMandatory: true,
+            isPreview: true,
+            content:
+              '<p>Explore PAS, AIDA, and Story-Hook-Offer formulas fine-tuned for AI prompt workflows.</p>',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    title: 'Online Freelancing & High-Income Remote Work with AI',
+    subtitle: 'The complete blueprint to landing global clients, packaging AI services, and receiving payments',
+    shortDescription: 'Launch a high-income freelance career offering AI-powered writing, design, and automation services.',
+    description:
+      'A battle-tested blueprint for breaking into online freelancing on platforms like Upwork, Fiverr, and direct enterprise contracts. Learn how to package AI-accelerated services, write winning proposals that get accepted, set competitive pricing, and safely manage international payments.',
+    outcomes: [
+      'Identify the most in-demand, high-margin freelance services you can deliver using AI',
+      'Write high-converting proposals on Upwork and build a 5-star profile',
+      'Set up global payment pathways to receive international funds from Ethiopia and worldwide',
+      'Communicate professionally with international clients and secure repeat retainers',
+    ],
+    requirements: [
+      'A computer or smartphone with internet connection',
+      'Desire to build an independent remote income stream',
+    ],
+    tags: ['Freelancing', 'Upwork', 'Remote Work', 'AI Services', 'Monetization', 'Online Income'],
+    categorySlug: 'business-management',
+    instructorSlug: 'joel-talargie',
+    difficulty: 'ALL_LEVELS',
+    language: 'English & Amharic',
+    priceUsd: 49.99,
+    discountUsd: 29.99,
+    durationMinutes: 120,
+    rating: 5.0,
+    studentsCount: 22400,
+    certificateEnabled: true,
+    featured: true,
+    thumbnailUrl: '/images/courses/ai-freelancing-remote-work-mastery.jpg',
+    customSections: [
+      {
+        id: 'sec-ai-freelance',
+        title: 'Freelancing Blueprint',
+        description: 'Packaging AI services, landing clients, and managing international payments.',
+        lessons: [
+          {
+            id: 'l-aif-1',
+            title: 'The AI Freelancer Blueprint: Packaging Services, Proposals & Payments',
+            lessonType: 'VIDEO',
+            durationSeconds: 960,
+            isMandatory: true,
+            isPreview: true,
+            videoUrl: 'https://youtu.be/nDW9G05lhlg',
+            content:
+              '<p>Learn the exact step-by-step strategy to create in-demand service offerings, submit proposals that stand out, and get paid globally.</p>',
+            resources: [
+              {
+                id: 'res-aif-1',
+                title: 'Winning Upwork Proposal Templates & Client Contract Pack',
+                externalUrl: null,
+                originalFileName: 'Upwork-Winning-Proposals-Pack.pdf',
+                mimeType: 'application/pdf',
+                fileSize: 1024 * 540,
+              },
+              {
+                id: 'res-aif-2',
+                title: 'International Payment Solutions Guide for Ethiopian Freelancers',
+                externalUrl: null,
+                originalFileName: 'Global-Payments-Guide.pdf',
+                mimeType: 'application/pdf',
+                fileSize: 1024 * 430,
+              },
+            ],
+          },
+          {
+            id: 'l-aif-2',
+            title: 'Setting Up Your Upwork & Fiverr Profiles',
+            lessonType: 'TEXT',
+            durationSeconds: 480,
+            isMandatory: true,
+            isPreview: true,
+            content:
+              '<p>Comprehensive profile optimization guide with headline formulas, portfolio layout examples, and client testimonial strategies.</p>',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    title: 'AI-Powered Rapid Web Prototyping & Development',
+    subtitle: 'From concept to live deployed web application in hours with modern AI coding assistants',
+    shortDescription: 'Turn ideas into fully functioning web prototypes in hours using modern AI coding tools.',
+    description:
+      'Discover how AI has transformed modern software engineering. Learn how to use next-generation AI coding tools (Cursor, v0.dev, Claude Artifacts) to generate clean React components, style responsive Tailwind UIs, and deploy live full-stack web prototypes at 10x speed.',
+    outcomes: [
+      'Build responsive Next.js & Tailwind CSS web interfaces using AI prompts',
+      'Use Cursor and AI pair programming tools to write, refactor, and debug production code',
+      'Connect frontend UI prototypes to databases and REST APIs',
+      'Deploy production applications to cloud hosting (Vercel, Netlify) with custom domains',
+    ],
+    requirements: [
+      'Basic understanding of HTML, CSS, and JavaScript concepts',
+      'A code editor installed on your computer (VS Code / Cursor)',
+    ],
+    tags: ['Web Development', 'React', 'Next.js', 'Cursor', 'v0', 'Claude Artifacts', 'Prototyping'],
+    categorySlug: 'web-development',
+    instructorSlug: 'joel-talargie',
+    difficulty: 'INTERMEDIATE',
+    language: 'English',
+    priceUsd: 59.99,
+    discountUsd: 39.99,
+    durationMinutes: 120,
+    rating: 4.9,
+    studentsCount: 18700,
+    certificateEnabled: true,
+    featured: false,
+    thumbnailUrl: '/images/courses/ai-powered-web-prototyping.jpg',
+    customSections: [
+      {
+        id: 'sec-ai-proto',
+        title: 'Rapid Prototyping Workflow',
+        description: 'From concept to live deployed web application with AI coding tools.',
+        lessons: [
+          {
+            id: 'l-aip-1',
+            title: 'From Concept to Live Web App: Rapid Prototyping with AI',
+            lessonType: 'VIDEO',
+            durationSeconds: 1100,
+            isMandatory: true,
+            isPreview: true,
+            videoUrl: 'https://youtu.be/4x9jwFxcWMc',
+            content:
+              '<p>Master modern AI-assisted web development workflows: generating wireframes, scaffolding React components with Tailwind, and shipping production builds in record time.</p>',
+            resources: [
+              {
+                id: 'res-aip-1',
+                title: 'Modern AI Developer Starter Kit & Cheatsheet (PDF)',
+                externalUrl: null,
+                originalFileName: 'AI-Developer-Starter-Kit.pdf',
+                mimeType: 'application/pdf',
+                fileSize: 1024 * 720,
+              },
+              {
+                id: 'res-aip-2',
+                title: 'Next.js & Tailwind AI Starter Template Repo',
+                externalUrl: 'https://github.com',
+                originalFileName: null,
+                mimeType: null,
+                fileSize: null,
+              },
+            ],
+          },
+          {
+            id: 'l-aip-2',
+            title: 'Deploying & Scaling Your Web Applications',
+            lessonType: 'TEXT',
+            durationSeconds: 540,
+            isMandatory: true,
+            isPreview: true,
+            content:
+              '<p>Step-by-step deployment guide for Vercel, Supabase backend integration, and setting up automated CI/CD pipelines.</p>',
+          },
+        ],
+      },
+    ],
+  },
   // Web Development
   {
     title: 'Full Stack Web Development Bootcamp',

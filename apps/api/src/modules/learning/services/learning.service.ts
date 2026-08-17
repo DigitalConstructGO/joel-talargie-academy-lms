@@ -1,5 +1,6 @@
 import {
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
@@ -11,6 +12,8 @@ import { LearningRepository } from '../repositories/learning.repository';
 import { NotificationsService } from '../../notifications/services/notifications.service';
 import { CertificatesService } from '../../certificates/services/certificates.service';
 import { CertificateWorkerService } from '../../certificates/workers/certificate-worker.service';
+import { STORAGE_SERVICE } from '../../storage/storage.interface';
+import type { StorageService } from '../../storage/storage.interface';
 
 @Injectable()
 export class LearningService {
@@ -19,6 +22,7 @@ export class LearningService {
     private readonly notifications: NotificationsService,
     private readonly certificates: CertificatesService,
     private readonly certificateWorker: CertificateWorkerService,
+    @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
   ) {}
 
   async overview(user: AuthUser, enrollmentId: string) {
@@ -76,10 +80,24 @@ export class LearningService {
   async lesson(user: AuthUser, enrollmentId: string, lessonId: string) {
     const access = await this.requireAccess(user, enrollmentId);
     const lesson = await this.requireLesson(access.courseId, lessonId);
-    const resources = (await this.repository.resources(lessonId)).map(
-      (resource) => ({
-        ...resource,
-        externalUrl: this.safeHttpsUrl(resource.externalUrl),
+    const rawResources = await this.repository.resources(lessonId);
+    const resources = await Promise.all(
+      rawResources.map(async (resource) => {
+        let downloadUrl = this.safeHttpsUrl(resource.externalUrl);
+        if (resource.storageKey) {
+          try {
+            downloadUrl = await this.storage.getSignedUrl(
+              resource.storageKey,
+              86400,
+            );
+          } catch {
+            downloadUrl = this.safeHttpsUrl(resource.externalUrl);
+          }
+        }
+        return {
+          ...resource,
+          externalUrl: downloadUrl,
+        };
       }),
     );
     return {
@@ -90,14 +108,37 @@ export class LearningService {
       durationSeconds: lesson.durationSeconds,
       isMandatory: lesson.isMandatory,
       isPreview: lesson.isPreview,
-      content:
-        lesson.lessonType === 'TEXT'
-          ? sanitizeHtml(lesson.content ?? '', {
-              allowedTags: sanitizeHtml.defaults.allowedTags,
-              allowedAttributes: { a: ['href', 'target', 'rel'] },
-              allowedSchemes: ['https'],
-            })
-          : null,
+      content: lesson.content
+        ? sanitizeHtml(lesson.content, {
+            allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+              'img',
+              'h1',
+              'h2',
+              'h3',
+              'h4',
+              'h5',
+              'h6',
+              'span',
+              'strong',
+              'em',
+              'code',
+              'pre',
+              'ul',
+              'ol',
+              'li',
+              'p',
+              'br',
+              'hr',
+              'blockquote',
+            ]),
+            allowedAttributes: {
+              a: ['href', 'target', 'rel'],
+              img: ['src', 'alt', 'title'],
+              '*': ['class', 'className'],
+            },
+            allowedSchemes: ['https', 'http'],
+          })
+        : null,
       videoUrl:
         lesson.lessonType === 'VIDEO'
           ? this.safeHttpsUrl(lesson.videoUrl)

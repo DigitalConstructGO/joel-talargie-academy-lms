@@ -63,6 +63,10 @@ import {
   useUnpublishLesson,
   useUpdateSection,
 } from '@/features/catalog/hooks/use-admin-curriculum';
+import {
+  LessonResourceUploader,
+  type UploadedResourceData,
+} from '@/features/catalog/components/lesson-resource-uploader';
 import type { AdminCourseSection } from '@/features/catalog/types/admin-course.types';
 import type { LessonType } from '@/features/catalog/types/admin-curriculum.types';
 import { ROUTES } from '@/constants/routes';
@@ -282,8 +286,7 @@ function AddLessonDialog({ courseId, sectionId }: { courseId: string; sectionId:
 
   // Optional initial resource attachment
   const [attachResource, setAttachResource] = useState(false);
-  const [resourceTitle, setResourceTitle] = useState('');
-  const [resourceUrl, setResourceUrl] = useState('');
+  const [attachedResource, setAttachedResource] = useState<UploadedResourceData | null>(null);
 
   const createLesson = useCreateLesson();
   const publishLesson = usePublishLesson();
@@ -311,8 +314,7 @@ function AddLessonDialog({ courseId, sectionId }: { courseId: string; sectionId:
     setIsPreview(false);
     setPublishImmediately(true);
     setAttachResource(false);
-    setResourceTitle('');
-    setResourceUrl('');
+    setAttachedResource(null);
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -367,8 +369,7 @@ function AddLessonDialog({ courseId, sectionId }: { courseId: string; sectionId:
       if (
         createdLessonId &&
         attachResource &&
-        resourceTitle.trim() &&
-        resourceUrl.trim()
+        attachedResource?.title?.trim()
       ) {
         try {
           await createResource.mutateAsync({
@@ -376,8 +377,12 @@ function AddLessonDialog({ courseId, sectionId }: { courseId: string; sectionId:
             args: [
               createdLessonId,
               {
-                title: resourceTitle.trim(),
-                externalUrl: resourceUrl.trim(),
+                title: attachedResource.title.trim(),
+                storageKey: attachedResource.storageKey,
+                externalUrl: attachedResource.externalUrl,
+                originalFileName: attachedResource.originalFileName,
+                mimeType: attachedResource.mimeType,
+                fileSize: attachedResource.fileSize,
                 visibility: 'ENROLLED_STUDENTS',
               },
             ],
@@ -589,29 +594,8 @@ function AddLessonDialog({ courseId, sectionId }: { courseId: string; sectionId:
             </div>
 
             {attachResource && (
-              <div className="grid gap-3 pt-2 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="res-title" className="text-xs">
-                    Resource Title
-                  </Label>
-                  <Input
-                    id="res-title"
-                    value={resourceTitle}
-                    onChange={(e) => setResourceTitle(e.target.value)}
-                    placeholder="e.g., Slide Deck PDF"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="res-url" className="text-xs">
-                    External Link / File URL
-                  </Label>
-                  <Input
-                    id="res-url"
-                    value={resourceUrl}
-                    onChange={(e) => setResourceUrl(e.target.value)}
-                    placeholder="https://..."
-                  />
-                </div>
+              <div className="pt-1">
+                <LessonResourceUploader onResourceReady={setAttachedResource} />
               </div>
             )}
           </div>

@@ -131,6 +131,10 @@ function buildRecord(seed: CourseSeed, index: number): MockCourseRecord {
   // Deterministic recent publish dates spread over the last ~18 months.
   const publishedAt = new Date(Date.now() - index * 9 * 24 * 60 * 60 * 1000).toISOString();
 
+  const sections = seed.customSections ?? buildSections(seed, id);
+  const lessonCount = sections.reduce((acc, sec) => acc + sec.lessons.length, 0);
+  const moduleCount = sections.length;
+
   return {
     id,
     title: seed.title,
@@ -139,6 +143,7 @@ function buildRecord(seed: CourseSeed, index: number): MockCourseRecord {
     shortDescription: seed.shortDescription,
     description: seed.description,
     thumbnailKey: null,
+    thumbnailUrl: seed.thumbnailUrl ?? null,
     presenterName: instructor.name,
     categoryId: category.id,
     categoryName: category.name,
@@ -158,9 +163,9 @@ function buildRecord(seed: CourseSeed, index: number): MockCourseRecord {
     tags: seed.tags,
     outcomes: seed.outcomes,
     requirements: seed.requirements,
-    sections: buildSections(seed, id),
-    lessonCount: seed.outcomes.length + 5,
-    moduleCount: 4,
+    sections,
+    lessonCount,
+    moduleCount,
   };
 }
 
@@ -176,6 +181,7 @@ export function toCourseSummary(record: MockCourseRecord): CourseSummary {
     slug: record.slug,
     shortDescription: record.shortDescription,
     thumbnailKey: record.thumbnailKey,
+    thumbnailUrl: record.thumbnailUrl,
     presenterName: record.presenterName,
     categoryId: record.categoryId,
     categoryName: record.categoryName,
@@ -207,6 +213,8 @@ export function toCourseDetail(record: MockCourseRecord): CourseDetail {
     shortDescription: record.shortDescription,
     description: record.description,
     presenterName: record.presenterName,
+    thumbnailKey: record.thumbnailKey,
+    thumbnailUrl: record.thumbnailUrl,
     accessType: record.accessType,
     price: record.price,
     discountPrice: record.discountPrice,

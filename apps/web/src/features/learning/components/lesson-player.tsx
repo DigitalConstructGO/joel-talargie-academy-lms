@@ -1,7 +1,16 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, Loader2, Maximize, Pause, Play, Volume2, VolumeX } from 'lucide-react';
+import {
+  AlertTriangle,
+  ExternalLink,
+  Loader2,
+  Maximize,
+  Pause,
+  Play,
+  Volume2,
+  VolumeX,
+} from 'lucide-react';
 import { formatDurationSeconds } from '@/lib/format';
 
 const POSITION_SAVE_INTERVAL_MS = 20_000;
@@ -92,7 +101,7 @@ function loadYouTubeIframeApi(): Promise<YouTubeIframeApi> {
         youtubeApiPromise = null;
         reject(new Error('YouTube API load timed out'));
       }
-    }, 4000);
+    }, 2500);
 
     const previousCallback = window.onYouTubeIframeAPIReady;
     window.onYouTubeIframeAPIReady = () => {
@@ -170,13 +179,14 @@ function YouTubeLessonPlayer({
       .then((YT) => {
         if (cancelled) return;
         playerRef.current = new YT.Player(target, {
-          host: 'https://www.youtube-nocookie.com',
+          host: 'https://www.youtube.com',
           videoId,
           playerVars: {
             rel: 0,
             modestbranding: 1,
             enablejsapi: 1,
-            ...(currentOrigin ? { origin: currentOrigin, widget_referrer: window.location.href } : {}),
+            playsinline: 1,
+            ...(currentOrigin ? { origin: currentOrigin } : {}),
             ...(!isCompleted ? { disablekb: 1 } : {}),
             start: 0,
           },
@@ -253,45 +263,86 @@ function YouTubeLessonPlayer({
     return () => clearInterval(saveInterval);
   }, [isPlaying, onProgress]);
 
+  const topBar = (
+    <div className="flex items-center justify-between gap-2 px-0.5 text-xs text-sidebar-foreground/70">
+      <div className="flex items-center gap-2">
+        <span className="inline-block size-2 rounded-full bg-red-500 animate-pulse" />
+        <span className="font-medium text-white/80">YouTube Video Lesson</span>
+      </div>
+      <a
+        href={`https://www.youtube.com/watch?v=${videoId}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => {
+          setReady(true);
+          onEnded();
+        }}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-white/90 transition-colors hover:border-sidebar-primary hover:bg-sidebar-primary/20 hover:text-white"
+        title="Open video in a new tab if embedded iframe is blocked by your network"
+      >
+        <ExternalLink className="size-3.5" />
+        <span>Open on YouTube ↗</span>
+      </a>
+    </div>
+  );
+
   if (useIframeFallback) {
     const originParam = typeof window !== 'undefined' ? `&origin=${encodeURIComponent(window.location.origin)}` : '';
     return (
-      <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-sidebar-border bg-black shadow-2xl">
-        <iframe
-          src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0&enablejsapi=1${originParam}&start=0`}
-          title="YouTube video player"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowFullScreen
-          referrerPolicy="strict-origin-when-cross-origin"
-          className="size-full border-0"
-          onLoad={() => {
-            setReady(true);
-            onEnded();
-          }}
-          onError={() => setPlaybackError(true)}
-        />
+      <div className="space-y-2">
+        {topBar}
+        <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-sidebar-border bg-black shadow-2xl">
+          <iframe
+            src={`https://www.youtube.com/embed/${videoId}?rel=0&enablejsapi=1&playsinline=1${originParam}&start=0`}
+            title="YouTube video player"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            className="size-full border-0"
+            onLoad={() => {
+              setReady(true);
+              onEnded();
+            }}
+            onError={() => setPlaybackError(true)}
+          />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-sidebar-border bg-black shadow-2xl">
-      <div ref={mountRef} className="size-full" />
-      {playbackError && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60 px-6 text-center">
-          <AlertTriangle className="size-8 text-warning" />
-          <p className="text-sm font-medium text-white">This video couldn&apos;t be played</p>
-          <p className="text-xs text-white/70">
-            The YouTube video may be private, deleted, or unavailable.
-          </p>
-        </div>
-      )}
-      {!ready && !playbackError && (
-        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80">
-          <Loader2 className="size-10 animate-spin text-sidebar-primary" />
-          <span className="text-xs font-medium text-white/80">Loading video...</span>
-        </div>
-      )}
+    <div className="space-y-2">
+      {topBar}
+      <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-sidebar-border bg-black shadow-2xl">
+        <div ref={mountRef} className="size-full" />
+        {playbackError && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/90 px-6 text-center">
+            <AlertTriangle className="size-8 text-amber-400" />
+            <p className="text-sm font-semibold text-white">Embedded Player Restricted</p>
+            <p className="max-w-md text-xs text-white/70">
+              Your network or browser extension is blocking YouTube embed connections. You can watch this masterclass directly on YouTube:
+            </p>
+            <a
+              href={`https://www.youtube.com/watch?v=${videoId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => {
+                setReady(true);
+                onEnded();
+              }}
+              className="mt-1 inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white shadow-md transition-colors hover:bg-red-700"
+            >
+              <ExternalLink className="size-4" />
+              <span>Watch on YouTube ↗</span>
+            </a>
+          </div>
+        )}
+        {!ready && !playbackError && (
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80">
+            <Loader2 className="size-10 animate-spin text-sidebar-primary" />
+            <span className="text-xs font-medium text-white/80">Loading video...</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

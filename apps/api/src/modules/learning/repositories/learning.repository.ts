@@ -167,6 +167,7 @@ export class LearningRepository {
         id: schema.lessonResources.id,
         label: schema.lessonResources.label,
         resourceType: schema.lessonResources.resourceType,
+        storageKey: schema.lessonResources.storageKey,
         externalUrl: schema.lessonResources.externalUrl,
         originalFileName: schema.lessonResources.originalFileName,
         mimeType: schema.lessonResources.mimeType,

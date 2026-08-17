@@ -9,6 +9,7 @@ import type {
   CurriculumSection,
   LessonContent,
   LessonProgressStatus,
+  LessonResource,
   ResumeTarget,
 } from '../types/learning.types';
 
@@ -180,6 +181,18 @@ async function buildOverview(enrollmentId: string): Promise<CourseOverview> {
 }
 
 function buildLessonContent(lesson: CourseLesson, sectionId: string): LessonContent {
+  const resources: LessonResource[] = (lesson.resources ?? []).map((r, idx) => ({
+    id: r.id || `res-${idx + 1}`,
+    label: r.title,
+    resourceType: r.mimeType || 'DOCUMENT',
+    externalUrl: r.externalUrl ?? null,
+    originalFileName: r.originalFileName ?? null,
+    mimeType: r.mimeType ?? null,
+    fileSize: r.fileSize ?? null,
+    visibility: 'PUBLIC',
+    position: idx + 1,
+  }));
+
   return {
     id: lesson.id,
     sectionId,
@@ -188,10 +201,14 @@ function buildLessonContent(lesson: CourseLesson, sectionId: string): LessonCont
     durationSeconds: lesson.durationSeconds,
     isMandatory: lesson.isMandatory,
     isPreview: lesson.isPreview,
-    content: lesson.lessonType === 'TEXT' ? mockLessonTextContent(lesson.title) : null,
-    videoUrl: lesson.lessonType === 'VIDEO' ? MOCK_LESSON_VIDEO_URL : null,
-    externalUrl: lesson.lessonType === 'EXTERNAL_LINK' ? 'https://example.com' : null,
-    resources: [],
+    content:
+      lesson.content ??
+      (lesson.lessonType === 'TEXT' ? mockLessonTextContent(lesson.title) : null),
+    videoUrl: lesson.lessonType === 'VIDEO' ? (lesson.videoUrl ?? MOCK_LESSON_VIDEO_URL) : null,
+    externalUrl:
+      lesson.externalUrl ??
+      (lesson.lessonType === 'EXTERNAL_LINK' ? 'https://example.com' : null),
+    resources,
   };
 }
 

@@ -10,6 +10,7 @@ export interface CourseSummary {
   slug: string;
   shortDescription: string;
   thumbnailKey: string | null;
+  thumbnailUrl?: string | null;
   presenterName: string;
   categoryId: string;
   categoryName: string;
@@ -75,6 +76,7 @@ export interface CourseDetail {
   description: string;
   presenterName: string;
   thumbnailKey?: string | null;
+  thumbnailUrl?: string | null;
   accessType: CourseAccessType;
   price: string;
   discountPrice: string | null;

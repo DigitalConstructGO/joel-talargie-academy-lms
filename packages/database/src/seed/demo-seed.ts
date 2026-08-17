@@ -233,13 +233,12 @@ async function seedUsers(
   return { admin, contentManager, instructor, students };
 }
 
-async function seedCategories(tx: AcademyDatabase) {
-  const rows = await tx
+export async function seedCategories(tx: AcademyDatabase) {
+  await tx
     .insert(schema.categories)
     .values(CATEGORY_CATALOG.map((category, index) => ({ ...category, sortOrder: index })))
-    .onConflictDoNothing({ target: schema.categories.slug })
-    .returning();
-  const categories = rows.length ? rows : await tx.select().from(schema.categories);
+    .onConflictDoNothing({ target: schema.categories.slug });
+  const categories = await tx.select().from(schema.categories);
   return new Map(categories.map((category) => [category.slug, category]));
 }
 
@@ -254,7 +253,7 @@ interface SeededCourse {
   lessons: { id: string; position: number }[];
 }
 
-async function seedCourses(
+export async function seedCourses(
   tx: AcademyDatabase,
   categoryBySlug: Map<string, { id: string }>,
   instructorUserId: string,
@@ -283,7 +282,8 @@ async function seedCourses(
         slug: courseData.slug,
         shortDescription: courseData.shortDescription,
         description: courseData.description,
-        presenterName: `${INSTRUCTOR_PERSON.firstName} ${INSTRUCTOR_PERSON.lastName}`,
+        presenterName:
+          courseData.presenterName ?? `${INSTRUCTOR_PERSON.firstName} ${INSTRUCTOR_PERSON.lastName}`,
         status: courseData.status,
         visibility: 'PUBLIC',
         accessType: courseData.accessType,
@@ -327,53 +327,70 @@ async function seedCourses(
         )
         .onConflictDoNothing();
 
+    const existingSections = await tx
+      .select({ id: schema.courseSections.id })
+      .from(schema.courseSections)
+      .where(eq(schema.courseSections.courseId, persisted.id));
+
     const lessons: { id: string; position: number }[] = [];
-    for (const [sectionIndex, sectionData] of courseData.sections.entries()) {
-      const [section] = await tx
-        .insert(schema.courseSections)
-        .values({
-          courseId: persisted.id,
-          title: sectionData.title,
-          description: sectionData.description,
-          position: sectionIndex + 1,
-        })
-        .returning();
-      if (!section) throw new Error(`Could not create section for ${courseData.slug}`);
-      sectionCount += 1;
-
-      const lessonRows = await tx
-        .insert(schema.lessons)
-        .values(
-          sectionData.lessons.map((lessonData, lessonIndex) => ({
+    if (existingSections.length > 0) {
+      const existingLessons = await tx
+        .select({ id: schema.lessons.id, position: schema.lessons.position })
+        .from(schema.lessons)
+        .where(eq(schema.lessons.courseId, persisted.id));
+      lessons.push(...existingLessons);
+    } else {
+      for (const [sectionIndex, sectionData] of courseData.sections.entries()) {
+        const [section] = await tx
+          .insert(schema.courseSections)
+          .values({
             courseId: persisted.id,
-            sectionId: section.id,
-            title: lessonData.title,
-            slug: `${sectionIndex + 1}-${lessonIndex + 1}-${lessonData.title
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, '-')
-              .replace(/(^-|-$)/g, '')}`,
-            lessonType: lessonData.lessonType,
-            durationSeconds: lessonData.durationSeconds,
-            position: lessonIndex + 1,
-            isPreview: lessonIndex === 0 && sectionIndex === 0,
-            isPublished: courseData.status === 'PUBLISHED',
-          })),
-        )
-        .returning({ id: schema.lessons.id, position: schema.lessons.position });
-      lessonCount += lessonRows.length;
-      lessons.push(...lessonRows);
+            title: sectionData.title,
+            description: sectionData.description,
+            position: sectionIndex + 1,
+          })
+          .returning();
+        if (!section) throw new Error(`Could not create section for ${courseData.slug}`);
+        sectionCount += 1;
 
-      const resourceRows = sectionData.lessons.flatMap((lessonData, lessonIndex) =>
-        (lessonData.resources ?? []).map((resource) => ({
-          lessonId: lessonRows[lessonIndex]!.id,
-          label: resource.label,
-          resourceType: resource.resourceType,
-          position: 1,
-        })),
-      );
-      if (resourceRows.length) {
-        await tx.insert(schema.lessonResources).values(resourceRows);
-        resourceCount += resourceRows.length;
+        const lessonRows = await tx
+          .insert(schema.lessons)
+          .values(
+            sectionData.lessons.map((lessonData, lessonIndex) => ({
+              courseId: persisted.id,
+              sectionId: section.id,
+              title: lessonData.title,
+              slug: `${sectionIndex + 1}-${lessonIndex + 1}-${lessonData.title
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/(^-|-$)/g, '')}`,
+              lessonType: lessonData.lessonType,
+              videoUrl: lessonData.videoUrl ?? null,
+              externalUrl: lessonData.externalUrl ?? null,
+              content: lessonData.content ?? null,
+              durationSeconds: lessonData.durationSeconds,
+              position: lessonIndex + 1,
+              isPreview: lessonData.isPreview ?? (lessonIndex === 0 && sectionIndex === 0),
+              isPublished: courseData.status === 'PUBLISHED',
+            })),
+          )
+          .returning({ id: schema.lessons.id, position: schema.lessons.position });
+        lessonCount += lessonRows.length;
+        lessons.push(...lessonRows);
+
+        const resourceRows = sectionData.lessons.flatMap((lessonData, lessonIndex) =>
+          (lessonData.resources ?? []).map((resource) => ({
+            lessonId: lessonRows[lessonIndex]!.id,
+            label: resource.label,
+            resourceType: resource.resourceType,
+            externalUrl: resource.externalUrl ?? null,
+            position: 1,
+          })),
+        );
+        if (resourceRows.length) {
+          await tx.insert(schema.lessonResources).values(resourceRows);
+          resourceCount += resourceRows.length;
+        }
       }
     }
 
