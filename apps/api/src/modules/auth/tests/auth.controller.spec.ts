@@ -114,7 +114,7 @@ describe('AuthController', () => {
     expect(auth.profile).toHaveBeenCalledWith('user-1');
   });
 
-  it('redirects to the web app with an access token fragment after a Google callback, and sets the refresh cookie', async () => {
+  it('redirects to the web app with access and refresh tokens in hash after a Google callback, and sets the refresh cookie', async () => {
     config.getOrThrow.mockReturnValue('http://localhost:3000');
     auth.loginWithGoogle.mockResolvedValue({
       user: { id: 'user-1' },
@@ -135,6 +135,9 @@ describe('AuthController', () => {
     );
     expect(res.redirect).toHaveBeenCalledWith(
       expect.stringContaining('access_token=google-access-token'),
+    );
+    expect(res.redirect).toHaveBeenCalledWith(
+      expect.stringContaining('refresh_token=google-refresh-token'),
     );
   });
 });

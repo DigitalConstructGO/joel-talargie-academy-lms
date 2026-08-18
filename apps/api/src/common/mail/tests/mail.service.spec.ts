@@ -24,6 +24,7 @@ const enabledEnvironment: Environment = {
   JWT_ACCESS_TTL: '15m',
   JWT_REFRESH_TTL: '7d',
   AUTH_COOKIE_SECURE: false,
+  AUTH_COOKIE_DOMAIN: '',
   GOOGLE_CLIENT_ID: '',
   GOOGLE_CLIENT_SECRET: '',
   GOOGLE_CALLBACK_URL: googleCallbackUrl,

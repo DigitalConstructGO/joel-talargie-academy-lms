@@ -49,7 +49,7 @@ type AuthState = {
   fetchAuthorization(): Promise<void>;
   clearError(): void;
   loginWithGoogle(): void;
-  handleGoogleCallback(accessToken: string): Promise<void>;
+  handleGoogleCallback(accessToken: string, refreshToken?: string | null): Promise<void>;
   logoutGoogle(): Promise<void>;
   setHasHydrated(value: boolean): void;
   setSessionChecked(value: boolean): void;
@@ -82,12 +82,20 @@ export const useAuthStore = create<AuthState>()(
         const base = getApiBaseUrl();
         window.location.assign(base ? `${base}/auth/google` : '/auth/google');
       },
-      handleGoogleCallback: async (accessToken) => {
+      handleGoogleCallback: async (accessToken, refreshToken) => {
         set({ accessToken, authenticated: true, loading: true, error: null, authzStatus: 'idle' });
+        if (typeof document !== 'undefined' && refreshToken) {
+          const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:';
+          const maxAge = 7 * 24 * 60 * 60; // 7 days in seconds
+          document.cookie = `refresh_token=${encodeURIComponent(refreshToken)}; path=/; max-age=${maxAge}; SameSite=Lax${isSecure ? '; Secure' : ''}`;
+        }
         try {
           const user = unwrap<AuthUser>(await authClient.get('/auth/profile'));
           set({ user, authenticated: true, loading: false });
         } catch (error) {
+          if (typeof document !== 'undefined') {
+            document.cookie = 'refresh_token=; path=/; max-age=0; SameSite=Lax';
+          }
           set({
             user: null,
             accessToken: null,
@@ -100,6 +108,9 @@ export const useAuthStore = create<AuthState>()(
         }
       },
       logoutGoogle: async () => {
+        if (typeof document !== 'undefined') {
+          document.cookie = 'refresh_token=; path=/; max-age=0; SameSite=Lax';
+        }
         try {
           await authClient.post('/auth/logout');
         } finally {
@@ -132,6 +143,9 @@ export const useAuthStore = create<AuthState>()(
         }
       },
       logout: async () => {
+        if (typeof document !== 'undefined') {
+          document.cookie = 'refresh_token=; path=/; max-age=0; SameSite=Lax';
+        }
         try {
           await authClient.post('/auth/logout');
         } finally {

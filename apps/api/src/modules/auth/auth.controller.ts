@@ -36,11 +36,13 @@ export class AuthController {
     const secure = Boolean(
       this.config.get<boolean>('AUTH_COOKIE_SECURE', false),
     );
+    const domain = this.config.get<string>('AUTH_COOKIE_DOMAIN');
     response.cookie('refresh_token', token, {
       httpOnly: true,
       secure,
       sameSite: secure ? 'none' : 'lax',
       path: '/',
+      domain: domain || undefined,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
   }
@@ -72,6 +74,7 @@ export class AuthController {
     );
     redirect.hash = new URLSearchParams({
       access_token: result.accessToken,
+      refresh_token: result.refreshToken,
     }).toString();
     return response.redirect(redirect.toString());
   }

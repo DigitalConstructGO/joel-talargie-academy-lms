@@ -187,15 +187,16 @@ describe('useAuthStore', () => {
   });
 
   describe('handleGoogleCallback', () => {
-    it('fetches the profile and authenticates using the OAuth-issued access token', async () => {
+    it('fetches the profile, sets refresh cookie, and authenticates using the OAuth-issued tokens', async () => {
       mockedGet.mockResolvedValueOnce({ data: { data: AUTH_USER } });
 
-      await useAuthStore.getState().handleGoogleCallback('google-access-token');
+      await useAuthStore.getState().handleGoogleCallback('google-access-token', 'google-refresh-token');
 
       const state = useAuthStore.getState();
       expect(state.accessToken).toBe('google-access-token');
       expect(state.authenticated).toBe(true);
       expect(state.user).toEqual(AUTH_USER);
+      expect(document.cookie).toContain('refresh_token=google-refresh-token');
     });
 
     it('clears state and rethrows when the profile fetch fails', async () => {

@@ -48,6 +48,7 @@ export const environmentSchema = z
     JWT_ACCESS_TTL: z.string().default('15m'),
     JWT_REFRESH_TTL: z.string().default('7d'),
     AUTH_COOKIE_SECURE: z.stringbool().default(false),
+    AUTH_COOKIE_DOMAIN: z.string().default(''),
     GOOGLE_CLIENT_ID: z.string().default(''),
     GOOGLE_CLIENT_SECRET: z.string().default(''),
     GOOGLE_CALLBACK_URL: z.string().url().default(''),
