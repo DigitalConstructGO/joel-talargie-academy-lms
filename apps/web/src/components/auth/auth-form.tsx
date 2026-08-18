@@ -89,6 +89,7 @@ export function AuthForm({ kind }: { kind: Kind }) {
   const store = useAuthStore();
   const [title, subtitle] = copy[kind];
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [redirectingText, setRedirectingText] = useState<string | null>(null);
   const redirectParam = search.get('redirect');
   const redirectQuery = isSafeRedirectPath(redirectParam)
     ? `?redirect=${encodeURIComponent(redirectParam)}`
@@ -105,6 +106,9 @@ export function AuthForm({ kind }: { kind: Kind }) {
       rememberMe: false,
     },
   });
+
+  const isBusy = form.formState.isSubmitting || Boolean(redirectingText);
+
   const submit = form.handleSubmit(async (values) => {
     setSuccessMessage(null);
     form.clearErrors('root');
@@ -114,10 +118,7 @@ export function AuthForm({ kind }: { kind: Kind }) {
           email: String(values.email ?? ''),
           password: String(values.password ?? ''),
         });
-        // Default lands on `/` - a preserved `?redirect=` (set by
-        // middleware.ts when this visitor was bounced here from a
-        // protected route) wins if present and safe, re-validated against
-        // the account's actual area once `user.roles` is known.
+        setRedirectingText('Redirecting to dashboard...');
         const { user } = useAuthStore.getState();
         router.replace(resolvePostLoginRedirect(search.get('redirect'), user?.roles ?? []));
         return;
@@ -130,9 +131,7 @@ export function AuthForm({ kind }: { kind: Kind }) {
           password: String(values.password ?? ''),
           confirmPassword: String(values.confirmPassword ?? ''),
         });
-        // Registration doesn't log the user in (email verification comes
-        // first) - carry the redirect target forward through verify-email
-        // so it survives to reach login, which already honors it.
+        setRedirectingText('Redirecting to verification...');
         router.push(`${ROUTES.auth.verifyEmail}${redirectQuery}`);
         return;
       }
@@ -146,17 +145,14 @@ export function AuthForm({ kind }: { kind: Kind }) {
         await authClient.post(`/auth/${endpoint}`, values),
       );
       if (kind === 'reset' || kind === 'verify') {
-        // Password reset / email verification both leave the account ready
-        // to sign in - send them straight to login rather than stranding
-        // them on a form with no more fields to submit. The success
-        // message is surfaced as a toast (not the inline box below) since
-        // this page is about to be replaced.
         toast.success(result.message);
+        setRedirectingText('Redirecting to sign in...');
         router.push(`${ROUTES.auth.login}${redirectQuery}`);
         return;
       }
       setSuccessMessage(result.message);
     } catch (error) {
+      setRedirectingText(null);
       const fieldErrors = extractFieldErrors(error);
       if (fieldErrors.length > 0) {
         for (const { field, message } of fieldErrors) {
@@ -175,7 +171,7 @@ export function AuthForm({ kind }: { kind: Kind }) {
       <p className="mt-1.5 text-center text-sm text-muted-foreground">{subtitle}</p>
       {isSocial && (
         <div className="mt-8">
-          <GoogleLoginButton redirectTo={search.get('redirect')} />
+          <GoogleLoginButton redirectTo={search.get('redirect')} disabled={isBusy} />
           <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
             <span className="h-px flex-1 bg-border" />
             Or continue with
@@ -186,8 +182,8 @@ export function AuthForm({ kind }: { kind: Kind }) {
       <form className={isSocial ? 'space-y-4' : 'mt-8 space-y-4'} onSubmit={submit}>
         {has('firstName') && (
           <div className="grid grid-cols-2 gap-3">
-            <Field name="firstName" label="First name" form={form} />
-            <Field name="lastName" label="Last name" form={form} />
+            <Field name="firstName" label="First name" form={form} disabled={isBusy} />
+            <Field name="lastName" label="Last name" form={form} disabled={isBusy} />
           </div>
         )}
         {has('email') && (
@@ -197,6 +193,7 @@ export function AuthForm({ kind }: { kind: Kind }) {
             type="email"
             placeholder="student@example.com"
             form={form}
+            disabled={isBusy}
           />
         )}
         {has('password') && (
@@ -205,6 +202,7 @@ export function AuthForm({ kind }: { kind: Kind }) {
             label={kind === 'reset' ? 'New password' : 'Password'}
             type="password"
             form={form}
+            disabled={isBusy}
             labelExtra={
               kind === 'login' && (
                 <Link
@@ -218,13 +216,20 @@ export function AuthForm({ kind }: { kind: Kind }) {
           />
         )}
         {has('confirmPassword') && (
-          <Field name="confirmPassword" label="Confirm password" type="password" form={form} />
+          <Field
+            name="confirmPassword"
+            label="Confirm password"
+            type="password"
+            form={form}
+            disabled={isBusy}
+          />
         )}
-        {has('token') && <Field name="token" label="Secure token" form={form} />}
+        {has('token') && <Field name="token" label="Secure token" form={form} disabled={isBusy} />}
         {kind === 'login' && (
           <div className="flex items-center gap-2">
             <Checkbox
               id="rememberMe"
+              disabled={isBusy}
               checked={Boolean(form.watch('rememberMe'))}
               onCheckedChange={(checked) => form.setValue('rememberMe', checked === true)}
             />
@@ -244,8 +249,8 @@ export function AuthForm({ kind }: { kind: Kind }) {
         <LoadingButton
           type="submit"
           className="w-full"
-          loading={form.formState.isSubmitting}
-          loadingText={submitLoadingText[kind]}
+          loading={isBusy}
+          loadingText={redirectingText || submitLoadingText[kind]}
         >
           {title === 'Welcome Back' ? 'Sign In' : title}
         </LoadingButton>
@@ -280,6 +285,7 @@ function Field({
   placeholder,
   form,
   labelExtra,
+  disabled,
 }: {
   name: string;
   label: string;
@@ -287,6 +293,7 @@ function Field({
   placeholder?: string;
   form: ReturnType<typeof useForm<Values>>;
   labelExtra?: React.ReactNode;
+  disabled?: boolean;
 }) {
   const [visible, setVisible] = useState(false);
   const error = form.formState.errors[name]?.message;
@@ -309,14 +316,16 @@ function Field({
           id={name}
           type={isPassword && visible ? 'text' : type}
           placeholder={placeholder}
+          disabled={disabled}
           className={Icon ? (isPassword ? 'pl-9 pr-9' : 'pl-9') : undefined}
           {...form.register(name)}
         />
         {isPassword && (
           <button
             type="button"
+            disabled={disabled}
             onClick={() => setVisible((v) => !v)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground disabled:opacity-50"
             aria-label={visible ? 'Hide password' : 'Show password'}
           >
             {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}

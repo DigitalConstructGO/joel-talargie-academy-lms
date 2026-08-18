@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { GraduationCap, Menu } from 'lucide-react';
+import { GraduationCap, Loader2, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -34,6 +34,7 @@ export function PublicHeader() {
   const roles = useAuthStore((state) => state.roles);
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const handleLogout = useLogout();
 
   // Never guess: while unauthenticated there's nothing to wait on: while
@@ -151,13 +152,23 @@ export function PublicHeader() {
                   </Link>
                   <button
                     type="button"
-                    onClick={() => {
+                    disabled={loggingOut}
+                    onClick={async () => {
+                      if (loggingOut) return;
+                      setLoggingOut(true);
+                      await handleLogout();
                       setMobileOpen(false);
-                      void handleLogout();
                     }}
-                    className="rounded-md px-3 py-2.5 text-left text-sm font-medium text-destructive hover:bg-destructive/10"
+                    className="flex items-center gap-2 rounded-md px-3 py-2.5 text-left text-sm font-medium text-destructive hover:bg-destructive/10 disabled:opacity-60"
                   >
-                    Logout
+                    {loggingOut ? (
+                      <>
+                        <Loader2 className="size-4 animate-spin" />
+                        <span>Signing out...</span>
+                      </>
+                    ) : (
+                      <span>Logout</span>
+                    )}
                   </button>
                 </div>
               ) : (

@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { LogOut, UserCircle } from 'lucide-react';
+import { Loader2, LogOut, UserCircle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +24,13 @@ function initials(firstName: string, lastName: string) {
 export function ProfileMenu() {
   const user = useAuthStore((state) => state.user);
   const handleLogout = useLogout();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const onSignOut = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    await handleLogout();
+  };
 
   return (
     <DropdownMenu>
@@ -50,11 +58,21 @@ export function ProfileMenu() {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onClick={handleLogout}
-          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+          onClick={onSignOut}
+          disabled={loggingOut}
+          className="text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer gap-2"
         >
-          <LogOut className="size-4" />
-          Sign out
+          {loggingOut ? (
+            <>
+              <Loader2 className="size-4 animate-spin text-destructive" />
+              <span>Signing out...</span>
+            </>
+          ) : (
+            <>
+              <LogOut className="size-4" />
+              <span>Sign out</span>
+            </>
+          )}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

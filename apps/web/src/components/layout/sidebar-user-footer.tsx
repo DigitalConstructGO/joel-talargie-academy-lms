@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { LogOut } from 'lucide-react';
+import { Loader2, LogOut } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuthStore } from '@/stores';
 import { useLogout } from '@/hooks/use-logout';
@@ -23,12 +24,19 @@ export function SidebarUserFooter({ roleLabel, profileHref }: SidebarUserFooterP
   const avatar = useAvatarImage(user?.id);
   const avatarUrl = avatar.url ?? user?.avatarUrl ?? undefined;
   const handleLogout = useLogout();
+  const [loggingOut, setLoggingOut] = useState(false);
   const name = user ? `${user.firstName} ${user.lastName}` : 'Account';
   const targetHref =
     profileHref ??
     (roleLabel.toLowerCase().includes('admin')
       ? ROUTES.admin.systemProfile
       : ROUTES.dashboard.profile);
+
+  const onLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    await handleLogout();
+  };
 
   return (
     <div className="flex items-center gap-2 px-3 py-1 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-2 group-data-[collapsible=icon]:px-0">
@@ -55,12 +63,17 @@ export function SidebarUserFooter({ roleLabel, profileHref }: SidebarUserFooterP
       </Link>
       <button
         type="button"
-        onClick={handleLogout}
+        onClick={onLogout}
+        disabled={loggingOut}
         aria-label="Logout"
         title="Logout"
-        className="flex size-8 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/70 transition-colors hover:bg-destructive/15 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+        className="flex size-8 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/70 transition-colors hover:bg-destructive/15 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring disabled:opacity-60"
       >
-        <LogOut className="size-4" />
+        {loggingOut ? (
+          <Loader2 className="size-4 animate-spin text-destructive" aria-hidden="true" />
+        ) : (
+          <LogOut className="size-4" />
+        )}
       </button>
     </div>
   );

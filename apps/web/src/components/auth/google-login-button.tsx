@@ -1,17 +1,46 @@
 'use client';
+import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 import { Button } from '@/components/ui/button';
 import { storeGoogleRedirect } from '@/lib/authorization/redirect';
-export function GoogleLoginButton({ redirectTo }: { redirectTo?: string | null }) {
+
+export interface GoogleLoginButtonProps {
+  redirectTo?: string | null;
+  disabled?: boolean;
+}
+
+export function GoogleLoginButton({ redirectTo, disabled }: GoogleLoginButtonProps) {
   const loginWithGoogle = useAuthStore((state) => state.loginWithGoogle);
+  const [isConnecting, setIsConnecting] = useState(false);
+
   const handleClick = () => {
+    if (isConnecting || disabled) return;
+    setIsConnecting(true);
     storeGoogleRedirect(redirectTo);
     loginWithGoogle();
   };
+
   return (
-    <Button type="button" variant="outline" className="w-full" onClick={handleClick}>
-      <GoogleMark />
-      Google
+    <Button
+      type="button"
+      variant="outline"
+      className="w-full gap-2 transition-all duration-200"
+      disabled={disabled || isConnecting}
+      aria-busy={isConnecting}
+      onClick={handleClick}
+    >
+      {isConnecting ? (
+        <>
+          <Loader2 className="size-4 animate-spin text-brand" aria-hidden="true" />
+          <span>Connecting to Google...</span>
+        </>
+      ) : (
+        <>
+          <GoogleMark />
+          <span>Google</span>
+        </>
+      )}
     </Button>
   );
 }

@@ -108,13 +108,14 @@ export const useAuthStore = create<AuthState>()(
         }
       },
       logoutGoogle: async () => {
+        set({ loading: true });
         if (typeof document !== 'undefined') {
           document.cookie = 'refresh_token=; path=/; max-age=0; SameSite=Lax';
         }
         try {
           await authClient.post('/auth/logout');
         } finally {
-          set({ user: null, accessToken: null, authenticated: false, ...unauthorized });
+          set({ user: null, accessToken: null, authenticated: false, loading: false, ...unauthorized });
         }
       },
       login: async (input) => {
@@ -143,13 +144,14 @@ export const useAuthStore = create<AuthState>()(
         }
       },
       logout: async () => {
+        set({ loading: true });
         if (typeof document !== 'undefined') {
           document.cookie = 'refresh_token=; path=/; max-age=0; SameSite=Lax';
         }
         try {
           await authClient.post('/auth/logout');
         } finally {
-          set({ user: null, accessToken: null, authenticated: false, ...unauthorized });
+          set({ user: null, accessToken: null, authenticated: false, loading: false, ...unauthorized });
         }
       },
       refresh: async () => {
