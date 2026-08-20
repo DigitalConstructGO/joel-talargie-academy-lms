@@ -15,9 +15,7 @@ interface VerifyCertificateLookupPageProps {
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-async function resolveVerification(
-  identifier?: string,
-): Promise<CertificateVerification | null> {
+async function resolveVerification(identifier?: string): Promise<CertificateVerification | null> {
   if (!identifier || typeof identifier !== 'string' || !identifier.trim()) {
     return null;
   }
@@ -61,22 +59,21 @@ export default async function VerifyCertificateLookupPage({
             Verify a Certificate
           </h1>
           <p className="mx-auto max-w-md text-sm text-muted-foreground">
-            Confirm that a Joel Talargie Academy certificate of completion is genuine, verified, and active.
+            Confirm that a Joel Talargie Academy certificate of completion is genuine, verified, and
+            active.
           </p>
         </div>
 
         <Card className="w-full border-border/80 bg-card/80 shadow-xl backdrop-blur-sm">
           <CardContent className="p-6 sm:p-8">
-            <CertificateLookupForm
-              initialIdentifier={queryParam}
-              initialResult={initialResult}
-            />
+            <CertificateLookupForm initialIdentifier={queryParam} initialResult={initialResult} />
           </CardContent>
         </Card>
 
         {/* Security Assurance Notice */}
         <div className="text-center text-xs text-muted-foreground/80 max-w-sm">
-          All certificates issued by Joel Talargie Academy are protected by tamper-evident verification tokens and cryptographically validated against our central registry.
+          All certificates issued by Joel Talargie Academy are protected by tamper-evident
+          verification tokens and cryptographically validated against our central registry.
         </div>
       </div>
     </div>

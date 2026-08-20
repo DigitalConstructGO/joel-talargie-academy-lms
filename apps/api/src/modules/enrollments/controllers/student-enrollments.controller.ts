@@ -34,7 +34,7 @@ export class StudentEnrollmentsController {
   }
   @Get('me/enrollments')
   @Roles('STUDENT', 'ADMINISTRATOR', 'ADMIN', 'INSTRUCTOR', 'STAFF')
-  @ApiOperation({ summary: 'List the authenticated user\'s own enrollments' })
+  @ApiOperation({ summary: "List the authenticated user's own enrollments" })
   list(@CurrentUser() user: AuthUser, @Query() query: ListMyEnrollmentsDto) {
     return this.enrollments.mine(user.id, query);
   }

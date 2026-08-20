@@ -136,7 +136,11 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (profile) {
-      profileForm.reset({ fullName: profile.fullName, phone: profile.phone ?? '', bio: profile.bio ?? '' });
+      profileForm.reset({
+        fullName: profile.fullName,
+        phone: profile.phone ?? '',
+        bio: profile.bio ?? '',
+      });
     }
   }, [profile, profileForm]);
 
@@ -157,7 +161,10 @@ export default function ProfilePage() {
     setIsChangingPassword(true);
     try {
       await authClient.post('/auth/change-password', values);
-      toast.success('Password updated successfully.', 'Use your new password next time you sign in.');
+      toast.success(
+        'Password updated successfully.',
+        'Use your new password next time you sign in.',
+      );
       passwordForm.reset();
     } catch (error) {
       const message =
@@ -215,7 +222,10 @@ export default function ProfilePage() {
   if (hasCoreError) {
     return (
       <ContentContainer>
-        <PageHeader title="Profile & Security" description="Manage your account profile and security." />
+        <PageHeader
+          title="Profile & Security"
+          description="Manage your account profile and security."
+        />
         <ErrorState
           description="Unable to load your profile."
           onRetry={() => {
@@ -253,9 +263,11 @@ export default function ProfilePage() {
                         className="object-cover"
                       />
                       <AvatarFallback className="bg-brand text-base font-bold text-primary-foreground">
-                        {profile?.fullName
-                          ? initials(profile.fullName.split(' ')[0], profile.fullName.split(' ')[1])
-                          : <UserCircle className="size-8" />}
+                        {profile?.fullName ? (
+                          initials(profile.fullName.split(' ')[0], profile.fullName.split(' ')[1])
+                        ) : (
+                          <UserCircle className="size-8" />
+                        )}
                       </AvatarFallback>
                     </Avatar>
                     {avatar.isLoading && <Skeleton className="absolute inset-0 rounded-full" />}
@@ -265,11 +277,17 @@ export default function ProfilePage() {
                       <h2 className="text-lg font-bold tracking-tight text-foreground">
                         {profile?.fullName || 'Student Account'}
                       </h2>
-                      <Badge variant="secondary" className="bg-brand/15 text-brand text-[11px] font-medium">
+                      <Badge
+                        variant="secondary"
+                        className="bg-brand/15 text-brand text-[11px] font-medium"
+                      >
                         <GraduationCap className="mr-1 size-3.5" />
                         Student
                       </Badge>
-                      <Badge variant="outline" className="text-muted-foreground text-[11px] font-normal">
+                      <Badge
+                        variant="outline"
+                        className="text-muted-foreground text-[11px] font-normal"
+                      >
                         <CheckCircle2 className="mr-1 size-3 text-emerald-600 dark:text-emerald-400" />
                         Verified
                       </Badge>
@@ -373,7 +391,9 @@ export default function ProfilePage() {
                       <Label htmlFor="fullName">Full Name</Label>
                       <Input id="fullName" {...profileForm.register('fullName')} />
                       {profileForm.formState.errors.fullName && (
-                        <p className="text-xs text-destructive">{profileForm.formState.errors.fullName.message}</p>
+                        <p className="text-xs text-destructive">
+                          {profileForm.formState.errors.fullName.message}
+                        </p>
                       )}
                     </div>
 
@@ -390,7 +410,9 @@ export default function ProfilePage() {
                           disabled
                           className="bg-muted/50 cursor-not-allowed text-muted-foreground"
                         />
-                        <p className="text-[11px] text-muted-foreground">Primary login identifier</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Primary login identifier
+                        </p>
                       </div>
 
                       <div className="space-y-1.5">
@@ -405,7 +427,9 @@ export default function ProfilePage() {
                           <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
                         </div>
                         {profileForm.formState.errors.phone && (
-                          <p className="text-xs text-destructive">{profileForm.formState.errors.phone.message}</p>
+                          <p className="text-xs text-destructive">
+                            {profileForm.formState.errors.phone.message}
+                          </p>
                         )}
                       </div>
                     </div>
@@ -419,13 +443,20 @@ export default function ProfilePage() {
                         placeholder="Tell instructors and fellow learners a bit about your background..."
                       />
                       {profileForm.formState.errors.bio && (
-                        <p className="text-xs text-destructive">{profileForm.formState.errors.bio.message}</p>
+                        <p className="text-xs text-destructive">
+                          {profileForm.formState.errors.bio.message}
+                        </p>
                       )}
                     </div>
 
                     <div className="pt-2">
-                      <Button type="submit" disabled={!profileForm.formState.isDirty || updateProfile.isPending}>
-                        {updateProfile.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+                      <Button
+                        type="submit"
+                        disabled={!profileForm.formState.isDirty || updateProfile.isPending}
+                      >
+                        {updateProfile.isPending && (
+                          <Loader2 className="mr-2 size-4 animate-spin" />
+                        )}
                         {updateProfile.isPending ? 'Saving...' : 'Save Changes'}
                       </Button>
                     </div>
@@ -450,7 +481,10 @@ export default function ProfilePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-3.5">
+                <form
+                  onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}
+                  className="space-y-3.5"
+                >
                   <div className="space-y-1.5">
                     <Label htmlFor="currentPassword">Current Password</Label>
                     <div className="relative">

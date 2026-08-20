@@ -74,7 +74,8 @@ export class PaymentMethodsService {
     await this.detail(id);
     const input: Partial<PaymentMethodInput> = {};
     if (dto.name !== undefined) input.name = dto.name;
-    if (dto.description !== undefined) input.description = dto.description.trim() || null;
+    if (dto.description !== undefined)
+      input.description = dto.description.trim() || null;
     if (dto.type !== undefined) input.type = dto.type;
     if (dto.instructions !== undefined) input.instructions = dto.instructions;
     if (dto.config !== undefined) input.config = dto.config;
@@ -133,7 +134,8 @@ export class PaymentMethodsService {
     if (value.includes('IN_USE'))
       throw new ConflictException({
         code: 'PAYMENT_METHOD_IN_USE',
-        message: 'Payment method is referenced by payments and cannot be deleted',
+        message:
+          'Payment method is referenced by payments and cannot be deleted',
       });
     if (value.includes('UNAVAILABLE'))
       throw new UnprocessableEntityException({

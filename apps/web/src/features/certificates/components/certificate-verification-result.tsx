@@ -89,7 +89,8 @@ export function CertificateVerificationResult({
               Certificate Not Found
             </h1>
             <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">
-              The certificate code you entered could not be verified. Please check the ID or QR code link and try again.
+              The certificate code you entered could not be verified. Please check the ID or QR code
+              link and try again.
             </p>
           </div>
         </div>
@@ -108,7 +109,10 @@ export function CertificateVerificationResult({
               </span>
             </div>
             {result.state === 'VALID' ? (
-              <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600 text-white gap-1 px-2.5 py-0.5">
+              <Badge
+                variant="default"
+                className="bg-emerald-600 hover:bg-emerald-600 text-white gap-1 px-2.5 py-0.5"
+              >
                 <CheckCircle2 className="size-3" />
                 VALID
               </Badge>
@@ -137,9 +141,7 @@ export function CertificateVerificationResult({
                 <dt className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Course
                 </dt>
-                <dd className="mt-0.5 font-semibold text-foreground">
-                  {result.courseTitle}
-                </dd>
+                <dd className="mt-0.5 font-semibold text-foreground">{result.courseTitle}</dd>
               </div>
             )}
 
@@ -147,9 +149,7 @@ export function CertificateVerificationResult({
               <dt className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Issued By
               </dt>
-              <dd className="mt-0.5 font-medium text-foreground">
-                Joel Talargie Academy
-              </dd>
+              <dd className="mt-0.5 font-medium text-foreground">Joel Talargie Academy</dd>
             </div>
 
             {result.certificateNumber && (
@@ -189,7 +189,8 @@ export function CertificateVerificationResult({
           <div className="mt-5 flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
             <ShieldCheck className="size-4 shrink-0 text-emerald-500" />
             <span>
-              Cryptographically registered credential • Tamper-evident record verified against Joel Talargie Academy public ledger.
+              Cryptographically registered credential • Tamper-evident record verified against Joel
+              Talargie Academy public ledger.
             </span>
           </div>
         </div>

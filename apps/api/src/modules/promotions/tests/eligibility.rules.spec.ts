@@ -12,9 +12,7 @@ import type {
   PromotionValidationInput,
 } from '../interfaces/promotion.interface';
 
-function baseRuleSet(
-  overrides: Partial<EngineRuleSet> = {},
-): EngineRuleSet {
+function baseRuleSet(overrides: Partial<EngineRuleSet> = {}): EngineRuleSet {
   return {
     promoCode: {
       id: 'code-1',
@@ -43,7 +41,10 @@ function baseRuleSet(
 function withCode(
   overrides: Partial<EngineRuleSet['promoCode']> = {},
 ): EngineRuleSet {
-  return { ...baseRuleSet(), promoCode: { ...baseRuleSet().promoCode, ...overrides } };
+  return {
+    ...baseRuleSet(),
+    promoCode: { ...baseRuleSet().promoCode, ...overrides },
+  };
 }
 
 function baseInput(
@@ -103,9 +104,15 @@ describe('eligibility rules', () => {
       userRedemptionCountForCode: 1,
     };
     expect(isNotDuplicateRedemption(singleUsed)).toBe(false);
-    const fresh = { ...withCode({ isSingleUse: true }), userRedemptionCountForCode: 0 };
+    const fresh = {
+      ...withCode({ isSingleUse: true }),
+      userRedemptionCountForCode: 0,
+    };
     expect(isNotDuplicateRedemption(fresh)).toBe(true);
-    const multiUse = { ...withCode({ isSingleUse: false }), userRedemptionCountForCode: 1 };
+    const multiUse = {
+      ...withCode({ isSingleUse: false }),
+      userRedemptionCountForCode: 1,
+    };
     expect(isNotDuplicateRedemption(multiUse)).toBe(true);
   });
 
@@ -119,9 +126,15 @@ describe('eligibility rules', () => {
   });
 
   it('Category Restriction: rejects a category outside the code category rules', () => {
-    const scoped = { ...baseRuleSet(), categoryRuleCategoryIds: ['other-category'] };
+    const scoped = {
+      ...baseRuleSet(),
+      categoryRuleCategoryIds: ['other-category'],
+    };
     expect(isCategoryEligible(scoped, baseInput())).toBe(false);
-    const included = { ...baseRuleSet(), categoryRuleCategoryIds: ['category-1'] };
+    const included = {
+      ...baseRuleSet(),
+      categoryRuleCategoryIds: ['category-1'],
+    };
     expect(isCategoryEligible(included, baseInput())).toBe(true);
   });
 

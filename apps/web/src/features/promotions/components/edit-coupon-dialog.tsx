@@ -219,9 +219,7 @@ export function EditCouponDialog({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-max-users">
-                  Max users (blank = unlimited)
-                </Label>
+                <Label htmlFor="edit-max-users">Max users (blank = unlimited)</Label>
                 <Input
                   id="edit-max-users"
                   type="number"
@@ -230,8 +228,8 @@ export function EditCouponDialog({
                   onChange={(e) => setMaxUsers(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Limit the code to the first N students who use it (e.g. 50 for
-                  a &quot;first 50&quot; offer).
+                  Limit the code to the first N students who use it (e.g. 50 for a &quot;first
+                  50&quot; offer).
                 </p>
               </div>
             </div>

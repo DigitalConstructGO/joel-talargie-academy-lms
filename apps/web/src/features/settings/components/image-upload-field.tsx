@@ -98,12 +98,7 @@ export function ImageUploadField({
           <div className="relative group overflow-hidden rounded-xl border border-border bg-muted/40 shadow-xs">
             <div className={`relative ${aspectClass} w-full bg-surface-dark/10`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={value}
-                alt={label}
-                className="size-full object-cover"
-                onError={() => {}}
-              />
+              <img src={value} alt={label} className="size-full object-cover" onError={() => {}} />
             </div>
             <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
               <Button

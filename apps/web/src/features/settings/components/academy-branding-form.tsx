@@ -21,7 +21,10 @@ export function AcademyBrandingForm({
   const updateBatch = useUpdateSettingsBatch();
   const [form, setForm] = useState<AcademyBrandingSettings>(initialData);
 
-  function handleChange<K extends keyof AcademyBrandingSettings>(key: K, value: AcademyBrandingSettings[K]) {
+  function handleChange<K extends keyof AcademyBrandingSettings>(
+    key: K,
+    value: AcademyBrandingSettings[K],
+  ) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -44,7 +47,8 @@ export function AcademyBrandingForm({
         <CardHeader>
           <CardTitle>Logo & Icon Assets</CardTitle>
           <CardDescription>
-            Official imagery displayed in the navigation bar, favicon, and email headers. Upload or paste a URL.
+            Official imagery displayed in the navigation bar, favicon, and email headers. Upload or
+            paste a URL.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">

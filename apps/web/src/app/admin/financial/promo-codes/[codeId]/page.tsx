@@ -58,29 +58,36 @@ const REDEMPTION_STATUS_OPTIONS = [
   { label: 'Failed', value: 'FAILED' },
 ];
 
-const VALIDITY_VARIANT: Record<CouponValidityStatus, 'success' | 'warning' | 'outline' | 'destructive' | 'secondary'> =
-  {
-    ACTIVE: 'success',
-    NOT_STARTED: 'warning',
-    EXPIRED: 'outline',
-    INACTIVE: 'secondary',
-    REVOKED: 'destructive',
-  };
+const VALIDITY_VARIANT: Record<
+  CouponValidityStatus,
+  'success' | 'warning' | 'outline' | 'destructive' | 'secondary'
+> = {
+  ACTIVE: 'success',
+  NOT_STARTED: 'warning',
+  EXPIRED: 'outline',
+  INACTIVE: 'secondary',
+  REVOKED: 'destructive',
+};
 
-const CODE_STATUS_VARIANT: Record<PromoCodeStatus, 'success' | 'warning' | 'outline' | 'destructive'> = {
+const CODE_STATUS_VARIANT: Record<
+  PromoCodeStatus,
+  'success' | 'warning' | 'outline' | 'destructive'
+> = {
   ACTIVE: 'success',
   PAUSED: 'warning',
   EXPIRED: 'outline',
   REVOKED: 'destructive',
 };
 
-const REDEMPTION_STATUS_VARIANT: Record<PromoRedemptionStatus, 'success' | 'warning' | 'outline' | 'destructive'> =
-  {
-    CONFIRMED: 'success',
-    RESERVED: 'warning',
-    CANCELLED: 'outline',
-    FAILED: 'destructive',
-  };
+const REDEMPTION_STATUS_VARIANT: Record<
+  PromoRedemptionStatus,
+  'success' | 'warning' | 'outline' | 'destructive'
+> = {
+  CONFIRMED: 'success',
+  RESERVED: 'warning',
+  CANCELLED: 'outline',
+  FAILED: 'destructive',
+};
 
 export default function AdminPromoCodeDetailPage() {
   const { codeId } = useParams<{ codeId: string }>();
@@ -148,8 +155,7 @@ export default function AdminPromoCodeDetailPage() {
       {
         accessorKey: 'discountAmount',
         header: 'Discount',
-        cell: ({ row }) =>
-          formatCurrency(row.original.discountAmount, row.original.currency),
+        cell: ({ row }) => formatCurrency(row.original.discountAmount, row.original.currency),
       },
       {
         accessorKey: 'finalPrice',

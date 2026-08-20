@@ -2,15 +2,7 @@
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import {
-  AlertTriangle,
-  BookOpen,
-  ListTree,
-  Pencil,
-  Rocket,
-  RotateCcw,
-  Trash2,
-} from 'lucide-react';
+import { AlertTriangle, BookOpen, ListTree, Pencil, Rocket, RotateCcw, Trash2 } from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
 import { PageHeader } from '@/components/common/page-header';
 import { PageBreadcrumb } from '@/components/common/page-breadcrumb';
@@ -59,8 +51,7 @@ export default function AdminCourseDetailPage() {
 
   const canManageCourse = (target: typeof course) =>
     Boolean(target) &&
-    (can('courses.manage_all') ||
-      (currentUserId != null && target!.createdBy === currentUserId));
+    (can('courses.manage_all') || (currentUserId != null && target!.createdBy === currentUserId));
 
   async function handlePublish() {
     try {
@@ -331,27 +322,27 @@ export default function AdminCourseDetailPage() {
                     <BookOpen className="size-4" /> Curriculum
                   </CardTitle>
                 </CardHeader>
-              <CardContent className="space-y-3">
-                <dl className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between">
-                    <dt className="text-muted-foreground">Sections</dt>
-                    <dd className="font-medium text-foreground">{course.sections.length}</dd>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <dt className="text-muted-foreground">Lessons</dt>
-                    <dd className="font-medium text-foreground">{lessonCount}</dd>
-                  </div>
-                </dl>
-                <Button asChild variant="outline" className="w-full gap-2">
-                  <Link href={ROUTES.admin.academicsCourseCurriculum(courseId)}>
-                    <ListTree className="size-4" /> Open curriculum builder
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
+                <CardContent className="space-y-3">
+                  <dl className="space-y-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <dt className="text-muted-foreground">Sections</dt>
+                      <dd className="font-medium text-foreground">{course.sections.length}</dd>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <dt className="text-muted-foreground">Lessons</dt>
+                      <dd className="font-medium text-foreground">{lessonCount}</dd>
+                    </div>
+                  </dl>
+                  <Button asChild variant="outline" className="w-full gap-2">
+                    <Link href={ROUTES.admin.academicsCourseCurriculum(courseId)}>
+                      <ListTree className="size-4" /> Open curriculum builder
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
-      </div>
       )}
     </ContentContainer>
   );

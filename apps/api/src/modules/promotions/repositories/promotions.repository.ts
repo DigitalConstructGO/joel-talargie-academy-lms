@@ -24,7 +24,10 @@ import type {
   UpdateCouponDto,
 } from '../dto/coupon.dto';
 import type { ListAffiliatesDto } from '../dto/affiliate.dto';
-import type { ListRedemptionsDto, ListCodeRedemptionsDto } from '../dto/redemption.dto';
+import type {
+  ListRedemptionsDto,
+  ListCodeRedemptionsDto,
+} from '../dto/redemption.dto';
 
 const ACTIVE_REDEMPTION_STATUSES = ['RESERVED', 'CONFIRMED'] as const;
 
@@ -77,23 +80,28 @@ export class PromotionsRepository {
     code: typeof schema.promoCodes.$inferSelect,
     userId: string,
   ): Promise<EngineRuleSet> {
-    const [courseRuleIds, categoryRuleIds, userRuleIds, redemptionCounts, userCount] =
-      await Promise.all([
-        this.db
-          .select({ courseId: schema.promoCodeCourseRules.courseId })
-          .from(schema.promoCodeCourseRules)
-          .where(eq(schema.promoCodeCourseRules.codeId, code.id)),
-        this.db
-          .select({ categoryId: schema.promoCodeCategoryRules.categoryId })
-          .from(schema.promoCodeCategoryRules)
-          .where(eq(schema.promoCodeCategoryRules.codeId, code.id)),
-        this.db
-          .select({ userId: schema.promoCodeUserRules.userId })
-          .from(schema.promoCodeUserRules)
-          .where(eq(schema.promoCodeUserRules.codeId, code.id)),
-        this.userRedemptionCountForCode(userId, code.id),
-        this.distinctUserCountForCode(code.id),
-      ]);
+    const [
+      courseRuleIds,
+      categoryRuleIds,
+      userRuleIds,
+      redemptionCounts,
+      userCount,
+    ] = await Promise.all([
+      this.db
+        .select({ courseId: schema.promoCodeCourseRules.courseId })
+        .from(schema.promoCodeCourseRules)
+        .where(eq(schema.promoCodeCourseRules.codeId, code.id)),
+      this.db
+        .select({ categoryId: schema.promoCodeCategoryRules.categoryId })
+        .from(schema.promoCodeCategoryRules)
+        .where(eq(schema.promoCodeCategoryRules.codeId, code.id)),
+      this.db
+        .select({ userId: schema.promoCodeUserRules.userId })
+        .from(schema.promoCodeUserRules)
+        .where(eq(schema.promoCodeUserRules.codeId, code.id)),
+      this.userRedemptionCountForCode(userId, code.id),
+      this.distinctUserCountForCode(code.id),
+    ]);
     return this.presentRuleSet(
       code,
       courseRuleIds.map((r) => r.courseId),
@@ -172,10 +180,7 @@ export class PromotionsRepository {
   // Coupons
   // ---------------------------------------------------------------------
 
-  async createCode(
-    actorId: string,
-    dto: CreateCouponDto & { code: string },
-  ) {
+  async createCode(actorId: string, dto: CreateCouponDto & { code: string }) {
     const [row] = await this.db
       .insert(schema.promoCodes)
       .values({
@@ -193,7 +198,8 @@ export class PromotionsRepository {
         createdBy: actorId,
       })
       .returning();
-    if (dto.courseIds?.length) await this.setCodeCourseRules(row.id, dto.courseIds);
+    if (dto.courseIds?.length)
+      await this.setCodeCourseRules(row.id, dto.courseIds);
     if (dto.categoryIds?.length)
       await this.setCodeCategoryRules(row.id, dto.categoryIds);
     if (dto.userIds?.length) await this.setCodeUserRules(row.id, dto.userIds);
@@ -320,9 +326,13 @@ export class PromotionsRepository {
     if (query.courseId)
       conditions.push(eq(schema.promoRedemptions.courseId, query.courseId));
     if (query.from)
-      conditions.push(gte(schema.promoRedemptions.redeemedAt, new Date(query.from)));
+      conditions.push(
+        gte(schema.promoRedemptions.redeemedAt, new Date(query.from)),
+      );
     if (query.to)
-      conditions.push(lte(schema.promoRedemptions.redeemedAt, new Date(query.to)));
+      conditions.push(
+        lte(schema.promoRedemptions.redeemedAt, new Date(query.to)),
+      );
     if (query.search) {
       const term = `%${query.search}%`;
       const searchClause = or(

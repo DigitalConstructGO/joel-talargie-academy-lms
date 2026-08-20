@@ -186,14 +186,22 @@ export class LearningService {
     const lesson = await this.requireLesson(access.courseId, lessonId);
 
     // Validate that the student legitimately watched the video before marking it complete
-    if (lesson.lessonType === 'VIDEO' && lesson.durationSeconds && lesson.durationSeconds > 10) {
-      const progress = await this.repository.findLessonProgress(enrollmentId, lessonId);
+    if (
+      lesson.lessonType === 'VIDEO' &&
+      lesson.durationSeconds &&
+      lesson.durationSeconds > 10
+    ) {
+      const progress = await this.repository.findLessonProgress(
+        enrollmentId,
+        lessonId,
+      );
       const minRequiredSeconds = Math.floor(lesson.durationSeconds * 0.85);
       const watched = progress?.lastPositionSeconds ?? 0;
       if (progress?.status !== 'COMPLETED' && watched < minRequiredSeconds) {
         throw new UnprocessableEntityException({
           code: 'VIDEO_NOT_COMPLETED',
-          message: 'You must watch the video lesson to completion before marking it complete.',
+          message:
+            'You must watch the video lesson to completion before marking it complete.',
         });
       }
     }
@@ -230,7 +238,10 @@ export class LearningService {
 
       if (access.certificateEnabled) {
         try {
-          const certResult = await this.certificates.request(user, enrollmentId);
+          const certResult = await this.certificates.request(
+            user,
+            enrollmentId,
+          );
           if (certResult?.certificate) {
             certificateId = certResult.certificate.id;
           }

@@ -278,7 +278,10 @@ export class PaymentsRepository {
         schema.enrollments,
         eq(schema.enrollments.id, schema.payments.enrollmentId),
       )
-      .innerJoin(schema.users, eq(schema.users.id, schema.enrollments.studentId))
+      .innerJoin(
+        schema.users,
+        eq(schema.users.id, schema.enrollments.studentId),
+      )
       .innerJoin(
         schema.courses,
         eq(schema.courses.id, schema.enrollments.courseId),

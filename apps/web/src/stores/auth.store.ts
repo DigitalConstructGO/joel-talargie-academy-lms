@@ -120,7 +120,13 @@ export const useAuthStore = create<AuthState>()(
         try {
           await authClient.post('/auth/logout');
         } finally {
-          set({ user: null, accessToken: null, authenticated: false, loading: false, ...unauthorized });
+          set({
+            user: null,
+            accessToken: null,
+            authenticated: false,
+            loading: false,
+            ...unauthorized,
+          });
         }
       },
       login: async (input) => {
@@ -161,7 +167,13 @@ export const useAuthStore = create<AuthState>()(
         try {
           await authClient.post('/auth/logout');
         } finally {
-          set({ user: null, accessToken: null, authenticated: false, loading: false, ...unauthorized });
+          set({
+            user: null,
+            accessToken: null,
+            authenticated: false,
+            loading: false,
+            ...unauthorized,
+          });
         }
       },
       refresh: async () => {
@@ -269,12 +281,9 @@ if (!markedClient[INTERCEPTORS_REGISTERED]) {
       if (refreshed) return authClient(error.config);
       if (typeof window !== 'undefined') {
         const pathname = window.location.pathname;
-        const isProtectedRoute =
-          pathname.startsWith('/dashboard') || pathname.startsWith('/admin');
+        const isProtectedRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/admin');
         if (isProtectedRoute) {
-          window.location.assign(
-            buildLoginRedirect(`${pathname}${window.location.search}`),
-          );
+          window.location.assign(buildLoginRedirect(`${pathname}${window.location.search}`));
         }
       }
     }

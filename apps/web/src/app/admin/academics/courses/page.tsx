@@ -127,8 +127,7 @@ export default function AdminCoursesPage() {
   // `courses.manage_all` permission, or the user who created it (non-admins
   // are limited to their own courses on the backend).
   const canManageCourse = (course: AdminCourseSummary) =>
-    can('courses.manage_all') ||
-    (currentUserId != null && course.createdBy === currentUserId);
+    can('courses.manage_all') || (currentUserId != null && course.createdBy === currentUserId);
 
   const coursesQuery = useAdminCourses({
     page,
@@ -249,7 +248,10 @@ export default function AdminCoursesPage() {
               <Can permission="courses.update">
                 {canManageCourse(row.original) && (
                   <DropdownMenuItem asChild>
-                    <Link href={ROUTES.admin.academicsCourseEdit(row.original.id)} className="gap-2">
+                    <Link
+                      href={ROUTES.admin.academicsCourseEdit(row.original.id)}
+                      className="gap-2"
+                    >
                       <Pencil className="size-4" /> Edit
                     </Link>
                   </DropdownMenuItem>
@@ -307,12 +309,7 @@ export default function AdminCoursesPage() {
     // Re-derive columns whenever publish/archive pending state changes, so
     // the row-specific spinner reflects live mutation state.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- handleArchive/handlePublish are stable per render via mutation identity
-    [
-      tab,
-      canManageCourse,
-      publishCourse.isPending,
-      publishCourse.variables,
-    ],
+    [tab, canManageCourse, publishCourse.isPending, publishCourse.variables],
   );
 
   return (

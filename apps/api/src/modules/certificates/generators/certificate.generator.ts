@@ -99,7 +99,10 @@ export async function generateCertificatePdf(
       document.translate(x, y);
       document.rotate(angle);
       // Outer diamond
-      document.polygon([0, -10], [10, 0], [0, 10], [-10, 0]).lineWidth(1.5).stroke(gold);
+      document
+        .polygon([0, -10], [10, 0], [0, 10], [-10, 0])
+        .lineWidth(1.5)
+        .stroke(gold);
       document.polygon([0, -5], [5, 0], [0, 5], [-5, 0]).fill(primary);
       // Corner corner ticks
       document.moveTo(14, 0).lineTo(22, 0).lineWidth(1).stroke(gold);
@@ -130,9 +133,24 @@ export async function generateCertificatePdf(
     const dividerY = 88;
     const dividerWidth = 140;
     const dividerLeft = (842 - dividerWidth) / 2;
-    document.moveTo(dividerLeft, dividerY).lineTo(dividerLeft + 55, dividerY).lineWidth(1).stroke(gold);
-    document.moveTo(dividerLeft + 85, dividerY).lineTo(dividerLeft + dividerWidth, dividerY).lineWidth(1).stroke(gold);
-    document.polygon([421, dividerY - 4], [425, dividerY], [421, dividerY + 4], [417, dividerY]).fill(gold);
+    document
+      .moveTo(dividerLeft, dividerY)
+      .lineTo(dividerLeft + 55, dividerY)
+      .lineWidth(1)
+      .stroke(gold);
+    document
+      .moveTo(dividerLeft + 85, dividerY)
+      .lineTo(dividerLeft + dividerWidth, dividerY)
+      .lineWidth(1)
+      .stroke(gold);
+    document
+      .polygon(
+        [421, dividerY - 4],
+        [425, dividerY],
+        [421, dividerY + 4],
+        [417, dividerY],
+      )
+      .fill(gold);
 
     // 6. Certificate Title
     document
@@ -172,19 +190,39 @@ export async function generateCertificatePdf(
     const nameUnderlineY = 212;
     const nameLineWidth = 360;
     const nameLineLeft = (842 - nameLineWidth) / 2;
-    document.moveTo(nameLineLeft, nameUnderlineY).lineTo(nameLineLeft + 160, nameUnderlineY).lineWidth(1.5).stroke(gold);
-    document.moveTo(nameLineLeft + 200, nameUnderlineY).lineTo(nameLineLeft + nameLineWidth, nameUnderlineY).lineWidth(1.5).stroke(gold);
-    document.polygon([421, nameUnderlineY - 5], [427, nameUnderlineY], [421, nameUnderlineY + 5], [415, nameUnderlineY]).fill(primary);
+    document
+      .moveTo(nameLineLeft, nameUnderlineY)
+      .lineTo(nameLineLeft + 160, nameUnderlineY)
+      .lineWidth(1.5)
+      .stroke(gold);
+    document
+      .moveTo(nameLineLeft + 200, nameUnderlineY)
+      .lineTo(nameLineLeft + nameLineWidth, nameUnderlineY)
+      .lineWidth(1.5)
+      .stroke(gold);
+    document
+      .polygon(
+        [421, nameUnderlineY - 5],
+        [427, nameUnderlineY],
+        [421, nameUnderlineY + 5],
+        [415, nameUnderlineY],
+      )
+      .fill(primary);
 
     // 9. Completion Text
     document
       .fillColor(mutedInk)
       .font('Helvetica')
       .fontSize(11.5)
-      .text('for successfully completing all curriculum requirements and demonstrating mastery in', CONTENT_X, 226, {
-        align: 'center',
-        width: CONTENT_WIDTH,
-      });
+      .text(
+        'for successfully completing all curriculum requirements and demonstrating mastery in',
+        CONTENT_X,
+        226,
+        {
+          align: 'center',
+          width: CONTENT_WIDTH,
+        },
+      );
 
     // 10. Course Title Card Banner
     const courseCardY = 250;
@@ -192,8 +230,25 @@ export async function generateCertificatePdf(
     const courseCardHeight = 52;
     const courseCardX = (842 - courseCardWidth) / 2;
 
-    document.roundedRect(courseCardX, courseCardY, courseCardWidth, courseCardHeight, 6).fill(cardBg);
-    document.roundedRect(courseCardX, courseCardY, courseCardWidth, courseCardHeight, 6).lineWidth(1).stroke(borderGold);
+    document
+      .roundedRect(
+        courseCardX,
+        courseCardY,
+        courseCardWidth,
+        courseCardHeight,
+        6,
+      )
+      .fill(cardBg);
+    document
+      .roundedRect(
+        courseCardX,
+        courseCardY,
+        courseCardWidth,
+        courseCardHeight,
+        6,
+      )
+      .lineWidth(1)
+      .stroke(borderGold);
 
     document
       .fillColor(primary)
@@ -207,7 +262,11 @@ export async function generateCertificatePdf(
       });
 
     // 11. Thin separator line
-    document.moveTo(CONTENT_X + 20, 322).lineTo(CONTENT_X + CONTENT_WIDTH - 20, 322).lineWidth(0.5).stroke('#E2E8F0');
+    document
+      .moveTo(CONTENT_X + 20, 322)
+      .lineTo(CONTENT_X + CONTENT_WIDTH - 20, 322)
+      .lineWidth(0.5)
+      .stroke('#E2E8F0');
 
     // 12. Executive 3-Column Footer Grid (Left: Official Seal & Date | Center: Signature | Right: QR Code Security)
 
@@ -224,22 +283,33 @@ export async function generateCertificatePdf(
       .fillColor(primary)
       .font('Helvetica-Bold')
       .fontSize(7.5)
-      .text('OFFICIAL CREDENTIAL', sealX - 60, sealY + 40, { width: 120, align: 'center' });
+      .text('OFFICIAL CREDENTIAL', sealX - 60, sealY + 40, {
+        width: 120,
+        align: 'center',
+      });
 
     document
       .fillColor(mutedInk)
       .font('Helvetica-Bold')
       .fontSize(8)
-      .text('ISSUE DATE', sealX - 60, sealY + 54, { width: 120, align: 'center' });
+      .text('ISSUE DATE', sealX - 60, sealY + 54, {
+        width: 120,
+        align: 'center',
+      });
 
     document
       .fillColor(darkInk)
       .font('Helvetica')
       .fontSize(11)
-      .text(input.completionDate.toISOString().slice(0, 10), sealX - 60, sealY + 66, {
-        width: 120,
-        align: 'center',
-      });
+      .text(
+        input.completionDate.toISOString().slice(0, 10),
+        sealX - 60,
+        sealY + 66,
+        {
+          width: 120,
+          align: 'center',
+        },
+      );
 
     // Center Column: Authorized Signature
     const sigX = 320;
@@ -262,7 +332,11 @@ export async function generateCertificatePdf(
         width: sigWidth,
       });
 
-    document.moveTo(sigX + 15, 438).lineTo(sigX + sigWidth - 15, 438).lineWidth(1).stroke(gold);
+    document
+      .moveTo(sigX + 15, 438)
+      .lineTo(sigX + sigWidth - 15, 438)
+      .lineWidth(1)
+      .stroke(gold);
 
     document
       .fillColor(darkInk)
@@ -288,10 +362,18 @@ export async function generateCertificatePdf(
     const qrCardWidth = 148;
     const qrCardHeight = 160;
 
-    document.roundedRect(qrCardX, qrCardY, qrCardWidth, qrCardHeight, 6).fill(cardBg);
-    document.roundedRect(qrCardX, qrCardY, qrCardWidth, qrCardHeight, 6).lineWidth(1).stroke(borderGold);
+    document
+      .roundedRect(qrCardX, qrCardY, qrCardWidth, qrCardHeight, 6)
+      .fill(cardBg);
+    document
+      .roundedRect(qrCardX, qrCardY, qrCardWidth, qrCardHeight, 6)
+      .lineWidth(1)
+      .stroke(borderGold);
 
-    document.image(qrCode, qrCardX + 24, qrCardY + 12, { width: 100, height: 100 });
+    document.image(qrCode, qrCardX + 24, qrCardY + 12, {
+      width: 100,
+      height: 100,
+    });
 
     document
       .fillColor(primary)
@@ -333,7 +415,8 @@ export async function generateCertificatePdf(
       .font('Helvetica')
       .fontSize(8)
       .text(
-        input.footerText ?? `Official digital certificate issued by ${input.academyName} • Tamper-evident credential verification enabled`,
+        input.footerText ??
+          `Official digital certificate issued by ${input.academyName} • Tamper-evident credential verification enabled`,
         CONTENT_X,
         542,
         {

@@ -260,7 +260,9 @@ export default function AdminCourseCreatePage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="estimatedDurationMinutes">Estimated duration (minutes, optional)</Label>
+              <Label htmlFor="estimatedDurationMinutes">
+                Estimated duration (minutes, optional)
+              </Label>
               <Input
                 id="estimatedDurationMinutes"
                 type="number"
@@ -310,9 +312,7 @@ export default function AdminCourseCreatePage() {
               <div className="space-y-2">
                 <Label htmlFor="price">Price (ETB)</Label>
                 <Input id="price" type="number" step="0.01" min="0" {...register('price')} />
-                {errors.price && (
-                  <p className="text-sm text-destructive">{errors.price.message}</p>
-                )}
+                {errors.price && <p className="text-sm text-destructive">{errors.price.message}</p>}
               </div>
             )}
           </CardContent>

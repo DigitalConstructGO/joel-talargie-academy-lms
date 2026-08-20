@@ -200,7 +200,8 @@ describe('NotificationsService', () => {
         category: 'security',
         variables: {
           recipientName: 'Ada',
-          verificationUrl: 'https://academy.example.com/auth/verify-email?token=abc',
+          verificationUrl:
+            'https://academy.example.com/auth/verify-email?token=abc',
           expiresInMinutes: '1440',
           academyName: 'Academy',
           supportEmail: 'support@example.com',

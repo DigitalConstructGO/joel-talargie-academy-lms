@@ -77,7 +77,8 @@ export class MailService implements OnModuleDestroy {
       [raw, raw.replace(/\s+/g, '')].filter((value) => value.length > 0),
     );
     let detail = error instanceof Error ? error.message : String(error ?? '');
-    for (const secret of secrets) detail = detail.split(secret).join('[REDACTED]');
+    for (const secret of secrets)
+      detail = detail.split(secret).join('[REDACTED]');
     return detail;
   }
 

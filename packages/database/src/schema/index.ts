@@ -1235,10 +1235,7 @@ export const promoCodes = pgTable(
     index('promo_codes_affiliate_idx').on(table.affiliateId),
     index('promo_codes_status_idx').on(table.status),
     index('promo_codes_valid_window_idx').on(table.validFrom, table.validUntil),
-    check(
-      'promo_codes_max_users_check',
-      sql`${table.maxUsers} IS NULL OR ${table.maxUsers} >= 1`,
-    ),
+    check('promo_codes_max_users_check', sql`${table.maxUsers} IS NULL OR ${table.maxUsers} >= 1`),
     check(
       'promo_codes_window_check',
       sql`${table.validFrom} IS NULL OR ${table.validUntil} IS NULL OR ${table.validUntil} > ${table.validFrom}`,

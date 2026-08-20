@@ -60,21 +60,21 @@ export class DashboardService {
     const isContext =
       typeof auth === 'object' && auth !== null && 'userId' in auth;
     const permissions: string[] = isContext
-      ? (auth as AuthorizationContext).permissions ?? []
+      ? ((auth as AuthorizationContext).permissions ?? [])
       : Array.isArray(auth)
         ? auth
         : [];
     const roles: string[] = isContext
-      ? (auth as AuthorizationContext).roles ?? []
+      ? ((auth as AuthorizationContext).roles ?? [])
       : [];
     const isAdministrator = isContext
       ? Boolean(
           (auth as AuthorizationContext).isAdministrator ||
-            roles.includes('ADMINISTRATOR'),
+          roles.includes('ADMINISTRATOR'),
         )
       : false;
     const userId: string = isContext
-      ? (auth as AuthorizationContext).userId ?? ''
+      ? ((auth as AuthorizationContext).userId ?? '')
       : '';
 
     const canManageAll =
@@ -82,8 +82,7 @@ export class DashboardService {
     const canReadFinancial =
       permissions.includes('dashboard.read_financial') ||
       permissions.includes('payments.read');
-    const canReadUsers =
-      isAdministrator || permissions.includes('users.read');
+    const canReadUsers = isAdministrator || permissions.includes('users.read');
     const canReadCourses =
       isAdministrator || permissions.includes('courses.read');
     const canReadCertificates =
@@ -109,7 +108,11 @@ export class DashboardService {
     };
 
     // If caller is Administrator or has global course management
-    if (canManageAll || isAdministrator || (!userId && permissions.length > 0)) {
+    if (
+      canManageAll ||
+      isAdministrator ||
+      (!userId && permissions.length > 0)
+    ) {
       return {
         type: 'GLOBAL',
         targetInstructorId: query.instructorId,
@@ -204,10 +207,7 @@ export class DashboardService {
     };
   }
 
-  async kpis(
-    query: DashboardQueryDto,
-    auth: AuthorizationContext | string[],
-  ) {
+  async kpis(query: DashboardQueryDto, auth: AuthorizationContext | string[]) {
     const range = this.dates.resolve(query);
     const scope = await this.resolveScope(auth, query);
 
@@ -257,7 +257,8 @@ export class DashboardService {
           active: Number(base.active_enrollments ?? 0),
           newDuringPeriod: newEnrollments,
         },
-        completionRate: base.completion_rate != null ? Number(base.completion_rate) : null,
+        completionRate:
+          base.completion_rate != null ? Number(base.completion_rate) : null,
       };
 
       if (scope.permissions.viewCertificates) {
@@ -311,7 +312,10 @@ export class DashboardService {
                 GROUP BY p.currency ORDER BY p.currency`,
           )) as { currency: string; amount: string }[];
           const previousByCurrency = new Map(
-            previousRevenueRows.map((row) => [row.currency, Number(row.amount)]),
+            previousRevenueRows.map((row) => [
+              row.currency,
+              Number(row.amount),
+            ]),
           );
           comparisons.revenue = (revenueByCurrency ?? []).map((row) => ({
             currency: row.currency,
@@ -467,7 +471,8 @@ export class DashboardService {
       if (scope && (scope.type !== 'GLOBAL' || !scope.permissions.viewUsers)) {
         throw new ForbiddenException({
           code: 'INSUFFICIENT_PERMISSIONS',
-          message: 'You do not have permission to view user registration trends.',
+          message:
+            'You do not have permission to view user registration trends.',
         });
       }
       const safeRows = await this.rows(
@@ -899,8 +904,7 @@ export class DashboardService {
   ) {
     const range = this.dates.resolve(query);
     const scope = auth ? await this.resolveScope(auth, query) : null;
-    const showFinancial =
-      scope ? scope.permissions.viewRevenue : financial;
+    const showFinancial = scope ? scope.permissions.viewRevenue : financial;
     const instructorId =
       scope?.type === 'INSTRUCTOR' || scope?.targetInstructorId
         ? scope.targetInstructorId
@@ -1140,7 +1144,9 @@ export class DashboardService {
       })),
       instructors: instructors.map((inst) => ({
         id: inst.id,
-        name: `${inst.first_name ?? ''} ${inst.last_name ?? ''}`.trim() || String(inst.email),
+        name:
+          `${inst.first_name ?? ''} ${inst.last_name ?? ''}`.trim() ||
+          String(inst.email),
         email: inst.email,
       })),
     };

@@ -33,8 +33,7 @@ export const settingsApi = {
   getStructured: async () =>
     unwrap<StructuredAcademySettings>(await authClient.get('/admin/settings/academy-structured')),
 
-  getPublicLanding: async () =>
-    unwrap<PublicLandingData>(await authClient.get('/public/landing')),
+  getPublicLanding: async () => unwrap<PublicLandingData>(await authClient.get('/public/landing')),
 
   getPublicAcademyInfo: async () =>
     unwrap<{

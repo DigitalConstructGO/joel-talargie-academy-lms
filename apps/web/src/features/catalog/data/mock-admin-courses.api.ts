@@ -145,8 +145,16 @@ export const mockAdminCoursesApi = {
       enrollmentOpenAt: null,
       enrollmentCloseAt: null,
       capacity: input.capacity ?? null,
-      outcomes: (input.outcomes ?? []).map((text, i) => ({ id: `outcome-${i}`, text, sortOrder: i })),
-      requirements: (input.requirements ?? []).map((text, i) => ({ id: `req-${i}`, text, sortOrder: i })),
+      outcomes: (input.outcomes ?? []).map((text, i) => ({
+        id: `outcome-${i}`,
+        text,
+        sortOrder: i,
+      })),
+      requirements: (input.requirements ?? []).map((text, i) => ({
+        id: `req-${i}`,
+        text,
+        sortOrder: i,
+      })),
       sections: [],
       readiness: { ready: false, issues: ['At least one section with a lesson is required.'] },
       archivedAt: null,

@@ -549,44 +549,44 @@ export class CatalogRepository {
       creator,
       category,
     ] = await Promise.all([
-        this.db
-          .select()
-          .from(schema.courseOutcomes)
-          .where(eq(schema.courseOutcomes.courseId, id))
-          .orderBy(asc(schema.courseOutcomes.sortOrder)),
-        this.db
-          .select()
-          .from(schema.courseRequirements)
-          .where(eq(schema.courseRequirements.courseId, id))
-          .orderBy(asc(schema.courseRequirements.sortOrder)),
-        this.db
-          .select()
-          .from(schema.courseSections)
-          .where(eq(schema.courseSections.courseId, id))
-          .orderBy(asc(schema.courseSections.position)),
-        this.db
-          .select()
-          .from(schema.lessons)
-          .where(eq(schema.lessons.courseId, id))
-          .orderBy(asc(schema.lessons.position)),
-        this.db
-          .select()
-          .from(schema.lessonResources)
-          .innerJoin(
-            schema.lessons,
-            eq(schema.lessonResources.lessonId, schema.lessons.id),
-          )
-          .where(eq(schema.lessons.courseId, id)),
-        this.readiness(id),
-        this.db.query.users.findFirst({
-          where: eq(schema.users.id, course.createdBy),
-          columns: { id: true, email: true },
-        }),
-        this.db.query.categories.findFirst({
-          where: eq(schema.categories.id, course.categoryId),
-          columns: { id: true, name: true, slug: true },
-        }),
-      ]);
+      this.db
+        .select()
+        .from(schema.courseOutcomes)
+        .where(eq(schema.courseOutcomes.courseId, id))
+        .orderBy(asc(schema.courseOutcomes.sortOrder)),
+      this.db
+        .select()
+        .from(schema.courseRequirements)
+        .where(eq(schema.courseRequirements.courseId, id))
+        .orderBy(asc(schema.courseRequirements.sortOrder)),
+      this.db
+        .select()
+        .from(schema.courseSections)
+        .where(eq(schema.courseSections.courseId, id))
+        .orderBy(asc(schema.courseSections.position)),
+      this.db
+        .select()
+        .from(schema.lessons)
+        .where(eq(schema.lessons.courseId, id))
+        .orderBy(asc(schema.lessons.position)),
+      this.db
+        .select()
+        .from(schema.lessonResources)
+        .innerJoin(
+          schema.lessons,
+          eq(schema.lessonResources.lessonId, schema.lessons.id),
+        )
+        .where(eq(schema.lessons.courseId, id)),
+      this.readiness(id),
+      this.db.query.users.findFirst({
+        where: eq(schema.users.id, course.createdBy),
+        columns: { id: true, email: true },
+      }),
+      this.db.query.categories.findFirst({
+        where: eq(schema.categories.id, course.categoryId),
+        columns: { id: true, name: true, slug: true },
+      }),
+    ]);
     const creatorProfile = creator
       ? await this.db.query.userProfiles.findFirst({
           where: eq(schema.userProfiles.userId, creator.id),
@@ -817,12 +817,30 @@ export class CatalogRepository {
     const searchCondition = searchTerm
       ? or(
           sql`${schema.courses.searchVector} @@ websearch_to_tsquery('simple', ${searchTerm})`,
-          ilike(schema.courses.title, `%${searchTerm.replace(/[%_\\]/g, '\\$&')}%`),
-          ilike(schema.courses.shortDescription, `%${searchTerm.replace(/[%_\\]/g, '\\$&')}%`),
-          ilike(schema.courses.description, `%${searchTerm.replace(/[%_\\]/g, '\\$&')}%`),
-          ilike(schema.courses.presenterName, `%${searchTerm.replace(/[%_\\]/g, '\\$&')}%`),
-          ilike(schema.courses.slug, `%${searchTerm.replace(/[%_\\]/g, '\\$&')}%`),
-          ilike(schema.categories.name, `%${searchTerm.replace(/[%_\\]/g, '\\$&')}%`),
+          ilike(
+            schema.courses.title,
+            `%${searchTerm.replace(/[%_\\]/g, '\\$&')}%`,
+          ),
+          ilike(
+            schema.courses.shortDescription,
+            `%${searchTerm.replace(/[%_\\]/g, '\\$&')}%`,
+          ),
+          ilike(
+            schema.courses.description,
+            `%${searchTerm.replace(/[%_\\]/g, '\\$&')}%`,
+          ),
+          ilike(
+            schema.courses.presenterName,
+            `%${searchTerm.replace(/[%_\\]/g, '\\$&')}%`,
+          ),
+          ilike(
+            schema.courses.slug,
+            `%${searchTerm.replace(/[%_\\]/g, '\\$&')}%`,
+          ),
+          ilike(
+            schema.categories.name,
+            `%${searchTerm.replace(/[%_\\]/g, '\\$&')}%`,
+          ),
         )
       : undefined;
 
@@ -885,7 +903,9 @@ export class CatalogRepository {
         categoryName: schema.categories.name,
         categorySlug: schema.categories.slug,
         createdBy: schema.courses.createdBy,
-        creatorName: sql<string | null>`trim(concat(${schema.userProfiles.firstName}, ' ', ${schema.userProfiles.lastName}))`,
+        creatorName: sql<
+          string | null
+        >`trim(concat(${schema.userProfiles.firstName}, ' ', ${schema.userProfiles.lastName}))`,
         accessType: schema.courses.accessType,
         price: schema.courses.price,
         discountPrice: schema.courses.discountPrice,

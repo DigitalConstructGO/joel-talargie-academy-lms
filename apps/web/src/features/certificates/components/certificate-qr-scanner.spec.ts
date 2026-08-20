@@ -15,9 +15,7 @@ describe('extractVerificationIdentifier', () => {
     ).toBe('mockVerificationToken0000000000000000000001');
 
     expect(
-      extractVerificationIdentifier(
-        'http://localhost:3000/certificates/verify/JTA-2026-000123',
-      ),
+      extractVerificationIdentifier('http://localhost:3000/certificates/verify/JTA-2026-000123'),
     ).toBe('JTA-2026-000123');
   });
 
@@ -35,7 +33,9 @@ describe('extractVerificationIdentifier', () => {
     ).toBe('JTA-2026-999');
 
     expect(
-      extractVerificationIdentifier('https://joeltalargieacademy.com/certificates/verify?q=TEST_CERT'),
+      extractVerificationIdentifier(
+        'https://joeltalargieacademy.com/certificates/verify?q=TEST_CERT',
+      ),
     ).toBe('TEST_CERT');
   });
 

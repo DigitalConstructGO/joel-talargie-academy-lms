@@ -74,10 +74,7 @@ export class AdminDashboardController {
   }
 
   @Get('trends/enrollments')
-  enrollments(
-    @Query() query: DashboardTrendQueryDto,
-    @Req() request: Request,
-  ) {
+  enrollments(@Query() query: DashboardTrendQueryDto, @Req() request: Request) {
     return this.dashboard.trend(
       'enrollments',
       query,
@@ -97,10 +94,7 @@ export class AdminDashboardController {
   }
 
   @Get('trends/completions')
-  completions(
-    @Query() query: DashboardTrendQueryDto,
-    @Req() request: Request,
-  ) {
+  completions(@Query() query: DashboardTrendQueryDto, @Req() request: Request) {
     return this.dashboard.trend(
       'completions',
       query,

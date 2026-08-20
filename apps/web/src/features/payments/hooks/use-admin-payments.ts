@@ -15,7 +15,8 @@ const adminPaymentKeys = {
   all: ADMIN_PAYMENTS_ROOT,
   lists: () => [...ADMIN_PAYMENTS_ROOT, 'list'] as const,
   list: (params: AdminPaymentListParams) => [...ADMIN_PAYMENTS_ROOT, 'list', params] as const,
-  count: (params: AdminPaymentListParams = {}) => [...ADMIN_PAYMENTS_ROOT, 'count', params] as const,
+  count: (params: AdminPaymentListParams = {}) =>
+    [...ADMIN_PAYMENTS_ROOT, 'count', params] as const,
   detail: (paymentId: string) => [...ADMIN_PAYMENTS_ROOT, 'detail', paymentId] as const,
   receipt: (paymentId: string) => [...ADMIN_PAYMENTS_ROOT, 'receipt', paymentId] as const,
   activity: (paymentId: string, params: PaymentActivityParams) =>

@@ -59,7 +59,6 @@ export default function DashboardPage() {
     (coursesQuery.data?.items ?? []).map((course) => [course.slug, course.lessonCount]),
   );
 
-
   if (enrollmentsQuery.isLoading) {
     return (
       <ContentContainer>

@@ -47,10 +47,14 @@ function demoEnrollment(
     courseId: record.id,
     status,
     progressPercentage,
-    startedAt: progressPercentage > 0 ? new Date(Date.now() - startedDaysAgo * 86_400_000).toISOString() : null,
-    completedAt: status === 'COMPLETED' && completedDaysAgo !== null
-      ? new Date(Date.now() - completedDaysAgo * 86_400_000).toISOString()
-      : null,
+    startedAt:
+      progressPercentage > 0
+        ? new Date(Date.now() - startedDaysAgo * 86_400_000).toISOString()
+        : null,
+    completedAt:
+      status === 'COMPLETED' && completedDaysAgo !== null
+        ? new Date(Date.now() - completedDaysAgo * 86_400_000).toISOString()
+        : null,
   };
 }
 
@@ -202,12 +206,10 @@ function buildLessonContent(lesson: CourseLesson, sectionId: string): LessonCont
     isMandatory: lesson.isMandatory,
     isPreview: lesson.isPreview,
     content:
-      lesson.content ??
-      (lesson.lessonType === 'TEXT' ? mockLessonTextContent(lesson.title) : null),
+      lesson.content ?? (lesson.lessonType === 'TEXT' ? mockLessonTextContent(lesson.title) : null),
     videoUrl: lesson.lessonType === 'VIDEO' ? (lesson.videoUrl ?? MOCK_LESSON_VIDEO_URL) : null,
     externalUrl:
-      lesson.externalUrl ??
-      (lesson.lessonType === 'EXTERNAL_LINK' ? 'https://example.com' : null),
+      lesson.externalUrl ?? (lesson.lessonType === 'EXTERNAL_LINK' ? 'https://example.com' : null),
     resources,
   };
 }

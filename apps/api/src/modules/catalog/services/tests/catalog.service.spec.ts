@@ -355,7 +355,9 @@ describe('CatalogService', () => {
   });
 
   it('visibility delegates to updateCourse with the visibility event', async () => {
-    await service.visibility(actor, 'course-1', { visibility: 'PUBLIC' } as never);
+    await service.visibility(actor, 'course-1', {
+      visibility: 'PUBLIC',
+    } as never);
     expect(repository.updateCourse).toHaveBeenCalledWith(
       'admin-1',
       'course-1',
@@ -594,9 +596,9 @@ describe('CatalogService', () => {
     it('throws NotFoundException when a non-admin manages a missing course', async () => {
       contexts.resolve.mockResolvedValueOnce(instructorContext);
       repository.courseById.mockResolvedValueOnce(undefined);
-      await expect(
-        service.archiveCourse(actor, 'missing'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.archiveCourse(actor, 'missing')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('rejects a non-active or missing authorization context', async () => {

@@ -167,9 +167,7 @@ async function run(): Promise<void> {
             await seedCourses(tx, categoryBySlug, instructor.id);
           }
         });
-        process.stdout.write(
-          'RBAC roles, categories, and course catalog synced.\n',
-        );
+        process.stdout.write('RBAC roles, categories, and course catalog synced.\n');
         return;
       }
 

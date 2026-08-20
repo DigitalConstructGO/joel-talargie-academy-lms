@@ -57,7 +57,8 @@ export class CouponsService {
     const { code, rules } = found;
     const now = new Date();
 
-    let validityStatus: 'NOT_STARTED' | 'ACTIVE' | 'EXPIRED' | 'INACTIVE' | 'REVOKED';
+    let validityStatus:
+      'NOT_STARTED' | 'ACTIVE' | 'EXPIRED' | 'INACTIVE' | 'REVOKED';
     if (code.status === 'REVOKED') {
       validityStatus = 'REVOKED';
     } else if (code.status === 'PAUSED') {

@@ -8,7 +8,10 @@ import { Button } from '@/components/ui/button';
 import { formatDurationMinutes } from '@/lib/format';
 import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/stores';
-import { useCreateEnrollment, useEnrollmentByCourse } from '@/features/enrollments/hooks/use-enrollments';
+import {
+  useCreateEnrollment,
+  useEnrollmentByCourse,
+} from '@/features/enrollments/hooks/use-enrollments';
 import { extractErrorMessage } from '@/lib/api/api-error';
 import { toast } from '@/lib/toast';
 import { PriceTag } from './price-tag';
@@ -31,10 +34,7 @@ export function CourseEnrollCard({ course }: { course: CourseDetail }) {
       const result = await createEnrollment.mutateAsync({ courseId: course.id });
       router.push(ROUTES.dashboard.learn(result.enrollment.id));
     } catch (error) {
-      toast.error(
-        'Could not start this course.',
-        extractErrorMessage(error, 'Please try again.'),
-      );
+      toast.error('Could not start this course.', extractErrorMessage(error, 'Please try again.'));
     }
   }
 

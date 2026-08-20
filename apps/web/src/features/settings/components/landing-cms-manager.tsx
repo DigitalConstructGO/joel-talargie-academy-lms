@@ -345,19 +345,59 @@ export function LandingCmsManager({
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {[
-                { key: 'hero', label: 'Hero Header & Search', desc: 'Main headline, CTAs & search' },
-                { key: 'valuePills', label: 'Value Propositions', desc: 'Top value highlight pills' },
-                { key: 'whyChooseUs', label: 'Why Choose Us', desc: 'Core institutional strengths' },
-                { key: 'howItWorks', label: 'The Learning Framework', desc: '4-step student roadmap' },
-                { key: 'featuredCourses', label: 'Featured Courses', desc: 'Real DB courses marked featured' },
-                { key: 'categories', label: 'Browse Categories', desc: 'Active categories & course counts' },
+                {
+                  key: 'hero',
+                  label: 'Hero Header & Search',
+                  desc: 'Main headline, CTAs & search',
+                },
+                {
+                  key: 'valuePills',
+                  label: 'Value Propositions',
+                  desc: 'Top value highlight pills',
+                },
+                {
+                  key: 'whyChooseUs',
+                  label: 'Why Choose Us',
+                  desc: 'Core institutional strengths',
+                },
+                {
+                  key: 'howItWorks',
+                  label: 'The Learning Framework',
+                  desc: '4-step student roadmap',
+                },
+                {
+                  key: 'featuredCourses',
+                  label: 'Featured Courses',
+                  desc: 'Real DB courses marked featured',
+                },
+                {
+                  key: 'categories',
+                  label: 'Browse Categories',
+                  desc: 'Active categories & course counts',
+                },
                 { key: 'mentor', label: 'Mentor Spotlight', desc: 'Featured instructor profile' },
-                { key: 'stats', label: 'Platform Statistics', desc: 'Live students, courses & ratings' },
+                {
+                  key: 'stats',
+                  label: 'Platform Statistics',
+                  desc: 'Live students, courses & ratings',
+                },
                 { key: 'pricing', label: 'Pricing Preview', desc: 'Free & paid course tiers' },
-                { key: 'testimonials', label: 'Learner Testimonials', desc: 'Student reviews carousel' },
-                { key: 'certificateVerify', label: 'Verify Certificate', desc: 'Public QR verification lookup' },
+                {
+                  key: 'testimonials',
+                  label: 'Learner Testimonials',
+                  desc: 'Student reviews carousel',
+                },
+                {
+                  key: 'certificateVerify',
+                  label: 'Verify Certificate',
+                  desc: 'Public QR verification lookup',
+                },
                 { key: 'faq', label: 'Frequently Asked Questions', desc: 'Accordion FAQ preview' },
-                { key: 'finalCta', label: 'Final Call to Action', desc: 'Bottom enrollment banner' },
+                {
+                  key: 'finalCta',
+                  label: 'Final Call to Action',
+                  desc: 'Bottom enrollment banner',
+                },
               ].map((item) => (
                 <div
                   key={item.key}
@@ -386,7 +426,9 @@ export function LandingCmsManager({
         <Card>
           <CardHeader>
             <CardTitle>Hero Section Configuration</CardTitle>
-            <CardDescription>Main public landing header, search, and call to action buttons.</CardDescription>
+            <CardDescription>
+              Main public landing header, search, and call to action buttons.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -439,7 +481,9 @@ export function LandingCmsManager({
                 <Input
                   id="secondaryCtaText"
                   value={hero.secondaryCtaText}
-                  onChange={(e) => setHero((prev) => ({ ...prev, secondaryCtaText: e.target.value }))}
+                  onChange={(e) =>
+                    setHero((prev) => ({ ...prev, secondaryCtaText: e.target.value }))
+                  }
                   placeholder="Create Account"
                   disabled={disabled || updateBatch.isPending}
                 />
@@ -449,7 +493,9 @@ export function LandingCmsManager({
                 <Input
                   id="secondaryCtaUrl"
                   value={hero.secondaryCtaUrl}
-                  onChange={(e) => setHero((prev) => ({ ...prev, secondaryCtaUrl: e.target.value }))}
+                  onChange={(e) =>
+                    setHero((prev) => ({ ...prev, secondaryCtaUrl: e.target.value }))
+                  }
                   placeholder="/auth/register"
                   disabled={disabled || updateBatch.isPending}
                 />
@@ -519,7 +565,10 @@ export function LandingCmsManager({
                         <div>
                           <div className="flex items-center gap-2">
                             <h4 className="font-semibold text-foreground">{pill.title}</h4>
-                            <Badge variant={pill.isActive ? 'default' : 'secondary'} className="text-[10px]">
+                            <Badge
+                              variant={pill.isActive ? 'default' : 'secondary'}
+                              className="text-[10px]"
+                            >
                               {pill.isActive ? 'Active' : 'Inactive'}
                             </Badge>
                             <Badge variant="outline" className="text-[10px]">
@@ -567,7 +616,9 @@ export function LandingCmsManager({
           <CardHeader className="flex flex-row items-center justify-between gap-4">
             <div>
               <CardTitle>Why Choose Us Cards</CardTitle>
-              <CardDescription>Institutional advantages and reasons to learn at the academy.</CardDescription>
+              <CardDescription>
+                Institutional advantages and reasons to learn at the academy.
+              </CardDescription>
             </div>
             <Button
               type="button"
@@ -610,12 +661,17 @@ export function LandingCmsManager({
                         <div>
                           <div className="flex items-center gap-2">
                             <h4 className="text-sm font-semibold text-foreground">{item.title}</h4>
-                            <Badge variant={item.isActive ? 'default' : 'secondary'} className="text-[10px]">
+                            <Badge
+                              variant={item.isActive ? 'default' : 'secondary'}
+                              className="text-[10px]"
+                            >
                               {item.isActive ? 'Active' : 'Inactive'}
                             </Badge>
                           </div>
                           <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
-                          <p className="mt-2 text-[10px] text-muted-foreground">Order: {item.displayOrder}</p>
+                          <p className="mt-2 text-[10px] text-muted-foreground">
+                            Order: {item.displayOrder}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
@@ -719,7 +775,10 @@ export function LandingCmsManager({
                     </div>
                     <div className="mt-3 flex items-center justify-between border-t border-border pt-2 text-[10px] text-muted-foreground">
                       <span>Order: {step.displayOrder}</span>
-                      <Badge variant={step.isActive ? 'default' : 'secondary'} className="text-[10px]">
+                      <Badge
+                        variant={step.isActive ? 'default' : 'secondary'}
+                        className="text-[10px]"
+                      >
                         {step.isActive ? 'Active' : 'Inactive'}
                       </Badge>
                     </div>
@@ -745,11 +804,15 @@ export function LandingCmsManager({
             <div className="flex items-center justify-between rounded-xl border border-border p-4">
               <div className="space-y-0.5">
                 <Label className="text-sm font-semibold">Enable Featured Courses Section</Label>
-                <p className="text-xs text-muted-foreground">Display the featured courses grid on the landing page.</p>
+                <p className="text-xs text-muted-foreground">
+                  Display the featured courses grid on the landing page.
+                </p>
               </div>
               <Switch
                 checked={featuredCourses.enabled}
-                onCheckedChange={(checked) => setFeaturedCourses((prev) => ({ ...prev, enabled: checked }))}
+                onCheckedChange={(checked) =>
+                  setFeaturedCourses((prev) => ({ ...prev, enabled: checked }))
+                }
               />
             </div>
             <div className="space-y-2 max-w-xs">
@@ -760,7 +823,9 @@ export function LandingCmsManager({
                 min={1}
                 max={24}
                 value={featuredCourses.limit}
-                onChange={(e) => setFeaturedCourses((prev) => ({ ...prev, limit: Number(e.target.value) }))}
+                onChange={(e) =>
+                  setFeaturedCourses((prev) => ({ ...prev, limit: Number(e.target.value) }))
+                }
               />
             </div>
           </CardContent>
@@ -780,11 +845,15 @@ export function LandingCmsManager({
             <div className="flex items-center justify-between rounded-xl border border-border p-4">
               <div className="space-y-0.5">
                 <Label className="text-sm font-semibold">Enable Categories Section</Label>
-                <p className="text-xs text-muted-foreground">Display the category exploration cards.</p>
+                <p className="text-xs text-muted-foreground">
+                  Display the category exploration cards.
+                </p>
               </div>
               <Switch
                 checked={categories.enabled}
-                onCheckedChange={(checked) => setCategories((prev) => ({ ...prev, enabled: checked }))}
+                onCheckedChange={(checked) =>
+                  setCategories((prev) => ({ ...prev, enabled: checked }))
+                }
               />
             </div>
             <div className="space-y-2 max-w-xs">
@@ -795,7 +864,9 @@ export function LandingCmsManager({
                 min={1}
                 max={24}
                 value={categories.limit}
-                onChange={(e) => setCategories((prev) => ({ ...prev, limit: Number(e.target.value) }))}
+                onChange={(e) =>
+                  setCategories((prev) => ({ ...prev, limit: Number(e.target.value) }))
+                }
               />
             </div>
           </CardContent>
@@ -808,14 +879,17 @@ export function LandingCmsManager({
           <CardHeader>
             <CardTitle>Mentor / Instructor Spotlight</CardTitle>
             <CardDescription>
-              Showcases the lead mentor/instructor photo, name, title, bio, and achievements on the landing page.
+              Showcases the lead mentor/instructor photo, name, title, bio, and achievements on the
+              landing page.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center justify-between rounded-xl border border-border p-4">
               <div className="space-y-0.5">
                 <Label className="text-sm font-semibold">Enable Mentor Spotlight</Label>
-                <p className="text-xs text-muted-foreground">Display the instructor profile banner on the homepage.</p>
+                <p className="text-xs text-muted-foreground">
+                  Display the instructor profile banner on the homepage.
+                </p>
               </div>
               <Switch
                 checked={mentor.enabled}
@@ -907,8 +981,8 @@ export function LandingCmsManager({
           <CardHeader>
             <CardTitle>Platform Statistics Configuration</CardTitle>
             <CardDescription>
-              Numerical metrics (students, courses, enrollments, ratings) are calculated live from the
-              database. Customize the display labels and ordering below.
+              Numerical metrics (students, courses, enrollments, ratings) are calculated live from
+              the database. Customize the display labels and ordering below.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -919,7 +993,9 @@ export function LandingCmsManager({
               </div>
               <Switch
                 checked={statistics.enabled}
-                onCheckedChange={(checked) => setStatistics((prev) => ({ ...prev, enabled: checked }))}
+                onCheckedChange={(checked) =>
+                  setStatistics((prev) => ({ ...prev, enabled: checked }))
+                }
               />
             </div>
 
@@ -968,7 +1044,10 @@ export function LandingCmsManager({
                             const currentItem = statistics.items[idx];
                             if (currentItem) {
                               const updated = [...statistics.items];
-                              updated[idx] = { ...currentItem, displayOrder: Number(e.target.value) };
+                              updated[idx] = {
+                                ...currentItem,
+                                displayOrder: Number(e.target.value),
+                              };
                               setStatistics((prev) => ({ ...prev, items: updated }));
                             }
                           }}
@@ -1002,7 +1081,8 @@ export function LandingCmsManager({
             <div>
               <CardTitle>Learner Testimonials</CardTitle>
               <CardDescription>
-                Manage authentic student feedback. Only active testimonials appear on the public landing page.
+                Manage authentic student feedback. Only active testimonials appear on the public
+                landing page.
               </CardDescription>
             </div>
             <Button
@@ -1049,18 +1129,28 @@ export function LandingCmsManager({
                               <Star key={i} className="size-3 fill-current" />
                             ))}
                           </span>
-                          <Badge variant={item.isActive ? 'default' : 'secondary'} className="text-[10px]">
+                          <Badge
+                            variant={item.isActive ? 'default' : 'secondary'}
+                            className="text-[10px]"
+                          >
                             {item.isActive ? 'Active' : 'Inactive'}
                           </Badge>
                           {item.isFeatured && (
-                            <Badge variant="outline" className="text-[10px] text-brand border-brand/30">
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] text-brand border-brand/30"
+                            >
                               Featured
                             </Badge>
                           )}
                         </div>
                         <p className="text-xs font-medium text-brand">{item.courseTitle}</p>
-                        <p className="text-xs text-muted-foreground italic">&ldquo;{item.testimonial}&rdquo;</p>
-                        <p className="text-[10px] text-muted-foreground">Order: {item.displayOrder}</p>
+                        <p className="text-xs text-muted-foreground italic">
+                          &ldquo;{item.testimonial}&rdquo;
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          Order: {item.displayOrder}
+                        </p>
                       </div>
                       <div className="flex items-center gap-1">
                         <Button
@@ -1098,7 +1188,9 @@ export function LandingCmsManager({
           <CardHeader className="flex flex-row items-center justify-between gap-4">
             <div>
               <CardTitle>Frequently Asked Questions</CardTitle>
-              <CardDescription>Manage the accordion FAQs displayed on the public landing page.</CardDescription>
+              <CardDescription>
+                Manage the accordion FAQs displayed on the public landing page.
+              </CardDescription>
             </div>
             <Button
               type="button"
@@ -1139,12 +1231,17 @@ export function LandingCmsManager({
                           <Badge variant="outline" className="text-[10px]">
                             {item.category}
                           </Badge>
-                          <Badge variant={item.isActive ? 'default' : 'secondary'} className="text-[10px]">
+                          <Badge
+                            variant={item.isActive ? 'default' : 'secondary'}
+                            className="text-[10px]"
+                          >
                             {item.isActive ? 'Active' : 'Inactive'}
                           </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">{item.answer}</p>
-                        <p className="text-[10px] text-muted-foreground">Order: {item.displayOrder}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          Order: {item.displayOrder}
+                        </p>
                       </div>
                       <div className="flex items-center gap-1">
                         <Button
@@ -1230,7 +1327,8 @@ export function LandingCmsManager({
       {/* Main Save Bar */}
       <div className="flex items-center justify-between border-t border-border pt-4">
         <p className="text-xs text-muted-foreground">
-          Saving updates will instantly refresh the dynamic content on <span className="font-mono">/</span>.
+          Saving updates will instantly refresh the dynamic content on{' '}
+          <span className="font-mono">/</span>.
         </p>
         <Button
           type="button"
@@ -1257,7 +1355,9 @@ export function LandingCmsManager({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingPill?.id ? 'Edit Value Pill' : 'Add Value Pill'}</DialogTitle>
-            <DialogDescription>Configure headline, description, icon and display order.</DialogDescription>
+            <DialogDescription>
+              Configure headline, description, icon and display order.
+            </DialogDescription>
           </DialogHeader>
           {editingPill && (
             <div className="space-y-4">
@@ -1309,16 +1409,22 @@ export function LandingCmsManager({
                     id="pillOrder"
                     type="number"
                     value={editingPill.displayOrder}
-                    onChange={(e) => setEditingPill({ ...editingPill, displayOrder: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setEditingPill({ ...editingPill, displayOrder: Number(e.target.value) })
+                    }
                   />
                 </div>
               </div>
               <div className="flex items-center justify-between rounded-lg border border-border p-3">
-                <Label htmlFor="pillActive" className="text-sm">Active</Label>
+                <Label htmlFor="pillActive" className="text-sm">
+                  Active
+                </Label>
                 <Switch
                   id="pillActive"
                   checked={editingPill.isActive}
-                  onCheckedChange={(checked) => setEditingPill({ ...editingPill, isActive: checked })}
+                  onCheckedChange={(checked) =>
+                    setEditingPill({ ...editingPill, isActive: checked })
+                  }
                 />
               </div>
             </div>
@@ -1341,7 +1447,9 @@ export function LandingCmsManager({
       <Dialog open={whyDialogOpen} onOpenChange={setWhyDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingWhy?.id ? 'Edit Why Choose Us Card' : 'Add Why Choose Us Card'}</DialogTitle>
+            <DialogTitle>
+              {editingWhy?.id ? 'Edit Why Choose Us Card' : 'Add Why Choose Us Card'}
+            </DialogTitle>
           </DialogHeader>
           {editingWhy && (
             <div className="space-y-4">
@@ -1393,12 +1501,16 @@ export function LandingCmsManager({
                     id="whyOrder"
                     type="number"
                     value={editingWhy.displayOrder}
-                    onChange={(e) => setEditingWhy({ ...editingWhy, displayOrder: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setEditingWhy({ ...editingWhy, displayOrder: Number(e.target.value) })
+                    }
                   />
                 </div>
               </div>
               <div className="flex items-center justify-between rounded-lg border border-border p-3">
-                <Label htmlFor="whyActive" className="text-sm">Active</Label>
+                <Label htmlFor="whyActive" className="text-sm">
+                  Active
+                </Label>
                 <Switch
                   id="whyActive"
                   checked={editingWhy.isActive}
@@ -1468,15 +1580,21 @@ export function LandingCmsManager({
                     id="howOrder"
                     type="number"
                     value={editingHow.displayOrder}
-                    onChange={(e) => setEditingHow({ ...editingHow, displayOrder: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setEditingHow({ ...editingHow, displayOrder: Number(e.target.value) })
+                    }
                   />
                 </div>
                 <div className="flex items-center justify-between rounded-lg border border-border p-3 mt-6">
-                  <Label htmlFor="howActive" className="text-sm">Active</Label>
+                  <Label htmlFor="howActive" className="text-sm">
+                    Active
+                  </Label>
                   <Switch
                     id="howActive"
                     checked={editingHow.isActive}
-                    onCheckedChange={(checked) => setEditingHow({ ...editingHow, isActive: checked })}
+                    onCheckedChange={(checked) =>
+                      setEditingHow({ ...editingHow, isActive: checked })
+                    }
                   />
                 </div>
               </div>
@@ -1500,7 +1618,9 @@ export function LandingCmsManager({
       <Dialog open={testimonialDialogOpen} onOpenChange={setTestimonialDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingTestimonial?.id ? 'Edit Testimonial' : 'Add Testimonial'}</DialogTitle>
+            <DialogTitle>
+              {editingTestimonial?.id ? 'Edit Testimonial' : 'Add Testimonial'}
+            </DialogTitle>
           </DialogHeader>
           {editingTestimonial && (
             <div className="space-y-4">
@@ -1578,7 +1698,9 @@ export function LandingCmsManager({
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center justify-between rounded-lg border border-border p-3">
-                  <Label htmlFor="testFeatured" className="text-sm">Featured</Label>
+                  <Label htmlFor="testFeatured" className="text-sm">
+                    Featured
+                  </Label>
                   <Switch
                     id="testFeatured"
                     checked={editingTestimonial.isFeatured}
@@ -1588,7 +1710,9 @@ export function LandingCmsManager({
                   />
                 </div>
                 <div className="flex items-center justify-between rounded-lg border border-border p-3">
-                  <Label htmlFor="testActive" className="text-sm">Active</Label>
+                  <Label htmlFor="testActive" className="text-sm">
+                    Active
+                  </Label>
                   <Switch
                     id="testActive"
                     checked={editingTestimonial.isActive}
@@ -1606,7 +1730,9 @@ export function LandingCmsManager({
             </Button>
             <Button
               onClick={() => editingTestimonial && handleSaveTestimonial(editingTestimonial)}
-              disabled={!editingTestimonial?.studentName.trim() || !editingTestimonial?.testimonial.trim()}
+              disabled={
+                !editingTestimonial?.studentName.trim() || !editingTestimonial?.testimonial.trim()
+              }
             >
               Save Testimonial
             </Button>
@@ -1659,12 +1785,16 @@ export function LandingCmsManager({
                     id="faqOrder"
                     type="number"
                     value={editingFaq.displayOrder}
-                    onChange={(e) => setEditingFaq({ ...editingFaq, displayOrder: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setEditingFaq({ ...editingFaq, displayOrder: Number(e.target.value) })
+                    }
                   />
                 </div>
               </div>
               <div className="flex items-center justify-between rounded-lg border border-border p-3">
-                <Label htmlFor="faqActive" className="text-sm">Active</Label>
+                <Label htmlFor="faqActive" className="text-sm">
+                  Active
+                </Label>
                 <Switch
                   id="faqActive"
                   checked={editingFaq.isActive}

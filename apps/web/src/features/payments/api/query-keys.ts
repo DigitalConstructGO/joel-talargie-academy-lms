@@ -9,6 +9,5 @@ export const paymentKeys = {
   count: (params: PaymentListParams = {}) => [...PAYMENTS_ROOT, 'count', params] as const,
   detail: (paymentId: string) => [...PAYMENTS_ROOT, 'detail', paymentId] as const,
   receipt: (paymentId: string) => [...PAYMENTS_ROOT, 'receipt', paymentId] as const,
-  instructions: (enrollmentId: string) =>
-    [...PAYMENTS_ROOT, 'instructions', enrollmentId] as const,
+  instructions: (enrollmentId: string) => [...PAYMENTS_ROOT, 'instructions', enrollmentId] as const,
 };

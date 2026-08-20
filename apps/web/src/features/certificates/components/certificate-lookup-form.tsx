@@ -89,7 +89,10 @@ export function CertificateLookupForm({
         <TabsContent value="manual" className="mt-6 space-y-4">
           <form onSubmit={handleManualSubmit} className="space-y-4">
             <div className="space-y-2 text-left">
-              <Label htmlFor="certificate-code" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <Label
+                htmlFor="certificate-code"
+                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+              >
                 Certificate Code / Verification ID
               </Label>
               <div className="relative">
@@ -107,7 +110,9 @@ export function CertificateLookupForm({
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                Enter the unique certificate number (e.g. <span className="font-mono text-foreground font-medium">JTA-2026-...</span>) or public token printed on the certificate.
+                Enter the unique certificate number (e.g.{' '}
+                <span className="font-mono text-foreground font-medium">JTA-2026-...</span>) or
+                public token printed on the certificate.
               </p>
             </div>
 
@@ -134,7 +139,8 @@ export function CertificateLookupForm({
         {/* Tab 2: Camera QR Code Scanning */}
         <TabsContent value="qr" className="mt-6 space-y-4">
           <div className="text-center text-xs text-muted-foreground">
-            Point your device camera at the QR code printed on the bottom-right corner of the certificate.
+            Point your device camera at the QR code printed on the bottom-right corner of the
+            certificate.
           </div>
           <CertificateQrScanner
             onScan={handleQrScan}

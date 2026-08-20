@@ -56,7 +56,11 @@ export default function AdminAcademicsPage() {
             value={
               overviewQuery.data?.kpis?.courses?.published ?? (overviewQuery.isLoading ? '—' : 0)
             }
-            suffix={overviewQuery.data?.kpis?.courses ? `/ ${overviewQuery.data.kpis.courses.total}` : undefined}
+            suffix={
+              overviewQuery.data?.kpis?.courses
+                ? `/ ${overviewQuery.data.kpis.courses.total}`
+                : undefined
+            }
             tone="primary"
           />
           <StatCard
@@ -77,7 +81,8 @@ export default function AdminAcademicsPage() {
             icon={GraduationCap}
             label="Completed enrollments"
             value={
-              overviewQuery.data?.kpis?.enrollments?.completed ?? (overviewQuery.isLoading ? '—' : 0)
+              overviewQuery.data?.kpis?.enrollments?.completed ??
+              (overviewQuery.isLoading ? '—' : 0)
             }
             tone="success"
           />

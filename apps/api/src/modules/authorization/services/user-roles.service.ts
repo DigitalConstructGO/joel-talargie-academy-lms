@@ -41,7 +41,11 @@ export class UserRolesService {
           'You cannot assign a role containing permissions you do not possess.',
       });
     try {
-      const assigned = await this.repository.assign({ actorId, userId, roleId });
+      const assigned = await this.repository.assign({
+        actorId,
+        userId,
+        roleId,
+      });
       await this.notifyRole('ROLE_ASSIGNED', userId, assigned);
       return assigned;
     } catch (error) {

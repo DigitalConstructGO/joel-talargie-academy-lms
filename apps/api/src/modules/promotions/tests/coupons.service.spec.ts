@@ -76,7 +76,11 @@ describe('CouponsService', () => {
     const now = Date.now();
 
     function found(overrides: {
-      code?: Partial<{ status: string; validFrom: Date | null; validUntil: Date | null }>;
+      code?: Partial<{
+        status: string;
+        validFrom: Date | null;
+        validUntil: Date | null;
+      }>;
       rules?: { courseIds: string[]; categoryIds: string[]; userIds: string[] };
     }) {
       return {
@@ -97,14 +101,20 @@ describe('CouponsService', () => {
 
     it('throws NotFoundException for a missing coupon', async () => {
       repository.findCodeWithRules.mockResolvedValue(null);
-      await expect(service.detail('missing')).rejects.toThrow(NotFoundException);
+      await expect(service.detail('missing')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('reports ACTIVE for an in-window active code', async () => {
       repository.findCodeWithRules.mockResolvedValue(found({}));
       const result = await service.detail('code-1');
       expect(result.validityStatus).toBe('ACTIVE');
-      expect(result.rules).toEqual({ courseIds: [], categoryIds: [], userIds: [] });
+      expect(result.rules).toEqual({
+        courseIds: [],
+        categoryIds: [],
+        userIds: [],
+      });
     });
 
     it('reports NOT_STARTED before the code window begins', async () => {
@@ -164,7 +174,10 @@ describe('CouponsService', () => {
         pageSize: 20,
       };
       repository.listCodeRedemptions.mockResolvedValue(history);
-      const result = await service.redemptions('code-1', { page: 1, pageSize: 20 });
+      const result = await service.redemptions('code-1', {
+        page: 1,
+        pageSize: 20,
+      });
       expect(result).toEqual(history);
       expect(repository.listCodeRedemptions).toHaveBeenCalledWith('code-1', {
         page: 1,

@@ -21,11 +21,17 @@ export function AcademyGeneralForm({
   const updateBatch = useUpdateSettingsBatch();
   const [form, setForm] = useState<AcademyGeneralSettings>(initialData);
 
-  function handleChange<K extends keyof AcademyGeneralSettings>(key: K, value: AcademyGeneralSettings[K]) {
+  function handleChange<K extends keyof AcademyGeneralSettings>(
+    key: K,
+    value: AcademyGeneralSettings[K],
+  ) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  function handleSocialChange(platform: keyof NonNullable<AcademyGeneralSettings['socialLinks']>, value: string) {
+  function handleSocialChange(
+    platform: keyof NonNullable<AcademyGeneralSettings['socialLinks']>,
+    value: string,
+  ) {
     setForm((prev) => ({
       ...prev,
       socialLinks: {
@@ -103,7 +109,9 @@ export function AcademyGeneralForm({
       <Card>
         <CardHeader>
           <CardTitle>Contact & Location</CardTitle>
-          <CardDescription>Public contact details for learner inquiries and support.</CardDescription>
+          <CardDescription>
+            Public contact details for learner inquiries and support.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -156,7 +164,9 @@ export function AcademyGeneralForm({
       <Card>
         <CardHeader>
           <CardTitle>Social Media Links</CardTitle>
-          <CardDescription>Official social profile links displayed in the footer and headers.</CardDescription>
+          <CardDescription>
+            Official social profile links displayed in the footer and headers.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

@@ -12,11 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { FileUpload } from '@/components/common/file-upload';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  extractErrorCode,
-  extractErrorMessage,
-  extractFieldErrors,
-} from '@/lib/api/api-error';
+import { extractErrorCode, extractErrorMessage, extractFieldErrors } from '@/lib/api/api-error';
 import { useSubmitPayment } from '@/features/payments/hooks/use-payments';
 import type {
   PaymentInstructions,
@@ -70,8 +66,7 @@ const PAYMENT_SUBMIT_ERROR_MESSAGES: Record<string, string> = {
   INVALID_PAYMENT_AMOUNT: "The amount you entered isn't valid. Please check it and try again.",
   PAYMENT_CURRENCY_MISMATCH:
     "The currency doesn't match this course. Please refresh the page and try again.",
-  INVALID_PAYMENT_DATE:
-    "The payment date can't be in the future. Choose today or an earlier date.",
+  INVALID_PAYMENT_DATE: "The payment date can't be in the future. Choose today or an earlier date.",
   PAYMENT_REVIEW_ALREADY_PENDING:
     'A payment for this course is already under review. Please wait for it to be processed.',
   PAYMENT_PENDING_ALREADY_EXISTS:

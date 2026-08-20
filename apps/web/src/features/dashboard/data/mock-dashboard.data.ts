@@ -245,7 +245,5 @@ export const MOCK_FILTER_OPTIONS: DashboardFilterOptions = {
     { id: 'cat-1', name: 'Web Development', slug: 'web-development' },
     { id: 'cat-2', name: 'Data Science', slug: 'data-science' },
   ],
-  instructors: [
-    { id: 'user-2', name: 'Sara Tesfaye', email: 'instructor@example.com' },
-  ],
+  instructors: [{ id: 'user-2', name: 'Sara Tesfaye', email: 'instructor@example.com' }],
 };

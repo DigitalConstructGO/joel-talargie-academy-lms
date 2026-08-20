@@ -86,9 +86,7 @@ export function PromoCodeStep({
             <div className="flex items-center gap-3">
               <CheckCircle2 className="size-5 shrink-0 text-success" />
               <div>
-                <p className="text-sm font-semibold text-foreground">
-                  {redemption.code} applied
-                </p>
+                <p className="text-sm font-semibold text-foreground">{redemption.code} applied</p>
                 <p className="text-xs text-muted-foreground">
                   You save{' '}
                   {formatCurrency(redemption.pricing.discountAmount, redemption.pricing.currency)}

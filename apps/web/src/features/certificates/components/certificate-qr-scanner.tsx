@@ -22,12 +22,7 @@ interface CertificateQrScannerProps {
 }
 
 type ScannerStatus =
-  | 'idle'
-  | 'requesting'
-  | 'scanning'
-  | 'permission-denied'
-  | 'unavailable'
-  | 'error';
+  'idle' | 'requesting' | 'scanning' | 'permission-denied' | 'unavailable' | 'error';
 
 /**
  * Extracts a certificate verification token or certificate code from raw QR contents.
@@ -44,7 +39,8 @@ export function extractVerificationIdentifier(raw: string): string {
   if (/^https?:\/\//i.test(trimmed)) {
     try {
       const url = new URL(trimmed);
-      const queryToken = url.searchParams.get('token') || url.searchParams.get('code') || url.searchParams.get('q');
+      const queryToken =
+        url.searchParams.get('token') || url.searchParams.get('code') || url.searchParams.get('q');
       if (queryToken) return queryToken.trim();
 
       const pathSegments = url.pathname.split('/').filter(Boolean);
@@ -200,13 +196,19 @@ export function CertificateQrScanner({
       const error = err as { name?: string; message?: string };
       if (error?.name === 'NotAllowedError' || error?.name === 'PermissionDeniedError') {
         setStatus('permission-denied');
-        setErrorMessage('Camera permission was denied. Please allow camera access in your browser settings, or enter the certificate code manually.');
+        setErrorMessage(
+          'Camera permission was denied. Please allow camera access in your browser settings, or enter the certificate code manually.',
+        );
       } else if (error?.name === 'NotFoundError' || error?.name === 'DevicesNotFoundError') {
         setStatus('unavailable');
-        setErrorMessage('No camera was detected on this device. You can enter the certificate code manually or upload a photo of the QR code.');
+        setErrorMessage(
+          'No camera was detected on this device. You can enter the certificate code manually or upload a photo of the QR code.',
+        );
       } else {
         setStatus('error');
-        setErrorMessage(error?.message || 'Unable to access camera. Please check your camera permissions.');
+        setErrorMessage(
+          error?.message || 'Unable to access camera. Please check your camera permissions.',
+        );
       }
     }
   }, [facingMode, scanFrame, stopCamera]);
@@ -218,7 +220,9 @@ export function CertificateQrScanner({
 
     try {
       const nextTorch = !torchOn;
-      await (track as unknown as { applyConstraints: (c: unknown) => Promise<void> }).applyConstraints({
+      await (
+        track as unknown as { applyConstraints: (c: unknown) => Promise<void> }
+      ).applyConstraints({
         advanced: [{ torch: nextTorch }],
       });
       setTorchOn(nextTorch);
@@ -258,7 +262,9 @@ export function CertificateQrScanner({
             return;
           }
         }
-        setErrorMessage('No valid certificate QR code could be read from this image. Please try another image or enter the certificate ID manually.');
+        setErrorMessage(
+          'No valid certificate QR code could be read from this image. Please try another image or enter the certificate ID manually.',
+        );
       };
       img.src = event.target?.result as string;
     };
@@ -332,7 +338,8 @@ export function CertificateQrScanner({
             <div className="space-y-1.5">
               <h3 className="text-base font-semibold">Camera Access Required</h3>
               <p className="max-w-xs text-xs text-muted-foreground">
-                Camera access is required to scan certificate QR codes. Please allow permissions in your browser.
+                Camera access is required to scan certificate QR codes. Please allow permissions in
+                your browser.
               </p>
             </div>
             <div className="flex flex-col gap-2 w-full max-w-xs">

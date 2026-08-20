@@ -213,10 +213,7 @@ function CreateCouponDialog() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="create-status">Status</Label>
-              <Select
-                value={status}
-                onValueChange={(value) => setStatus(value as PromoCodeStatus)}
-              >
+              <Select value={status} onValueChange={(value) => setStatus(value as PromoCodeStatus)}>
                 <SelectTrigger id="create-status">
                   <SelectValue />
                 </SelectTrigger>
@@ -291,9 +288,7 @@ function CreateCouponDialog() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="create-max-users">
-              Max users (blank = unlimited)
-            </Label>
+            <Label htmlFor="create-max-users">Max users (blank = unlimited)</Label>
             <Input
               id="create-max-users"
               type="number"
@@ -302,8 +297,8 @@ function CreateCouponDialog() {
               onChange={(e) => setMaxUsers(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              Limit the code to the first N students who use it (e.g. 50 for
-              a &quot;first 50&quot; offer).
+              Limit the code to the first N students who use it (e.g. 50 for a &quot;first 50&quot;
+              offer).
             </p>
           </div>
           <div className="flex items-center gap-3 rounded-lg border border-border px-4 py-3">
@@ -393,8 +388,7 @@ export default function AdminPromoCodesPage() {
         cell: ({ row }) => {
           const coupon = row.original;
           if (coupon.discountType === 'FREE') return 'Free';
-          if (coupon.discountType === 'PERCENTAGE')
-            return `${Number(coupon.discountValue)}%`;
+          if (coupon.discountType === 'PERCENTAGE') return `${Number(coupon.discountValue)}%`;
           return formatCurrency(coupon.discountValue);
         },
       },

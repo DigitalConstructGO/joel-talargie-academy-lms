@@ -15,7 +15,16 @@ export type SettingCategory =
 export interface SettingDefinition {
   key: string;
   category: SettingCategory;
-  type: 'STRING' | 'BOOLEAN' | 'INTEGER' | 'EMAIL' | 'ENUM' | 'UUID' | 'JSON' | 'OBJECT' | 'ARRAY';
+  type:
+    | 'STRING'
+    | 'BOOLEAN'
+    | 'INTEGER'
+    | 'EMAIL'
+    | 'ENUM'
+    | 'UUID'
+    | 'JSON'
+    | 'OBJECT'
+    | 'ARRAY';
   defaultValue: unknown;
   permission: string;
   editable: boolean;
@@ -629,7 +638,10 @@ export class SettingRegistryService {
       (!Number.isInteger(value) || Number(value) <= 0)
     )
       throw new BadRequestException('Expected positive integer');
-    if (d.type === 'OBJECT' && (typeof value !== 'object' || value === null || Array.isArray(value)))
+    if (
+      d.type === 'OBJECT' &&
+      (typeof value !== 'object' || value === null || Array.isArray(value))
+    )
       throw new BadRequestException('Expected object');
     if (d.type === 'ARRAY' && !Array.isArray(value))
       throw new BadRequestException('Expected array');

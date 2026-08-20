@@ -62,7 +62,13 @@ describe('AdminAnalyticsPage', () => {
         kpis: {
           students: { total: 100, active: 80, pendingVerification: 5, newDuringPeriod: 12 },
           courses: { total: 10, published: 8, draft: 2 },
-          enrollments: { total: 250, active: 180, pendingPayment: 10, completed: 60, newDuringPeriod: 25 },
+          enrollments: {
+            total: 250,
+            active: 180,
+            pendingPayment: 10,
+            completed: 60,
+            newDuringPeriod: 25,
+          },
           certificates: { generated: 50, attention: 0 },
           payments: { waitingForReview: 3 },
           revenue: [{ currency: 'ETB', amount: '50000' }],
@@ -106,7 +112,13 @@ describe('AdminAnalyticsPage', () => {
         range: { preset: 'LAST_30_DAYS', from: '2026-07-15', to: '2026-08-15', timezone: 'UTC' },
         kpis: {
           courses: { total: 2, published: 2, draft: 0 },
-          enrollments: { total: 30, active: 20, pendingPayment: 0, completed: 10, newDuringPeriod: 5 },
+          enrollments: {
+            total: 30,
+            active: 20,
+            pendingPayment: 0,
+            completed: 10,
+            newDuringPeriod: 5,
+          },
           students: { total: 18, active: 20, newDuringPeriod: 5 },
           completionRate: 33.33,
         },

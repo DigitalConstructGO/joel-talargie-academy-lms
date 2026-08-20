@@ -42,13 +42,18 @@ export class GoogleAuthGuard extends AuthGuard('google') {
     const response = context.switchToHttp().getResponse<Response>();
     const secret = this.getSecret();
 
-    if (request.path.endsWith('/callback') || request.path.includes('/callback')) {
+    if (
+      request.path.endsWith('/callback') ||
+      request.path.includes('/callback')
+    ) {
       const stateParam =
         typeof request.query.state === 'string' ? request.query.state : '';
       const cookieState = request.cookies?.google_oauth_state;
 
       const isCookieMatch =
-        Boolean(cookieState) && Boolean(stateParam) && stateParam === cookieState;
+        Boolean(cookieState) &&
+        Boolean(stateParam) &&
+        stateParam === cookieState;
       const isSignedValid =
         Boolean(stateParam) && verifySignedOAuthState(stateParam, secret);
 
@@ -90,4 +95,3 @@ export class GoogleAuthGuard extends AuthGuard('google') {
     return { scope: ['openid', 'email', 'profile'], state: request.oauthState };
   }
 }
-

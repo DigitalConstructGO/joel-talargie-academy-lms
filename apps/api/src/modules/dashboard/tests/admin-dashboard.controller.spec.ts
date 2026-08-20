@@ -19,7 +19,11 @@ describe('AdminDashboardController', () => {
   };
   const controller = new AdminDashboardController(dashboard as never);
 
-  function request(permissions: string[] = [], roles: string[] = ['ADMINISTRATOR'], userId = 'user-1') {
+  function request(
+    permissions: string[] = [],
+    roles: string[] = ['ADMINISTRATOR'],
+    userId = 'user-1',
+  ) {
     return {
       authorization: {
         userId,
@@ -59,37 +63,49 @@ describe('AdminDashboardController', () => {
     expect(dashboard.trend).toHaveBeenCalledWith(
       'registrations',
       {},
-      expect.objectContaining({ permissions: ['dashboard.read', 'dashboard.read_financial'] }),
+      expect.objectContaining({
+        permissions: ['dashboard.read', 'dashboard.read_financial'],
+      }),
     );
     controller.enrollments({} as never, req);
     expect(dashboard.trend).toHaveBeenCalledWith(
       'enrollments',
       {},
-      expect.objectContaining({ permissions: ['dashboard.read', 'dashboard.read_financial'] }),
+      expect.objectContaining({
+        permissions: ['dashboard.read', 'dashboard.read_financial'],
+      }),
     );
     controller.payments({} as never, req);
     expect(dashboard.trend).toHaveBeenCalledWith(
       'payments',
       {},
-      expect.objectContaining({ permissions: ['dashboard.read', 'dashboard.read_financial'] }),
+      expect.objectContaining({
+        permissions: ['dashboard.read', 'dashboard.read_financial'],
+      }),
     );
     controller.revenue({} as never, req);
     expect(dashboard.trend).toHaveBeenCalledWith(
       'revenue',
       {},
-      expect.objectContaining({ permissions: ['dashboard.read', 'dashboard.read_financial'] }),
+      expect.objectContaining({
+        permissions: ['dashboard.read', 'dashboard.read_financial'],
+      }),
     );
     controller.completions({} as never, req);
     expect(dashboard.trend).toHaveBeenCalledWith(
       'completions',
       {},
-      expect.objectContaining({ permissions: ['dashboard.read', 'dashboard.read_financial'] }),
+      expect.objectContaining({
+        permissions: ['dashboard.read', 'dashboard.read_financial'],
+      }),
     );
     controller.certificates({} as never, req);
     expect(dashboard.trend).toHaveBeenCalledWith(
       'certificates',
       {},
-      expect.objectContaining({ permissions: ['dashboard.read', 'dashboard.read_financial'] }),
+      expect.objectContaining({
+        permissions: ['dashboard.read', 'dashboard.read_financial'],
+      }),
     );
   });
 
@@ -159,11 +175,20 @@ describe('AdminDashboardController', () => {
   it('delegates scoped endpoints', () => {
     const req = request(['dashboard.read']);
     controller.recentCompletions({ limit: 3 } as never, req);
-    expect(dashboard.recentCompletions).toHaveBeenCalledWith(3, expect.any(Object));
+    expect(dashboard.recentCompletions).toHaveBeenCalledWith(
+      3,
+      expect.any(Object),
+    );
     controller.recentCertificates({ limit: 3 } as never, req);
-    expect(dashboard.recentCertificates).toHaveBeenCalledWith(3, expect.any(Object));
+    expect(dashboard.recentCertificates).toHaveBeenCalledWith(
+      3,
+      expect.any(Object),
+    );
     controller.lowCompletion({} as never, req);
-    expect(dashboard.lowCompletion).toHaveBeenCalledWith({}, expect.any(Object));
+    expect(dashboard.lowCompletion).toHaveBeenCalledWith(
+      {},
+      expect.any(Object),
+    );
     controller.distribution({} as never, req);
     expect(dashboard.distribution).toHaveBeenCalledWith({}, expect.any(Object));
   });

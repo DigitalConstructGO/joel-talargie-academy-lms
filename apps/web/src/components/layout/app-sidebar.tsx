@@ -262,9 +262,7 @@ export function AppSidebar({
         <SidebarUserFooter
           roleLabel={portalLabel}
           profileHref={
-            pathname.startsWith('/admin')
-              ? ROUTES.admin.systemProfile
-              : ROUTES.dashboard.profile
+            pathname.startsWith('/admin') ? ROUTES.admin.systemProfile : ROUTES.dashboard.profile
           }
         />
         <SidebarMenu></SidebarMenu>

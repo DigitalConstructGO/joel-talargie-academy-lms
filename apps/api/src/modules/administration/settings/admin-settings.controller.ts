@@ -47,7 +47,8 @@ export class AdminSettingsController {
   @Get('academy-structured')
   @RequirePermissions('settings.read')
   @ApiOperation({
-    summary: 'Get structured academy general, branding, and landing page settings',
+    summary:
+      'Get structured academy general, branding, and landing page settings',
   })
   academyStructured() {
     return this.service.getStructuredAcademySettings();

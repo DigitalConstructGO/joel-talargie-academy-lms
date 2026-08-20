@@ -52,7 +52,8 @@ export class CreateCouponDto {
   @IsIn(PROMO_DISCOUNT_TYPES)
   discountType?: PromoDiscountType;
   @ApiPropertyOptional({
-    description: 'Discount value (percentage points for PERCENTAGE, amount for FIXED).',
+    description:
+      'Discount value (percentage points for PERCENTAGE, amount for FIXED).',
   })
   @IsOptional()
   @IsNumber()
@@ -65,7 +66,8 @@ export class CreateCouponDto {
   @IsBoolean()
   isSingleUse?: boolean;
   @ApiPropertyOptional({
-    description: 'Cap on the number of distinct students who can redeem this code.',
+    description:
+      'Cap on the number of distinct students who can redeem this code.',
   })
   @IsOptional()
   @IsInt()
@@ -114,7 +116,8 @@ export class UpdateCouponDto {
   @IsOptional()
   @IsBoolean()
   isSingleUse?: boolean;
-  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(1) maxUsers?: number | null;
+  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(1) maxUsers?:
+    number | null;
   @ApiPropertyOptional() @IsOptional() @IsISO8601() validFrom?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsISO8601() validUntil?: string | null;
   @ApiPropertyOptional({ type: [String] })

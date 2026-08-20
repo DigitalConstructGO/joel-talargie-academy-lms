@@ -165,7 +165,9 @@ export class StorageService {
   }
 
   async streamCourseThumbnail(filename: string): Promise<FileStreamDescriptor> {
-    const sanitized = filename.replace(/^course-thumbnails\//, '').replace(/[\\/]/g, '');
+    const sanitized = filename
+      .replace(/^course-thumbnails\//, '')
+      .replace(/[\\/]/g, '');
     const key = `${UPLOAD_CATEGORY_FOLDER.COURSE_THUMBNAIL}/${sanitized}`;
     try {
       return await this.local.readDescriptor(key, sanitized);
@@ -382,9 +384,7 @@ export class StorageService {
           ? config.primaryColor
           : undefined,
       accentColor:
-        typeof config.accentColor === 'string'
-          ? config.accentColor
-          : undefined,
+        typeof config.accentColor === 'string' ? config.accentColor : undefined,
       footerText:
         typeof config.footerText === 'string' ? config.footerText : undefined,
     });

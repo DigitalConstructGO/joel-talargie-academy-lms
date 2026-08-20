@@ -147,8 +147,7 @@ export function LessonResourceUploader({
         setExternalUrl('');
         toast.success('External resource attached');
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Could not attach resource.';
+        const message = err instanceof Error ? err.message : 'Could not attach resource.';
         toast.error('Failed to attach resource', message);
       } finally {
         setIsUploading(false);
@@ -219,9 +218,7 @@ export function LessonResourceUploader({
               <UploadCloud className="size-7 text-muted-foreground" aria-hidden="true" />
               <div>
                 <p className="text-xs font-medium text-foreground">
-                  {isDragActive
-                    ? 'Drop file here'
-                    : 'Drag & drop resource file or click to browse'}
+                  {isDragActive ? 'Drop file here' : 'Drag & drop resource file or click to browse'}
                 </p>
                 <p className="mt-0.5 text-[11px] text-muted-foreground">
                   PDF, DOCX, XLSX, PPTX, ZIP, MP3, MP4 up to {formatFileSize(MAX_RESOURCE_BYTES)}

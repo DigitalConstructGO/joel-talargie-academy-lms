@@ -23,7 +23,12 @@ export interface DashboardKpiComparisons {
 }
 
 export interface DashboardKpis {
-  students?: { total: number; active: number; pendingVerification: number; newDuringPeriod: number };
+  students?: {
+    total: number;
+    active: number;
+    pendingVerification: number;
+    newDuringPeriod: number;
+  };
   courses?: { total: number; published: number; draft: number };
   enrollments?: {
     total: number;
@@ -186,12 +191,7 @@ export interface DashboardOverviewParams {
 }
 
 export type DashboardTrendKind =
-  | 'registrations'
-  | 'enrollments'
-  | 'payments'
-  | 'revenue'
-  | 'completions'
-  | 'certificates';
+  'registrations' | 'enrollments' | 'payments' | 'revenue' | 'completions' | 'certificates';
 
 export type DashboardGranularity = 'DAY' | 'WEEK' | 'MONTH';
 
@@ -220,11 +220,7 @@ export interface DashboardDistribution {
 }
 
 export type CoursePerformanceSort =
-  | 'ENROLLMENTS'
-  | 'COMPLETIONS'
-  | 'COMPLETION_RATE'
-  | 'AVERAGE_PROGRESS'
-  | 'REVENUE';
+  'ENROLLMENTS' | 'COMPLETIONS' | 'COMPLETION_RATE' | 'AVERAGE_PROGRESS' | 'REVENUE';
 
 export interface CoursePerformanceParams {
   range?: DashboardRangePreset;

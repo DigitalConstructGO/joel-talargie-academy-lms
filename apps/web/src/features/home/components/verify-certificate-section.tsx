@@ -21,7 +21,9 @@ export function VerifyCertificateSection() {
                 <span className="text-brand">Verify its authenticity</span>
               </h2>
               <p className="max-w-2xl text-base text-muted-foreground">
-                Employers, recruiters, and academic partners can instantly authenticate any Joel Talargie Academy credential without logging in. Validate via live camera QR scanning or by typing the certificate ID.
+                Employers, recruiters, and academic partners can instantly authenticate any Joel
+                Talargie Academy credential without logging in. Validate via live camera QR scanning
+                or by typing the certificate ID.
               </p>
             </div>
 
@@ -33,7 +35,8 @@ export function VerifyCertificateSection() {
                 <div>
                   <h3 className="text-sm font-semibold text-foreground">Scan QR Code</h3>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Point your camera at the QR code printed on the certificate for instant validation.
+                    Point your camera at the QR code printed on the certificate for instant
+                    validation.
                   </p>
                 </div>
               </div>
@@ -45,7 +48,8 @@ export function VerifyCertificateSection() {
                 <div>
                   <h3 className="text-sm font-semibold text-foreground">Enter Certificate ID</h3>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Type the unique certificate ID (e.g. JTA-2026-...) to view the official verified record.
+                    Type the unique certificate ID (e.g. JTA-2026-...) to view the official verified
+                    record.
                   </p>
                 </div>
               </div>
@@ -76,8 +80,12 @@ export function VerifyCertificateSection() {
                     JTA
                   </div>
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-foreground">Joel Talargie Academy</p>
-                    <p className="text-[11px] text-muted-foreground">Credential Verification System</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-foreground">
+                      Joel Talargie Academy
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Credential Verification System
+                    </p>
                   </div>
                 </div>
                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
@@ -95,9 +103,7 @@ export function VerifyCertificateSection() {
                     </div>
                   </div>
                 </div>
-                <p className="mt-3 font-mono text-xs font-bold text-foreground">
-                  JTA-2026-000123
-                </p>
+                <p className="mt-3 font-mono text-xs font-bold text-foreground">JTA-2026-000123</p>
                 <p className="mt-1 text-[11px] text-muted-foreground">
                   Tamper-evident 256-bit cryptographic verification token
                 </p>

@@ -137,7 +137,10 @@ export default function AdminProfilePage() {
     setIsChangingPassword(true);
     try {
       await authClient.post('/auth/change-password', values);
-      toast.success('Password updated successfully.', 'Use your new password next time you sign in.');
+      toast.success(
+        'Password updated successfully.',
+        'Use your new password next time you sign in.',
+      );
       passwordForm.reset();
     } catch (error) {
       const message =
@@ -219,7 +222,10 @@ export default function AdminProfilePage() {
         title="Profile & Security"
         description="Manage your administrator profile, avatar, credentials, and platform security."
         actions={
-          <ShieldCheck className="hidden size-5 text-muted-foreground sm:block" aria-hidden="true" />
+          <ShieldCheck
+            className="hidden size-5 text-muted-foreground sm:block"
+            aria-hidden="true"
+          />
         }
       />
 
@@ -237,9 +243,11 @@ export default function AdminProfilePage() {
                     className="object-cover"
                   />
                   <AvatarFallback className="bg-brand text-base font-bold text-primary-foreground">
-                    {profile?.fullName
-                      ? initials(profile.fullName.split(' ')[0], profile.fullName.split(' ')[1])
-                      : <UserCircle className="size-8" />}
+                    {profile?.fullName ? (
+                      initials(profile.fullName.split(' ')[0], profile.fullName.split(' ')[1])
+                    ) : (
+                      <UserCircle className="size-8" />
+                    )}
                   </AvatarFallback>
                 </Avatar>
                 {avatar.isLoading && <Skeleton className="absolute inset-0 rounded-full" />}
@@ -249,11 +257,17 @@ export default function AdminProfilePage() {
                   <h2 className="text-lg font-bold tracking-tight text-foreground">
                     {profile?.fullName || 'Administrator'}
                   </h2>
-                  <Badge variant="secondary" className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[11px] font-medium">
+                  <Badge
+                    variant="secondary"
+                    className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[11px] font-medium"
+                  >
                     <ShieldCheck className="mr-1 size-3 text-emerald-600 dark:text-emerald-400" />
                     Administrator
                   </Badge>
-                  <Badge variant="outline" className="text-muted-foreground text-[11px] font-normal">
+                  <Badge
+                    variant="outline"
+                    className="text-muted-foreground text-[11px] font-normal"
+                  >
                     <CheckCircle2 className="mr-1 size-3 text-emerald-600 dark:text-emerald-400" />
                     Verified
                   </Badge>
@@ -368,7 +382,9 @@ export default function AdminProfilePage() {
                         disabled
                         className="bg-muted/50 cursor-not-allowed text-muted-foreground"
                       />
-                      <p className="text-[11px] text-muted-foreground">Managed via system administrator</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        Managed via system administrator
+                      </p>
                     </div>
 
                     <div className="space-y-1.5">
@@ -481,11 +497,7 @@ export default function AdminProfilePage() {
                       className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
                       aria-label={showNewPassword ? 'Hide password' : 'Show password'}
                     >
-                      {showNewPassword ? (
-                        <EyeOff className="size-4" />
-                      ) : (
-                        <Eye className="size-4" />
-                      )}
+                      {showNewPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                     </button>
                   </div>
                   {passwordForm.formState.errors.newPassword && (
@@ -559,9 +571,7 @@ export default function AdminProfilePage() {
                 <ShieldCheck className="size-4 text-brand" />
                 <CardTitle className="text-base">Role &amp; Permissions</CardTitle>
               </div>
-              <CardDescription>
-                Active platform privileges for this account.
-              </CardDescription>
+              <CardDescription>Active platform privileges for this account.</CardDescription>
             </CardHeader>
             <CardContent>
               {isAdministrator ? (

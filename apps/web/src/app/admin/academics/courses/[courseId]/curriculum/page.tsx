@@ -292,8 +292,7 @@ function AddLessonDialog({ courseId, sectionId }: { courseId: string; sectionId:
   const publishLesson = usePublishLesson();
   const createResource = useCreateResource();
 
-  const isSaving =
-    createLesson.isPending || publishLesson.isPending || createResource.isPending;
+  const isSaving = createLesson.isPending || publishLesson.isPending || createResource.isPending;
 
   const videoUrlError = lessonType === 'VIDEO' ? getVideoUrlError(videoUrl) : null;
   const externalUrlError =
@@ -335,11 +334,9 @@ function AddLessonDialog({ courseId, sectionId }: { courseId: string; sectionId:
           {
             title: title.trim(),
             lessonType,
-            videoUrl:
-              lessonType === 'VIDEO' && videoUrl.trim() ? videoUrl.trim() : undefined,
+            videoUrl: lessonType === 'VIDEO' && videoUrl.trim() ? videoUrl.trim() : undefined,
             externalUrl:
-              (lessonType === 'EXTERNAL_LINK' || lessonType === 'DOWNLOAD') &&
-              externalUrl.trim()
+              (lessonType === 'EXTERNAL_LINK' || lessonType === 'DOWNLOAD') && externalUrl.trim()
                 ? externalUrl.trim()
                 : undefined,
             content:
@@ -366,11 +363,7 @@ function AddLessonDialog({ courseId, sectionId }: { courseId: string; sectionId:
         }
       }
 
-      if (
-        createdLessonId &&
-        attachResource &&
-        attachedResource?.title?.trim()
-      ) {
+      if (createdLessonId && attachResource && attachedResource?.title?.trim()) {
         try {
           await createResource.mutateAsync({
             courseId,
@@ -392,11 +385,7 @@ function AddLessonDialog({ courseId, sectionId }: { courseId: string; sectionId:
         }
       }
 
-      toast.success(
-        publishImmediately
-          ? 'Lesson added and published'
-          : 'Lesson added as draft',
-      );
+      toast.success(publishImmediately ? 'Lesson added and published' : 'Lesson added as draft');
       resetForm();
       setOpen(false);
     } catch (error) {
@@ -506,9 +495,7 @@ function AddLessonDialog({ courseId, sectionId }: { courseId: string; sectionId:
                 placeholder="https://..."
                 aria-invalid={Boolean(externalUrlError)}
               />
-              {externalUrlError && (
-                <p className="text-xs text-destructive">{externalUrlError}</p>
-              )}
+              {externalUrlError && <p className="text-xs text-destructive">{externalUrlError}</p>}
             </div>
           )}
 
@@ -554,11 +541,7 @@ function AddLessonDialog({ courseId, sectionId }: { courseId: string; sectionId:
                   Allows prospective students to view this lesson before enrolling.
                 </p>
               </div>
-              <Switch
-                id="lesson-preview"
-                checked={isPreview}
-                onCheckedChange={setIsPreview}
-              />
+              <Switch id="lesson-preview" checked={isPreview} onCheckedChange={setIsPreview} />
             </div>
 
             <div className="flex items-center justify-between border-t border-border/60 pt-3">
@@ -615,10 +598,7 @@ function AddLessonDialog({ courseId, sectionId }: { courseId: string; sectionId:
             <Button
               type="submit"
               disabled={
-                !title.trim() ||
-                Boolean(videoUrlError) ||
-                Boolean(externalUrlError) ||
-                isSaving
+                !title.trim() || Boolean(videoUrlError) || Boolean(externalUrlError) || isSaving
               }
             >
               {isSaving && <Loader2 className="mr-2 size-4 animate-spin" />}
@@ -654,8 +634,8 @@ function SectionCard({
   const unpublishLesson = useUnpublishLesson();
   const archiveLesson = useArchiveLesson();
 
-  const publishedCount = section.lessons.filter(
-    (l) => Boolean(l.isPublished || l.publishedAt),
+  const publishedCount = section.lessons.filter((l) =>
+    Boolean(l.isPublished || l.publishedAt),
   ).length;
 
   async function handleArchiveSection() {
@@ -867,7 +847,10 @@ function SectionCard({
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <Badge variant={isLessonPublished ? 'success' : 'secondary'} className="text-xs">
+                    <Badge
+                      variant={isLessonPublished ? 'success' : 'secondary'}
+                      className="text-xs"
+                    >
                       {isLessonPublished ? 'Published' : 'Draft'}
                     </Badge>
                     {isLessonPublished ? (

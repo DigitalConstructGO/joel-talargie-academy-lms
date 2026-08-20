@@ -28,7 +28,8 @@ export const COURSE_SEEDS: CourseSeed[] = [
   {
     title: 'AI & Modern Technology: Orientation & Roadmap',
     subtitle: 'Your complete starter guide to modern artificial intelligence and digital workflows',
-    shortDescription: 'Get started with modern AI and emerging tech with a guided orientation from Joel Talargie.',
+    shortDescription:
+      'Get started with modern AI and emerging tech with a guided orientation from Joel Talargie.',
     description:
       'A comprehensive orientation and foundation designed to help beginners and ambitious creators navigate the fast-moving world of artificial intelligence and emerging technology. In this course, Joel Talargie introduces the core pillars of modern AI, demonstrates essential account setups across top AI platforms (ChatGPT, Claude, Dala AI, Google AI Studio), and outlines a structured roadmap to transition from passive consumer to empowered AI builder.',
     outcomes: [
@@ -42,7 +43,13 @@ export const COURSE_SEEDS: CourseSeed[] = [
       'No prior coding or technical background required',
       'Curiosity to learn and experiment with modern AI tools',
     ],
-    tags: ['Artificial Intelligence', 'Getting Started', 'Productivity', 'Tech Kemsha', 'Joel Talargie'],
+    tags: [
+      'Artificial Intelligence',
+      'Getting Started',
+      'Productivity',
+      'Tech Kemsha',
+      'Joel Talargie',
+    ],
     categorySlug: 'artificial-intelligence',
     instructorSlug: 'joel-talargie',
     difficulty: 'BEGINNER',
@@ -105,8 +112,9 @@ export const COURSE_SEEDS: CourseSeed[] = [
   },
   {
     title: 'AI from A to Z: 13-Minute Complete Free Crash Course',
-    subtitle: 'በ13 ደቂቃ ብቻ! AI በነፃ ከ\'ሀ\' እስከ \'ፐ\' — Complete Free AI Foundations & Productivity',
-    shortDescription: 'Master AI foundations, understand how AI actually works, and explore the best free AI tools in minutes.',
+    subtitle: "በ13 ደቂቃ ብቻ! AI በነፃ ከ'ሀ' እስከ 'ፐ' — Complete Free AI Foundations & Productivity",
+    shortDescription:
+      'Master AI foundations, understand how AI actually works, and explore the best free AI tools in minutes.',
     description:
       'Want to master Artificial Intelligence without spending money or wasting hours? In this intensive crash course by Joel Talargie, you will learn the exact foundations of AI from A to Z, discover the top free tools you can start using today, and learn practical ways to automate work and studies with zero technical background.\n\nየአርቲፊሻል ኢንተለጀንስ (AI) ቴክኖሎጂን ከ"ሀ" እስከ "ፐ" በቀላሉ እና በፍጥነት ለመማር የተዘጋጀ ሙሉ የቪዲዮ ኮርስ! የ AI ጽንሰ-ሀሳቦችን፣ ምርጥ ነጻ የ AI ቱሎችን እና በዕለት ተዕለት ስራ ላይ እንዴት ማዋል እንደምትችሉ ደረጃ በደረጃ ይማራሉ።',
     outcomes: [
@@ -119,7 +127,14 @@ export const COURSE_SEEDS: CourseSeed[] = [
       'No prior coding or technical experience needed',
       'A web browser on PC or mobile phone',
     ],
-    tags: ['AI Crash Course', 'Free AI', 'Tech Kemsha', 'Learn AI', 'Productivity', 'Ethiopia Tech'],
+    tags: [
+      'AI Crash Course',
+      'Free AI',
+      'Tech Kemsha',
+      'Learn AI',
+      'Productivity',
+      'Ethiopia Tech',
+    ],
     categorySlug: 'artificial-intelligence',
     instructorSlug: 'joel-talargie',
     difficulty: 'BEGINNER',
@@ -183,7 +198,8 @@ export const COURSE_SEEDS: CourseSeed[] = [
   {
     title: 'Build Anything with No-Code AI: Dala AI Studio Masterclass',
     subtitle: 'ስራህን በደቂቃ የሚያቀልልህ ድብቁ ነጻ AI! — Build Apps, Websites & Digital Assets with No-Code',
-    shortDescription: 'Build full websites, mobile apps, digital art, and social media videos in minutes with Dala AI Studio.',
+    shortDescription:
+      'Build full websites, mobile apps, digital art, and social media videos in minutes with Dala AI Studio.',
     description:
       'In this video masterclass, Joel Talargie dives deep into Dala AI Studio—the revolutionary all-in-one no-code AI platform that lets you build literally anything in minutes! Whether you want to create full websites, mobile apps, stunning digital art, or high-converting social media videos, this free AI tool does it all with simple text prompts.\n\nያለምንም የኮዲንግ እውቀት ድረ-ገጾችን (Websites)፣ ሞባይል አፕሊኬሽኖችን (Apps)፣ ዲጂታል ምስሎችን፣ ቪዲዮዎችን እና ሌሎችንም ዲጂታል ስራዎች በደቂቃዎች ውስጥ እንድትሰሩ የሚያስችል ልዩ የቪዲዮ ስልጠና!',
     outcomes: [
@@ -196,7 +212,14 @@ export const COURSE_SEEDS: CourseSeed[] = [
       'No coding or graphic design experience required',
       'Internet access and a free Dala AI account',
     ],
-    tags: ['Dala AI Studio', 'No Code', 'App Builder', 'Website Builder', 'Digital Art', 'Tech Kemsha'],
+    tags: [
+      'Dala AI Studio',
+      'No Code',
+      'App Builder',
+      'Website Builder',
+      'Digital Art',
+      'Tech Kemsha',
+    ],
     categorySlug: 'artificial-intelligence',
     instructorSlug: 'joel-talargie',
     difficulty: 'BEGINNER',
@@ -223,7 +246,7 @@ export const COURSE_SEEDS: CourseSeed[] = [
             isPreview: true,
             videoUrl: 'https://youtu.be/4x9jwFxcWMc',
             content:
-              '<p>Follow along with Joel Talargie as he demonstrates the power of Africa\'s groundbreaking all-in-one AI platform, <strong>Dala AI Studio</strong>.</p><h3>What is covered</h3><ul><li>Creating responsive landing pages and web apps in minutes</li><li>Generating mobile application prototypes</li><li>Creating high-resolution digital artwork and branding assets</li><li>Producing marketing videos from text descriptions</li><li>Monetizing no-code digital creations for clients worldwide</li></ul>',
+              "<p>Follow along with Joel Talargie as he demonstrates the power of Africa's groundbreaking all-in-one AI platform, <strong>Dala AI Studio</strong>.</p><h3>What is covered</h3><ul><li>Creating responsive landing pages and web apps in minutes</li><li>Generating mobile application prototypes</li><li>Creating high-resolution digital artwork and branding assets</li><li>Producing marketing videos from text descriptions</li><li>Monetizing no-code digital creations for clients worldwide</li></ul>",
             resources: [
               {
                 id: 'res-dala-1',
@@ -260,20 +283,25 @@ export const COURSE_SEEDS: CourseSeed[] = [
   {
     title: 'Claude AI Masterclass: Advanced Reasoning & Online Income',
     subtitle: 'Claude AIን በመጠቀም እንዴት የኦንላይን ስራ መስራት እና ገቢ ማግኘት ይቻላል?',
-    shortDescription: 'Master Anthropic Claude AI\'s advanced reasoning, 200k context window, and monetize your AI skills online.',
+    shortDescription:
+      "Master Anthropic Claude AI's advanced reasoning, 200k context window, and monetize your AI skills online.",
     description:
-      'Anthropic\'s Claude AI represents a massive paradigm shift in artificial intelligence. While everyone is still discussing traditional chatbots, Claude has quietly dropped updates that completely redefine what an AI assistant can achieve.\n\nIn this comprehensive guide, Joel Talargie breaks down why Claude is turning heads across the global tech industry, how its advanced reasoning and 200K+ context window outperform rivals, and how YOU can use its hidden features as a complete beginner with zero tech experience to automate knowledge work, analyze complex data, and earn income online.',
+      "Anthropic's Claude AI represents a massive paradigm shift in artificial intelligence. While everyone is still discussing traditional chatbots, Claude has quietly dropped updates that completely redefine what an AI assistant can achieve.\n\nIn this comprehensive guide, Joel Talargie breaks down why Claude is turning heads across the global tech industry, how its advanced reasoning and 200K+ context window outperform rivals, and how YOU can use its hidden features as a complete beginner with zero tech experience to automate knowledge work, analyze complex data, and earn income online.",
     outcomes: [
-      'Master Claude 3.5 Sonnet\'s state-of-the-art reasoning and coding capabilities',
+      "Master Claude 3.5 Sonnet's state-of-the-art reasoning and coding capabilities",
       'Utilize Claude Artifacts to generate live interactive web applications, charts, and documents',
       'Analyze massive books, financial reports, and datasets using the 200k context window',
       'Package and deliver high-value freelance services (copywriting, data analysis, automation) on Upwork and Fiverr',
     ],
-    requirements: [
-      'No prior technical experience required',
-      'Free Claude AI account (claude.ai)',
+    requirements: ['No prior technical experience required', 'Free Claude AI account (claude.ai)'],
+    tags: [
+      'Claude AI',
+      'Anthropic',
+      'Prompt Engineering',
+      'Online Income',
+      'Freelancing',
+      'Tech Kemsha',
     ],
-    tags: ['Claude AI', 'Anthropic', 'Prompt Engineering', 'Online Income', 'Freelancing', 'Tech Kemsha'],
     categorySlug: 'artificial-intelligence',
     instructorSlug: 'joel-talargie',
     difficulty: 'ALL_LEVELS',
@@ -300,7 +328,7 @@ export const COURSE_SEEDS: CourseSeed[] = [
             isPreview: true,
             videoUrl: 'https://youtu.be/nDW9G05lhlg',
             content:
-              '<p>Join Joel Talargie on <strong>Tech Kemsha</strong> as we dissect the groundbreaking features of Anthropic\'s Claude AI.</p><h3>Key Topics</h3><ul><li>Why Claude outperforms traditional AI models in deep reasoning and nuanced writing</li><li>How to take advantage of the massive 200K context window to analyze entire books and codebases</li><li>Building instant web apps and visualizations with Claude Artifacts</li><li>Real-world strategies to land freelance clients and generate income using Claude</li></ul>',
+              "<p>Join Joel Talargie on <strong>Tech Kemsha</strong> as we dissect the groundbreaking features of Anthropic's Claude AI.</p><h3>Key Topics</h3><ul><li>Why Claude outperforms traditional AI models in deep reasoning and nuanced writing</li><li>How to take advantage of the massive 200K context window to analyze entire books and codebases</li><li>Building instant web apps and visualizations with Claude Artifacts</li><li>Real-world strategies to land freelance clients and generate income using Claude</li></ul>",
             resources: [
               {
                 id: 'res-claude-1',
@@ -337,7 +365,8 @@ export const COURSE_SEEDS: CourseSeed[] = [
   {
     title: 'ChatGPT & Systematic Prompt Engineering for Productivity',
     subtitle: 'Master structured prompt frameworks, Custom GPTs, and advanced workplace automation',
-    shortDescription: 'Master ChatGPT prompt frameworks, custom GPTs, and advanced workflows for 10x productivity.',
+    shortDescription:
+      'Master ChatGPT prompt frameworks, custom GPTs, and advanced workflows for 10x productivity.',
     description:
       'Move far beyond basic questions. Learn the systematic prompt engineering frameworks used by top professionals to extract accurate, nuanced, and repeatable results from ChatGPT for business analysis, software development, research, and executive communication.',
     outcomes: [
@@ -346,10 +375,15 @@ export const COURSE_SEEDS: CourseSeed[] = [
       'Automate complex research, data synthesis, and email management',
       'Prevent hallucinations and verify AI generated outputs reliably',
     ],
-    requirements: [
-      'Familiarity with basic ChatGPT interface',
+    requirements: ['Familiarity with basic ChatGPT interface'],
+    tags: [
+      'ChatGPT',
+      'OpenAI',
+      'Prompt Engineering',
+      'Custom GPTs',
+      'Productivity',
+      'Joel Talargie',
     ],
-    tags: ['ChatGPT', 'OpenAI', 'Prompt Engineering', 'Custom GPTs', 'Productivity', 'Joel Talargie'],
     categorySlug: 'artificial-intelligence',
     instructorSlug: 'joel-talargie',
     difficulty: 'INTERMEDIATE',
@@ -405,8 +439,10 @@ export const COURSE_SEEDS: CourseSeed[] = [
   },
   {
     title: 'AI-Driven Digital Marketing & Content Creation Engine',
-    subtitle: 'Scale your audience with AI short-form videos, viral copywriting, and automated funnels',
-    shortDescription: 'Create high-converting social media content, viral short-form videos, and SEO copy using AI.',
+    subtitle:
+      'Scale your audience with AI short-form videos, viral copywriting, and automated funnels',
+    shortDescription:
+      'Create high-converting social media content, viral short-form videos, and SEO copy using AI.',
     description:
       'Learn how to construct a scalable digital content machine. Use cutting-edge generative AI for video creation, voice synthesis, thumbnail ideation, copy generation, and SEO optimization to rapidly grow your brand and revenue.',
     outcomes: [
@@ -474,8 +510,10 @@ export const COURSE_SEEDS: CourseSeed[] = [
   },
   {
     title: 'Online Freelancing & High-Income Remote Work with AI',
-    subtitle: 'The complete blueprint to landing global clients, packaging AI services, and receiving payments',
-    shortDescription: 'Launch a high-income freelance career offering AI-powered writing, design, and automation services.',
+    subtitle:
+      'The complete blueprint to landing global clients, packaging AI services, and receiving payments',
+    shortDescription:
+      'Launch a high-income freelance career offering AI-powered writing, design, and automation services.',
     description:
       'A battle-tested blueprint for breaking into online freelancing on platforms like Upwork, Fiverr, and direct enterprise contracts. Learn how to package AI-accelerated services, write winning proposals that get accepted, set competitive pricing, and safely manage international payments.',
     outcomes: [
@@ -552,8 +590,10 @@ export const COURSE_SEEDS: CourseSeed[] = [
   },
   {
     title: 'AI-Powered Rapid Web Prototyping & Development',
-    subtitle: 'From concept to live deployed web application in hours with modern AI coding assistants',
-    shortDescription: 'Turn ideas into fully functioning web prototypes in hours using modern AI coding tools.',
+    subtitle:
+      'From concept to live deployed web application in hours with modern AI coding assistants',
+    shortDescription:
+      'Turn ideas into fully functioning web prototypes in hours using modern AI coding tools.',
     description:
       'Discover how AI has transformed modern software engineering. Learn how to use next-generation AI coding tools (Cursor, v0.dev, Claude Artifacts) to generate clean React components, style responsive Tailwind UIs, and deploy live full-stack web prototypes at 10x speed.',
     outcomes: [
@@ -566,7 +606,15 @@ export const COURSE_SEEDS: CourseSeed[] = [
       'Basic understanding of HTML, CSS, and JavaScript concepts',
       'A code editor installed on your computer (VS Code / Cursor)',
     ],
-    tags: ['Web Development', 'React', 'Next.js', 'Cursor', 'v0', 'Claude Artifacts', 'Prototyping'],
+    tags: [
+      'Web Development',
+      'React',
+      'Next.js',
+      'Cursor',
+      'v0',
+      'Claude Artifacts',
+      'Prototyping',
+    ],
     categorySlug: 'web-development',
     instructorSlug: 'joel-talargie',
     difficulty: 'INTERMEDIATE',

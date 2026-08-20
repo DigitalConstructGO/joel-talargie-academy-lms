@@ -19,9 +19,15 @@ describe('LearningService', () => {
     activity: jest.fn(),
   };
   const notifications = { notify: jest.fn().mockResolvedValue(null) };
-  const certificates = { request: jest.fn().mockResolvedValue({ certificate: { id: 'cert-1' } }) };
+  const certificates = {
+    request: jest.fn().mockResolvedValue({ certificate: { id: 'cert-1' } }),
+  };
   const certificateWorker = { tick: jest.fn().mockResolvedValue(1) };
-  const storage = { getSignedUrl: jest.fn().mockResolvedValue('https://signed.download/resource') };
+  const storage = {
+    getSignedUrl: jest
+      .fn()
+      .mockResolvedValue('https://signed.download/resource'),
+  };
   const service = new LearningService(
     repository as never,
     notifications as never,

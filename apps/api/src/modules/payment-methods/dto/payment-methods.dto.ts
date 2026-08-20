@@ -44,7 +44,8 @@ export class CreatePaymentMethodDto {
   @MaxLength(500)
   description?: string;
 
-  @IsOptional() @IsEnum(PaymentMethodType) type: PaymentMethodType = PaymentMethodType.OTHER;
+  @IsOptional() @IsEnum(PaymentMethodType) type: PaymentMethodType =
+    PaymentMethodType.OTHER;
 
   @IsOptional() @IsObject() instructions?: Record<string, unknown>;
 
@@ -78,7 +79,12 @@ export class UpdatePaymentMethodDto {
 
   @IsOptional() @IsObject() config?: Record<string, unknown>;
 
-  @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(10000) sortOrder?: number;
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(10000)
+  sortOrder?: number;
 }
 
 export class SetPaymentMethodStatusDto {

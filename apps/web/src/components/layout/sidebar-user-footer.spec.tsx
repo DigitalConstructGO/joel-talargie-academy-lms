@@ -40,10 +40,7 @@ describe('SidebarUserFooter', () => {
 
   it('links the user profile container to the unified profile page', () => {
     render(
-      <SidebarUserFooter
-        roleLabel="Administrator"
-        profileHref={ROUTES.admin.systemProfile}
-      />,
+      <SidebarUserFooter roleLabel="Administrator" profileHref={ROUTES.admin.systemProfile} />,
     );
 
     const link = screen.getByRole('link', { name: /view profile/i });

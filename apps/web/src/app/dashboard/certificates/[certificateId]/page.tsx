@@ -62,8 +62,12 @@ function PreviewPanel({
     return (
       <div className="flex aspect-[297/210] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-muted/30 p-8 text-center shadow-xs">
         <Loader2 className="size-8 animate-spin text-brand" />
-        <p className="text-sm font-medium text-foreground">Your certificate is being generated...</p>
-        <p className="text-xs text-muted-foreground">Rendering tamper-evident credentials and security seal.</p>
+        <p className="text-sm font-medium text-foreground">
+          Your certificate is being generated...
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Rendering tamper-evident credentials and security seal.
+        </p>
       </div>
     );
   }
@@ -240,7 +244,9 @@ export default function CertificateDetailPage() {
                   <Award className="size-5" />
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-foreground">{certificate.studentName}</p>
+                  <p className="truncate text-sm font-semibold text-foreground">
+                    {certificate.studentName}
+                  </p>
                   <p className="truncate text-xs text-muted-foreground">
                     {course?.presenterName ?? 'Joel Talargie Academy'}
                   </p>

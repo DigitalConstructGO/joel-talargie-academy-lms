@@ -279,7 +279,9 @@ export default function AdminDashboardPage() {
                             {course.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>{course.new_enrollments ?? course.totalEnrollments ?? 0}</TableCell>
+                        <TableCell>
+                          {course.new_enrollments ?? course.totalEnrollments ?? 0}
+                        </TableCell>
                         <TableCell>
                           {course.completion_rate !== null && course.completion_rate !== undefined
                             ? `${course.completion_rate}%`

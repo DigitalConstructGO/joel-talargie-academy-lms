@@ -32,20 +32,28 @@ describe('NewsletterController', () => {
 
   it('subscribes an email to the newsletter', async () => {
     const result = await controller.subscribe({ email: 'user@example.com' });
-    expect(service.subscribe).toHaveBeenCalledWith({ email: 'user@example.com' });
+    expect(service.subscribe).toHaveBeenCalledWith({
+      email: 'user@example.com',
+    });
     expect(result.success).toBe(true);
   });
 
   it('lists subscribers for admin', async () => {
     const result = await controller.listSubscribers({ page: 1, pageSize: 20 });
-    expect(service.listSubscribers).toHaveBeenCalledWith({ page: 1, pageSize: 20 });
+    expect(service.listSubscribers).toHaveBeenCalledWith({
+      page: 1,
+      pageSize: 20,
+    });
     expect(result.total).toBe(0);
   });
 
   it('updates subscriber status for admin', async () => {
-    const result = await controller.updateStatus('11111111-1111-1111-1111-111111111111', {
-      status: 'UNSUBSCRIBED',
-    });
+    const result = await controller.updateStatus(
+      '11111111-1111-1111-1111-111111111111',
+      {
+        status: 'UNSUBSCRIBED',
+      },
+    );
     expect(service.updateStatus).toHaveBeenCalledWith(
       '11111111-1111-1111-1111-111111111111',
       'UNSUBSCRIBED',

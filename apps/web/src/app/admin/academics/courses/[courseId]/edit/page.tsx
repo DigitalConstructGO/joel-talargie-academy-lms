@@ -433,11 +433,13 @@ function ListEditor({
   placeholder: string;
 }) {
   const [values, setValues] = useState<string[]>(() =>
-    (items ?? []).map((item) => (typeof item === 'string' ? item : (item ? String(item) : ''))),
+    (items ?? []).map((item) => (typeof item === 'string' ? item : item ? String(item) : '')),
   );
 
   useEffect(() => {
-    setValues((items ?? []).map((item) => (typeof item === 'string' ? item : (item ? String(item) : ''))));
+    setValues(
+      (items ?? []).map((item) => (typeof item === 'string' ? item : item ? String(item) : '')),
+    );
   }, [items]);
 
   return (
@@ -476,7 +478,7 @@ function ListEditor({
         <Button
           onClick={() => {
             const cleanItems = (values ?? [])
-              .map((v) => (typeof v === 'string' ? v.trim() : (v ? String(v).trim() : '')))
+              .map((v) => (typeof v === 'string' ? v.trim() : v ? String(v).trim() : ''))
               .filter(Boolean);
             onSave(cleanItems);
           }}

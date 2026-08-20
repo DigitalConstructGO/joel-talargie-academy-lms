@@ -52,7 +52,9 @@ export function PublicSettingsForm({
       <Card>
         <CardHeader>
           <CardTitle>Platform Registration & Access</CardTitle>
-          <CardDescription>Configure user sign-up availability and currency settings.</CardDescription>
+          <CardDescription>
+            Configure user sign-up availability and currency settings.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between rounded-xl border border-border p-4">
@@ -64,7 +66,9 @@ export function PublicSettingsForm({
             </div>
             <Switch
               checked={form.registrationEnabled}
-              onCheckedChange={(checked) => setForm((prev) => ({ ...prev, registrationEnabled: checked }))}
+              onCheckedChange={(checked) =>
+                setForm((prev) => ({ ...prev, registrationEnabled: checked }))
+              }
               disabled={disabled || updateBatch.isPending}
             />
           </div>

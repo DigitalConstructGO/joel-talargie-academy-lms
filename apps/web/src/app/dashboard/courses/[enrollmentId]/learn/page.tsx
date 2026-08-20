@@ -136,8 +136,7 @@ export default function LessonPlayerPage() {
 
   const isCourseCompleted =
     overview?.progressPercentage === 100 ||
-    (flatLessons.length > 0 &&
-      flatLessons.every((item) => item.progressStatus === 'COMPLETED'));
+    (flatLessons.length > 0 && flatLessons.every((item) => item.progressStatus === 'COMPLETED'));
 
   const canComplete = !isLessonVideo || isLessonAlreadyCompleted || videoFinishedLocally;
 
@@ -151,7 +150,10 @@ export default function LessonPlayerPage() {
   async function handleComplete() {
     if (!activeLessonId) return;
     if (!canComplete) {
-      toast.error('Watch Video to Complete', 'Please finish watching the video before completing this lesson.');
+      toast.error(
+        'Watch Video to Complete',
+        'Please finish watching the video before completing this lesson.',
+      );
       return;
     }
     try {
@@ -173,7 +175,10 @@ export default function LessonPlayerPage() {
     } catch (error) {
       const code = extractErrorCode(error);
       if (code === 'VIDEO_NOT_COMPLETED') {
-        toast.error('Watch Video to Complete', 'Please watch the video lesson to completion before marking it complete.');
+        toast.error(
+          'Watch Video to Complete',
+          'Please watch the video lesson to completion before marking it complete.',
+        );
       } else {
         toast.error('Could not mark this lesson complete', 'Please try again.');
       }
@@ -270,17 +275,17 @@ export default function LessonPlayerPage() {
           </nav>
         </div>
         <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="shrink-0 gap-1.5 text-xs text-sidebar-foreground/70 hover:bg-white/10 hover:text-white"
-              asChild
-            >
-              <Link href={ROUTES.dashboard.courses}>
-                <ChevronLeft className="size-4" />
-                <span>Back to Courses</span>
-              </Link>
-            </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="shrink-0 gap-1.5 text-xs text-sidebar-foreground/70 hover:bg-white/10 hover:text-white"
+            asChild
+          >
+            <Link href={ROUTES.dashboard.courses}>
+              <ChevronLeft className="size-4" />
+              <span>Back to Courses</span>
+            </Link>
+          </Button>
         </div>
       </header>
 
@@ -342,7 +347,12 @@ export default function LessonPlayerPage() {
               />
             ) : null}
 
-            <h1 className={cn('text-2xl font-bold text-white', lesson?.lessonType === 'VIDEO' ? 'mt-6' : 'mt-0')}>
+            <h1
+              className={cn(
+                'text-2xl font-bold text-white',
+                lesson?.lessonType === 'VIDEO' ? 'mt-6' : 'mt-0',
+              )}
+            >
               {lesson?.title ?? activeLesson?.title}
             </h1>
 

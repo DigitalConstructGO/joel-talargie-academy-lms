@@ -1,5 +1,8 @@
 import { ForbiddenException } from '@nestjs/common';
-import { DashboardService, type AuthorizationContext } from '../dashboard.service';
+import {
+  DashboardService,
+  type AuthorizationContext,
+} from '../dashboard.service';
 import type { DashboardRange } from '../dashboard-date-range.service';
 
 describe('DashboardService', () => {
@@ -196,16 +199,19 @@ describe('DashboardService', () => {
       'revenue',
       'completions',
       'certificates',
-    ] as const)('builds a %s trend from resolved points for Admin', async (kind) => {
-      rows([{ period: '2026-08-01', count: 3 }]);
-      const result = await service.trend(
-        kind,
-        { granularity: 'DAY' } as never,
-        adminAuth,
-      );
-      expect(result.points).toEqual([{ period: '2026-08-01', count: 3 }]);
-      expect(result.granularity).toBe('DAY');
-    });
+    ] as const)(
+      'builds a %s trend from resolved points for Admin',
+      async (kind) => {
+        rows([{ period: '2026-08-01', count: 3 }]);
+        const result = await service.trend(
+          kind,
+          { granularity: 'DAY' } as never,
+          adminAuth,
+        );
+        expect(result.points).toEqual([{ period: '2026-08-01', count: 3 }]);
+        expect(result.granularity).toBe('DAY');
+      },
+    );
 
     it('rejects registrations trend for Instructor without global user permissions', async () => {
       await expect(
@@ -220,9 +226,25 @@ describe('DashboardService', () => {
 
   describe('filterOptions', () => {
     it('returns all courses and instructors for Admin', async () => {
-      rows([{ id: 'c1', title: 'Course 1', slug: 'c-1', category_id: 'cat1', category_name: 'Tech', created_by: 'inst1' }]);
+      rows([
+        {
+          id: 'c1',
+          title: 'Course 1',
+          slug: 'c-1',
+          category_id: 'cat1',
+          category_name: 'Tech',
+          created_by: 'inst1',
+        },
+      ]);
       rows([{ id: 'cat1', name: 'Tech', slug: 'tech' }]);
-      rows([{ id: 'inst1', first_name: 'John', last_name: 'Doe', email: 'john@example.com' }]);
+      rows([
+        {
+          id: 'inst1',
+          first_name: 'John',
+          last_name: 'Doe',
+          email: 'john@example.com',
+        },
+      ]);
 
       const result = await service.filterOptions(adminAuth);
       expect(result.scope).toBe('GLOBAL');
@@ -231,7 +253,15 @@ describe('DashboardService', () => {
     });
 
     it('returns only owned courses and no instructors list for Instructor', async () => {
-      rows([{ id: 'c1', title: 'My Course', slug: 'my-course', category_id: 'cat1', category_name: 'Tech' }]);
+      rows([
+        {
+          id: 'c1',
+          title: 'My Course',
+          slug: 'my-course',
+          category_id: 'cat1',
+          category_name: 'Tech',
+        },
+      ]);
       rows([{ id: 'cat1', name: 'Tech', slug: 'tech' }]);
 
       const result = await service.filterOptions(instructorAuth);
@@ -254,7 +284,14 @@ describe('DashboardService', () => {
 
   describe('coursePerformance', () => {
     it('adds a revenue column only with financial access', async () => {
-      rows([{ course_id: 'c1', course_title: 'Course', total_revenue: '100', currency: 'ETB' }]);
+      rows([
+        {
+          course_id: 'c1',
+          course_title: 'Course',
+          total_revenue: '100',
+          currency: 'ETB',
+        },
+      ]);
       const result = await service.coursePerformance(
         { limit: 5, sort: 'REVENUE' } as never,
         true,

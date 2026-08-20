@@ -48,8 +48,7 @@ export const FAQ_ITEMS: FaqEntry[] = [
   },
   {
     question: 'How do promo codes work?',
-    answer:
-      'Enter your promo code at checkout to see the discounted price before you enroll.',
+    answer: 'Enter your promo code at checkout to see the discounted price before you enroll.',
   },
   {
     question: 'Can I request a refund?',

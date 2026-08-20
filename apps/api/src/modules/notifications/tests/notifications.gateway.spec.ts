@@ -44,7 +44,9 @@ describe('NotificationsGateway', () => {
         type: 'access',
         sub: 'user-1',
       });
-      jest.mocked(findAuthUserById).mockResolvedValueOnce({ ...activeUser, id: 'user-1' });
+      jest
+        .mocked(findAuthUserById)
+        .mockResolvedValueOnce({ ...activeUser, id: 'user-1' });
       const client = makeClient();
       client.handshake.auth = { token: 'valid-token' };
 
@@ -60,7 +62,9 @@ describe('NotificationsGateway', () => {
         type: 'access',
         sub: 'user-2',
       });
-      jest.mocked(findAuthUserById).mockResolvedValueOnce({ ...activeUser, id: 'user-2' });
+      jest
+        .mocked(findAuthUserById)
+        .mockResolvedValueOnce({ ...activeUser, id: 'user-2' });
       const client = makeClient();
       client.handshake.query = { token: 'query-token' };
 
@@ -75,7 +79,9 @@ describe('NotificationsGateway', () => {
         type: 'access',
         sub: 'user-3',
       });
-      jest.mocked(findAuthUserById).mockResolvedValueOnce({ ...activeUser, id: 'user-3' });
+      jest
+        .mocked(findAuthUserById)
+        .mockResolvedValueOnce({ ...activeUser, id: 'user-3' });
       const client = makeClient();
       client.handshake.headers = { authorization: 'Bearer header-token' };
 
@@ -115,9 +121,11 @@ describe('NotificationsGateway', () => {
         type: 'access',
         sub: 'user-1',
       });
-      jest
-        .mocked(findAuthUserById)
-        .mockResolvedValueOnce({ ...activeUser, id: 'user-1', status: 'SUSPENDED' });
+      jest.mocked(findAuthUserById).mockResolvedValueOnce({
+        ...activeUser,
+        id: 'user-1',
+        status: 'SUSPENDED',
+      });
       const client = makeClient();
       client.handshake.auth = { token: 'valid-token' };
       await gateway.handleConnection(client as never);

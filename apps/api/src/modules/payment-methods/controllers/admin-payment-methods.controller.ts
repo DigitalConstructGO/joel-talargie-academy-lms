@@ -46,10 +46,7 @@ export class AdminPaymentMethodsController {
   @Post()
   @RequirePermissions('payment_methods.create')
   @ApiOperation({ summary: 'Create a new payment method' })
-  create(
-    @CurrentUser() actor: AuthUser,
-    @Body() dto: CreatePaymentMethodDto,
-  ) {
+  create(@CurrentUser() actor: AuthUser, @Body() dto: CreatePaymentMethodDto) {
     return this.methods.create(actor, dto);
   }
 

@@ -1,5 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { and, asc, desc, eq, isNull, schema, sql } from '@joel-academy/database';
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  isNull,
+  schema,
+  sql,
+} from '@joel-academy/database';
 import { DatabaseService } from '../../../common/database/database.service';
 import { SettingRegistryService } from './settings';
 import { SettingsQueryDto, SettingItemDto } from './settings.dto';
@@ -169,13 +177,18 @@ export class PlatformSettingsService {
       faqs: val('landing.faqs'),
       finalCta: val('landing.final_cta'),
       publicSettings: {
-        academyName: (map.get('academy.name') as string) ?? 'Joel Talargie Academy',
+        academyName:
+          (map.get('academy.name') as string) ?? 'Joel Talargie Academy',
         shortName: (map.get('academy.short_name') as string) ?? 'JTA',
-        supportEmail: (map.get('academy.support_email') as string) ?? 'support@example.com',
+        supportEmail:
+          (map.get('academy.support_email') as string) ?? 'support@example.com',
         supportPhone: (map.get('academy.support_phone') as string) ?? '',
-        defaultCurrency: (map.get('academy.default_currency') as string) ?? 'ETB',
-        timezone: (map.get('academy.timezone') as string) ?? 'Africa/Addis_Ababa',
-        registrationEnabled: (map.get('registration.enabled') as boolean) ?? true,
+        defaultCurrency:
+          (map.get('academy.default_currency') as string) ?? 'ETB',
+        timezone:
+          (map.get('academy.timezone') as string) ?? 'Africa/Addis_Ababa',
+        registrationEnabled:
+          (map.get('registration.enabled') as boolean) ?? true,
       },
     };
   }
@@ -250,8 +263,14 @@ export class PlatformSettingsService {
         instructorLastName: schema.userProfiles.lastName,
       })
       .from(schema.courses)
-      .leftJoin(schema.categories, eq(schema.categories.id, schema.courses.categoryId))
-      .leftJoin(schema.userProfiles, eq(schema.userProfiles.userId, schema.courses.createdBy))
+      .leftJoin(
+        schema.categories,
+        eq(schema.categories.id, schema.courses.categoryId),
+      )
+      .leftJoin(
+        schema.userProfiles,
+        eq(schema.userProfiles.userId, schema.courses.createdBy),
+      )
       .where(
         and(
           eq(schema.courses.status, 'PUBLISHED'),
@@ -283,7 +302,11 @@ export class PlatformSettingsService {
       durationMinutes: c.durationMinutes ?? 0,
       isFeatured: c.featured ?? false,
       category: c.categoryName
-        ? { id: c.categoryId!, name: c.categoryName, slug: c.categorySlug ?? '' }
+        ? {
+            id: c.categoryId!,
+            name: c.categoryName,
+            slug: c.categorySlug ?? '',
+          }
         : undefined,
       instructor: {
         name:
@@ -305,8 +328,16 @@ export class PlatformSettingsService {
         courseCount: sql<number>`count(${schema.courses.id}) filter (where ${schema.courses.status} = 'PUBLISHED' and ${schema.courses.visibility} = 'PUBLIC' and ${schema.courses.archivedAt} is null)`,
       })
       .from(schema.categories)
-      .leftJoin(schema.courses, eq(schema.courses.categoryId, schema.categories.id))
-      .where(and(eq(schema.categories.isActive, true), isNull(schema.categories.archivedAt)))
+      .leftJoin(
+        schema.courses,
+        eq(schema.courses.categoryId, schema.categories.id),
+      )
+      .where(
+        and(
+          eq(schema.categories.isActive, true),
+          isNull(schema.categories.archivedAt),
+        ),
+      )
       .groupBy(schema.categories.id)
       .orderBy(asc(schema.categories.sortOrder), asc(schema.categories.name))
       .limit(catLimit);
@@ -331,8 +362,15 @@ export class PlatformSettingsService {
         bio: schema.userProfiles.bio,
       })
       .from(schema.users)
-      .leftJoin(schema.userProfiles, eq(schema.userProfiles.userId, schema.users.id))
-      .where(targetInstructorId ? eq(schema.users.id, targetInstructorId) : undefined)
+      .leftJoin(
+        schema.userProfiles,
+        eq(schema.userProfiles.userId, schema.users.id),
+      )
+      .where(
+        targetInstructorId
+          ? eq(schema.users.id, targetInstructorId)
+          : undefined,
+      )
       .limit(1);
 
     const cfgName = (mentorConfig as any)?.name?.trim();
@@ -348,7 +386,8 @@ export class PlatformSettingsService {
         (mentorUser?.firstName
           ? `${mentorUser.firstName} ${mentorUser.lastName ?? ''}`.trim()
           : 'Joel Talargie'),
-      headline: cfgHeadline || 'Founder & Lead Instructor at Joel Talargie Academy',
+      headline:
+        cfgHeadline || 'Founder & Lead Instructor at Joel Talargie Academy',
       bio:
         cfgBio ||
         mentorUser?.bio ||
@@ -356,7 +395,8 @@ export class PlatformSettingsService {
       photoUrl: cfgPhotoUrl || null,
       avatarUrl: cfgPhotoUrl || null,
       achievements:
-        Array.isArray(cfgAchievements) && cfgAchievements.filter((a: string) => a.trim()).length > 0
+        Array.isArray(cfgAchievements) &&
+        cfgAchievements.filter((a: string) => a.trim()).length > 0
           ? cfgAchievements.filter((a: string) => a.trim())
           : undefined,
     };
@@ -401,4 +441,3 @@ export class PlatformSettingsService {
     };
   }
 }
-

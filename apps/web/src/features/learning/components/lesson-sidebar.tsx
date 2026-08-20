@@ -1,7 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, CheckCircle2, ChevronDown, ChevronRight, Circle, Clock, PlayCircle } from 'lucide-react';
+import {
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Circle,
+  Clock,
+  PlayCircle,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDurationSeconds } from '@/lib/format';
 import type { CurriculumSection } from '../types/learning.types';

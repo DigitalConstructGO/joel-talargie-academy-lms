@@ -117,7 +117,8 @@ function setYouTubeSessionBlocked(blocked: boolean) {
 function loadYouTubeIframeApi(): Promise<YouTubeIframeApi> {
   if (typeof window === 'undefined') return Promise.reject(new Error('Window unavailable'));
   if (window.YT && window.YT.Player) return Promise.resolve(window.YT);
-  if (checkYouTubeSessionBlocked()) return Promise.reject(new Error('YouTube blocked on this network'));
+  if (checkYouTubeSessionBlocked())
+    return Promise.reject(new Error('YouTube blocked on this network'));
   if (youtubeApiPromise) return youtubeApiPromise;
 
   youtubeApiPromise = new Promise((resolve, reject) => {
@@ -393,7 +394,7 @@ function YouTubeLessonPlayer({
       {topBar}
       <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-sidebar-border bg-black shadow-2xl">
         <div ref={mountRef} className={`size-full ${playbackError ? 'hidden' : 'block'}`} />
-        
+
         {playbackError && (
           <div className="relative size-full flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-zinc-950 via-slate-900 to-zinc-950 p-6 text-center">
             {/* Background Thumbnail preview */}
@@ -405,7 +406,7 @@ function YouTubeLessonPlayer({
                 className="absolute inset-0 size-full object-cover opacity-20 filter blur-xs"
               />
             )}
-            
+
             <div className="relative z-10 max-w-lg space-y-4">
               <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-red-500/30 bg-red-500/10 text-red-400 shadow-lg shadow-red-500/10">
                 <Play className="size-7 fill-red-400" />
@@ -416,7 +417,9 @@ function YouTubeLessonPlayer({
                   YouTube Player Restricted on Network
                 </h3>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  YouTube embed connections are blocked on your current network (<code className="text-red-400 font-mono text-[11px]">ERR_EMPTY_RESPONSE</code>). Choose how you&apos;d like to continue:
+                  YouTube embed connections are blocked on your current network (
+                  <code className="text-red-400 font-mono text-[11px]">ERR_EMPTY_RESPONSE</code>).
+                  Choose how you&apos;d like to continue:
                 </p>
               </div>
 
@@ -695,7 +698,8 @@ function NativeLessonPlayer({
           </p>
         </div>
       ) : (
-        !isPlaying && !isLoading && (
+        !isPlaying &&
+        !isLoading && (
           <button
             type="button"
             onClick={togglePlay}

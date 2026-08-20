@@ -16,8 +16,7 @@ const NOTIFICATION_NAMESPACE = '/notifications';
  * Next.js. In production this is the API origin; when unset it falls back to
  * the same origin (API served behind the web app).
  */
-const getSocketOrigin = () =>
-  (process.env.NEXT_PUBLIC_API_URL ?? '').trim().replace(/\/+$/, '');
+const getSocketOrigin = () => (process.env.NEXT_PUBLIC_API_URL ?? '').trim().replace(/\/+$/, '');
 
 /**
  * Real-time notification delivery. While the user is authenticated this opens

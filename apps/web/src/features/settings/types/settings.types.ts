@@ -9,15 +9,7 @@ export type SettingCategory =
   | 'reports';
 
 export type SettingType =
-  | 'STRING'
-  | 'BOOLEAN'
-  | 'INTEGER'
-  | 'EMAIL'
-  | 'ENUM'
-  | 'UUID'
-  | 'JSON'
-  | 'OBJECT'
-  | 'ARRAY';
+  'STRING' | 'BOOLEAN' | 'INTEGER' | 'EMAIL' | 'ENUM' | 'UUID' | 'JSON' | 'OBJECT' | 'ARRAY';
 
 export interface PlatformSetting {
   key: string;

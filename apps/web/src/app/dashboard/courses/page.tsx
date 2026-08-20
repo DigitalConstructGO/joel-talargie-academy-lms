@@ -70,7 +70,6 @@ export default function CoursesPage() {
   const user = useAuthStore((state) => state.user);
   const isStudent = user?.roles?.includes('STUDENT') ?? false;
 
-
   const categoriesQuery = useCategories({ pageSize: 100 });
   const coursesQuery = useCourses({ pageSize: 100 });
   const enrollmentsQuery = useMyEnrollments(

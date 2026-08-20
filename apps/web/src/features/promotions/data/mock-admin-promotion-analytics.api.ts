@@ -16,10 +16,7 @@ export const mockAdminPromotionAnalyticsApi = {
     const active = MOCK_COUPONS.filter((coupon) => coupon.status === 'ACTIVE').length;
     const expired = MOCK_COUPONS.filter((coupon) => coupon.status === 'EXPIRED').length;
     const redeemed = MOCK_COUPONS.filter((coupon) => coupon.redemptionCount > 0).length;
-    const totalRedemptions = MOCK_COUPONS.reduce(
-      (sum, coupon) => sum + coupon.redemptionCount,
-      0,
-    );
+    const totalRedemptions = MOCK_COUPONS.reduce((sum, coupon) => sum + coupon.redemptionCount, 0);
     const topCodes = [...MOCK_COUPONS]
       .sort((a, b) => b.redemptionCount - a.redemptionCount)
       .slice(0, limit)

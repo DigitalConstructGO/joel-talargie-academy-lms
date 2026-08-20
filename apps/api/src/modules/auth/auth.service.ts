@@ -56,6 +56,13 @@ export class AuthService {
   private normalizeEmail(email: string) {
     return email.trim().toLowerCase();
   }
+  private publicAppUrl(): string {
+    const raw =
+      (this.config.get('EMAIL_PUBLIC_APP_URL') as string) ||
+      (this.config.get('WEB_URL') as string) ||
+      'http://lms.srv1912542.hstgr.cloud';
+    return raw.trim().replace(/\/+$/, '');
+  }
   private safe(user: Awaited<ReturnType<typeof findAuthUserById>>): AuthUser {
     if (!user) throw new UnauthorizedException();
     return {
@@ -126,7 +133,8 @@ export class AuthService {
         deduplicationKey: `welcome:${user.id}`,
         category: 'learning',
         title: 'Welcome to Joel Talargie Academy!',
-        message: 'Your account is ready. Start exploring courses and begin learning today.',
+        message:
+          'Your account is ready. Start exploring courses and begin learning today.',
         actionUrl: '/dashboard',
         relatedEntityType: 'user',
         relatedEntityId: user.id,
@@ -134,7 +142,10 @@ export class AuthService {
       })
       .catch(() => null);
   }
-  private notifyGoogleSignIn(user: { id: string; email: string; firstName: string }, sessionId: string) {
+  private notifyGoogleSignIn(
+    user: { id: string; email: string; firstName: string },
+    sessionId: string,
+  ) {
     return this.notifications
       .notify({
         userId: user.id,
@@ -149,7 +160,8 @@ export class AuthService {
         deduplicationKey: `new-login:${sessionId}`,
         category: 'security',
         title: 'New Google sign-in',
-        message: 'A new sign-in to your academy account with Google was detected.',
+        message:
+          'A new sign-in to your academy account with Google was detected.',
         actionUrl: '/dashboard/security',
         priority: 'CRITICAL',
       })
@@ -196,7 +208,7 @@ export class AuthService {
         templateCode: 'EMAIL_VERIFICATION',
         variables: {
           recipientName: user.firstName ?? 'Student',
-          verificationUrl: `${this.config.get('EMAIL_PUBLIC_APP_URL')}/auth/verify-email?token=${verificationToken}`,
+          verificationUrl: `${this.publicAppUrl()}/auth/verify-email?token=${verificationToken}`,
           expiresInMinutes: '1440',
           academyName: 'Joel Talargie Academy',
           supportEmail:
@@ -434,7 +446,7 @@ export class AuthService {
           templateCode: 'PASSWORD_RESET',
           variables: {
             recipientName: user.firstName ?? 'Student',
-            resetUrl: `${this.config.get('EMAIL_PUBLIC_APP_URL')}/auth/reset-password?token=${resetToken}`,
+            resetUrl: `${this.publicAppUrl()}/auth/reset-password?token=${resetToken}`,
             expiresInMinutes: '60',
             academyName: 'Joel Talargie Academy',
             supportEmail:

@@ -283,7 +283,8 @@ export async function seedCourses(
         shortDescription: courseData.shortDescription,
         description: courseData.description,
         presenterName:
-          courseData.presenterName ?? `${INSTRUCTOR_PERSON.firstName} ${INSTRUCTOR_PERSON.lastName}`,
+          courseData.presenterName ??
+          `${INSTRUCTOR_PERSON.firstName} ${INSTRUCTOR_PERSON.lastName}`,
         status: courseData.status,
         visibility: 'PUBLIC',
         accessType: courseData.accessType,

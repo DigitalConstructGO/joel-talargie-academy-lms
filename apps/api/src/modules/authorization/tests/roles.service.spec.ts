@@ -147,7 +147,7 @@ describe('RolesService', () => {
     });
   });
 
-   describe('replacePermissions', () => {
+  describe('replacePermissions', () => {
     it('checks assignability before delegating to the repository', async () => {
       contexts.resolve.mockResolvedValueOnce({
         status: 'ACTIVE',

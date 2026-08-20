@@ -39,7 +39,8 @@ export class AdminPaymentsController {
   @Get('count')
   @RequirePermissions('payments.read')
   @ApiOperation({
-    summary: 'Count payments matching the review-queue filters (e.g. status=PENDING)',
+    summary:
+      'Count payments matching the review-queue filters (e.g. status=PENDING)',
   })
   count(@Query() query: PaymentListQueryDto) {
     return this.payments.adminCount(query);

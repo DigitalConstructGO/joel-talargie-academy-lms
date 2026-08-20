@@ -23,9 +23,7 @@ export function computePricing(
   if (code.discountType === 'FREE') {
     discountAmount = originalPrice;
   } else if (code.discountType === 'PERCENTAGE') {
-    discountAmount = round2(
-      (originalPrice * Number(code.discountValue)) / 100,
-    );
+    discountAmount = round2((originalPrice * Number(code.discountValue)) / 100);
   } else {
     discountAmount = round2(Number(code.discountValue));
   }

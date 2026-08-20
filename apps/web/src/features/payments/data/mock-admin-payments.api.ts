@@ -26,8 +26,7 @@ function filterAdminPayments(params: AdminPaymentListParams) {
   return store.filter((payment) => {
     if (params.status && payment.status !== params.status) return false;
     if (params.courseId && payment.courseId !== params.courseId) return false;
-    if (params.paymentMethodId && payment.paymentMethodId !== params.paymentMethodId)
-      return false;
+    if (params.paymentMethodId && payment.paymentMethodId !== params.paymentMethodId) return false;
     if (params.amountMismatch !== undefined && payment.amountMismatch !== params.amountMismatch)
       return false;
     if (params.duplicateOnly && payment.duplicateTransactionCount === 0) return false;

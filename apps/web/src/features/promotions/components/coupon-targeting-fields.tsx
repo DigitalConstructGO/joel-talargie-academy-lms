@@ -5,10 +5,7 @@ import { Search } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  RadioGroup,
-  RadioGroupItem,
-} from '@/components/ui/radio-group';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -114,7 +111,9 @@ export function CouponTargetingFields({
                           key={category.id}
                           role="button"
                           tabIndex={0}
-                          onClick={() => onCategoryIdsChange(toggleId(selectedCategoryIds, category.id))}
+                          onClick={() =>
+                            onCategoryIdsChange(toggleId(selectedCategoryIds, category.id))
+                          }
                           onKeyDown={(event) => {
                             if (event.key === 'Enter' || event.key === ' ') {
                               event.preventDefault();
@@ -130,7 +129,9 @@ export function CouponTargetingFields({
                             }
                             className="pointer-events-none"
                           />
-                          <span className={checked ? 'font-medium text-foreground' : 'text-foreground'}>
+                          <span
+                            className={checked ? 'font-medium text-foreground' : 'text-foreground'}
+                          >
                             {category.name}
                           </span>
                         </div>

@@ -104,7 +104,8 @@ describe('GoogleAuthGuard', () => {
   it('accepts a callback with valid signed HMAC state even when cookie is dropped', () => {
     configureCredentials();
     config.get.mockImplementation((key: string) => {
-      if (key === 'GOOGLE_CLIENT_ID' || key === 'GOOGLE_CLIENT_SECRET') return 'configured';
+      if (key === 'GOOGLE_CLIENT_ID' || key === 'GOOGLE_CLIENT_SECRET')
+        return 'configured';
       if (key === 'JWT_ACCESS_SECRET') return 'test-secret-key';
       return false;
     });

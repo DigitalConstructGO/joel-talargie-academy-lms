@@ -51,7 +51,10 @@ export class CatalogService {
         code: 'INSUFFICIENT_PERMISSIONS',
         message: 'You do not have permission to perform this action.',
       });
-    if (context.isAdministrator || context.permissions.includes('courses.manage_all'))
+    if (
+      context.isAdministrator ||
+      context.permissions.includes('courses.manage_all')
+    )
       return;
     const course = await this.repository.courseById(courseId);
     if (!course)
@@ -360,10 +363,14 @@ export class CatalogService {
     if (!readiness.ready) {
       const issueDescriptions: Record<string, string> = {
         COURSE_DETAILS_REQUIRED: 'Course title and descriptions are required.',
-        SECTION_REQUIRED: 'At least one curriculum section is required before publishing.',
-        PUBLISHED_LESSON_REQUIRED: 'At least one published lesson is required before publishing.',
-        OUTCOME_REQUIRED: 'At least one learning outcome is required before publishing.',
-        VALID_PRICE_REQUIRED: 'Paid courses must have a valid price greater than 0.',
+        SECTION_REQUIRED:
+          'At least one curriculum section is required before publishing.',
+        PUBLISHED_LESSON_REQUIRED:
+          'At least one published lesson is required before publishing.',
+        OUTCOME_REQUIRED:
+          'At least one learning outcome is required before publishing.',
+        VALID_PRICE_REQUIRED:
+          'Paid courses must have a valid price greater than 0.',
       };
       const detailedMessage = readiness.issues
         .map((issue) => issueDescriptions[issue] || issue)
@@ -570,19 +577,22 @@ export class CatalogService {
     if (lesson.lessonType === 'VIDEO' && !lesson.videoUrl?.trim()) {
       throw new BadRequestException({
         code: 'VIDEO_URL_REQUIRED',
-        message: 'A valid video URL is required before publishing a video lesson.',
+        message:
+          'A valid video URL is required before publishing a video lesson.',
       });
     }
     if (lesson.lessonType === 'TEXT' && !lesson.content?.trim()) {
       throw new BadRequestException({
         code: 'CONTENT_REQUIRED',
-        message: 'Lesson content/notes are required before publishing a text lesson.',
+        message:
+          'Lesson content/notes are required before publishing a text lesson.',
       });
     }
     if (lesson.lessonType === 'EXTERNAL_LINK' && !lesson.externalUrl?.trim()) {
       throw new BadRequestException({
         code: 'EXTERNAL_URL_REQUIRED',
-        message: 'An external URL is required before publishing an external link lesson.',
+        message:
+          'An external URL is required before publishing an external link lesson.',
       });
     }
     validateLesson(lesson as unknown as CreateLessonDto);

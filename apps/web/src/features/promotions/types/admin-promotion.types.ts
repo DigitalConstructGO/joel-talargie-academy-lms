@@ -1,6 +1,6 @@
 export type PromoDiscountType = 'PERCENTAGE' | 'FIXED' | 'FREE';
 export type PromoCodeType =
-  | 'MANUAL' | 'REFERRAL' | 'AFFILIATE' | 'CORPORATE' | 'UNIVERSITY_PARTNER' | 'SYSTEM_GENERATED';
+  'MANUAL' | 'REFERRAL' | 'AFFILIATE' | 'CORPORATE' | 'UNIVERSITY_PARTNER' | 'SYSTEM_GENERATED';
 export type PromoCodeStatus = 'ACTIVE' | 'PAUSED' | 'EXPIRED' | 'REVOKED';
 export type PromoRedemptionStatus = 'RESERVED' | 'CONFIRMED' | 'CANCELLED' | 'FAILED';
 export type CouponValidityStatus = 'NOT_STARTED' | 'ACTIVE' | 'EXPIRED' | 'INACTIVE' | 'REVOKED';

@@ -2,16 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import {
-  Clock,
-  Eye,
-  EyeOff,
-  FileText,
-  Loader2,
-  Paperclip,
-  Plus,
-  Trash2,
-} from 'lucide-react';
+import { Clock, Eye, EyeOff, FileText, Loader2, Paperclip, Plus, Trash2 } from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
 import { PageHeader } from '@/components/common/page-header';
 import { PageBreadcrumb } from '@/components/common/page-breadcrumb';
@@ -272,9 +263,7 @@ export default function AdminLessonDetailPage() {
                     onClick={handleTogglePublish}
                     disabled={unpublishLesson.isPending}
                   >
-                    {unpublishLesson.isPending && (
-                      <Loader2 className="size-3.5 animate-spin" />
-                    )}
+                    {unpublishLesson.isPending && <Loader2 className="size-3.5 animate-spin" />}
                     Unpublish
                   </Button>
                 </Can>
@@ -286,9 +275,7 @@ export default function AdminLessonDetailPage() {
                     onClick={handleTogglePublish}
                     disabled={publishLesson.isPending}
                   >
-                    {publishLesson.isPending && (
-                      <Loader2 className="size-3.5 animate-spin" />
-                    )}
+                    {publishLesson.isPending && <Loader2 className="size-3.5 animate-spin" />}
                     Publish Lesson
                   </Button>
                 </Can>
@@ -309,7 +296,12 @@ export default function AdminLessonDetailPage() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="lesson-title">Lesson Title</Label>
-                <Input id="lesson-title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+                <Input
+                  id="lesson-title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -425,11 +417,7 @@ export default function AdminLessonDetailPage() {
                       Allows prospective students to view this lesson before enrolling.
                     </p>
                   </div>
-                  <Switch
-                    id="lesson-preview"
-                    checked={isPreview}
-                    onCheckedChange={setIsPreview}
-                  />
+                  <Switch id="lesson-preview" checked={isPreview} onCheckedChange={setIsPreview} />
                 </div>
               </div>
 

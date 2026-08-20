@@ -63,31 +63,29 @@ export default function GoogleCallbackPage() {
       });
   }, [handle, router]);
 
-  const stageDetails: Record<
-    CallbackStage,
-    { title: string; subtitle: string; progress: number }
-  > = {
-    verifying: {
-      title: 'Verifying Google credentials...',
-      subtitle: 'Validating single sign-on response with Google.',
-      progress: 35,
-    },
-    securing: {
-      title: 'Securing your session...',
-      subtitle: 'Syncing your profile, roles, and permissions.',
-      progress: 75,
-    },
-    redirecting: {
-      title: 'Session ready!',
-      subtitle: 'Taking you to your learning portal now...',
-      progress: 100,
-    },
-    error: {
-      title: 'Authentication Error',
-      subtitle: errorMessage || 'Could not complete Google sign-in. Returning to login...',
-      progress: 100,
-    },
-  };
+  const stageDetails: Record<CallbackStage, { title: string; subtitle: string; progress: number }> =
+    {
+      verifying: {
+        title: 'Verifying Google credentials...',
+        subtitle: 'Validating single sign-on response with Google.',
+        progress: 35,
+      },
+      securing: {
+        title: 'Securing your session...',
+        subtitle: 'Syncing your profile, roles, and permissions.',
+        progress: 75,
+      },
+      redirecting: {
+        title: 'Session ready!',
+        subtitle: 'Taking you to your learning portal now...',
+        progress: 100,
+      },
+      error: {
+        title: 'Authentication Error',
+        subtitle: errorMessage || 'Could not complete Google sign-in. Returning to login...',
+        progress: 100,
+      },
+    };
 
   const current = stageDetails[stage];
 
@@ -135,11 +133,7 @@ export default function GoogleCallbackPage() {
           </div>
         ) : (
           <div className="mt-6">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.replace(ROUTES.auth.login)}
-            >
+            <Button variant="outline" size="sm" onClick={() => router.replace(ROUTES.auth.login)}>
               Return to Login
             </Button>
           </div>

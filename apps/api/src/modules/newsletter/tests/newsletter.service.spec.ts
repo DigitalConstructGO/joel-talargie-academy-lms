@@ -22,14 +22,18 @@ describe('NewsletterService', () => {
         },
       },
       insert: jest.fn().mockReturnValue({
-        values: jest.fn().mockResolvedValue([{ id: 'sub-1', email: 'test@example.com' }]),
+        values: jest
+          .fn()
+          .mockResolvedValue([{ id: 'sub-1', email: 'test@example.com' }]),
       }),
       update: jest.fn().mockReturnValue({
         set: jest.fn().mockReturnValue({
           where: jest.fn().mockReturnValue({
-            returning: jest.fn().mockResolvedValue([
-              { id: 'sub-1', email: 'test@example.com', status: 'ACTIVE' },
-            ]),
+            returning: jest
+              .fn()
+              .mockResolvedValue([
+                { id: 'sub-1', email: 'test@example.com', status: 'ACTIVE' },
+              ]),
           }),
         }),
       }),
@@ -39,7 +43,11 @@ describe('NewsletterService', () => {
             orderBy: jest.fn().mockReturnValue({
               limit: jest.fn().mockReturnValue({
                 offset: jest.fn().mockResolvedValue([
-                  { id: 'sub-1', email: 'test@example.com', status: 'ACTIVE' },
+                  {
+                    id: 'sub-1',
+                    email: 'test@example.com',
+                    status: 'ACTIVE',
+                  },
                 ]),
               }),
             }),
@@ -59,14 +67,16 @@ describe('NewsletterService', () => {
     it('creates a new subscriber if email is not found', () => {
       mockDb.query.newsletterSubscribers.findFirst.mockResolvedValue(null);
 
-      return service.subscribe({ email: ' NewUser@example.com ' }).then((result) => {
-        expect(result).toEqual({
-          success: true,
-          message: "You're subscribed successfully!",
-          status: 'subscribed',
+      return service
+        .subscribe({ email: ' NewUser@example.com ' })
+        .then((result) => {
+          expect(result).toEqual({
+            success: true,
+            message: "You're subscribed successfully!",
+            status: 'subscribed',
+          });
+          expect(mockDb.insert).toHaveBeenCalled();
         });
-        expect(mockDb.insert).toHaveBeenCalled();
-      });
     });
 
     it('returns already_subscribed status if active subscriber exists', () => {
@@ -108,9 +118,9 @@ describe('NewsletterService', () => {
     it('throws NotFoundException if subscriber not found', async () => {
       mockDb.query.newsletterSubscribers.findFirst.mockResolvedValue(null);
 
-      await expect(service.updateStatus('invalid-id', 'UNSUBSCRIBED')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.updateStatus('invalid-id', 'UNSUBSCRIBED'),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('updates status of an existing subscriber', async () => {

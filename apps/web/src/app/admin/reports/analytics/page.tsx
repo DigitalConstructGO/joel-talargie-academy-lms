@@ -308,9 +308,7 @@ export default function AdminAnalyticsPage() {
               {filterOptions && filterOptions.courses.length > 1 && (
                 <Select
                   value={courseId || 'ALL'}
-                  onValueChange={(val) =>
-                    setFilters({ courseId: val === 'ALL' ? undefined : val })
-                  }
+                  onValueChange={(val) => setFilters({ courseId: val === 'ALL' ? undefined : val })}
                 >
                   <SelectTrigger className="w-48" aria-label="Course Filter">
                     <SelectValue placeholder="All Courses" />
@@ -393,8 +391,8 @@ export default function AdminAnalyticsPage() {
               <>
                 <UserCheck className="h-4 w-4 text-primary" />
                 <span>
-                  <strong className="font-semibold text-foreground">Instructor Scope:</strong> Data is
-                  strictly calculated from the courses you own and manage.
+                  <strong className="font-semibold text-foreground">Instructor Scope:</strong> Data
+                  is strictly calculated from the courses you own and manage.
                 </span>
                 <Badge variant="outline" className="ml-auto font-mono text-[10px]">
                   INSTRUCTOR
@@ -490,7 +488,8 @@ export default function AdminAnalyticsPage() {
               />
             )}
 
-            {data.kpis?.revenue && canReadRevenue && (
+            {data.kpis?.revenue &&
+              canReadRevenue &&
               data.kpis.revenue.map((rev) => (
                 <StatCard
                   key={rev.currency}
@@ -499,8 +498,7 @@ export default function AdminAnalyticsPage() {
                   value={formatCurrency(Number(rev.amount), rev.currency)}
                   tone="success"
                 />
-              ))
-            )}
+              ))}
           </div>
 
           {/* Period-over-period comparisons - only if present in response */}
@@ -562,7 +560,11 @@ export default function AdminAnalyticsPage() {
                         <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/40" />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      className="stroke-border/40"
+                    />
                     <XAxis
                       dataKey="period"
                       tickLine={false}
@@ -604,7 +606,11 @@ export default function AdminAnalyticsPage() {
                         <stop offset="100%" stopColor="#d97706" />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/40" />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      className="stroke-border/40"
+                    />
                     <XAxis
                       dataKey="period"
                       tickLine={false}
@@ -630,7 +636,11 @@ export default function AdminAnalyticsPage() {
                   />
                 ) : revenueTrendQuery.data && revenueTrendQuery.data.points.length > 0 ? (
                   <ChartCard
-                    title={data.scope === 'INSTRUCTOR' ? 'Course Revenue Trend' : 'Platform Revenue Trend'}
+                    title={
+                      data.scope === 'INSTRUCTOR'
+                        ? 'Course Revenue Trend'
+                        : 'Platform Revenue Trend'
+                    }
                     description="Approved payment revenue over the selected period"
                     config={REVENUE_TREND_CONFIG}
                   >
@@ -647,7 +657,11 @@ export default function AdminAnalyticsPage() {
                           <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/40" />
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        className="stroke-border/40"
+                      />
                       <XAxis
                         dataKey="period"
                         tickLine={false}
@@ -707,7 +721,11 @@ export default function AdminAnalyticsPage() {
                           <stop offset="100%" stopColor="#0284c7" />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/40" />
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        className="stroke-border/40"
+                      />
                       <XAxis
                         dataKey="period"
                         tickLine={false}
@@ -728,46 +746,53 @@ export default function AdminAnalyticsPage() {
                 ))}
 
               {/* Registrations Trend - Global only */}
-              {isGlobal && canReadUsers && data.trends?.registrations && data.trends.registrations.length > 0 && (
-                <ChartCard
-                  title="New Registrations"
-                  description="User growth over the selected period"
-                  config={REGISTRATIONS_CONFIG}
-                >
-                  <AreaChart
-                    data={data.trends.registrations.map((p) => ({
-                      period: p.period,
-                      registrations: p.count,
-                    }))}
-                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              {isGlobal &&
+                canReadUsers &&
+                data.trends?.registrations &&
+                data.trends.registrations.length > 0 && (
+                  <ChartCard
+                    title="New Registrations"
+                    description="User growth over the selected period"
+                    config={REGISTRATIONS_CONFIG}
                   >
-                    <defs>
-                      <linearGradient id="regGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.45} />
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/40" />
-                    <XAxis
-                      dataKey="period"
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(v) => formatDate(v)}
-                      tickMargin={8}
-                    />
-                    <YAxis tickLine={false} axisLine={false} tickMargin={8} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Area
-                      dataKey="registrations"
-                      type="monotone"
-                      fill="url(#regGrad)"
-                      stroke="#3b82f6"
-                      strokeWidth={2.5}
-                      activeDot={{ r: 6, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }}
-                    />
-                  </AreaChart>
-                </ChartCard>
-              )}
+                    <AreaChart
+                      data={data.trends.registrations.map((p) => ({
+                        period: p.period,
+                        registrations: p.count,
+                      }))}
+                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                    >
+                      <defs>
+                        <linearGradient id="regGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.45} />
+                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        className="stroke-border/40"
+                      />
+                      <XAxis
+                        dataKey="period"
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={(v) => formatDate(v)}
+                        tickMargin={8}
+                      />
+                      <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Area
+                        dataKey="registrations"
+                        type="monotone"
+                        fill="url(#regGrad)"
+                        stroke="#3b82f6"
+                        strokeWidth={2.5}
+                        activeDot={{ r: 6, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }}
+                      />
+                    </AreaChart>
+                  </ChartCard>
+                )}
 
               {/* Payment Count Trend - if revenue permitted */}
               {canReadRevenue && data.trends?.payments && data.trends.payments.length > 0 && (
@@ -789,7 +814,11 @@ export default function AdminAnalyticsPage() {
                         <stop offset="100%" stopColor="#ea580c" />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/40" />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      className="stroke-border/40"
+                    />
                     <XAxis
                       dataKey="period"
                       tickLine={false}
@@ -821,7 +850,12 @@ export default function AdminAnalyticsPage() {
                     <ChartLegend content={<ChartLegendContent />} />
                     <Pie
                       data={[
-                        { key: 'active', name: 'Active', value: data.kpis.enrollments.active, fill: '#10b981' },
+                        {
+                          key: 'active',
+                          name: 'Active',
+                          value: data.kpis.enrollments.active,
+                          fill: '#10b981',
+                        },
                         {
                           key: 'completed',
                           name: 'Completed',
@@ -884,7 +918,12 @@ export default function AdminAnalyticsPage() {
                           value: data.kpis.courses.published,
                           fill: '#10b981',
                         },
-                        { key: 'draft', name: 'Draft', value: data.kpis.courses.draft, fill: '#8b5cf6' },
+                        {
+                          key: 'draft',
+                          name: 'Draft',
+                          value: data.kpis.courses.draft,
+                          fill: '#8b5cf6',
+                        },
                         {
                           key: 'archived',
                           name: 'Archived',
@@ -938,7 +977,10 @@ export default function AdminAnalyticsPage() {
                       cornerRadius={4}
                     >
                       {data.kpis.revenue.map((r, index) => (
-                        <Cell key={r.currency} fill={VIBRANT_PALETTE[index % VIBRANT_PALETTE.length]} />
+                        <Cell
+                          key={r.currency}
+                          fill={VIBRANT_PALETTE[index % VIBRANT_PALETTE.length]}
+                        />
                       ))}
                     </Pie>
                   </PieChart>
@@ -973,7 +1015,11 @@ export default function AdminAnalyticsPage() {
                       }))}
                       margin={{ top: 10, right: 20, left: 10, bottom: 0 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" horizontal={false} className="stroke-border/40" />
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        horizontal={false}
+                        className="stroke-border/40"
+                      />
                       <XAxis type="number" tickLine={false} axisLine={false} />
                       <YAxis
                         type="category"
@@ -988,7 +1034,10 @@ export default function AdminAnalyticsPage() {
                       <ChartTooltip content={<ChartTooltipContent />} />
                       <Bar dataKey="revenue" radius={[0, 6, 6, 0]}>
                         {coursesByRevenueQuery.data.map((_, index) => (
-                          <Cell key={index} fill={VIBRANT_PALETTE[index % VIBRANT_PALETTE.length]} />
+                          <Cell
+                            key={index}
+                            fill={VIBRANT_PALETTE[index % VIBRANT_PALETTE.length]}
+                          />
                         ))}
                       </Bar>
                     </BarChart>
@@ -1021,7 +1070,11 @@ export default function AdminAnalyticsPage() {
                     }))}
                     margin={{ top: 10, right: 20, left: 10, bottom: 0 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} className="stroke-border/40" />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      horizontal={false}
+                      className="stroke-border/40"
+                    />
                     <XAxis type="number" tickLine={false} axisLine={false} unit="%" />
                     <YAxis
                       type="category"
@@ -1038,7 +1091,9 @@ export default function AdminAnalyticsPage() {
                       {lowCompletionQuery.data.map((_, index) => (
                         <Cell
                           key={index}
-                          fill={COMPLETION_WARNING_PALETTE[index % COMPLETION_WARNING_PALETTE.length]}
+                          fill={
+                            COMPLETION_WARNING_PALETTE[index % COMPLETION_WARNING_PALETTE.length]
+                          }
                         />
                       ))}
                     </Bar>
@@ -1063,8 +1118,15 @@ export default function AdminAnalyticsPage() {
                   description="Where your course content is concentrated"
                   config={CATEGORY_CONFIG}
                 >
-                  <BarChart data={categoryDistribution} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/40" />
+                  <BarChart
+                    data={categoryDistribution}
+                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      className="stroke-border/40"
+                    />
                     <XAxis
                       dataKey="category"
                       tickLine={false}
@@ -1090,14 +1152,12 @@ export default function AdminAnalyticsPage() {
                 />
               )}
 
-              {isGlobal && canReadUsers && (
-                rolesQuery.isLoading ? (
+              {isGlobal &&
+                canReadUsers &&
+                (rolesQuery.isLoading ? (
                   <ChartSkeleton />
                 ) : rolesQuery.isError ? (
-                  <ChartErrorCard
-                    title="Role Distribution"
-                    onRetry={() => rolesQuery.refetch()}
-                  />
+                  <ChartErrorCard title="Role Distribution" onRetry={() => rolesQuery.refetch()} />
                 ) : roleDistribution.length > 0 ? (
                   <ChartCard
                     title="Role Distribution"
@@ -1121,7 +1181,10 @@ export default function AdminAnalyticsPage() {
                         cornerRadius={4}
                       >
                         {roleDistribution.map((role, index) => (
-                          <Cell key={role.id} fill={VIBRANT_PALETTE[index % VIBRANT_PALETTE.length]} />
+                          <Cell
+                            key={role.id}
+                            fill={VIBRANT_PALETTE[index % VIBRANT_PALETTE.length]}
+                          />
                         ))}
                       </Pie>
                     </PieChart>
@@ -1131,8 +1194,7 @@ export default function AdminAnalyticsPage() {
                     title="Role Distribution"
                     description="No users assigned to roles yet."
                   />
-                )
-              )}
+                ))}
             </div>
           </section>
 
@@ -1161,7 +1223,11 @@ export default function AdminAnalyticsPage() {
                     }))}
                     margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/40" />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      className="stroke-border/40"
+                    />
                     <XAxis
                       dataKey="name"
                       tickLine={false}
@@ -1175,7 +1241,10 @@ export default function AdminAnalyticsPage() {
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Bar dataKey="redemptions" radius={[6, 6, 0, 0]}>
                       {promotionAnalyticsQuery.data.topCodes.map((_, index) => (
-                        <Cell key={index} fill={VIBRANT_PALETTE[(index + 3) % VIBRANT_PALETTE.length]} />
+                        <Cell
+                          key={index}
+                          fill={VIBRANT_PALETTE[(index + 3) % VIBRANT_PALETTE.length]}
+                        />
                       ))}
                     </Bar>
                   </BarChart>
@@ -1199,7 +1268,9 @@ export default function AdminAnalyticsPage() {
               </CardHeader>
               <CardContent>
                 {data.topCourses.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No course performance data available.</p>
+                  <p className="text-sm text-muted-foreground">
+                    No course performance data available.
+                  </p>
                 ) : (
                   <div className="overflow-x-auto">
                     <Table>

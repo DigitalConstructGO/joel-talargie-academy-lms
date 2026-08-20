@@ -20,11 +20,7 @@ const COLORS = [
   'from-rose-500 to-rose-700',
 ];
 
-export function TestimonialsSection({
-  testimonials,
-}: {
-  testimonials?: TestimonialItem[];
-}) {
+export function TestimonialsSection({ testimonials }: { testimonials?: TestimonialItem[] }) {
   const items: Testimonial[] =
     testimonials && testimonials.length > 0
       ? testimonials.map((t, idx) => ({

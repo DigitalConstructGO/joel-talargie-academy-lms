@@ -15,9 +15,18 @@ export interface PaymentMethodInput {
 }
 
 const SORT_COLUMNS = {
-  name: (dir: 'asc' | 'desc') => dir === 'asc' ? asc(schema.paymentMethods.name) : desc(schema.paymentMethods.name),
-  sortOrder: (dir: 'asc' | 'desc') => dir === 'asc' ? asc(schema.paymentMethods.sortOrder) : desc(schema.paymentMethods.sortOrder),
-  createdAt: (dir: 'asc' | 'desc') => dir === 'asc' ? asc(schema.paymentMethods.createdAt) : desc(schema.paymentMethods.createdAt),
+  name: (dir: 'asc' | 'desc') =>
+    dir === 'asc'
+      ? asc(schema.paymentMethods.name)
+      : desc(schema.paymentMethods.name),
+  sortOrder: (dir: 'asc' | 'desc') =>
+    dir === 'asc'
+      ? asc(schema.paymentMethods.sortOrder)
+      : desc(schema.paymentMethods.sortOrder),
+  createdAt: (dir: 'asc' | 'desc') =>
+    dir === 'asc'
+      ? asc(schema.paymentMethods.createdAt)
+      : desc(schema.paymentMethods.createdAt),
 } as const;
 
 @Injectable()
@@ -42,7 +51,11 @@ export class PaymentMethodsRepository {
       .select({ total: count() })
       .from(schema.paymentMethods)
       .where(where);
-    const sort = query.sort ? SORT_COLUMNS[query.sort.split(':')[0] as 'name' | 'sortOrder' | 'createdAt'](query.sort.split(':')[1] as 'asc' | 'desc') : asc(schema.paymentMethods.sortOrder);
+    const sort = query.sort
+      ? SORT_COLUMNS[
+          query.sort.split(':')[0] as 'name' | 'sortOrder' | 'createdAt'
+        ](query.sort.split(':')[1] as 'asc' | 'desc')
+      : asc(schema.paymentMethods.sortOrder);
     const items = await this.db
       .select({
         id: schema.paymentMethods.id,
@@ -83,7 +96,10 @@ export class PaymentMethodsRepository {
       })
       .from(schema.paymentMethods)
       .where(eq(schema.paymentMethods.isActive, true))
-      .orderBy(asc(schema.paymentMethods.sortOrder), asc(schema.paymentMethods.name));
+      .orderBy(
+        asc(schema.paymentMethods.sortOrder),
+        asc(schema.paymentMethods.name),
+      );
   }
 
   activeById(id: string) {
@@ -131,7 +147,9 @@ export class PaymentMethodsRepository {
           ? { instructions: input.instructions }
           : {}),
         ...(input.config !== undefined ? { config: input.config } : {}),
-        ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
+        ...(input.sortOrder !== undefined
+          ? { sortOrder: input.sortOrder }
+          : {}),
         updatedAt: new Date(),
       })
       .where(eq(schema.paymentMethods.id, id))

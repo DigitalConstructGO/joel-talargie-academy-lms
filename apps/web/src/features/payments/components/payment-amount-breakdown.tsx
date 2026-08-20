@@ -17,7 +17,12 @@ interface PaymentAmountBreakdownProps {
   promo?: PaymentPromoInfo | null;
 }
 
-function promoLabel(code: string, type: PaymentPromoInfo['discountType'], value: string | null, currency: string) {
+function promoLabel(
+  code: string,
+  type: PaymentPromoInfo['discountType'],
+  value: string | null,
+  currency: string,
+) {
   if (type === 'PERCENTAGE' && value) return `${code} · ${value}% off`;
   if (type === 'FIXED' && value) return `${code} · ${formatCurrency(value, currency)} off`;
   if (type === 'FREE') return `${code} · Free`;
@@ -37,8 +42,8 @@ export function PaymentAmountBreakdown({
 }: PaymentAmountBreakdownProps) {
   const hasPromo = Boolean(promo?.code && promo.discountAmount !== null);
   const promoInfo = hasPromo && promo ? promo : null;
-  const coursePrice = promoInfo ? promoInfo.originalAmount ?? expectedAmount : expectedAmount;
-  const finalPrice = promoInfo ? promoInfo.finalAmount ?? expectedAmount : expectedAmount;
+  const coursePrice = promoInfo ? (promoInfo.originalAmount ?? expectedAmount) : expectedAmount;
+  const finalPrice = promoInfo ? (promoInfo.finalAmount ?? expectedAmount) : expectedAmount;
 
   return (
     <dl className="space-y-3 rounded-xl border border-border bg-card p-3 text-sm">
@@ -49,7 +54,8 @@ export function PaymentAmountBreakdown({
       {promoInfo && (
         <div className="flex items-center justify-between text-success">
           <dt>
-            Promo ({promoLabel(promoInfo.code, promoInfo.discountType, promoInfo.discountValue, currency)})
+            Promo (
+            {promoLabel(promoInfo.code, promoInfo.discountType, promoInfo.discountValue, currency)})
           </dt>
           <dd>-{formatCurrency(promoInfo.discountAmount!, currency)}</dd>
         </div>

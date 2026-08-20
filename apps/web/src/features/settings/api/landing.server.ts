@@ -17,4 +17,3 @@ export const getLandingPageDataServer = cache(async (): Promise<PublicLandingDat
     return null;
   }
 });
-

@@ -15,7 +15,9 @@ async function testIssue() {
   });
 
   // Enable certificates for the course
-  await pool.query('UPDATE courses SET certificate_enabled = true WHERE id = $1', ['06fc0e16-7ff1-4b69-8dc9-c91c47c6c4a7']);
+  await pool.query('UPDATE courses SET certificate_enabled = true WHERE id = $1', [
+    '06fc0e16-7ff1-4b69-8dc9-c91c47c6c4a7',
+  ]);
   console.log('Enabled certificates for course 06fc0e16-7ff1-4b69-8dc9-c91c47c6c4a7');
 
   await pool.end();

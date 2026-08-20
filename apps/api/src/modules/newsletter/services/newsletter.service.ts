@@ -1,12 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import {
-  and,
-  count,
-  desc,
-  eq,
-  ilike,
-  schema,
-} from '@joel-academy/database';
+import { and, count, desc, eq, ilike, schema } from '@joel-academy/database';
 import { DatabaseService } from '../../../common/database/database.service';
 import type {
   ListSubscribersDto,
@@ -79,8 +72,12 @@ export class NewsletterService {
       : undefined;
 
     const conditions = [
-      query.status ? eq(schema.newsletterSubscribers.status, query.status) : undefined,
-      searchPattern ? ilike(schema.newsletterSubscribers.email, searchPattern) : undefined,
+      query.status
+        ? eq(schema.newsletterSubscribers.status, query.status)
+        : undefined,
+      searchPattern
+        ? ilike(schema.newsletterSubscribers.email, searchPattern)
+        : undefined,
     ].filter(Boolean);
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -129,7 +126,9 @@ export class NewsletterService {
       .update(schema.newsletterSubscribers)
       .set({
         status,
-        ...(status === 'UNSUBSCRIBED' ? { unsubscribedAt: new Date() } : { unsubscribedAt: null }),
+        ...(status === 'UNSUBSCRIBED'
+          ? { unsubscribedAt: new Date() }
+          : { unsubscribedAt: null }),
         updatedAt: new Date(),
       })
       .where(eq(schema.newsletterSubscribers.id, id))

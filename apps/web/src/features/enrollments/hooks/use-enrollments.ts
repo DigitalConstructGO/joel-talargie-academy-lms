@@ -14,7 +14,6 @@ export function useMyEnrollments(params: EnrollmentListParams = {}, enabled = tr
   });
 }
 
-
 export function useEnrollmentByCourse(courseId: string) {
   return useQuery({
     queryKey: enrollmentKeys.byCourse(courseId),

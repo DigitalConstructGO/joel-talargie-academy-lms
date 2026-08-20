@@ -119,7 +119,7 @@ export function AuthForm({ kind }: { kind: Kind }) {
           password: String(values.password ?? ''),
         });
         const state = useAuthStore.getState();
-        const activeRoles = state.roles.length > 0 ? state.roles : state.user?.roles ?? [];
+        const activeRoles = state.roles.length > 0 ? state.roles : (state.user?.roles ?? []);
         const targetUrl = resolvePostLoginRedirect(search.get('redirect'), activeRoles);
         window.location.assign(targetUrl);
         return;

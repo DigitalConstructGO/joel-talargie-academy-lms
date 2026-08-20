@@ -152,9 +152,9 @@ describe('MailService', () => {
     expect(Logger.prototype.error).toHaveBeenCalledWith(
       expect.stringContaining('Email delivery failed'),
     );
-    expect((Logger.prototype.error as jest.Mock).mock.calls.join('\n')).not.toContain(
-      'top-secret-password',
-    );
+    expect(
+      (Logger.prototype.error as jest.Mock).mock.calls.join('\n'),
+    ).not.toContain('top-secret-password');
   });
 
   it('skips delivery when mail is disabled', async () => {

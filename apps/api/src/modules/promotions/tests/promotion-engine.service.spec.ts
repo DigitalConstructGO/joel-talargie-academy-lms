@@ -40,7 +40,11 @@ function input(
 ): PromotionValidationInput {
   const courseOverrides = overrides.course ?? {};
   return {
-    user: overrides.user ?? { id: 'user-1', email: 'student@example.com', roles: ['STUDENT'] },
+    user: overrides.user ?? {
+      id: 'user-1',
+      email: 'student@example.com',
+      roles: ['STUDENT'],
+    },
     course: {
       id: courseOverrides.id ?? 'course-1',
       price: courseOverrides.price ?? '100.00',
