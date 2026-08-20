@@ -3,7 +3,16 @@ import { NewsletterService } from '../services/newsletter.service';
 
 describe('NewsletterService', () => {
   let service: NewsletterService;
-  let mockDb: any;
+  let mockDb: {
+    query: {
+      newsletterSubscribers: {
+        findFirst: jest.Mock;
+      };
+    };
+    insert: jest.Mock;
+    update: jest.Mock;
+    select: jest.Mock;
+  };
 
   beforeEach(() => {
     mockDb = {
@@ -43,7 +52,7 @@ describe('NewsletterService', () => {
       client: mockDb,
     };
 
-    service = new NewsletterService(mockDatabaseService as any);
+    service = new NewsletterService(mockDatabaseService as never);
   });
 
   describe('subscribe', () => {

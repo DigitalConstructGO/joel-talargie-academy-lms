@@ -2,7 +2,11 @@ import { NewsletterController } from '../controllers/newsletter.controller';
 
 describe('NewsletterController', () => {
   let controller: NewsletterController;
-  let service: any;
+  let service: {
+    subscribe: jest.Mock;
+    listSubscribers: jest.Mock;
+    updateStatus: jest.Mock;
+  };
 
   beforeEach(() => {
     service = {
@@ -23,7 +27,7 @@ describe('NewsletterController', () => {
       }),
     };
 
-    controller = new NewsletterController(service);
+    controller = new NewsletterController(service as never);
   });
 
   it('subscribes an email to the newsletter', async () => {
