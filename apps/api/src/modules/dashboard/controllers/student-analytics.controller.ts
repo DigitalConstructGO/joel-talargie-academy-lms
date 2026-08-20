@@ -21,7 +21,6 @@ import { StudentAnalyticsService } from '../services/student-analytics.service';
 @Controller('student/analytics')
 @ApiTags('Student Analytics')
 @ApiBearerAuth()
-@RequirePermissions('dashboard.read')
 export class StudentAnalyticsController {
   constructor(private readonly service: StudentAnalyticsService) {}
 

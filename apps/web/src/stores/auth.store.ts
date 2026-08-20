@@ -63,7 +63,7 @@ const unauthorized = {
 };
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       accessToken: null,
       authenticated: false,
@@ -92,6 +92,11 @@ export const useAuthStore = create<AuthState>()(
         try {
           const user = unwrap<AuthUser>(await authClient.get('/auth/profile'));
           set({ user, authenticated: true, loading: false });
+          try {
+            await get().fetchAuthorization();
+          } catch {
+            // Non-fatal if permissions fetch fails initially
+          }
         } catch (error) {
           if (typeof document !== 'undefined') {
             document.cookie = 'refresh_token=; path=/; max-age=0; SameSite=Lax';
@@ -125,6 +130,11 @@ export const useAuthStore = create<AuthState>()(
             await authClient.post('/auth/login', input),
           );
           set({ ...result, authenticated: true, loading: false, authzStatus: 'idle' });
+          try {
+            await get().fetchAuthorization();
+          } catch {
+            // Non-fatal if authorization fetch fails initially
+          }
         } catch (error) {
           set({ error: message(error), loading: false });
           throw error;
@@ -160,6 +170,11 @@ export const useAuthStore = create<AuthState>()(
             await authClient.post('/auth/refresh', {}),
           );
           set({ ...result, authenticated: true, authzStatus: 'idle' });
+          try {
+            await get().fetchAuthorization();
+          } catch {
+            // Non-fatal
+          }
           return true;
         } catch {
           set({ user: null, accessToken: null, authenticated: false, ...unauthorized });
@@ -263,7 +278,8 @@ if (!markedClient[INTERCEPTORS_REGISTERED]) {
         }
       }
     }
-    if (status === 403 && !isAuthFlowRequest(request.url)) {
+    const method = (error.config?.method ?? 'GET').toUpperCase();
+    if (status === 403 && !isAuthFlowRequest(request.url) && method !== 'GET') {
       toast.error('Access denied', "You don't have permission to do that.");
     }
     throw error;

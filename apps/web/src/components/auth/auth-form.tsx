@@ -118,9 +118,10 @@ export function AuthForm({ kind }: { kind: Kind }) {
           email: String(values.email ?? ''),
           password: String(values.password ?? ''),
         });
-        setRedirectingText('Redirecting to dashboard...');
-        const { user } = useAuthStore.getState();
-        router.replace(resolvePostLoginRedirect(search.get('redirect'), user?.roles ?? []));
+        const state = useAuthStore.getState();
+        const activeRoles = state.roles.length > 0 ? state.roles : state.user?.roles ?? [];
+        const targetUrl = resolvePostLoginRedirect(search.get('redirect'), activeRoles);
+        window.location.assign(targetUrl);
         return;
       }
       if (kind === 'register') {

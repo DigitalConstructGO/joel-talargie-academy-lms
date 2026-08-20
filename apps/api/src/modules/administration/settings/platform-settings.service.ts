@@ -335,16 +335,30 @@ export class PlatformSettingsService {
       .where(targetInstructorId ? eq(schema.users.id, targetInstructorId) : undefined)
       .limit(1);
 
+    const cfgName = (mentorConfig as any)?.name?.trim();
+    const cfgHeadline = (mentorConfig as any)?.headline?.trim();
+    const cfgBio = (mentorConfig as any)?.bio?.trim();
+    const cfgPhotoUrl = (mentorConfig as any)?.photoUrl?.trim();
+    const cfgAchievements = (mentorConfig as any)?.achievements;
+
     const mentorProfile = {
       id: mentorUser?.id ?? 'instructor-joel',
-      name: mentorUser?.firstName
-        ? `${mentorUser.firstName} ${mentorUser.lastName ?? ''}`.trim()
-        : 'Joel Talargie',
-      headline: 'Founder & Lead Instructor at Joel Talargie Academy',
+      name:
+        cfgName ||
+        (mentorUser?.firstName
+          ? `${mentorUser.firstName} ${mentorUser.lastName ?? ''}`.trim()
+          : 'Joel Talargie'),
+      headline: cfgHeadline || 'Founder & Lead Instructor at Joel Talargie Academy',
       bio:
-        mentorUser?.bio ??
+        cfgBio ||
+        mentorUser?.bio ||
         'Seasoned software engineer, systems architect, and educator passionate about empowering African tech talent with rigorous, world-class skills.',
-      avatarUrl: null,
+      photoUrl: cfgPhotoUrl || null,
+      avatarUrl: cfgPhotoUrl || null,
+      achievements:
+        Array.isArray(cfgAchievements) && cfgAchievements.filter((a: string) => a.trim()).length > 0
+          ? cfgAchievements.filter((a: string) => a.trim())
+          : undefined,
     };
 
     // Filter Active CRUD items & sort by displayOrder

@@ -256,6 +256,11 @@ const defs: (Omit<
     defaultValue: {
       enabled: true,
       featuredInstructorId: null,
+      name: '',
+      headline: '',
+      bio: '',
+      photoUrl: '',
+      achievements: [],
     },
   },
   {

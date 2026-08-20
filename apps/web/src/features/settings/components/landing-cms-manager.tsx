@@ -126,7 +126,15 @@ export function LandingCmsManager({
     initialData.categories ?? { enabled: true, limit: 8, ordering: 'courseCount' },
   );
   const [mentor, setMentor] = useState<MentorSettings>(
-    initialData.mentor ?? { enabled: true, featuredInstructorId: null },
+    initialData.mentor ?? {
+      enabled: true,
+      featuredInstructorId: null,
+      name: '',
+      headline: '',
+      bio: '',
+      photoUrl: '',
+      achievements: [],
+    },
   );
   const [statistics, setStatistics] = useState<PlatformStatsSettings>(
     initialData.statistics ?? {
@@ -800,25 +808,94 @@ export function LandingCmsManager({
           <CardHeader>
             <CardTitle>Mentor / Instructor Spotlight</CardTitle>
             <CardDescription>
-              Showcases the lead mentor (e.g. Joel Talargie) from the database on the landing page.
+              Showcases the lead mentor/instructor photo, name, title, bio, and achievements on the landing page.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             <div className="flex items-center justify-between rounded-xl border border-border p-4">
               <div className="space-y-0.5">
                 <Label className="text-sm font-semibold">Enable Mentor Spotlight</Label>
-                <p className="text-xs text-muted-foreground">Display the instructor profile banner.</p>
+                <p className="text-xs text-muted-foreground">Display the instructor profile banner on the homepage.</p>
               </div>
               <Switch
                 checked={mentor.enabled}
                 onCheckedChange={(checked) => setMentor((prev) => ({ ...prev, enabled: checked }))}
+                disabled={disabled || updateBatch.isPending}
               />
             </div>
-            <div className="space-y-2 max-w-md">
-              <Label htmlFor="mentorSelect">Featured Instructor</Label>
-              <p className="text-xs text-muted-foreground">
-                Currently configured to automatically feature the Lead Instructor (Joel Talargie) from the database.
-              </p>
+
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="mentorName">Mentor Full Name</Label>
+                  <Input
+                    id="mentorName"
+                    value={mentor.name ?? ''}
+                    onChange={(e) => setMentor((prev) => ({ ...prev, name: e.target.value }))}
+                    placeholder="e.g. Joel Talargie"
+                    disabled={disabled || updateBatch.isPending}
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Leave blank to automatically use the default instructor name from the database.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="mentorHeadline">Title / Subtitle</Label>
+                  <Input
+                    id="mentorHeadline"
+                    value={mentor.headline ?? ''}
+                    onChange={(e) => setMentor((prev) => ({ ...prev, headline: e.target.value }))}
+                    placeholder="e.g. Founder & Lead Instructor at Joel Talargie Academy"
+                    disabled={disabled || updateBatch.isPending}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="mentorBio">Bio / Profile Description</Label>
+                  <Textarea
+                    id="mentorBio"
+                    rows={4}
+                    value={mentor.bio ?? ''}
+                    onChange={(e) => setMentor((prev) => ({ ...prev, bio: e.target.value }))}
+                    placeholder="Detailed bio text highlighting experience, teaching focus, and background..."
+                    disabled={disabled || updateBatch.isPending}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <ImageUploadField
+                  id="mentorPhoto"
+                  label="Mentor Photo / Avatar Image"
+                  description="Upload a photo or provide an image URL. Square ratio recommended."
+                  value={mentor.photoUrl ?? ''}
+                  onChange={(url) => setMentor((prev) => ({ ...prev, photoUrl: url }))}
+                  aspectRatio="square"
+                  placeholder="/images/instructors/joel-talargie.png"
+                  disabled={disabled || updateBatch.isPending}
+                />
+
+                <div className="space-y-2">
+                  <Label htmlFor="mentorAchievements">Key Achievements (One per line)</Label>
+                  <Textarea
+                    id="mentorAchievements"
+                    rows={4}
+                    value={(mentor.achievements ?? []).join('\n')}
+                    onChange={(e) =>
+                      setMentor((prev) => ({
+                        ...prev,
+                        achievements: e.target.value.split('\n'),
+                      }))
+                    }
+                    placeholder="Over 10+ years of software engineering leadership&#10;Curriculum designed for career promotion&#10;Trained thousands of engineers"
+                    disabled={disabled || updateBatch.isPending}
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Each line will be displayed as a checkmark bullet point on the mentor card.
+                  </p>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

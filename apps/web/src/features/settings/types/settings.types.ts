@@ -151,7 +151,12 @@ export interface CategoriesSettings {
 
 export interface MentorSettings {
   enabled: boolean;
-  featuredInstructorId: string | null;
+  featuredInstructorId?: string | null;
+  name?: string;
+  headline?: string;
+  bio?: string;
+  photoUrl?: string;
+  achievements?: string[];
 }
 
 export interface PlatformStatsSettings {

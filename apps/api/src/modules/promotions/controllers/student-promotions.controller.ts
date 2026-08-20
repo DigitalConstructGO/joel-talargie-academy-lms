@@ -27,7 +27,7 @@ import { RedemptionService } from '../services/redemption.service';
 @Controller('promotions')
 @ApiTags('My Promotions')
 @ApiBearerAuth()
-@Roles('STUDENT')
+@Roles('STUDENT', 'ADMINISTRATOR', 'INSTRUCTOR', 'STAFF')
 export class StudentPromotionsController {
   constructor(private readonly redemption: RedemptionService) {}
 

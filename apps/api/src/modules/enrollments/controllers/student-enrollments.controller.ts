@@ -24,7 +24,7 @@ import { EnrollmentsService } from '../services/enrollments.service';
 export class StudentEnrollmentsController {
   constructor(private readonly enrollments: EnrollmentsService) {}
   @Post('enrollments')
-  @Roles('STUDENT')
+  @Roles('STUDENT', 'ADMINISTRATOR', 'ADMIN', 'INSTRUCTOR', 'STAFF')
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @ApiOperation({
     summary: 'Enroll the authenticated Student in an available course',
@@ -33,13 +33,13 @@ export class StudentEnrollmentsController {
     return this.enrollments.create(user, dto.courseId, dto.redemptionId);
   }
   @Get('me/enrollments')
-  @Roles('STUDENT', 'ADMIN', 'INSTRUCTOR')
+  @Roles('STUDENT', 'ADMINISTRATOR', 'ADMIN', 'INSTRUCTOR', 'STAFF')
   @ApiOperation({ summary: 'List the authenticated user\'s own enrollments' })
   list(@CurrentUser() user: AuthUser, @Query() query: ListMyEnrollmentsDto) {
     return this.enrollments.mine(user.id, query);
   }
   @Get('me/enrollments/course/:courseId')
-  @Roles('STUDENT', 'ADMIN', 'INSTRUCTOR')
+  @Roles('STUDENT', 'ADMINISTRATOR', 'ADMIN', 'INSTRUCTOR', 'STAFF')
   @ApiOperation({ summary: 'Check enrollment state for one course' })
   byCourse(
     @CurrentUser() user: AuthUser,
@@ -48,7 +48,7 @@ export class StudentEnrollmentsController {
     return this.enrollments.mineByCourse(user.id, id);
   }
   @Get('me/enrollments/:enrollmentId')
-  @Roles('STUDENT', 'ADMIN', 'INSTRUCTOR')
+  @Roles('STUDENT', 'ADMINISTRATOR', 'ADMIN', 'INSTRUCTOR', 'STAFF')
   @ApiOperation({ summary: 'Get one owned enrollment' })
   detail(
     @CurrentUser() user: AuthUser,

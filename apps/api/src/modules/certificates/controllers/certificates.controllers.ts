@@ -28,7 +28,7 @@ import { CertificatesService } from '../services/certificates.service';
 @Controller()
 @ApiTags('Student Certificates')
 @ApiBearerAuth()
-@Roles('STUDENT')
+@Roles('STUDENT', 'ADMINISTRATOR', 'INSTRUCTOR', 'STAFF')
 export class StudentCertificatesController {
   constructor(private readonly certificates: CertificatesService) {}
 

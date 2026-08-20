@@ -18,7 +18,7 @@ import { LearningService } from '../services/learning.service';
 @Controller('me/learning/enrollments')
 @ApiTags('Student Learning', 'Lesson Progress')
 @ApiBearerAuth()
-@Roles('STUDENT')
+@Roles('STUDENT', 'ADMINISTRATOR', 'INSTRUCTOR', 'STAFF')
 export class StudentLearningController {
   constructor(private readonly learning: LearningService) {}
 

@@ -19,7 +19,6 @@ export function AnnouncementBar() {
 
   return (
     <div className="flex items-center justify-center gap-2 bg-brand px-4 py-2 text-center text-xs font-medium text-brand-foreground sm:text-sm">
-      <Sparkles className="size-3.5 shrink-0" aria-hidden="true" />
       <span>
         New this month: dozens of courses across cloud, security, and AI.{' '}
         <Link

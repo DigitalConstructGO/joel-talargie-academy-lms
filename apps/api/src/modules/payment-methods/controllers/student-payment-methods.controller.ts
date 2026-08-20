@@ -4,7 +4,7 @@ import { Roles } from '../../auth/decorators/roles.decorator';
 import { PaymentMethodsService } from '../services/payment-methods.service';
 
 @Controller('me/payment-methods')
-@Roles('STUDENT')
+@Roles('STUDENT', 'ADMINISTRATOR', 'INSTRUCTOR', 'STAFF')
 @ApiTags('Student Payment Methods')
 @ApiBearerAuth()
 export class StudentPaymentMethodsController {

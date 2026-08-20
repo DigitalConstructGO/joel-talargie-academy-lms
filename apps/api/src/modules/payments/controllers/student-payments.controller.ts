@@ -27,7 +27,7 @@ import { PaymentsService } from '../services/payments.service';
 @Controller()
 @ApiTags('Student Payments', 'Payment Receipts')
 @ApiBearerAuth()
-@Roles('STUDENT')
+@Roles('STUDENT', 'ADMINISTRATOR', 'INSTRUCTOR', 'STAFF')
 export class StudentPaymentsController {
   constructor(private readonly payments: PaymentsService) {}
 
