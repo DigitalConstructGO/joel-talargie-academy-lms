@@ -1121,9 +1121,17 @@ export function LandingCmsManager({
                       key={item.id}
                       className="flex items-start justify-between rounded-xl border border-border bg-card p-4 shadow-xs"
                     >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-semibold text-foreground">{item.studentName}</h4>
+                      <div className="flex items-start gap-3">
+                        {item.avatarUrl ? (
+                          <img
+                            src={item.avatarUrl}
+                            alt={item.studentName}
+                            className="size-10 rounded-full object-cover border border-border shrink-0"
+                          />
+                        ) : null}
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold text-foreground">{item.studentName}</h4>
                           <span className="flex items-center text-amber-400">
                             {Array.from({ length: item.rating }).map((_, i) => (
                               <Star key={i} className="size-3 fill-current" />
@@ -1152,6 +1160,7 @@ export function LandingCmsManager({
                           Order: {item.displayOrder}
                         </p>
                       </div>
+                    </div>
                       <div className="flex items-center gap-1">
                         <Button
                           type="button"
@@ -1649,6 +1658,17 @@ export function LandingCmsManager({
                   />
                 </div>
               </div>
+              <ImageUploadField
+                id="testAvatar"
+                label="Student Avatar / Profile Photo"
+                description="Upload a photo or enter image URL for the student avatar."
+                value={editingTestimonial.avatarUrl ?? ''}
+                onChange={(url) =>
+                  setEditingTestimonial({ ...editingTestimonial, avatarUrl: url })
+                }
+                aspectRatio="square"
+                placeholder="/images/students/avatar.png"
+              />
               <div className="space-y-2">
                 <Label htmlFor="testContent">Testimonial Text</Label>
                 <Textarea

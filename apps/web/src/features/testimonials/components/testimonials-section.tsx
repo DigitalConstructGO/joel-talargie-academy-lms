@@ -26,6 +26,7 @@ export function TestimonialsSection({ testimonials }: { testimonials?: Testimoni
       ? testimonials.map((t, idx) => ({
           id: t.id,
           studentName: t.studentName,
+          avatarUrl: t.avatarUrl,
           role: t.courseTitle || 'Academy Graduate',
           courseTitle: t.courseTitle || 'Full-Stack Web Development',
           quote: t.testimonial,

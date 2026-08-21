@@ -34,14 +34,22 @@ export function TestimonialCard({
         ))}
       </div>
       <div className="flex items-center gap-3 border-t border-border pt-4">
-        <span
-          className={cn(
-            'flex size-10 shrink-0 items-center justify-center rounded-full bg-linear-to-br text-sm font-semibold text-white',
-            testimonial.avatarColor,
-          )}
-        >
-          {initials}
-        </span>
+        {testimonial.avatarUrl ? (
+          <img
+            src={testimonial.avatarUrl}
+            alt={testimonial.studentName}
+            className="size-10 shrink-0 rounded-full object-cover border border-border"
+          />
+        ) : (
+          <span
+            className={cn(
+              'flex size-10 shrink-0 items-center justify-center rounded-full bg-linear-to-br text-sm font-semibold text-white',
+              testimonial.avatarColor,
+            )}
+          >
+            {initials}
+          </span>
+        )}
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-foreground">
             {testimonial.studentName}
