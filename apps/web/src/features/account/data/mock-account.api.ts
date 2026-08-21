@@ -125,6 +125,13 @@ export const mockAccountApi = {
 
   uploadAvatar: async (file: File): Promise<AvatarUploadResult> => {
     avatarBlob = file;
+    const downloadUrl = URL.createObjectURL(file);
+    const current = ensureProfile();
+    profile = {
+      ...current,
+      avatarUrl: downloadUrl,
+      updatedAt: new Date().toISOString(),
+    };
     return delay({
       id: `avatar-${Date.now()}`,
       originalFileName: file.name,
@@ -133,17 +140,24 @@ export const mockAccountApi = {
       checksum: 'mock-checksum',
       width: 512,
       height: 512,
-      downloadUrl: '/storage/avatar/mock-user',
+      downloadUrl,
     });
   },
 
   deleteAvatar: async (): Promise<{ message: string }> => {
-    if (!avatarBlob) {
+    if (!avatarBlob && !profile?.avatarUrl) {
       const error = new Error('No avatar to delete') as Error & { response?: { status: number } };
       error.response = { status: 404 };
       throw error;
     }
     avatarBlob = null;
+    if (profile) {
+      profile = {
+        ...profile,
+        avatarUrl: null,
+        updatedAt: new Date().toISOString(),
+      };
+    }
     return delay({ message: 'Avatar deleted' });
   },
 

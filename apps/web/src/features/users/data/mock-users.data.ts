@@ -103,6 +103,25 @@ export const MOCK_USERS: ManagedUser[] = [
     roles: ['STUDENT', 'ADMINISTRATOR'],
     authenticationProviders: [],
   },
+  {
+    id: 'user-daniel-osei',
+    email: 'instructor@academy.test',
+    status: 'ACTIVE',
+    emailVerified: true,
+    provider: 'LOCAL',
+    avatarUrl: null,
+    archivedAt: null,
+    createdAt: '2025-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    lastLoginAt: '2026-08-07T06:00:00.000Z',
+    firstName: 'Daniel',
+    lastName: 'Osei',
+    phone: null,
+    bio: 'Academy instructor.',
+    fullName: 'Daniel Osei',
+    roles: ['STUDENT', 'INSTRUCTOR', 'ADMINISTRATOR'],
+    authenticationProviders: [],
+  },
 ];
 
 export const MOCK_USER_SUMMARIES: Record<string, ManagedUserSummary> = {

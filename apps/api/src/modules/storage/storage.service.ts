@@ -134,17 +134,9 @@ export class StorageService {
   }
 
   async streamAvatar(
-    requester: AuthUser,
     targetUserId: string,
+    requester?: AuthUser,
   ): Promise<FileStreamDescriptor> {
-    if (
-      requester.id !== targetUserId &&
-      !requester.roles.includes('ADMINISTRATOR')
-    )
-      throw new ForbiddenException({
-        code: 'AVATAR_ACCESS_DENIED',
-        message: 'You cannot access this avatar',
-      });
     const record = await this.repository.findActiveAvatar(targetUserId);
     if (!record)
       throw new NotFoundException({

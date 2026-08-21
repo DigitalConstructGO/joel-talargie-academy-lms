@@ -1,7 +1,15 @@
 import type { CourseSummary } from '@/features/catalog/types/catalog.types';
 
 export interface Instructor {
+  id?: string;
+  slug?: string;
   name: string;
+  title?: string;
+  photoUrl?: string;
+  avatarUrl?: string;
+  bio?: string;
+  skills?: string[];
+  achievements?: string[];
   courseCount: number;
   courses: CourseSummary[];
 }

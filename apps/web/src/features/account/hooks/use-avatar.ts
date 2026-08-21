@@ -39,11 +39,16 @@ export function useUploadAvatar() {
   const fetchProfile = useAuthStore((state) => state.fetchProfile);
   return useMutation({
     mutationFn: (file: File) => accountApi.uploadAvatar(file),
-    onSuccess: () => {
+    onSuccess: (data) => {
       void queryClient.invalidateQueries({ queryKey: accountKeys.all });
-      // Header/sidebar read the avatar from useAuthStore, not this feature's
-      // query cache - without this they'd keep showing the old image until
-      // the next unrelated session refresh.
+      useAuthStore.setState((state) => ({
+        user: state.user
+          ? {
+              ...state.user,
+              avatarUrl: data.downloadUrl || `/api/v1/storage/avatar/${state.user.id}`,
+            }
+          : null,
+      }));
       void fetchProfile();
     },
   });
@@ -56,6 +61,14 @@ export function useDeleteAvatar() {
     mutationFn: () => accountApi.deleteAvatar(),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: accountKeys.all });
+      useAuthStore.setState((state) => ({
+        user: state.user
+          ? {
+              ...state.user,
+              avatarUrl: null,
+            }
+          : null,
+      }));
       void fetchProfile();
     },
   });

@@ -109,9 +109,10 @@ export class StorageRepository {
           createdBy: input.createdBy,
         })
         .returning();
+      const avatarUrl = `/api/v1/storage/avatar/${input.relatedUserId}`;
       await tx
         .update(schema.users)
-        .set({ avatarUrl: null, updatedAt: new Date() })
+        .set({ avatarUrl, updatedAt: new Date() })
         .where(eq(schema.users.id, input.relatedUserId));
       return {
         inserted: inserted as UploadedFileRecord,

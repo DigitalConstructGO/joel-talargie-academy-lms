@@ -9,6 +9,8 @@ import { catalogApi } from '@/features/catalog/api/catalog.api';
 import { deriveInstructors } from '@/features/instructors/utils/derive-instructors';
 import { InstructorCard } from '@/features/instructors/components/instructor-card';
 
+import { usersApi } from '@/features/users/api/users.api';
+
 export const metadata: Metadata = {
   title: 'Instructors',
   description: 'Meet the instructors teaching on the platform.',
@@ -16,10 +18,25 @@ export const metadata: Metadata = {
 
 async function loadInstructors() {
   try {
-    const { items } = await catalogApi.listCourses({ pageSize: 100, sort: 'newest' });
-    return deriveInstructors(items);
+    const [coursesRes, usersRes] = await Promise.allSettled([
+      catalogApi.listCourses({ pageSize: 100, sort: 'newest' }),
+      usersApi.list({ pageSize: 100 }),
+    ]);
+
+    const courses = coursesRes.status === 'fulfilled' ? coursesRes.value.items : [];
+    const instructorUsers =
+      usersRes.status === 'fulfilled'
+        ? usersRes.value.items.map((u) => ({
+            name: (u.fullName || `${u.firstName || ''} ${u.lastName || ''}`).trim() || u.email,
+            photoUrl: u.avatarUrl || undefined,
+            avatarUrl: u.avatarUrl || undefined,
+            bio: u.bio || undefined,
+          }))
+        : [];
+
+    return deriveInstructors(courses, instructorUsers);
   } catch {
-    return [];
+    return deriveInstructors([]);
   }
 }
 

@@ -287,7 +287,9 @@ export default function AdminCourseDetailPage() {
                     <p className="mb-1 text-xs text-muted-foreground">Outcomes</p>
                     <ul className="list-inside list-disc text-sm text-foreground">
                       {course.outcomes.map((outcome) => (
-                        <li key={outcome.id}>{outcome.text}</li>
+                        <li key={outcome.id}>
+                          {outcome.text || (outcome as unknown as { outcome: string }).outcome}
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -297,7 +299,9 @@ export default function AdminCourseDetailPage() {
                     <p className="mb-1 text-xs text-muted-foreground">Requirements</p>
                     <ul className="list-inside list-disc text-sm text-foreground">
                       {course.requirements.map((requirement) => (
-                        <li key={requirement.id}>{requirement.text}</li>
+                        <li key={requirement.id}>
+                          {requirement.text || (requirement as unknown as { requirement: string }).requirement}
+                        </li>
                       ))}
                     </ul>
                   </div>

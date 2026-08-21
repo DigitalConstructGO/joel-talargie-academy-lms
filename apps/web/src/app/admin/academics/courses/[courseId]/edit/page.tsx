@@ -578,7 +578,12 @@ export default function AdminCourseEditPage() {
               </TabsContent>
               <TabsContent value="outcomes">
                 <ListEditor
-                  items={(course.outcomes ?? []).map((o) => o?.text ?? '')}
+                  items={(course.outcomes ?? []).map(
+                    (o) =>
+                      o?.text ??
+                      (o as unknown as { outcome: string })?.outcome ??
+                      (typeof o === 'string' ? o : ''),
+                  )}
                   onSave={handleSaveOutcomes}
                   isSaving={updateOutcomes.isPending}
                   placeholder="What will students learn?"
@@ -586,7 +591,12 @@ export default function AdminCourseEditPage() {
               </TabsContent>
               <TabsContent value="requirements">
                 <ListEditor
-                  items={(course.requirements ?? []).map((r) => r?.text ?? '')}
+                  items={(course.requirements ?? []).map(
+                    (r) =>
+                      r?.text ??
+                      (r as unknown as { requirement: string })?.requirement ??
+                      (typeof r === 'string' ? r : ''),
+                  )}
                   onSave={handleSaveRequirements}
                   isSaving={updateRequirements.isPending}
                   placeholder="What do students need before starting?"

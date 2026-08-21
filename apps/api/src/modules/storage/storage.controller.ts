@@ -20,6 +20,7 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
+import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthUser } from '../auth/interfaces/auth-user.interface';
 import { RequirePermissions } from '../authorization/decorators/require-permissions.decorator';
@@ -72,18 +73,19 @@ export class StorageController {
     return this.storage.deleteAvatar(user);
   }
 
+  @Public()
   @Get('avatar/:userId')
   @ApiTags('My Avatar')
-  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @Throttle({ default: { limit: 120, ttl: 60_000 } })
   @ApiOperation({
-    summary: 'Stream an avatar image (owner or Administrator only)',
+    summary: 'Stream a public user avatar image',
   })
   async streamAvatar(
-    @CurrentUser() user: AuthUser,
     @Param('userId', ParseUUIDPipe) userId: string,
     @Res() response: Response,
+    @CurrentUser() user?: AuthUser,
   ) {
-    const descriptor = await this.storage.streamAvatar(user, userId);
+    const descriptor = await this.storage.streamAvatar(userId, user);
     writeFileResponse(response, descriptor, 'inline');
   }
 

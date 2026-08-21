@@ -610,8 +610,18 @@ export class CatalogRepository {
                 .join(' '),
           }
         : null,
-      outcomes,
-      requirements,
+      outcomes: outcomes.map((o) => ({
+        id: o.id,
+        text: o.outcome,
+        outcome: o.outcome,
+        sortOrder: o.sortOrder,
+      })),
+      requirements: requirements.map((r) => ({
+        id: r.id,
+        text: r.requirement,
+        requirement: r.requirement,
+        sortOrder: r.sortOrder,
+      })),
       sections: sections.map((section) => ({
         ...section,
         lessons: lessons

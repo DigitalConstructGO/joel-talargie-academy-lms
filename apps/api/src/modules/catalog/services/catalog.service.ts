@@ -484,9 +484,11 @@ export class CatalogService {
       estimatedDurationMinutes: detail.estimatedDurationMinutes,
       certificateEnabled: detail.certificateEnabled,
       publishedAt: detail.publishedAt,
-      outcomes: detail.outcomes.map((x: { outcome: string }) => x.outcome),
+      outcomes: detail.outcomes.map(
+        (x: { outcome?: string; text?: string }) => x.text ?? x.outcome ?? '',
+      ),
       requirements: detail.requirements.map(
-        (x: { requirement: string }) => x.requirement,
+        (x: { requirement?: string; text?: string }) => x.text ?? x.requirement ?? '',
       ),
       sections: detail.sections
         .filter((s: { archivedAt: Date | null }) => !s.archivedAt)
