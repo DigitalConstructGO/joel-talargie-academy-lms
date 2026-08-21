@@ -23,6 +23,7 @@ Welcome to the official technical documentation for **Joel Talargie Academy Lear
 Joel Talargie Academy LMS is a complete enterprise learning and course delivery platform engineered for high-performance course distribution, student progress tracking, financial management, automated certificate issuance, and administrative content management.
 
 ### Key Capabilities
+
 - **Public Marketing & Catalog**: Dynamic landing page driven by administrative CMS, course discovery (`/courses`), category exploration (`/categories`), and instructor spotlight.
 - **Student Learning Portal**: Interactive course enrollment, multi-section video/article lesson player, quiz/assignment tracking, progress persistence, and payment histories.
 - **Administrative Control Workspace**: Comprehensive course authoring, category hierarchy management, student enrollment management, manual bank transfer payment approval workflows, promo code engine, user role/permissions management, platform settings configuration, and audit logging.
@@ -64,26 +65,27 @@ JoelAcademy/
 
 ## 3. Technology Stack
 
-| Layer | Technology | Version | Purpose |
-|---|---|---|---|
-| **Frontend Framework** | Next.js (App Router) | `^15.2.3` | React Server Components & Client SPA pages |
-| **UI Library** | React | `^19.0.0` | UI Component Rendering Engine |
-| **Styling & Icons** | Tailwind CSS v4 / Lucide | `^4.0.12` | Modern styling, utility classes, and iconography |
-| **State & Data Fetching** | TanStack React Query / Zustand | `^5.67.2` | Server state caching & global client auth store |
-| **Backend Framework** | NestJS | `^11.0.10` | Enterprise RESTful API backend architecture |
-| **Database ORM** | Drizzle ORM | `^0.40.0` | Type-safe SQL query builder and migrations |
-| **Database Server** | PostgreSQL (Neon / Local) | `>=15` | Serverless pooled & direct relational database |
-| **Authentication** | JWT & Passport & Google OAuth | `^11.0.0` | Token auth, HTTP-only cookies, Google OAuth 2.0 |
-| **Password Hashing** | bcrypt | `^6.0.0` | One-way password hashing (12 rounds) |
-| **Validation** | class-validator & Zod | `^0.14.1` | DTO request validation & type contracts |
-| **Image Processing** | Sharp | `^0.33.5` | Thumbnail resizing & WebP variant conversion |
-| **Language & Tooling** | TypeScript | `^5.8.3` | Strict static typing across entire codebase |
+| Layer                     | Technology                     | Version    | Purpose                                          |
+| ------------------------- | ------------------------------ | ---------- | ------------------------------------------------ |
+| **Frontend Framework**    | Next.js (App Router)           | `^15.2.3`  | React Server Components & Client SPA pages       |
+| **UI Library**            | React                          | `^19.0.0`  | UI Component Rendering Engine                    |
+| **Styling & Icons**       | Tailwind CSS v4 / Lucide       | `^4.0.12`  | Modern styling, utility classes, and iconography |
+| **State & Data Fetching** | TanStack React Query / Zustand | `^5.67.2`  | Server state caching & global client auth store  |
+| **Backend Framework**     | NestJS                         | `^11.0.10` | Enterprise RESTful API backend architecture      |
+| **Database ORM**          | Drizzle ORM                    | `^0.40.0`  | Type-safe SQL query builder and migrations       |
+| **Database Server**       | PostgreSQL (Neon / Local)      | `>=15`     | Serverless pooled & direct relational database   |
+| **Authentication**        | JWT & Passport & Google OAuth  | `^11.0.0`  | Token auth, HTTP-only cookies, Google OAuth 2.0  |
+| **Password Hashing**      | bcrypt                         | `^6.0.0`   | One-way password hashing (12 rounds)             |
+| **Validation**            | class-validator & Zod          | `^0.14.1`  | DTO request validation & type contracts          |
+| **Image Processing**      | Sharp                          | `^0.33.5`  | Thumbnail resizing & WebP variant conversion     |
+| **Language & Tooling**    | TypeScript                     | `^5.8.3`   | Strict static typing across entire codebase      |
 
 ---
 
 ## 4. Quick Start & Prerequisites
 
 ### Prerequisites
+
 - **Node.js**: Version `24.x` (enforced via `.nvmrc` and `engines`)
 - **npm**: Version `11.x`
 - **PostgreSQL Database**: Neon serverless instance or local PostgreSQL instance
@@ -91,14 +93,16 @@ JoelAcademy/
 ### Local Development Setup
 
 1. **Clone Repository and Install Dependencies**:
+
    ```bash
-   git clone <repository-url>
-   cd JoelAcademy
+   git clone https://github.com/DigitalConstructGO/joel-talargie-academy-lms.git
+   cd joel-talargie-academy-lms
    npm install
    ```
 
 2. **Configure Environment Variables**:
    Copy `.env.example` to root `.env`, `apps/web/.env.local`, and `apps/api/.env`:
+
    ```bash
    cp .env.example .env
    cp apps/web/.env.example apps/web/.env.local
@@ -106,6 +110,7 @@ JoelAcademy/
    ```
 
 3. **Run Database Migrations & Seed**:
+
    ```bash
    npm run db:migrate
    npm run db:seed
@@ -139,6 +144,7 @@ graph TD
 ```
 
 ### Core Business Workflows
+
 1. **Authentication Flow**: User registers or logs in → API issues JWT HTTP-only cookies & access tokens → `useAuthStore` fetches authorization context (`/me/authorization`) → App routes dynamically based on role (`STUDENT`, `INSTRUCTOR`, `ADMINISTRATOR`).
 2. **Checkout & Payment Flow**: Student selects course → Enters promo code (optional) → Submits manual bank payment receipt image → Payment record created with `PENDING` status → Admin reviews proof in Admin Panel → Upon approval, enrollment status changes to `ACTIVE`.
 3. **Learning & Progress Flow**: Student accesses `/dashboard/courses/:id/learn` → Selects lessons → Progress auto-saved to backend → Upon 100% completion, certificate generation job triggers automatically.
@@ -177,20 +183,20 @@ apps/api/src/modules/
 
 All standard commands are executed from the monorepo root:
 
-| Command | Purpose |
-|---|---|
-| `npm run dev` | Runs both `apps/web` (3000) and `apps/api` (4000) concurrently |
-| `npm run build` | Builds production bundles for all workspace apps and packages |
-| `npm run typecheck` | Runs TypeScript `--noEmit` typecheck across all workspaces |
-| `npm run lint` | Runs ESLint across all workspaces |
-| `npm test` | Executes unit and integration test suites |
-| `npm run db:generate` | Generates new Drizzle migration files based on schema changes |
-| `npm run db:migrate` | Applies pending Drizzle database migrations |
-| `npm run db:seed` | Seeds database with system roles, admin user, categories, and courses |
-| `npm run db:studio` | Launches Drizzle Studio GUI for visual database management |
-| `npm run worker:email` | Launches background email notification delivery worker |
-| `npm run worker:certificates` | Launches background certificate generation worker |
-| `npm run worker:reports` | Launches background reporting & export generation worker |
+| Command                       | Purpose                                                               |
+| ----------------------------- | --------------------------------------------------------------------- |
+| `npm run dev`                 | Runs both `apps/web` (3000) and `apps/api` (4000) concurrently        |
+| `npm run build`               | Builds production bundles for all workspace apps and packages         |
+| `npm run typecheck`           | Runs TypeScript `--noEmit` typecheck across all workspaces            |
+| `npm run lint`                | Runs ESLint across all workspaces                                     |
+| `npm test`                    | Executes unit and integration test suites                             |
+| `npm run db:generate`         | Generates new Drizzle migration files based on schema changes         |
+| `npm run db:migrate`          | Applies pending Drizzle database migrations                           |
+| `npm run db:seed`             | Seeds database with system roles, admin user, categories, and courses |
+| `npm run db:studio`           | Launches Drizzle Studio GUI for visual database management            |
+| `npm run worker:email`        | Launches background email notification delivery worker                |
+| `npm run worker:certificates` | Launches background certificate generation worker                     |
+| `npm run worker:reports`      | Launches background reporting & export generation worker              |
 
 ---
 
