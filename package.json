@@ -28,6 +28,7 @@
     "db:migrate": "npm run db:migrate -w @joel-academy/database",
     "db:seed": "npm run db:seed -w @joel-academy/database",
     "db:seed:performance": "npm run db:seed:performance -w @joel-academy/database",
+    "db:export": "npm run db:export -w @joel-academy/database",
     "db:check": "npm run db:check -w @joel-academy/database",
     "worker:certificates": "npm run worker:certificates -w @joel-academy/api",
     "worker:email": "npm run worker:email -w @joel-academy/api",
