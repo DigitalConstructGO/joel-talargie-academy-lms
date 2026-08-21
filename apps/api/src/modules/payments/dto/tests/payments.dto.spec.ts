@@ -15,7 +15,7 @@ describe('payments DTOs', () => {
     const valid = {
       transactionId: 'TXN-12345',
       submittedAmount: '99.99',
-      currency: 'usd',
+      currency: 'etb',
     };
 
     it('trims the transaction id and uppercases the currency', () => {
@@ -24,7 +24,7 @@ describe('payments DTOs', () => {
         transactionId: '  TXN-12345  ',
       });
       expect(instance.transactionId).toBe('TXN-12345');
-      expect(instance.currency).toBe('USD');
+      expect(instance.currency).toBe('ETB');
     });
 
     it('accepts a minimal valid payload', async () => {

@@ -151,7 +151,7 @@ function buildRecord(seed: CourseSeed, index: number): MockCourseRecord {
     accessType,
     price: seed.priceUsd.toFixed(2),
     discountPrice: seed.discountUsd !== undefined ? seed.discountUsd.toFixed(2) : null,
-    currency: 'USD',
+    currency: 'ETB',
     difficulty: seed.difficulty,
     estimatedDurationMinutes: seed.durationMinutes,
     certificateEnabled: seed.certificateEnabled,

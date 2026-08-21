@@ -62,7 +62,7 @@ async function run(): Promise<void> {
     await client.query(
       `with u as (select id,row_number() over(order by email_normalized) rn from users where email_normalized like 'perf-user-%@example.invalid'), c as (select id,row_number() over(order by slug) rn from courses where slug like 'perf-course-%')
       insert into enrollments(student_id,course_id,status,price_at_enrollment,currency_at_enrollment)
-      select u.id,c.id,'ACTIVE',0,'USD' from generate_series(1,$1) n join u on u.rn=(floor((n-1)/$3)::int%$2)+1 join c on c.rn=((n-1)%$3)+1 on conflict(student_id,course_id) do nothing`,
+      select u.id,c.id,'ACTIVE',0,'ETB' from generate_series(1,$1) n join u on u.rn=(floor((n-1)/$3)::int%$2)+1 join c on c.rn=((n-1)%$3)+1 on conflict(student_id,course_id) do nothing`,
       [volumes.enrollments, volumes.users, volumes.courses],
     );
     await client.query(
@@ -72,7 +72,7 @@ async function run(): Promise<void> {
       [volumes.enrollments, volumes.progress],
     );
     await client.query(
-      `insert into payments(enrollment_id,attempt_number,transaction_id,amount,currency,status) select id,1,'PERF-TX-'||row_number() over(order by id),0,'USD','PENDING' from enrollments order by id limit $1`,
+      `insert into payments(enrollment_id,attempt_number,transaction_id,amount,currency,status) select id,1,'PERF-TX-'||row_number() over(order by id),0,'ETB','PENDING' from enrollments order by id limit $1`,
       [volumes.payments],
     );
     await client.query(

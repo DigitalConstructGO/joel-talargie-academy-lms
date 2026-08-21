@@ -76,7 +76,7 @@ function buildMockRedemptions(coupon: Coupon): CouponRedemption[] {
       originalPrice: originalPrice.toFixed(2),
       discountAmount: discount.toFixed(2),
       finalPrice: finalPrice.toFixed(2),
-      currency: 'USD',
+      currency: 'ETB',
       redeemedAt: new Date(baseDate + index * 60 * 60 * 1000).toISOString(),
       enrollmentId: `enrollment-${index + 1}`,
       paymentId: index % 3 === 0 ? `payment-${index + 1}` : null,

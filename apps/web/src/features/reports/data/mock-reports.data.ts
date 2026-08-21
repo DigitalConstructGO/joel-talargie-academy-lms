@@ -16,7 +16,7 @@ const SAMPLE_ROWS: Partial<Record<ReportType, Record<string, unknown>[]>> = {
     },
   ],
   REVENUE: [
-    { currency: 'USD', totalRevenue: '1249.50', paymentCount: 32, period: '2026-06' },
+    { currency: 'ETB', totalRevenue: '1249.50', paymentCount: 32, period: '2026-06' },
     { currency: 'ETB', totalRevenue: '84200.00', paymentCount: 51, period: '2026-06' },
   ],
   COURSE_ENROLLMENTS: [

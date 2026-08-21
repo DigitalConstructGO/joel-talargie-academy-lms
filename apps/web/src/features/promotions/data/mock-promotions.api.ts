@@ -26,7 +26,7 @@ function evaluate(input: ValidateCouponInput): PromotionValidationResult {
       message: 'Enter a promo code to continue',
       codeId: null,
       code: null,
-      pricing: { originalPrice, discountAmount: 0, finalPrice: originalPrice, currency: 'USD' },
+      pricing: { originalPrice, discountAmount: 0, finalPrice: originalPrice, currency: 'ETB' },
     };
   }
   if (input.code.trim().toUpperCase() !== MOCK_COUPON_CODE) {
@@ -36,7 +36,7 @@ function evaluate(input: ValidateCouponInput): PromotionValidationResult {
       message: 'This coupon code is invalid or has expired',
       codeId: null,
       code: input.code,
-      pricing: { originalPrice, discountAmount: 0, finalPrice: originalPrice, currency: 'USD' },
+      pricing: { originalPrice, discountAmount: 0, finalPrice: originalPrice, currency: 'ETB' },
     };
   }
   const discountAmount = Math.round(originalPrice * 0.15 * 100) / 100;
@@ -50,7 +50,7 @@ function evaluate(input: ValidateCouponInput): PromotionValidationResult {
       originalPrice,
       discountAmount,
       finalPrice: Math.max(0, originalPrice - discountAmount),
-      currency: 'USD',
+      currency: 'ETB',
     },
   };
 }
