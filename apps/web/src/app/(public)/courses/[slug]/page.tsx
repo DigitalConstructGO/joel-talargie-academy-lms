@@ -21,10 +21,15 @@ interface CoursePageProps {
 }
 
 async function loadCourse(slug: string) {
+  const decoded = decodeURIComponent(slug);
   try {
-    return await getCourseBySlug(slug);
+    return await getCourseBySlug(decoded);
   } catch {
-    return null;
+    try {
+      return await catalogApi.getCourse(decoded, { preview: true });
+    } catch {
+      return null;
+    }
   }
 }
 

@@ -35,7 +35,7 @@ export class PublicCatalogController {
   }
   @Get('courses/:slug')
   @ApiOperation({ summary: 'Get published course details with safe previews' })
-  course(@Param('slug') slug: string) {
-    return this.catalog.publicCourse(slug);
+  course(@Param('slug') slug: string, @Query('preview') preview?: string) {
+    return this.catalog.publicCourse(slug, preview === 'true');
   }
 }

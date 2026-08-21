@@ -6,7 +6,11 @@ export const getApiBaseUrl = () => {
   if (typeof window !== 'undefined') {
     return '/api/v1';
   }
-  return normalizeBaseUrl(process.env.NEXT_PUBLIC_API_URL) ?? '';
+  const raw =
+    process.env.INTERNAL_API_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    'http://localhost:4000/api/v1';
+  return normalizeBaseUrl(raw) ?? 'http://localhost:4000/api/v1';
 };
 
 export const authClient = axios.create({

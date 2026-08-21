@@ -25,8 +25,12 @@ export const catalogApi = {
       await authClient.get('/catalog/courses/featured', { params: cleanParams(params) }),
     ),
 
-  getCourse: async (slug: string) =>
-    unwrap<CourseDetail>(await authClient.get(`/catalog/courses/${encodeURIComponent(slug)}`)),
+  getCourse: async (slug: string, options?: { preview?: boolean }) =>
+    unwrap<CourseDetail>(
+      await authClient.get(`/catalog/courses/${encodeURIComponent(slug)}`, {
+        params: options?.preview ? { preview: 'true' } : undefined,
+      }),
+    ),
 
   listCategories: async (params: CategoryListParams = {}) =>
     unwrap<CategoryListResult>(

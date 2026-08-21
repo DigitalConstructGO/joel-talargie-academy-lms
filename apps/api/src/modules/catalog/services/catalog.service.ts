@@ -438,13 +438,17 @@ export class CatalogService {
   async publicCourses(query: ListCoursesDto) {
     return this.repository.listCourses(query, true);
   }
-  async publicCourse(slug: string) {
+  async publicCourse(slug: string, allowPreview = false) {
     const course = await this.repository.courseBySlug(slug);
+    if (!course || course.archivedAt)
+      throw new NotFoundException({
+        code: 'COURSE_NOT_FOUND',
+        message: 'Course not found',
+      });
+
     if (
-      !course ||
-      course.status !== 'PUBLISHED' ||
-      course.visibility === 'PRIVATE' ||
-      course.archivedAt
+      !allowPreview &&
+      (course.status !== 'PUBLISHED' || course.visibility === 'PRIVATE')
     )
       throw new NotFoundException({
         code: 'COURSE_NOT_FOUND',
