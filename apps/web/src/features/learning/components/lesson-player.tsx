@@ -33,7 +33,7 @@ interface LessonPlayerProps {
  * exactly 11 characters.
  */
 const YOUTUBE_ID_PATTERN =
-  /(?:youtube(?:-nocookie)?\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+  /(?:youtu\.be\/|(?:www\.|m\.)?youtube(?:-nocookie)?\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([a-zA-Z0-9_-]{11})/;
 
 function getYouTubeVideoId(url: string): string | null {
   return url.match(YOUTUBE_ID_PATTERN)?.[1] ?? null;
@@ -90,27 +90,11 @@ let youtubeApiPromise: Promise<YouTubeIframeApi> | null = null;
 let isYouTubeSessionBlocked = false;
 
 function checkYouTubeSessionBlocked(): boolean {
-  if (isYouTubeSessionBlocked) return true;
-  if (typeof window !== 'undefined') {
-    try {
-      return window.sessionStorage.getItem('yt_blocked') === 'true';
-    } catch {
-      return false;
-    }
-  }
-  return false;
+  return isYouTubeSessionBlocked;
 }
 
 function setYouTubeSessionBlocked(blocked: boolean) {
   isYouTubeSessionBlocked = blocked;
-  if (typeof window !== 'undefined') {
-    try {
-      if (blocked) window.sessionStorage.setItem('yt_blocked', 'true');
-      else window.sessionStorage.removeItem('yt_blocked');
-    } catch {
-      // Ignore storage errors
-    }
-  }
 }
 
 /** Loads `https://www.youtube.com/iframe_api` at most once app-wide, with timeout and error fallback. */
@@ -214,17 +198,14 @@ function YouTubeLessonPlayer({
     target.className = 'size-full';
     mount.appendChild(target);
 
-    // Only pass origin if it's HTTPS to avoid ERR_EMPTY_RESPONSE on http://localhost
-    const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
-    const originParam = isHttps ? window.location.origin : undefined;
+    const originParam = typeof window !== 'undefined' ? window.location.origin : undefined;
 
-    // Fast watchdog: if YouTube player is unreachable, show fallback without hanging
+    // Watchdog: allow up to 15s for slow connections to initialize YouTube player
     const readyTimeout = setTimeout(() => {
       if (!cancelled && !ready) {
-        setYouTubeSessionBlocked(true);
         setPlaybackError(true);
       }
-    }, 3000);
+    }, 15000);
 
     const host = useNoCookie ? 'https://www.youtube-nocookie.com' : 'https://www.youtube.com';
 

@@ -84,7 +84,7 @@ const LESSON_TYPE_OPTIONS: { label: string; value: LessonType }[] = [
 
 const VIDEO_FILE_PATTERN = /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i;
 const YOUTUBE_URL_PATTERN =
-  /(?:youtube(?:-nocookie)?\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)[a-zA-Z0-9_-]{11}/;
+  /(?:youtu\.be\/|(?:www\.|m\.)?youtube(?:-nocookie)?\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))[a-zA-Z0-9_-]{11}/;
 
 function getVideoUrlError(value: string): string | null {
   const trimmed = value.trim();

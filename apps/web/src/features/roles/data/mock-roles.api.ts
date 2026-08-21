@@ -110,7 +110,7 @@ export const mockRolesApi = {
     const role = store.find((entry) => entry.id === roleId);
     if (!role) notFound('Role not found');
     if (role.isSystem) forbidden('System roles cannot be modified');
-    role.archivedAt = new Date().toISOString();
+    store = store.filter((entry) => entry.id !== roleId);
     return delay(undefined);
   },
 };

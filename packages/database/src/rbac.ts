@@ -258,21 +258,21 @@ export const archiveCustomRole = async (db: AcademyDatabase, actorId: string, ro
     const role = await tx.query.roles.findFirst({ where: eq(schema.roles.id, roleId) });
     if (!role) throw new Error('ROLE_NOT_FOUND');
     if (role.isSystem) throw new Error('SYSTEM_ROLE');
-    if (role.archivedAt) return role;
-    const [updated] = await tx
-      .update(schema.roles)
-      .set({ archivedAt: new Date(), updatedAt: new Date() })
+    await tx.delete(schema.rolePermissions).where(eq(schema.rolePermissions.roleId, roleId));
+    await tx.delete(schema.userRoles).where(eq(schema.userRoles.roleId, roleId));
+    const [deleted] = await tx
+      .delete(schema.roles)
       .where(eq(schema.roles.id, roleId))
       .returning();
     await log(tx as AcademyDatabase, {
       actorId,
-      action: 'role.archived',
+      action: 'role.deleted',
       entityType: 'role',
       entityId: roleId,
-      before: { archivedAt: null },
-      after: { archivedAt: updated?.archivedAt?.toISOString() },
+      before: { name: role.name, code: role.code },
+      after: {},
     });
-    return updated;
+    return deleted ?? role;
   });
 export const listUserRoles = async (db: AcademyDatabase, userId: string) =>
   db
