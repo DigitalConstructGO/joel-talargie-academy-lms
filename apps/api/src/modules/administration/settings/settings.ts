@@ -314,7 +314,7 @@ const defs: (Omit<
       {
         id: 'test-1',
         studentName: 'Abebe Kebede',
-        avatarUrl: '',
+        avatarUrl: '/images/students/student-1.png',
         testimonial:
           'The curriculum was straightforward and practical. I was able to apply what I learned in my engineering job within weeks.',
         rating: 5,
@@ -326,7 +326,7 @@ const defs: (Omit<
       {
         id: 'test-2',
         studentName: 'Sara Mohammed',
-        avatarUrl: '',
+        avatarUrl: '/images/students/student-2.png',
         testimonial:
           'Exceptional instruction and crystal-clear explanations. The certificate verification was seamless.',
         rating: 5,
@@ -338,7 +338,7 @@ const defs: (Omit<
       {
         id: 'test-3',
         studentName: 'Dawit Yohannes',
-        avatarUrl: '',
+        avatarUrl: '/images/students/student-3.png',
         testimonial:
           'By far the best learning experience I have had online. Hands-on exercises and great support.',
         rating: 5,

@@ -261,21 +261,41 @@ export function LandingCmsManager({
   }
 
   // --- Testimonial Handlers ---
-  function handleSaveTestimonial(item: TestimonialItem) {
+  async function handleSaveTestimonial(item: TestimonialItem) {
+    let nextList: TestimonialItem[];
     if (editingTestimonial && editingTestimonial.id) {
-      setTestimonials((prev) => prev.map((t) => (t.id === item.id ? item : t)));
+      nextList = testimonials.map((t) => (t.id === item.id ? item : t));
     } else {
       const newItem = { ...item, id: `test-${Date.now()}` };
-      setTestimonials((prev) => [...prev, newItem]);
+      nextList = [...testimonials, newItem];
     }
+    setTestimonials(nextList);
     setTestimonialDialogOpen(false);
     setEditingTestimonial(null);
+    try {
+      await updateBatch.mutateAsync({
+        reason: 'Saved testimonial entry',
+        items: [{ key: 'landing.testimonials', value: nextList }],
+      });
+      toast.success('Testimonial saved to database');
+    } catch {
+      toast.error('Failed to auto-save testimonial', 'Click "Save All Changes" to save manually.');
+    }
   }
 
-  function handleDeleteTestimonial(id: string) {
-    setTestimonials((prev) => prev.filter((t) => t.id !== id));
+  async function handleDeleteTestimonial(id: string) {
+    const nextList = testimonials.filter((t) => t.id !== id);
+    setTestimonials(nextList);
     setDeleteTestimonialId(null);
-    toast.success('Testimonial removed');
+    try {
+      await updateBatch.mutateAsync({
+        reason: 'Deleted testimonial entry',
+        items: [{ key: 'landing.testimonials', value: nextList }],
+      });
+      toast.success('Testimonial removed from database');
+    } catch {
+      toast.error('Failed to update database', 'Click "Save All Changes" to save manually.');
+    }
   }
 
   // --- FAQ Handlers ---
