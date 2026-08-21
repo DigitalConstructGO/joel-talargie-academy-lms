@@ -59,6 +59,8 @@ export class CatalogRepository {
         id: true,
         name: true,
         slug: true,
+        isActive: true,
+        archivedAt: true,
       },
     });
   }
@@ -855,6 +857,9 @@ export class CatalogRepository {
         : query.visibility
           ? eq(schema.courses.visibility, query.visibility)
           : undefined,
+      publicOnly
+        ? or(isNull(schema.categories.id), eq(schema.categories.isActive, true))
+        : undefined,
       isNull(schema.courses.archivedAt),
       query.accessType
         ? eq(schema.courses.accessType, query.accessType)

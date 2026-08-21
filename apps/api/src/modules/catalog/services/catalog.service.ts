@@ -458,6 +458,12 @@ export class CatalogService {
     const category = course.categoryId
       ? await this.repository.courseCategory(course.categoryId)
       : undefined;
+
+    if (!allowPreview && category && (category.isActive === false || category.archivedAt))
+      throw new NotFoundException({
+        code: 'COURSE_NOT_FOUND',
+        message: 'Course not found',
+      });
     return {
       id: detail.id,
       title: detail.title,
