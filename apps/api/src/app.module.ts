@@ -9,6 +9,7 @@ import { validateEnvironment } from './config/environment';
 import { HealthModule } from './health/health.module';
 import { SecurityModule } from './common/security/security.module';
 import { MailModule } from './common/mail/mail.module';
+import { SmsModule } from './common/sms/sms.module';
 import { DatabaseModule } from './common/database/database.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { JobsModule } from './modules/jobs/jobs.module';
@@ -44,6 +45,7 @@ import { NewsletterModule } from './modules/newsletter/newsletter.module';
     HealthModule,
     SecurityModule,
     MailModule,
+    SmsModule,
     DatabaseModule,
     AuditModule,
     JobsModule,

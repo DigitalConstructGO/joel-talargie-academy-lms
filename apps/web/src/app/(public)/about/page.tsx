@@ -208,50 +208,6 @@ export default async function AboutPage() {
       </Reveal>
 
       <Reveal>
-        <section className="border-t border-border bg-muted/20">
-          <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6">
-            <div className="mb-8 text-center">
-              <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-                Meet the team
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                The people building the platform.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {LEADERSHIP_TEAM.map((leader) => {
-                const initials = leader.name
-                  .split(' ')
-                  .map((part) => part[0])
-                  .slice(0, 2)
-                  .join('');
-                return (
-                  <Card
-                    key={leader.name}
-                    className="flex flex-col items-center gap-3 p-6 text-center"
-                  >
-                    <span
-                      className={cn(
-                        'flex size-16 items-center justify-center rounded-full bg-linear-to-br text-lg font-semibold text-white',
-                        leader.avatarColor,
-                      )}
-                    >
-                      {initials}
-                    </span>
-                    <div>
-                      <h3 className="text-sm font-semibold text-foreground">{leader.name}</h3>
-                      <p className="text-xs text-muted-foreground">{leader.role}</p>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{leader.bio}</p>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      </Reveal>
-
-      <Reveal>
         <CtaBannerSection />
       </Reveal>
     </div>

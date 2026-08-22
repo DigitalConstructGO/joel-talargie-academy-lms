@@ -103,6 +103,21 @@ export const emailAttemptStatus = pgEnum('email_attempt_status', [
   'TEMPORARY_FAILURE',
   'PERMANENT_FAILURE',
 ]);
+export const smsDeliveryStatus = pgEnum('sms_delivery_status', [
+  'QUEUED',
+  'PROCESSING',
+  'SUCCEEDED',
+  'RETRY_SCHEDULED',
+  'FAILED',
+  'CANCELLED',
+  'SUPPRESSED',
+]);
+export const smsAttemptStatus = pgEnum('sms_attempt_status', [
+  'PROCESSING',
+  'SUCCEEDED',
+  'TEMPORARY_FAILURE',
+  'PERMANENT_FAILURE',
+]);
 export const jobStatus = pgEnum('job_status', ['PENDING', 'RUNNING', 'COMPLETED', 'FAILED']);
 export const reportExportStatus = pgEnum('report_export_status', [
   'QUEUED',
@@ -244,6 +259,10 @@ export const userNotificationPreferences = pgTable('user_notification_preference
   inAppLearning: boolean('in_app_learning').notNull().default(true),
   inAppPayments: boolean('in_app_payments').notNull().default(true),
   inAppCertificates: boolean('in_app_certificates').notNull().default(true),
+  smsSecurity: boolean('sms_security').notNull().default(true),
+  smsLearning: boolean('sms_learning').notNull().default(true),
+  smsPayments: boolean('sms_payments').notNull().default(true),
+  smsCertificates: boolean('sms_certificates').notNull().default(true),
   ...timestamps,
 });
 
@@ -989,6 +1008,75 @@ export const emailDeliveryAttempts = pgTable(
     ),
   ],
 );
+export const smsDeliveries = pgTable(
+  'sms_deliveries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    recipientPhone: text('recipient_phone').notNull(),
+    messageText: text('message_text').notNull(),
+    templateCode: text('template_code').notNull(),
+    status: smsDeliveryStatus('status').notNull().default('QUEUED'),
+    priority: notificationPriority('priority').notNull().default('NORMAL'),
+    deduplicationKey: text('deduplication_key'),
+    relatedEntityType: text('related_entity_type'),
+    relatedEntityId: uuid('related_entity_id'),
+    scheduledAt: timestamp('scheduled_at', { withTimezone: true }).notNull().defaultNow(),
+    sentAt: timestamp('sent_at', { withTimezone: true }),
+    failedAt: timestamp('failed_at', { withTimezone: true }),
+    cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+    attemptCount: integer('attempt_count').notNull().default(0),
+    maximumAttempts: integer('maximum_attempts').notNull().default(3),
+    lastAttemptAt: timestamp('last_attempt_at', { withTimezone: true }),
+    nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }),
+    lockedAt: timestamp('locked_at', { withTimezone: true }),
+    lockedBy: text('locked_by'),
+    providerMessageId: text('provider_message_id'),
+    providerLogId: text('provider_log_id'),
+    failureCode: text('failure_code'),
+    failureMessage: text('failure_message'),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('sms_deliveries_deduplication_key_uq')
+      .on(table.deduplicationKey)
+      .where(sql`${table.deduplicationKey} IS NOT NULL`),
+    index('sms_deliveries_claim_idx')
+      .on(table.priority.desc(), table.scheduledAt, table.id)
+      .where(sql`${table.status} IN ('QUEUED', 'RETRY_SCHEDULED')`),
+    index('sms_deliveries_user_created_idx').on(table.userId, table.createdAt.desc(), table.id),
+    index('sms_deliveries_status_created_idx').on(table.status, table.createdAt.desc(), table.id),
+    check('sms_deliveries_attempts_check', sql`${table.maximumAttempts} > 0`),
+  ],
+);
+
+export const smsDeliveryAttempts = pgTable(
+  'sms_delivery_attempts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    deliveryId: uuid('delivery_id')
+      .notNull()
+      .references(() => smsDeliveries.id, { onDelete: 'cascade' }),
+    attemptNumber: integer('attempt_number').notNull(),
+    workerId: text('worker_id'),
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    status: smsAttemptStatus('status').notNull().default('PROCESSING'),
+    providerResponseCode: text('provider_response_code'),
+    providerMessageId: text('provider_message_id'),
+    failureCode: text('failure_code'),
+    failureMessage: text('failure_message'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique('sms_delivery_attempts_delivery_number_uq').on(table.deliveryId, table.attemptNumber),
+    index('sms_delivery_attempts_delivery_created_idx').on(
+      table.deliveryId,
+      table.createdAt.desc(),
+      table.id,
+    ),
+  ],
+);
 
 export const notificationEvents = pgTable(
   'notification_events',
@@ -1423,6 +1511,8 @@ export const schema = {
   emailTemplates,
   emailDeliveries,
   emailDeliveryAttempts,
+  smsDeliveries,
+  smsDeliveryAttempts,
   notificationEvents,
   activityLogs,
   platformSettings,

@@ -39,8 +39,8 @@ describe('StorageController', () => {
       lastModified: new Date('2024-01-01T00:00:00Z'),
     });
     const response = mockResponse();
-    await controller.streamAvatar(user, 'target-user', response as never);
-    expect(storage.streamAvatar).toHaveBeenCalledWith(user, 'target-user');
+    await controller.streamAvatar('target-user', response as any, user);
+    expect(storage.streamAvatar).toHaveBeenCalledWith('target-user', user);
     expect(response.setHeader).toHaveBeenCalledWith(
       'Content-Type',
       'image/png',

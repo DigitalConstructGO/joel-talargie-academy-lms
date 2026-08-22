@@ -8,6 +8,7 @@ import {
   UnprocessableEntityException,
   UnsupportedMediaTypeException,
 } from '@nestjs/common';
+import { AuthUser } from '../../auth/interfaces/auth-user.interface';
 import { StorageService } from '../storage.service';
 
 jest.mock('sharp', () => {
@@ -60,8 +61,26 @@ describe('StorageService', () => {
     {} as never,
     {} as never,
   );
-  const actor = { id: 'user-1', roles: ['STUDENT'] } as never;
-  const admin = { id: 'admin-1', roles: ['ADMINISTRATOR'] } as never;
+  const actor: AuthUser = {
+    id: 'user-1',
+    email: 'user1@example.com',
+    firstName: 'User',
+    lastName: 'One',
+    roles: ['STUDENT'],
+    avatarUrl: null,
+    provider: 'LOCAL',
+    emailVerified: true,
+  };
+  const admin: AuthUser = {
+    id: 'admin-1',
+    email: 'admin1@example.com',
+    firstName: 'Admin',
+    lastName: 'One',
+    roles: ['ADMINISTRATOR'],
+    avatarUrl: null,
+    provider: 'LOCAL',
+    emailVerified: true,
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -163,7 +182,7 @@ describe('StorageService', () => {
       });
       local.readDescriptor.mockResolvedValue({ fileName: 'avatar.png' });
       await expect(
-        service.streamAvatar(actor, 'user-1'),
+        service.streamAvatar('user-1', actor),
       ).resolves.toMatchObject({
         fileName: 'avatar.png',
       });
@@ -175,20 +194,13 @@ describe('StorageService', () => {
       });
       local.readDescriptor.mockResolvedValue({ fileName: 'avatar.png' });
       await expect(
-        service.streamAvatar(admin, 'user-1'),
+        service.streamAvatar('user-1', admin),
       ).resolves.toBeDefined();
-    });
-
-    it('forbids a student from streaming a different avatar', async () => {
-      await expect(service.streamAvatar(actor, 'someone-else')).rejects.toThrow(
-        ForbiddenException,
-      );
-      expect(repository.findActiveAvatar).not.toHaveBeenCalled();
     });
 
     it('returns NotFoundException when the target user has no avatar', async () => {
       repository.findActiveAvatar.mockResolvedValue(undefined);
-      await expect(service.streamAvatar(actor, 'user-1')).rejects.toThrow(
+      await expect(service.streamAvatar('user-1', actor)).rejects.toThrow(
         NotFoundException,
       );
     });

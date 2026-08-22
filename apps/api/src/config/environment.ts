@@ -181,6 +181,19 @@ export const environmentSchema = z
       .min(1)
       .max(10)
       .default(2),
+    SMS_ENABLED: z.stringbool().default(false),
+    SMS_PROVIDER: z.enum(['geez', 'logger']).default('geez'),
+    GEEZ_SMS_TOKEN: z.string().default(''),
+    GEEZ_SMS_SHORTCODE_ID: z.string().default(''),
+    GEEZ_SMS_CALLBACK_URL: z.string().default(''),
+    SMS_WORKER_ENABLED: z.stringbool().default(false),
+    SMS_WORKER_POLL_MS: z.coerce
+      .number()
+      .int()
+      .min(1000)
+      .max(60000)
+      .default(5000),
+    SMS_WORKER_BATCH_SIZE: z.coerce.number().int().min(1).max(100).default(10),
     CERTIFICATE_JOB_LOCK_TIMEOUT_MS: z.coerce
       .number()
       .int()

@@ -8,6 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import type { Environment } from '../../../config/environment';
 import { MailService } from '../../../common/mail/mail.service';
+import { SmsService } from '../../../common/sms/sms.service';
 import type {
   DeliveryListDto,
   NotificationListDto,
@@ -81,6 +82,7 @@ export class NotificationsService {
     private readonly config: ConfigService<Environment, true>,
     private readonly mail: MailService,
     private readonly gateway: NotificationsGateway,
+    private readonly sms: SmsService,
   ) {}
   listMine(userId: string, query: NotificationListDto) {
     return this.repository.listMine(userId, query);
@@ -129,6 +131,37 @@ export class NotificationsService {
       },
       preferences,
     );
+
+    // SMS Dispatch
+    const profile = await this.repository.db.query.userProfiles.findFirst({
+      where: (table, { eq }) => eq(table.userId, input.userId),
+    });
+    if (profile?.phone) {
+      const smsEnabled =
+        essential ||
+        preferences?.[`sms${suffix}` as keyof typeof preferences] !== false;
+      const smsText = `[Joel Academy] ${input.title}: ${input.message}`;
+      await this.repository.createSmsDelivery({
+        userId: input.userId,
+        recipientPhone: profile.phone,
+        messageText: smsText,
+        templateCode: input.templateCode,
+        status: smsEnabled ? 'QUEUED' : 'SUPPRESSED',
+        priority: input.priority,
+        deduplicationKey: `sms:${input.deduplicationKey}`,
+        relatedEntityType: input.relatedEntityType,
+        relatedEntityId: input.relatedEntityId,
+      });
+      if (smsEnabled) {
+        void this.sms.sendSms({
+          recipientPhone: profile.phone,
+          messageText: smsText,
+          templateCode: input.templateCode,
+          deduplicationKey: `sms:${input.deduplicationKey}`,
+        });
+      }
+    }
+
     const template =
       (await this.repository.activeTemplate(
         input.templateCode,

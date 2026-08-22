@@ -285,4 +285,110 @@ export class NotificationsRepository {
       .from(schema.emailDeliveries);
     return row;
   }
+
+  async createSmsDelivery(data: {
+    userId: string;
+    recipientPhone: string;
+    messageText: string;
+    templateCode: string;
+    status: 'QUEUED' | 'SUPPRESSED';
+    priority?: 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';
+    deduplicationKey?: string;
+    relatedEntityType?: string;
+    relatedEntityId?: string;
+  }) {
+    const [row] = await this.db
+      .insert(schema.smsDeliveries)
+      .values({
+        userId: data.userId,
+        recipientPhone: data.recipientPhone,
+        messageText: data.messageText,
+        templateCode: data.templateCode,
+        status: data.status,
+        priority: data.priority ?? 'NORMAL',
+        deduplicationKey: data.deduplicationKey,
+        relatedEntityType: data.relatedEntityType,
+        relatedEntityId: data.relatedEntityId,
+        attemptCount: 0,
+        maximumAttempts: 3,
+      })
+      .onConflictDoNothing()
+      .returning();
+    return row ?? null;
+  }
+
+  async claimSmsDelivery(workerId: string) {
+    const result = await this.db.execute(
+      sql`WITH candidate AS (
+        SELECT id FROM sms_deliveries
+        WHERE status IN ('QUEUED', 'RETRY_SCHEDULED')
+          AND scheduled_at <= now()
+        ORDER BY priority DESC, scheduled_at ASC, id ASC
+        FOR UPDATE SKIP LOCKED
+        LIMIT 1
+      )
+      UPDATE sms_deliveries s
+      SET status = 'PROCESSING',
+          attempt_count = attempt_count + 1,
+          last_attempt_at = now(),
+          locked_at = now(),
+          locked_by = ${workerId},
+          updated_at = now()
+      FROM candidate
+      WHERE s.id = candidate.id
+      RETURNING s.*`,
+    );
+    return (result as any).rows?.[0] ?? (result as any)[0] ?? null;
+  }
+
+  async markSmsDeliverySuccess(
+    id: string,
+    providerMessageId?: string,
+    providerLogId?: string,
+  ) {
+    return this.db
+      .update(schema.smsDeliveries)
+      .set({
+        status: 'SUCCEEDED',
+        sentAt: new Date(),
+        providerMessageId: providerMessageId ?? null,
+        providerLogId: providerLogId ?? null,
+        lockedAt: null,
+        lockedBy: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.smsDeliveries.id, id));
+  }
+
+  async markSmsDeliveryFailure(
+    id: string,
+    failureCode: string,
+    failureMessage: string,
+    maxAttempts = 3,
+  ) {
+    const [delivery] = await this.db
+      .select({ attemptCount: schema.smsDeliveries.attemptCount })
+      .from(schema.smsDeliveries)
+      .where(eq(schema.smsDeliveries.id, id));
+    const attempts = delivery?.attemptCount ?? 1;
+    const isFinal = attempts >= maxAttempts;
+    const nextAttempt = isFinal
+      ? null
+      : new Date(Date.now() + Math.pow(2, attempts) * 60_000);
+
+    return this.db
+      .update(schema.smsDeliveries)
+      .set({
+        status: isFinal ? 'FAILED' : 'RETRY_SCHEDULED',
+        failedAt: isFinal ? new Date() : null,
+        failureCode,
+        failureMessage,
+        nextAttemptAt: nextAttempt,
+        scheduledAt: nextAttempt ?? new Date(),
+        lockedAt: null,
+        lockedBy: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.smsDeliveries.id, id));
+  }
 }

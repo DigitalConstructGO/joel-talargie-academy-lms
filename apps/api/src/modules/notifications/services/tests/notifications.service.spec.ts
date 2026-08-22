@@ -13,8 +13,14 @@ describe('NotificationsService', () => {
     unread: jest.fn(),
     mark: jest.fn(),
     archive: jest.fn(),
-    db: { query: { userNotificationPreferences: { findFirst: jest.fn() } } },
+    db: {
+      query: {
+        userNotificationPreferences: { findFirst: jest.fn() },
+        userProfiles: { findFirst: jest.fn() },
+      },
+    },
     createInApp: jest.fn(),
+    createSmsDelivery: jest.fn(),
     activeTemplate: jest.fn(),
     createDelivery: jest.fn(),
     listDeliveries: jest.fn(),
@@ -29,6 +35,7 @@ describe('NotificationsService', () => {
   const renderer = { render: jest.fn() };
   const mail = { verifyConnection: jest.fn() };
   const gateway = { notifyUser: jest.fn() };
+  const sms = { sendSms: jest.fn() };
   const configValues: Record<string, unknown> = {
     EMAIL_DEFAULT_LOCALE: 'en',
     EMAIL_MAX_RETRY_ATTEMPTS: 5,
@@ -43,6 +50,7 @@ describe('NotificationsService', () => {
     config as never,
     mail as never,
     gateway as never,
+    sms as never,
   );
 
   const baseInput = {

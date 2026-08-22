@@ -13,6 +13,7 @@ import { NotificationsRepository } from './repositories/notifications.repository
 import { EmailRenderingService } from './services/email-rendering.service';
 import { NotificationsService } from './services/notifications.service';
 import { EmailWorkerService } from './workers/email-worker.service';
+import { SmsWorkerService } from './workers/sms-worker.service';
 
 @Module({
   imports: [DatabaseModule, MailModule, JwtModule.register({})],
@@ -28,6 +29,7 @@ import { EmailWorkerService } from './workers/email-worker.service';
     NotificationsGateway,
     NotificationsService,
     EmailWorkerService,
+    SmsWorkerService,
   ],
   exports: [NotificationsService],
 })

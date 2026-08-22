@@ -46,6 +46,6 @@ describe('PublicCatalogController', () => {
 
   it('gets a published course by slug', () => {
     controller.course('intro-to-ts');
-    expect(catalog.publicCourse).toHaveBeenCalledWith('intro-to-ts');
+    expect(catalog.publicCourse).toHaveBeenCalledWith('intro-to-ts', false);
   });
 });

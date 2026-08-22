@@ -80,6 +80,14 @@ const enabledEnvironment: Environment = {
   CERTIFICATE_WORKER_BATCH_SIZE: 2,
   CERTIFICATE_JOB_LOCK_TIMEOUT_MS: 300_000,
   CERTIFICATE_JOB_MAX_ATTEMPTS: 5,
+  SMS_ENABLED: false,
+  SMS_PROVIDER: 'geez',
+  GEEZ_SMS_TOKEN: '',
+  GEEZ_SMS_SHORTCODE_ID: '',
+  GEEZ_SMS_CALLBACK_URL: '',
+  SMS_WORKER_ENABLED: false,
+  SMS_WORKER_POLL_MS: 5000,
+  SMS_WORKER_BATCH_SIZE: 10,
 };
 
 function createService(overrides: Partial<Environment> = {}) {
