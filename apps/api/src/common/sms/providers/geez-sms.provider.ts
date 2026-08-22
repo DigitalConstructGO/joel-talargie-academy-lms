@@ -91,7 +91,10 @@ export class GeezSmsProvider implements SmsProvider {
         };
       }
 
-      const failureReason = data.error || data.message || JSON.stringify(data);
+      const failureReason =
+        typeof data.error === 'string'
+          ? data.error
+          : data.message || JSON.stringify(data);
       this.logger.error(
         `Geez SMS API failed for ${input.recipientPhone}: ${failureReason} (HTTP ${response.status})`,
       );
