@@ -77,5 +77,37 @@ describe('SmsService', () => {
       expect(result.success).toBe(true);
       expect(result.providerMessageId).toContain('logger-');
     });
+
+    it('parses real Geez SMS API response format correctly', async () => {
+      const { geezProvider } = createService({
+        GEEZ_SMS_TOKEN: 'valid-token',
+      });
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          error: false,
+          msg: 'SMS has been sent successfully.',
+          sms_units: 1,
+          cost_etb: 0.7475,
+          contact_count: 1,
+          data: {
+            msg: 'SMS_SENT_SUCCSSFULLY',
+            date: '2026-08-22T10:07:07+03:00',
+            api_log_id: 5878133,
+          },
+        }),
+      });
+
+      const result = await geezProvider.sendSms({
+        recipientPhone: '251963751477',
+        messageText: 'Test payment approved',
+        templateCode: 'PAYMENT_APPROVED',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.providerMessageId).toBe('5878133');
+    });
   });
 });

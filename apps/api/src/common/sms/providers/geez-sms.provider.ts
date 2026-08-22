@@ -58,23 +58,34 @@ export class GeezSmsProvider implements SmsProvider {
         status?: string;
         log?: string;
         api_log_id?: number | string;
-        error?: string;
+        error?: boolean | string;
+        msg?: string;
         message?: string;
+        data?: {
+          msg?: string;
+          api_log_id?: number | string;
+          date?: string;
+        };
       };
+
+      const logId = data.api_log_id ?? data.data?.api_log_id ?? data.log;
 
       const isSuccess =
         response.ok &&
-        (data.message_status === 'success' ||
+        (data.error === false ||
+          data.message_status === 'success' ||
           data.status === 'success' ||
-          Boolean(data.api_log_id));
+          data.data?.msg === 'SMS_SENT_SUCCSSFULLY' ||
+          Boolean(data.msg?.toLowerCase().includes('success')) ||
+          Boolean(logId));
 
       if (isSuccess) {
         this.logger.log(
-          `Geez SMS successfully sent to ${input.recipientPhone} (api_log_id: ${data.api_log_id ?? 'N/A'})`,
+          `Geez SMS successfully sent to ${input.recipientPhone} (api_log_id: ${logId ?? 'N/A'})`,
         );
         return {
           success: true,
-          providerMessageId: String(data.api_log_id ?? ''),
+          providerMessageId: String(logId ?? ''),
           providerLogId: data.log ?? undefined,
           responseCode: String(response.status),
         };
