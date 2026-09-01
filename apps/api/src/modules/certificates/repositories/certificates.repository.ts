@@ -87,7 +87,7 @@ export class CertificatesRepository {
   }) {
     return this.db.transaction(async (tx) => {
       await tx.execute(
-        sql`SELECT id FROM enrollments WHERE id = ${input.enrollmentId} FOR UPDATE`,
+        sql`SELECT id FROM enrollments WHERE id = ${input.enrollmentId}`,
       );
       const existing = await tx.query.certificates.findFirst({
         where: and(
@@ -329,7 +329,7 @@ export class CertificatesRepository {
   ) {
     return this.db.transaction(async (tx) => {
       await tx.execute(
-        sql`SELECT id FROM certificates WHERE id = ${certificateId} FOR UPDATE`,
+        sql`SELECT id FROM certificates WHERE id = ${certificateId}`,
       );
       const certificate = await tx.query.certificates.findFirst({
         where: eq(schema.certificates.id, certificateId),
@@ -383,7 +383,7 @@ export class CertificatesRepository {
   revoke(actorId: string, certificateId: string, reason: string) {
     return this.db.transaction(async (tx) => {
       await tx.execute(
-        sql`SELECT id FROM certificates WHERE id = ${certificateId} FOR UPDATE`,
+        sql`SELECT id FROM certificates WHERE id = ${certificateId}`,
       );
       const certificate = await tx.query.certificates.findFirst({
         where: eq(schema.certificates.id, certificateId),

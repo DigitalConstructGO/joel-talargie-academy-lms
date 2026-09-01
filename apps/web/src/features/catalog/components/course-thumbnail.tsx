@@ -80,11 +80,16 @@ export function CourseThumbnail({
 }: CourseThumbnailProps) {
   const [imageError, setImageError] = useState(false);
 
-  const resolvedUrl =
-    thumbnailUrl ||
-    (thumbnailKey
-      ? `/api/v1/storage/course-thumbnails/${thumbnailKey.replace(/^course-thumbnails\//, '')}`
-      : null);
+  const rawUrl = thumbnailUrl || thumbnailKey;
+  let resolvedUrl: string | null = null;
+  if (rawUrl) {
+    if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://') || rawUrl.startsWith('/')) {
+      resolvedUrl = rawUrl;
+    } else {
+      const cleanKey = rawUrl.replace(/^course-thumbnails\//, '');
+      resolvedUrl = `/api/v1/storage/course-thumbnails/${cleanKey}`;
+    }
+  }
 
   if (resolvedUrl && !imageError) {
     return (

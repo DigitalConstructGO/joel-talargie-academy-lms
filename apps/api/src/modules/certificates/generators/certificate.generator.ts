@@ -52,9 +52,34 @@ function drawStar(
   document.restore();
 }
 
+function safeWinAnsiText(value: string): string {
+  return [...(value ?? '')]
+    .filter((character) => {
+      const code = character.charCodeAt(0);
+      return (
+        (code >= 32 && code <= 255) ||
+        character === '\n' ||
+        character === '\r' ||
+        character === '\t'
+      );
+    })
+    .join('');
+}
+
 export async function generateCertificatePdf(
-  input: CertificateDocumentInput,
+  rawInput: CertificateDocumentInput,
 ): Promise<Buffer> {
+  const input: CertificateDocumentInput = {
+    ...rawInput,
+    academyName: safeWinAnsiText(rawInput.academyName) || 'Joel Talargie Academy',
+    title: safeWinAnsiText(rawInput.title) || 'Certificate of Completion',
+    studentName: safeWinAnsiText(rawInput.studentName) || 'Student',
+    courseTitle: safeWinAnsiText(rawInput.courseTitle) || 'Course',
+    certificateNumber: safeWinAnsiText(rawInput.certificateNumber),
+    verificationUrl: safeWinAnsiText(rawInput.verificationUrl),
+    footerText: rawInput.footerText ? safeWinAnsiText(rawInput.footerText) : undefined,
+  };
+
   const qrCode = await QRCode.toBuffer(input.verificationUrl, {
     type: 'png',
     width: 240,

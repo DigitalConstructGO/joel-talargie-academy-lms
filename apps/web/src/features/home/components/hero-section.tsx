@@ -8,20 +8,22 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/constants/routes';
 
+import { useLanguage } from '@/lib/i18n/language-provider';
 import type { HeroSettings } from '@/features/settings/types/settings.types';
 
 export function HeroSection({ hero }: { hero?: HeroSettings }) {
+  const { t, locale } = useLanguage();
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [isPending, startTransition] = useTransition();
 
-  const heading = hero?.heading || 'Engineer Your Next Career Move.';
+  const defaultHeading = locale === 'am' ? `${t('hero.title1')} ${t('hero.title2')}` : 'Engineer Your Next Career Move.';
+  const heading = hero?.heading || defaultHeading;
   const description =
-    hero?.description ||
-    'Learn directly from the source. Elite industry experts meticulously designed our structured, self-paced curriculum to deliver elite results with zero fluff. You are not just buying a course; you are investing in a masterclass.';
-  const primaryCtaText = hero?.primaryCtaText || 'View Curriculum';
+    hero?.description || t('hero.subtitle');
+  const primaryCtaText = hero?.primaryCtaText || t('hero.ctaBrowse');
   const primaryCtaUrl = hero?.primaryCtaUrl || ROUTES.courses.list;
-  const secondaryCtaText = hero?.secondaryCtaText || 'Create free account';
+  const secondaryCtaText = hero?.secondaryCtaText || t('hero.ctaStart');
   const secondaryCtaUrl = hero?.secondaryCtaUrl || ROUTES.auth.register;
   const heroImage = hero?.heroImageUrl || '/images/hero/network-abstract.jpg';
 
@@ -40,7 +42,7 @@ export function HeroSection({ hero }: { hero?: HeroSettings }) {
         <div className="flex flex-col gap-6">
           <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-brand/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand">
             <Sparkles className="size-3.5" />
-            Learn with purpose
+            {t('hero.badge')}
           </span>
           <h1 className="text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl">
             {heading}
@@ -56,7 +58,7 @@ export function HeroSection({ hero }: { hero?: HeroSettings }) {
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="What do you want to learn?"
+                placeholder={locale === 'am' ? 'ምን መማር ይፈልጋሉ?' : 'What do you want to learn?'}
                 aria-label="Search courses"
                 disabled={isPending}
                 className="h-12 pl-10"
@@ -66,10 +68,10 @@ export function HeroSection({ hero }: { hero?: HeroSettings }) {
               {isPending ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />
-                  Searching...
+                  {t('common.loading')}
                 </>
               ) : (
-                'Search'
+                t('common.search')
               )}
             </Button>
           </form>

@@ -472,6 +472,13 @@ export class CatalogService {
       description: detail.description,
       presenterName: detail.presenterName,
       thumbnailKey: detail.thumbnailKey ?? null,
+      thumbnailUrl: detail.thumbnailKey
+        ? detail.thumbnailKey.startsWith('http://') ||
+          detail.thumbnailKey.startsWith('https://') ||
+          detail.thumbnailKey.startsWith('/')
+          ? detail.thumbnailKey
+          : `/api/v1/storage/course-thumbnails/${detail.thumbnailKey.replace(/^course-thumbnails\//, '')}`
+        : null,
       categoryId: detail.categoryId ?? null,
       categoryName: category?.name ?? null,
       categorySlug: category?.slug ?? null,

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { eq, schema, sql } from '@joel-academy/database';
+import { and, eq, inArray, lt, schema, sql } from '@joel-academy/database';
 import { randomUUID } from 'node:crypto';
 import type { Environment } from '../../../config/environment';
 import { DatabaseService } from '../../../common/database/database.service';
@@ -36,30 +36,40 @@ export class EmailWorkerService {
   }
   private async claim(): Promise<ClaimedDelivery[]> {
     const size = this.config.get('EMAIL_WORKER_BATCH_SIZE', { infer: true });
-    const result = await this.database.client.transaction((tx) =>
-      tx.execute(sql`
-      WITH candidates AS (
-        SELECT id FROM email_deliveries
-        WHERE status IN ('QUEUED', 'RETRY_SCHEDULED') AND scheduled_at <= now()
-        ORDER BY priority DESC, scheduled_at, id
-        FOR UPDATE SKIP LOCKED LIMIT ${size}
-      )
-      UPDATE email_deliveries delivery SET status = 'PROCESSING', locked_at = now(),
-        locked_by = ${this.workerId}, attempt_count = delivery.attempt_count + 1,
-        last_attempt_at = now(), updated_at = now()
-      FROM candidates WHERE delivery.id = candidates.id
-      RETURNING delivery.id, delivery.recipient_email AS "recipientEmail",
-        delivery.subject_snapshot AS subject, delivery.text_body_snapshot AS text,
-        delivery.html_body_snapshot AS html, delivery.attempt_count AS attempt,
-        delivery.maximum_attempts AS "maximumAttempts", delivery.user_id AS "userId"
-    `),
-    );
-    return result.rows.map((row) => ({
+    const candidates = await this.database.client
+      .select({ id: schema.emailDeliveries.id })
+      .from(schema.emailDeliveries)
+      .where(inArray(schema.emailDeliveries.status, ['QUEUED', 'RETRY_SCHEDULED']))
+      .limit(size);
+    if (!candidates.length) return [];
+    const ids = candidates.map((c: any) => c.id);
+    const rows = await this.database.client
+      .update(schema.emailDeliveries)
+      .set({
+        status: 'PROCESSING',
+        lockedAt: new Date(),
+        lockedBy: this.workerId,
+        attemptCount: sql`${schema.emailDeliveries.attemptCount} + 1`,
+        lastAttemptAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(inArray(schema.emailDeliveries.id, ids))
+      .returning({
+        id: schema.emailDeliveries.id,
+        recipientEmail: schema.emailDeliveries.recipientEmail,
+        subject: schema.emailDeliveries.subjectSnapshot,
+        text: schema.emailDeliveries.textBodySnapshot,
+        html: schema.emailDeliveries.htmlBodySnapshot,
+        attempt: schema.emailDeliveries.attemptCount,
+        maximumAttempts: schema.emailDeliveries.maximumAttempts,
+        userId: schema.emailDeliveries.userId,
+      });
+    return rows.map((row: any) => ({
       id: String(row.id),
       recipientEmail: String(row.recipientEmail),
-      subject: String(row.subject),
-      text: String(row.text),
-      html: String(row.html),
+      subject: String(row.subject ?? ''),
+      text: String(row.text ?? ''),
+      html: String(row.html ?? ''),
       attempt: Number(row.attempt),
       maximumAttempts: Number(row.maximumAttempts),
       userId: row.userId ? String(row.userId) : null,
@@ -196,8 +206,23 @@ export class EmailWorkerService {
     const timeout = this.config.get('EMAIL_WORKER_LOCK_TIMEOUT_MS', {
       infer: true,
     });
-    return this.database.client.execute(
-      sql`UPDATE email_deliveries SET status = 'RETRY_SCHEDULED', locked_at = NULL, locked_by = NULL, scheduled_at = now(), updated_at = now(), failure_code = 'STALE_LOCK_RECOVERED', failure_message = 'Stale worker lock recovered' WHERE status = 'PROCESSING' AND locked_at < now() - (${timeout} * interval '1 millisecond')`,
-    );
+    const cutoff = new Date(Date.now() - timeout);
+    return this.database.client
+      .update(schema.emailDeliveries)
+      .set({
+        status: 'RETRY_SCHEDULED',
+        lockedAt: null,
+        lockedBy: null,
+        scheduledAt: new Date(),
+        updatedAt: new Date(),
+        failureCode: 'STALE_LOCK_RECOVERED',
+        failureMessage: 'Stale worker lock recovered',
+      })
+      .where(
+        and(
+          eq(schema.emailDeliveries.status, 'PROCESSING'),
+          lt(schema.emailDeliveries.lockedAt, cutoff),
+        ),
+      );
   }
 }

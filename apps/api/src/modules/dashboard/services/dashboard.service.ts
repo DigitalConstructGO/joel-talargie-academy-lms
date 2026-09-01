@@ -49,8 +49,9 @@ export class DashboardService {
   ) {}
 
   private async rows(query: ReturnType<typeof sql>): Promise<Row[]> {
-    const result = await this.database.client.execute(query);
-    return ((result as unknown as { rows?: Row[] }).rows ?? []) as Row[];
+    const result: any = await this.database.client.execute(query);
+    if (Array.isArray(result)) return result;
+    return ((result as unknown as { rows?: Row[] })?.rows ?? []) as Row[];
   }
 
   async resolveScope(
@@ -216,25 +217,25 @@ export class DashboardService {
       const current = await this.rows(sql`
         SELECT
           -- Instructor owned courses
-          (SELECT count(*)::int FROM courses c WHERE c.created_by = ${instructorId} AND c.archived_at IS NULL ${scope.courseId ? sql`AND c.id = ${scope.courseId}` : sql``} ${scope.categoryId ? sql`AND c.category_id = ${scope.categoryId}` : sql``}) total_courses,
-          (SELECT count(*)::int FROM courses c WHERE c.created_by = ${instructorId} AND c.status = 'PUBLISHED' AND c.archived_at IS NULL ${scope.courseId ? sql`AND c.id = ${scope.courseId}` : sql``} ${scope.categoryId ? sql`AND c.category_id = ${scope.categoryId}` : sql``}) published_courses,
-          (SELECT count(*)::int FROM courses c WHERE c.created_by = ${instructorId} AND c.status = 'DRAFT' AND c.archived_at IS NULL ${scope.courseId ? sql`AND c.id = ${scope.courseId}` : sql``} ${scope.categoryId ? sql`AND c.category_id = ${scope.categoryId}` : sql``}) draft_courses,
+          (SELECT count(*) FROM courses c WHERE c.created_by = ${instructorId} AND c.archived_at IS NULL ${scope.courseId ? sql`AND c.id = ${scope.courseId}` : sql``} ${scope.categoryId ? sql`AND c.category_id = ${scope.categoryId}` : sql``}) total_courses,
+          (SELECT count(*) FROM courses c WHERE c.created_by = ${instructorId} AND c.status = 'PUBLISHED' AND c.archived_at IS NULL ${scope.courseId ? sql`AND c.id = ${scope.courseId}` : sql``} ${scope.categoryId ? sql`AND c.category_id = ${scope.categoryId}` : sql``}) published_courses,
+          (SELECT count(*) FROM courses c WHERE c.created_by = ${instructorId} AND c.status = 'DRAFT' AND c.archived_at IS NULL ${scope.courseId ? sql`AND c.id = ${scope.courseId}` : sql``} ${scope.categoryId ? sql`AND c.category_id = ${scope.categoryId}` : sql``}) draft_courses,
 
           -- Enrollments in instructor courses
-          (SELECT count(*)::int FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${instructorId} ${scope.courseId ? sql`AND c.id = ${scope.courseId}` : sql``} ${scope.categoryId ? sql`AND c.category_id = ${scope.categoryId}` : sql``}) total_enrollments,
-          (SELECT count(*)::int FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${instructorId} AND e.status IN ('ENROLLED','IN_PROGRESS') ${scope.courseId ? sql`AND c.id = ${scope.courseId}` : sql``} ${scope.categoryId ? sql`AND c.category_id = ${scope.categoryId}` : sql``}) active_enrollments,
-          (SELECT count(*)::int FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${instructorId} AND e.status = 'PENDING_PAYMENT' ${scope.courseId ? sql`AND c.id = ${scope.courseId}` : sql``} ${scope.categoryId ? sql`AND c.category_id = ${scope.categoryId}` : sql``}) pending_payment_enrollments,
-          (SELECT count(*)::int FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${instructorId} AND e.status = 'COMPLETED' ${scope.courseId ? sql`AND c.id = ${scope.courseId}` : sql``} ${scope.categoryId ? sql`AND c.category_id = ${scope.categoryId}` : sql``}) completed_enrollments,
-          (SELECT count(*)::int FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${instructorId} AND e.created_at >= ${range.from} AND e.created_at < ${range.to} ${scope.courseId ? sql`AND c.id = ${scope.courseId}` : sql``} ${scope.categoryId ? sql`AND c.category_id = ${scope.categoryId}` : sql``}) new_enrollments,
+          (SELECT count(*) FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${instructorId} ${scope.courseId ? sql`AND c.id = ${scope.courseId}` : sql``} ${scope.categoryId ? sql`AND c.category_id = ${scope.categoryId}` : sql``}) total_enrollments,
+          (SELECT count(*) FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${instructorId} AND e.status IN ('ENROLLED','IN_PROGRESS') ${scope.courseId ? sql`AND c.id = ${scope.courseId}` : sql``} ${scope.categoryId ? sql`AND c.category_id = ${scope.categoryId}` : sql``}) active_enrollments,
+          (SELECT count(*) FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${instructorId} AND e.status = 'PENDING_PAYMENT' ${scope.courseId ? sql`AND c.id = ${scope.courseId}` : sql``} ${scope.categoryId ? sql`AND c.category_id = ${scope.categoryId}` : sql``}) pending_payment_enrollments,
+          (SELECT count(*) FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${instructorId} AND e.status = 'COMPLETED' ${scope.courseId ? sql`AND c.id = ${scope.courseId}` : sql``} ${scope.categoryId ? sql`AND c.category_id = ${scope.categoryId}` : sql``}) completed_enrollments,
+          (SELECT count(*) FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${instructorId} AND e.created_at >= ${range.from} AND e.created_at < ${range.to} ${scope.courseId ? sql`AND c.id = ${scope.courseId}` : sql``} ${scope.categoryId ? sql`AND c.category_id = ${scope.categoryId}` : sql``}) new_enrollments,
 
           -- Distinct students enrolled in instructor courses
-          (SELECT count(DISTINCT e.student_id)::int FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${instructorId} ${scope.courseId ? sql`AND c.id = ${scope.courseId}` : sql``} ${scope.categoryId ? sql`AND c.category_id = ${scope.categoryId}` : sql``}) my_students,
+          (SELECT count(DISTINCT e.student_id) FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${instructorId} ${scope.courseId ? sql`AND c.id = ${scope.courseId}` : sql``} ${scope.categoryId ? sql`AND c.category_id = ${scope.categoryId}` : sql``}) my_students,
 
           -- Completion rate
-          (SELECT CASE WHEN count(e.id) FILTER (WHERE e.status IN ('ENROLLED','IN_PROGRESS','COMPLETED')) = 0 THEN NULL ELSE round(100.0 * count(e.id) FILTER (WHERE e.status = 'COMPLETED') / count(e.id) FILTER (WHERE e.status IN ('ENROLLED','IN_PROGRESS','COMPLETED')), 2) END FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${instructorId} ${scope.courseId ? sql`AND c.id = ${scope.courseId}` : sql``} ${scope.categoryId ? sql`AND c.category_id = ${scope.categoryId}` : sql``}) completion_rate,
+          (SELECT CASE WHEN count(CASE WHEN e.status IN ('ENROLLED','IN_PROGRESS','COMPLETED') THEN 1 END) = 0 THEN NULL ELSE round(100.0 * count(CASE WHEN e.status = 'COMPLETED' THEN 1 END) / count(CASE WHEN e.status IN ('ENROLLED','IN_PROGRESS','COMPLETED') THEN 1 END), 2) END FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${instructorId} ${scope.courseId ? sql`AND c.id = ${scope.courseId}` : sql``} ${scope.categoryId ? sql`AND c.category_id = ${scope.categoryId}` : sql``}) completion_rate,
 
           -- Certificates issued for instructor courses
-          (SELECT count(*)::int FROM certificates cert JOIN enrollments e ON e.id = cert.enrollment_id JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${instructorId} AND cert.status = 'GENERATED' ${scope.courseId ? sql`AND c.id = ${scope.courseId}` : sql``} ${scope.categoryId ? sql`AND c.category_id = ${scope.categoryId}` : sql``}) certificates_generated
+          (SELECT count(*) FROM certificates cert JOIN enrollments e ON e.id = cert.enrollment_id JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${instructorId} AND cert.status = 'GENERATED' ${scope.courseId ? sql`AND c.id = ${scope.courseId}` : sql``} ${scope.categoryId ? sql`AND c.category_id = ${scope.categoryId}` : sql``}) certificates_generated
       `);
 
       const base = current[0] ?? {};
@@ -271,7 +272,7 @@ export class DashboardService {
       let revenueByCurrency: { currency: string; amount: string }[] | undefined;
       if (scope.permissions.viewRevenue) {
         revenueByCurrency = (await this.rows(
-          sql`SELECT p.currency, coalesce(sum(p.amount),0)::text amount
+          sql`SELECT p.currency, coalesce(sum(p.amount),0) amount
               FROM payments p
               JOIN enrollments e ON e.id = p.enrollment_id
               JOIN courses c ON c.id = e.course_id
@@ -289,7 +290,7 @@ export class DashboardService {
       if (range.previous) {
         const [previousBase] = await this.rows(sql`
           SELECT
-            (SELECT count(*)::int FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${instructorId} AND e.created_at >= ${range.previous.from} AND e.created_at < ${range.previous.to} ${scope.courseId ? sql`AND c.id = ${scope.courseId}` : sql``} ${scope.categoryId ? sql`AND c.category_id = ${scope.categoryId}` : sql``}) new_enrollments
+            (SELECT count(*) FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${instructorId} AND e.created_at >= ${range.previous.from} AND e.created_at < ${range.previous.to} ${scope.courseId ? sql`AND c.id = ${scope.courseId}` : sql``} ${scope.categoryId ? sql`AND c.category_id = ${scope.categoryId}` : sql``}) new_enrollments
         `);
         const comparisons: Record<string, unknown> = {
           newEnrollments: this.comparison(
@@ -299,7 +300,7 @@ export class DashboardService {
         };
         if (scope.permissions.viewRevenue) {
           const previousRevenueRows = (await this.rows(
-            sql`SELECT p.currency, coalesce(sum(p.amount),0)::text amount
+            sql`SELECT p.currency, coalesce(sum(p.amount),0) amount
                 FROM payments p
                 JOIN enrollments e ON e.id = p.enrollment_id
                 JOIN courses c ON c.id = e.course_id
@@ -339,21 +340,21 @@ export class DashboardService {
     // Global / Administrator scope
     const current = await this.rows(sql`
       SELECT
-        (SELECT count(DISTINCT ur.user_id)::int FROM user_roles ur JOIN roles r ON r.id=ur.role_id WHERE r.code='STUDENT') total_students,
-        (SELECT count(DISTINCT ur.user_id)::int FROM user_roles ur JOIN roles r ON r.id=ur.role_id JOIN users u ON u.id=ur.user_id WHERE r.code='STUDENT' AND u.status='ACTIVE') active_students,
-        (SELECT count(DISTINCT ur.user_id)::int FROM user_roles ur JOIN roles r ON r.id=ur.role_id JOIN users u ON u.id=ur.user_id WHERE r.code='STUDENT' AND u.status='PENDING_VERIFICATION') pending_verification_students,
-        (SELECT count(*)::int FROM courses ${scope.categoryId ? sql`WHERE category_id = ${scope.categoryId}` : sql``}) total_courses,
-        (SELECT count(*)::int FROM courses WHERE status='PUBLISHED' AND archived_at IS NULL ${scope.categoryId ? sql`AND category_id = ${scope.categoryId}` : sql``}) published_courses,
-        (SELECT count(*)::int FROM courses WHERE status='DRAFT' AND archived_at IS NULL ${scope.categoryId ? sql`AND category_id = ${scope.categoryId}` : sql``}) draft_courses,
-        (SELECT count(*)::int FROM enrollments e ${scope.courseId ? sql`WHERE e.course_id = ${scope.courseId}` : scope.categoryId ? sql`JOIN courses c ON c.id=e.course_id WHERE c.category_id = ${scope.categoryId}` : sql``}) total_enrollments,
-        (SELECT count(*)::int FROM enrollments e WHERE e.status IN ('ENROLLED','IN_PROGRESS') ${scope.courseId ? sql`AND e.course_id = ${scope.courseId}` : scope.categoryId ? sql`AND EXISTS (SELECT 1 FROM courses c WHERE c.id=e.course_id AND c.category_id = ${scope.categoryId})` : sql``}) active_enrollments,
-        (SELECT count(*)::int FROM enrollments e WHERE e.status='PENDING_PAYMENT' ${scope.courseId ? sql`AND e.course_id = ${scope.courseId}` : scope.categoryId ? sql`AND EXISTS (SELECT 1 FROM courses c WHERE c.id=e.course_id AND c.category_id = ${scope.categoryId})` : sql``}) pending_payment_enrollments,
-        (SELECT count(*)::int FROM enrollments e WHERE e.status='COMPLETED' ${scope.courseId ? sql`AND e.course_id = ${scope.courseId}` : scope.categoryId ? sql`AND EXISTS (SELECT 1 FROM courses c WHERE c.id=e.course_id AND c.category_id = ${scope.categoryId})` : sql``}) completed_enrollments,
-        (SELECT count(*)::int FROM payments WHERE status='PENDING') pending_payment_reviews,
-        (SELECT count(*)::int FROM certificates WHERE status='GENERATED') certificates_generated,
-        (SELECT count(*)::int FROM certificates WHERE status IN ('PENDING','FAILED')) certificates_attention,
-        (SELECT count(*)::int FROM users u JOIN user_roles ur ON ur.user_id=u.id JOIN roles r ON r.id=ur.role_id WHERE r.code='STUDENT' AND u.created_at >= ${range.from} AND u.created_at < ${range.to}) new_students,
-        (SELECT count(*)::int FROM enrollments e WHERE e.created_at >= ${range.from} AND e.created_at < ${range.to} ${scope.courseId ? sql`AND e.course_id = ${scope.courseId}` : scope.categoryId ? sql`AND EXISTS (SELECT 1 FROM courses c WHERE c.id=e.course_id AND c.category_id = ${scope.categoryId})` : sql``}) new_enrollments
+        (SELECT count(DISTINCT ur.user_id) FROM user_roles ur JOIN roles r ON r.id=ur.role_id WHERE r.code='STUDENT') total_students,
+        (SELECT count(DISTINCT ur.user_id) FROM user_roles ur JOIN roles r ON r.id=ur.role_id JOIN users u ON u.id=ur.user_id WHERE r.code='STUDENT' AND u.status='ACTIVE') active_students,
+        (SELECT count(DISTINCT ur.user_id) FROM user_roles ur JOIN roles r ON r.id=ur.role_id JOIN users u ON u.id=ur.user_id WHERE r.code='STUDENT' AND u.status='PENDING_VERIFICATION') pending_verification_students,
+        (SELECT count(*) FROM courses ${scope.categoryId ? sql`WHERE category_id = ${scope.categoryId}` : sql``}) total_courses,
+        (SELECT count(*) FROM courses WHERE status='PUBLISHED' AND archived_at IS NULL ${scope.categoryId ? sql`AND category_id = ${scope.categoryId}` : sql``}) published_courses,
+        (SELECT count(*) FROM courses WHERE status='DRAFT' AND archived_at IS NULL ${scope.categoryId ? sql`AND category_id = ${scope.categoryId}` : sql``}) draft_courses,
+        (SELECT count(*) FROM enrollments e ${scope.courseId ? sql`WHERE e.course_id = ${scope.courseId}` : scope.categoryId ? sql`JOIN courses c ON c.id=e.course_id WHERE c.category_id = ${scope.categoryId}` : sql``}) total_enrollments,
+        (SELECT count(*) FROM enrollments e WHERE e.status IN ('ENROLLED','IN_PROGRESS') ${scope.courseId ? sql`AND e.course_id = ${scope.courseId}` : scope.categoryId ? sql`AND EXISTS (SELECT 1 FROM courses c WHERE c.id=e.course_id AND c.category_id = ${scope.categoryId})` : sql``}) active_enrollments,
+        (SELECT count(*) FROM enrollments e WHERE e.status='PENDING_PAYMENT' ${scope.courseId ? sql`AND e.course_id = ${scope.courseId}` : scope.categoryId ? sql`AND EXISTS (SELECT 1 FROM courses c WHERE c.id=e.course_id AND c.category_id = ${scope.categoryId})` : sql``}) pending_payment_enrollments,
+        (SELECT count(*) FROM enrollments e WHERE e.status='COMPLETED' ${scope.courseId ? sql`AND e.course_id = ${scope.courseId}` : scope.categoryId ? sql`AND EXISTS (SELECT 1 FROM courses c WHERE c.id=e.course_id AND c.category_id = ${scope.categoryId})` : sql``}) completed_enrollments,
+        (SELECT count(*) FROM payments WHERE status='PENDING') pending_payment_reviews,
+        (SELECT count(*) FROM certificates WHERE status='GENERATED') certificates_generated,
+        (SELECT count(*) FROM certificates WHERE status IN ('PENDING','FAILED')) certificates_attention,
+        (SELECT count(*) FROM users u JOIN user_roles ur ON ur.user_id=u.id JOIN roles r ON r.id=ur.role_id WHERE r.code='STUDENT' AND u.created_at >= ${range.from} AND u.created_at < ${range.to}) new_students,
+        (SELECT count(*) FROM enrollments e WHERE e.created_at >= ${range.from} AND e.created_at < ${range.to} ${scope.courseId ? sql`AND e.course_id = ${scope.courseId}` : scope.categoryId ? sql`AND EXISTS (SELECT 1 FROM courses c WHERE c.id=e.course_id AND c.category_id = ${scope.categoryId})` : sql``}) new_enrollments
     `);
     const base = current[0] ?? {};
     const newStudents = Number(base.new_students ?? 0);
@@ -395,7 +396,7 @@ export class DashboardService {
         waitingForReview: Number(base.pending_payment_reviews ?? 0),
       };
       revenueByCurrency = (await this.rows(
-        sql`SELECT currency, coalesce(sum(amount),0)::text amount
+        sql`SELECT currency, coalesce(sum(amount),0) amount
             FROM payments p
             ${scope.courseId ? sql`JOIN enrollments e ON e.id=p.enrollment_id WHERE e.course_id = ${scope.courseId} AND` : scope.categoryId ? sql`JOIN enrollments e ON e.id=p.enrollment_id JOIN courses c ON c.id=e.course_id WHERE c.category_id = ${scope.categoryId} AND` : sql`WHERE`}
             p.status='APPROVED' AND p.reviewed_at >= ${range.from} AND p.reviewed_at < ${range.to}
@@ -407,8 +408,8 @@ export class DashboardService {
     if (range.previous) {
       const [previousBase] = await this.rows(sql`
         SELECT
-          (SELECT count(*)::int FROM users u JOIN user_roles ur ON ur.user_id=u.id JOIN roles r ON r.id=ur.role_id WHERE r.code='STUDENT' AND u.created_at >= ${range.previous.from} AND u.created_at < ${range.previous.to}) new_students,
-          (SELECT count(*)::int FROM enrollments e WHERE e.created_at >= ${range.previous.from} AND e.created_at < ${range.previous.to} ${scope.courseId ? sql`AND e.course_id = ${scope.courseId}` : scope.categoryId ? sql`AND EXISTS (SELECT 1 FROM courses c WHERE c.id=e.course_id AND c.category_id = ${scope.categoryId})` : sql``}) new_enrollments
+          (SELECT count(*) FROM users u JOIN user_roles ur ON ur.user_id=u.id JOIN roles r ON r.id=ur.role_id WHERE r.code='STUDENT' AND u.created_at >= ${range.previous.from} AND u.created_at < ${range.previous.to}) new_students,
+          (SELECT count(*) FROM enrollments e WHERE e.created_at >= ${range.previous.from} AND e.created_at < ${range.previous.to} ${scope.courseId ? sql`AND e.course_id = ${scope.courseId}` : scope.categoryId ? sql`AND EXISTS (SELECT 1 FROM courses c WHERE c.id=e.course_id AND c.category_id = ${scope.categoryId})` : sql``}) new_enrollments
       `);
       const comparisons: Record<string, unknown> = {
         newEnrollments: this.comparison(
@@ -424,7 +425,7 @@ export class DashboardService {
       }
       if (scope.permissions.viewRevenue) {
         const previousRevenueRows = (await this.rows(
-          sql`SELECT currency, coalesce(sum(amount),0)::text amount
+          sql`SELECT currency, coalesce(sum(amount),0) amount
               FROM payments p
               ${scope.courseId ? sql`JOIN enrollments e ON e.id=p.enrollment_id WHERE e.course_id = ${scope.courseId} AND` : scope.categoryId ? sql`JOIN enrollments e ON e.id=p.enrollment_id JOIN courses c ON c.id=e.course_id WHERE c.category_id = ${scope.categoryId} AND` : sql`WHERE`}
               p.status='APPROVED' AND p.reviewed_at >= ${range.previous.from} AND p.reviewed_at < ${range.previous.to}
@@ -476,7 +477,7 @@ export class DashboardService {
         });
       }
       const safeRows = await this.rows(
-        sql`SELECT date_trunc(${unit}, created_at) period, count(*)::int count FROM users WHERE created_at >= ${range.from} AND created_at < ${range.to} GROUP BY 1 ORDER BY 1`,
+        sql`SELECT strftime('%Y-%m-%d 00:00:00', datetime(created_at / 1000, 'unixepoch')) period, count(*) count FROM users WHERE created_at >= ${range.from} AND created_at < ${range.to} GROUP BY 1 ORDER BY 1`,
       );
       return {
         range: this.presentRange(range),
@@ -495,7 +496,7 @@ export class DashboardService {
       if (scope && (scope.type === 'INSTRUCTOR' || scope.targetInstructorId)) {
         const instructorId = scope.targetInstructorId!;
         const safeRows = await this.rows(
-          sql`SELECT date_trunc(${unit}, p.reviewed_at) period, p.currency, count(*)::int count, coalesce(sum(p.amount),0)::text amount
+          sql`SELECT strftime('%Y-%m-%d 00:00:00', datetime(p.reviewed_at / 1000, 'unixepoch')) period, p.currency, count(*) count, coalesce(sum(p.amount),0) amount
               FROM payments p
               JOIN enrollments e ON e.id = p.enrollment_id
               JOIN courses c ON c.id = e.course_id
@@ -514,7 +515,7 @@ export class DashboardService {
         };
       }
       const safeRows = await this.rows(
-        sql`SELECT date_trunc(${unit}, reviewed_at) period, currency, count(*)::int count, coalesce(sum(amount),0)::text amount
+        sql`SELECT strftime('%Y-%m-%d 00:00:00', datetime(reviewed_at / 1000, 'unixepoch')) period, currency, count(*) count, coalesce(sum(amount),0) amount
             FROM payments p
             ${scope?.courseId ? sql`JOIN enrollments e ON e.id=p.enrollment_id WHERE e.course_id = ${scope.courseId} AND` : scope?.categoryId ? sql`JOIN enrollments e ON e.id=p.enrollment_id JOIN courses c ON c.id=e.course_id WHERE c.category_id = ${scope.categoryId} AND` : sql`WHERE`}
             p.status='APPROVED' AND p.reviewed_at >= ${range.from} AND p.reviewed_at < ${range.to}
@@ -537,7 +538,7 @@ export class DashboardService {
       if (scope && (scope.type === 'INSTRUCTOR' || scope.targetInstructorId)) {
         const instructorId = scope.targetInstructorId!;
         const safeRows = await this.rows(
-          sql`SELECT date_trunc(${unit}, p.reviewed_at) period, count(*)::int count
+          sql`SELECT strftime('%Y-%m-%d 00:00:00', datetime(p.reviewed_at / 1000, 'unixepoch')) period, count(*) count
               FROM payments p
               JOIN enrollments e ON e.id = p.enrollment_id
               JOIN courses c ON c.id = e.course_id
@@ -555,7 +556,7 @@ export class DashboardService {
         };
       }
       const safeRows = await this.rows(
-        sql`SELECT date_trunc(${unit}, reviewed_at) period, count(*)::int count
+        sql`SELECT strftime('%Y-%m-%d 00:00:00', datetime(reviewed_at / 1000, 'unixepoch')) period, count(*) count
             FROM payments p
             ${scope?.courseId ? sql`JOIN enrollments e ON e.id=p.enrollment_id WHERE e.course_id = ${scope.courseId} AND` : scope?.categoryId ? sql`JOIN enrollments e ON e.id=p.enrollment_id JOIN courses c ON c.id=e.course_id WHERE c.category_id = ${scope.categoryId} AND` : sql`WHERE`}
             p.reviewed_at >= ${range.from} AND p.reviewed_at < ${range.to}
@@ -572,7 +573,7 @@ export class DashboardService {
       if (scope && (scope.type === 'INSTRUCTOR' || scope.targetInstructorId)) {
         const instructorId = scope.targetInstructorId!;
         const safeRows = await this.rows(
-          sql`SELECT date_trunc(${unit}, e.completed_at) period, count(*)::int count
+          sql`SELECT strftime('%Y-%m-%d 00:00:00', datetime(e.completed_at / 1000, 'unixepoch')) period, count(*) count
               FROM enrollments e
               JOIN courses c ON c.id = e.course_id
               WHERE c.created_by = ${instructorId}
@@ -590,7 +591,7 @@ export class DashboardService {
         };
       }
       const safeRows = await this.rows(
-        sql`SELECT date_trunc(${unit}, completed_at) period, count(*)::int count
+        sql`SELECT strftime('%Y-%m-%d 00:00:00', datetime(completed_at / 1000, 'unixepoch')) period, count(*) count
             FROM enrollments e
             ${scope?.courseId ? sql`WHERE e.course_id = ${scope.courseId} AND` : scope?.categoryId ? sql`JOIN courses c ON c.id=e.course_id WHERE c.category_id = ${scope.categoryId} AND` : sql`WHERE`}
             e.status='COMPLETED' AND e.completed_at >= ${range.from} AND e.completed_at < ${range.to}
@@ -613,7 +614,7 @@ export class DashboardService {
       if (scope && (scope.type === 'INSTRUCTOR' || scope.targetInstructorId)) {
         const instructorId = scope.targetInstructorId!;
         const safeRows = await this.rows(
-          sql`SELECT date_trunc(${unit}, cert.issued_at) period, count(*)::int count
+          sql`SELECT strftime('%Y-%m-%d 00:00:00', datetime(cert.issued_at / 1000, 'unixepoch')) period, count(*) count
               FROM certificates cert
               JOIN enrollments e ON e.id = cert.enrollment_id
               JOIN courses c ON c.id = e.course_id
@@ -631,7 +632,7 @@ export class DashboardService {
         };
       }
       const safeRows = await this.rows(
-        sql`SELECT date_trunc(${unit}, cert.issued_at) period, count(*)::int count
+        sql`SELECT strftime('%Y-%m-%d 00:00:00', datetime(cert.issued_at / 1000, 'unixepoch')) period, count(*) count
             FROM certificates cert
             ${scope?.courseId ? sql`JOIN enrollments e ON e.id=cert.enrollment_id WHERE e.course_id = ${scope.courseId} AND` : scope?.categoryId ? sql`JOIN enrollments e ON e.id=cert.enrollment_id JOIN courses c ON c.id=e.course_id WHERE c.category_id = ${scope.categoryId} AND` : sql`WHERE`}
             cert.issued_at >= ${range.from} AND cert.issued_at < ${range.to}
@@ -648,7 +649,7 @@ export class DashboardService {
     if (scope && (scope.type === 'INSTRUCTOR' || scope.targetInstructorId)) {
       const instructorId = scope.targetInstructorId!;
       const safeRows = await this.rows(
-        sql`SELECT date_trunc(${unit}, e.created_at) period, count(*)::int count
+        sql`SELECT strftime('%Y-%m-%d 00:00:00', datetime(e.created_at / 1000, 'unixepoch')) period, count(*) count
             FROM enrollments e
             JOIN courses c ON c.id = e.course_id
             WHERE c.created_by = ${instructorId}
@@ -666,7 +667,7 @@ export class DashboardService {
     }
 
     const safeRows = await this.rows(
-      sql`SELECT date_trunc(${unit}, e.created_at) period, count(*)::int count
+      sql`SELECT strftime('%Y-%m-%d 00:00:00', datetime(e.created_at / 1000, 'unixepoch')) period, count(*) count
           FROM enrollments e
           ${scope?.courseId ? sql`WHERE e.course_id = ${scope.courseId} AND` : scope?.categoryId ? sql`JOIN courses c ON c.id=e.course_id WHERE c.category_id = ${scope.categoryId} AND` : sql`WHERE`}
           e.created_at >= ${range.from} AND e.created_at < ${range.to}
@@ -849,7 +850,7 @@ export class DashboardService {
         : null;
 
     const [row] = await this.rows(
-      sql`SELECT count(*) FILTER (WHERE c.access_type='FREE')::int free_count,count(*) FILTER (WHERE c.access_type='PAID')::int paid_count
+      sql`SELECT count(CASE WHEN c.access_type='FREE' THEN 1 END) free_count, count(CASE WHEN c.access_type='PAID' THEN 1 END) paid_count
           FROM enrollments e
           JOIN courses c ON c.id=e.course_id
           WHERE e.created_at>=${range.from} AND e.created_at<${range.to}
@@ -882,9 +883,9 @@ export class DashboardService {
 
     return this.rows(
       sql`SELECT c.id course_id, c.title course_title, c.slug,
-                 count(e.id)::int total_enrollments,
-                 count(e.id) FILTER (WHERE e.status='COMPLETED')::int completions,
-                 coalesce(round(100.0 * count(e.id) FILTER (WHERE e.status='COMPLETED') / nullif(count(e.id),0), 2), 0)::float completion_rate
+                 count(e.id) total_enrollments,
+                 count(CASE WHEN e.status='COMPLETED' THEN 1 END) completions,
+                 coalesce(round(100.0 * count(CASE WHEN e.status='COMPLETED' THEN 1 END) / nullif(count(e.id),0), 2), 0) completion_rate
           FROM courses c
           LEFT JOIN enrollments e ON e.course_id=c.id AND e.created_at>=${range.from} AND e.created_at<${range.to}
           WHERE c.archived_at IS NULL
@@ -912,11 +913,11 @@ export class DashboardService {
 
     const rows = await this.rows(
       sql`SELECT c.id course_id, c.title course_title, c.slug, c.status, c.created_by,
-                 count(e.id)::int total_enrollments,
-                 count(e.id) FILTER (WHERE e.status='COMPLETED')::int completions,
-                 coalesce(round(100.0 * count(e.id) FILTER (WHERE e.status='COMPLETED') / nullif(count(e.id),0), 2), 0)::float completion_rate,
-                 coalesce(round(avg(e.progress_percentage)::numeric, 1), 0)::float average_progress,
-                 coalesce(sum(p.amount) FILTER (WHERE p.status='APPROVED'), 0)::text total_revenue,
+                 count(e.id) total_enrollments,
+                 count(CASE WHEN e.status='COMPLETED' THEN 1 END) completions,
+                 coalesce(round(100.0 * count(CASE WHEN e.status='COMPLETED' THEN 1 END) / nullif(count(e.id),0), 2), 0) completion_rate,
+                 coalesce(round(avg(e.progress_percentage), 1), 0) average_progress,
+                 coalesce(sum(CASE WHEN p.status='APPROVED' THEN p.amount ELSE 0 END), 0) total_revenue,
                  coalesce(c.currency, 'ETB') currency
           FROM courses c
           LEFT JOIN enrollments e ON e.course_id=c.id AND e.created_at>=${range.from} AND e.created_at<${range.to}
@@ -1165,8 +1166,9 @@ export class DashboardService {
   }
 
   async health() {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 3600 * 1000);
     const [row] = await this.rows(
-      sql`SELECT (SELECT count(*)::int FROM payments WHERE status='PENDING' AND submitted_at < now()-interval '24 hours') old_payments,(SELECT count(*)::int FROM certificates WHERE status='FAILED') failed_certificates,(SELECT count(*)::int FROM email_deliveries WHERE status='FAILED') failed_emails,(SELECT count(*)::int FROM report_exports WHERE status='FAILED') failed_exports`,
+      sql`SELECT (SELECT count(*) FROM payments WHERE status='PENDING' AND submitted_at < ${twentyFourHoursAgo}) old_payments,(SELECT count(*) FROM certificates WHERE status='FAILED') failed_certificates,(SELECT count(*) FROM email_deliveries WHERE status='FAILED') failed_emails,(SELECT count(*) FROM report_exports WHERE status='FAILED') failed_exports`,
     );
     const alerts = [] as Row[];
     for (const [key, code, message] of [

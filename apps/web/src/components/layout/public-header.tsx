@@ -8,25 +8,29 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
+import { LanguageToggle } from '@/components/layout/language-toggle';
 import { ProfileMenu } from '@/components/layout/profile-menu';
 import { CoursesMegaMenu } from '@/components/layout/courses-mega-menu';
 import { ROUTES } from '@/constants/routes';
 import { siteConfig } from '@/config/site.config';
 import { useAuthStore } from '@/stores';
 import { useLogout } from '@/hooks/use-logout';
+import { useLanguage } from '@/lib/i18n/language-provider';
+import type { TranslationKey } from '@/lib/i18n/translations/en';
 import { getPostLoginRoute } from '@/lib/authorization/user-type';
 import { cn } from '@/lib/utils';
 
-const NAV_LINKS = [
-  { label: 'Categories', href: ROUTES.categories.list },
-  { label: 'Instructors', href: ROUTES.instructors.list },
-  { label: 'Pricing', href: ROUTES.pricing },
-  { label: 'About', href: ROUTES.about },
-  { label: 'Verify Certificate', href: ROUTES.certificates.verifyLookup },
-  { label: 'Contact', href: ROUTES.contact },
+const NAV_LINKS: { key: TranslationKey; href: string }[] = [
+  { key: 'nav.categories', href: ROUTES.categories.list },
+  { key: 'nav.instructors', href: ROUTES.instructors.list },
+  { key: 'nav.pricing', href: ROUTES.pricing },
+  { key: 'nav.about', href: ROUTES.about },
+  { key: 'nav.verifyCertificate', href: ROUTES.certificates.verifyLookup },
+  { key: 'nav.contact', href: ROUTES.contact },
 ];
 
 export function PublicHeader() {
+  const { t } = useLanguage();
   const hasHydrated = useAuthStore((state) => state.hasHydrated);
   const sessionChecked = useAuthStore((state) => state.sessionChecked);
   const authenticated = useAuthStore((state) => state.authenticated);
@@ -37,13 +41,6 @@ export function PublicHeader() {
   const [loggingOut, setLoggingOut] = useState(false);
   const handleLogout = useLogout();
 
-  // Never guess: while unauthenticated there's nothing to wait on: while
-  // authenticated, wait for authzStatus to settle ('ready' or 'error' -
-  // error still unblocks, falling back to `roles: []`, so a down
-  // authorization endpoint doesn't wedge the navbar forever) before
-  // deciding what "Dashboard" points to. Otherwise a non-student could
-  // flash a `/dashboard` link for an instant, since `isStudent([])` is
-  // vacuously true before roles load.
   const navReady =
     hasHydrated &&
     sessionChecked &&
@@ -71,12 +68,13 @@ export function PublicHeader() {
                 pathname === link.href && 'text-foreground',
               )}
             >
-              {link.label}
+              {t(link.key)}
             </Link>
           ))}
         </nav>
 
         <div className="flex items-center gap-2">
+          <LanguageToggle />
           <ThemeToggle />
           {!navReady ? (
             <div className="hidden items-center gap-2 sm:flex" aria-hidden="true">
@@ -86,17 +84,17 @@ export function PublicHeader() {
           ) : authenticated ? (
             <div className="flex items-center gap-2">
               <Button variant="ghost" asChild className="hidden sm:inline-flex">
-                <Link href={dashboardHref}>Dashboard</Link>
+                <Link href={dashboardHref}>{t('nav.dashboard')}</Link>
               </Button>
               <ProfileMenu />
             </div>
           ) : (
             <div className="hidden items-center gap-2 sm:flex">
               <Button variant="ghost" asChild>
-                <Link href={ROUTES.auth.login}>Sign in</Link>
+                <Link href={ROUTES.auth.login}>{t('nav.signIn')}</Link>
               </Button>
               <Button asChild>
-                <Link href={ROUTES.auth.register}>Get started</Link>
+                <Link href={ROUTES.auth.register}>{t('nav.getStarted')}</Link>
               </Button>
             </div>
           )}
@@ -121,7 +119,7 @@ export function PublicHeader() {
                 className="rounded-md px-3 py-2.5 text-sm font-medium hover:bg-accent"
                 onClick={() => setMobileOpen(false)}
               >
-                Courses
+                {t('nav.courses')}
               </Link>
               {NAV_LINKS.map((link) => (
                 <Link
@@ -130,7 +128,7 @@ export function PublicHeader() {
                   className="rounded-md px-3 py-2.5 text-sm font-medium hover:bg-accent"
                   onClick={() => setMobileOpen(false)}
                 >
-                  {link.label}
+                  {t(link.key)}
                 </Link>
               ))}
               {!navReady ? (
@@ -148,7 +146,7 @@ export function PublicHeader() {
                     className="rounded-md px-3 py-2.5 text-sm font-medium hover:bg-accent"
                     onClick={() => setMobileOpen(false)}
                   >
-                    Dashboard
+                    {t('nav.dashboard')}
                   </Link>
                   <button
                     type="button"
@@ -164,10 +162,10 @@ export function PublicHeader() {
                     {loggingOut ? (
                       <>
                         <Loader2 className="size-4 animate-spin" />
-                        <span>Signing out...</span>
+                        <span>{t('nav.signingOut')}</span>
                       </>
                     ) : (
-                      <span>Logout</span>
+                      <span>{t('nav.logout')}</span>
                     )}
                   </button>
                 </div>
@@ -175,12 +173,12 @@ export function PublicHeader() {
                 <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
                   <Button variant="outline" asChild>
                     <Link href={ROUTES.auth.login} onClick={() => setMobileOpen(false)}>
-                      Sign in
+                      {t('nav.signIn')}
                     </Link>
                   </Button>
                   <Button asChild>
                     <Link href={ROUTES.auth.register} onClick={() => setMobileOpen(false)}>
-                      Get started
+                      {t('nav.getStarted')}
                     </Link>
                   </Button>
                 </div>

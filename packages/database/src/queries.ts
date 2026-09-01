@@ -1,10 +1,10 @@
-import { and, asc, desc, eq, lt, or, sql } from 'drizzle-orm';
-import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { and, asc, desc, eq, like, lt, or, sql } from 'drizzle-orm';
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { backgroundJobs, courses, notifications, payments, schema } from './schema/index.ts';
 
 export const MAX_PAGE_SIZE = 100;
 const pageSize = (requested: number) => Math.max(1, Math.min(MAX_PAGE_SIZE, Math.trunc(requested)));
-export type AcademyDatabase = NodePgDatabase<typeof schema>;
+export type AcademyDatabase = any;
 
 export interface DateCursor {
   date: Date;
@@ -24,7 +24,10 @@ export function publicCourseCatalogQuery(
       )
     : undefined;
   const searchFilter = search?.trim()
-    ? sql`${courses.searchVector} @@ websearch_to_tsquery('simple', ${search.trim()})`
+    ? or(
+        like(courses.title, `%${search.trim()}%`),
+        like(courses.description, `%${search.trim()}%`),
+      )
     : undefined;
   return database
     .select({
@@ -119,8 +122,7 @@ export function claimBackgroundJobsQuery(database: AcademyDatabase, requestedSiz
       attempts: backgroundJobs.attempts,
     })
     .from(backgroundJobs)
-    .where(and(eq(backgroundJobs.status, 'PENDING'), sql`${backgroundJobs.scheduledAt} <= now()`))
+    .where(and(eq(backgroundJobs.status, 'PENDING'), sql`${backgroundJobs.scheduledAt} <= CURRENT_TIMESTAMP`))
     .orderBy(asc(backgroundJobs.scheduledAt), asc(backgroundJobs.priority), asc(backgroundJobs.id))
-    .limit(pageSize(requestedSize))
-    .for('update', { skipLocked: true });
+    .limit(pageSize(requestedSize));
 }

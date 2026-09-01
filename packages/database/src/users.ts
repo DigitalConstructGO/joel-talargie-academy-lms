@@ -43,7 +43,7 @@ export const getSafeUser = async (db: AcademyDatabase, userId: string) => {
   return {
     ...user,
     fullName: [user.firstName, user.lastName].filter(Boolean).join(' '),
-    roles: roles.map((x) => x.code),
+    roles: roles.map((x: any) => x.code),
     authenticationProviders: providers.length
       ? providers
       : [
@@ -69,7 +69,7 @@ export const updateSafeProfile = async (
     userAgent?: string;
   },
 ) =>
-  db.transaction(async (tx) => {
+  db.transaction(async (tx: any) => {
     const profile = await tx.query.userProfiles.findFirst({
       where: eq(schema.userProfiles.userId, input.userId),
     });
@@ -134,12 +134,12 @@ export type PreferenceUpdate = Partial<
     | 'inAppCertificates'
   >
 >;
-export const updateUserPreferences = async (
+export const updateNotificationPreferences = async (
   db: AcademyDatabase,
   actorId: string,
   values: PreferenceUpdate,
 ) =>
-  db.transaction(async (tx) => {
+  db.transaction(async (tx: any) => {
     const before = await getUserPreferences(tx as AcademyDatabase, actorId);
     await tx
       .insert(schema.userNotificationPreferences)
@@ -158,6 +158,7 @@ export const updateUserPreferences = async (
     });
     return getUserPreferences(db, actorId);
   });
+export const updateUserPreferences = updateNotificationPreferences;
 export const listActiveSessions = async (db: AcademyDatabase, userId: string) =>
   db
     .select({
@@ -181,33 +182,33 @@ export const revokeOwnedSession = async (
   db: AcademyDatabase,
   input: { actorId: string; userId: string; sessionId: string; admin: boolean },
 ) =>
-  db.transaction(async (tx) => {
+  db.transaction(async (tx: any) => {
     const session = await tx.query.refreshSessions.findFirst({
       where: and(
         eq(schema.refreshSessions.id, input.sessionId),
         eq(schema.refreshSessions.userId, input.userId),
       ),
     });
-    if (!session) throw new Error('SESSION_NOT_FOUND');
-    if (session.revokedAt) throw new Error('SESSION_ALREADY_REVOKED');
+    if (!session) return false;
     await tx
       .update(schema.refreshSessions)
       .set({ revokedAt: new Date() })
-      .where(eq(schema.refreshSessions.id, session.id));
+      .where(eq(schema.refreshSessions.id, input.sessionId));
     await tx.insert(schema.activityLogs).values({
       actorId: input.actorId,
-      action: input.admin ? 'admin.user_session.revoked' : 'user.session.revoked',
+      action: input.admin ? 'admin.sessions.revoked' : 'user.sessions.revoked',
       entityType: 'refresh_session',
-      entityId: session.id,
-      after: { targetUserId: input.userId },
+      entityId: input.sessionId,
+      before: { userId: input.userId, revokedAt: null },
+      after: { userId: input.userId, revokedAt: new Date() },
     });
-    return session.id;
+    return true;
   });
 export const revokeSessionsExcept = async (
   db: AcademyDatabase,
   input: { actorId: string; userId: string; keepSessionId?: string; admin: boolean },
 ) =>
-  db.transaction(async (tx) => {
+  db.transaction(async (tx: any) => {
     const conditions = [
       eq(schema.refreshSessions.userId, input.userId),
       isNull(schema.refreshSessions.revokedAt),
@@ -277,7 +278,7 @@ export const listManagedUsers = async (
     .leftJoin(schema.userRoles, eq(schema.userRoles.userId, schema.users.id))
     .leftJoin(schema.roles, eq(schema.roles.id, schema.userRoles.roleId))
     .where(and(...conditions));
-  const userIds = items.map((user) => user.id);
+  const userIds = items.map((user: any) => user.id);
   if (!userIds.length) return { items: [], total: Number(total) };
   const [roleRows, providerRows] = await Promise.all([
     db
@@ -296,11 +297,11 @@ export const listManagedUsers = async (
       .from(schema.oauthAccounts)
       .where(inArray(schema.oauthAccounts.userId, userIds)),
   ]);
-  const enriched = items.map((user) => ({
+  const enriched = items.map((user: any) => ({
     ...user,
     fullName: [user.firstName, user.lastName].filter(Boolean).join(' '),
-    roles: roleRows.filter((role) => role.userId === user.id).map((role) => role.code),
-    authenticationProviders: providerRows.filter((provider) => provider.userId === user.id),
+    roles: roleRows.filter((role: any) => role.userId === user.id).map((role: any) => role.code),
+    authenticationProviders: providerRows.filter((provider: any) => provider.userId === user.id),
   }));
   return { items: enriched, total: Number(total) };
 };
@@ -313,7 +314,7 @@ export const getUserRecordSummary = async (db: AcademyDatabase, userId: string) 
   ] = await Promise.all([
     db
       .select({
-        enrollmentCount: count(),
+        enrollmentCount: count(sql`*`),
         activeEnrollmentCount: count(
           sql`case when ${schema.enrollments.status} in ('ENROLLED', 'IN_PROGRESS') then 1 end`,
         ),
@@ -324,16 +325,19 @@ export const getUserRecordSummary = async (db: AcademyDatabase, userId: string) 
       .from(schema.enrollments)
       .where(eq(schema.enrollments.studentId, userId)),
     db
-      .select({ paymentAttemptCount: count() })
+      .select({ paymentAttemptCount: count(sql`*`) })
       .from(schema.payments)
       .innerJoin(schema.enrollments, eq(schema.payments.enrollmentId, schema.enrollments.id))
       .where(eq(schema.enrollments.studentId, userId)),
     db
-      .select({ certificateCount: count() })
+      .select({ certificateCount: count(sql`*`) })
       .from(schema.certificates)
       .innerJoin(schema.enrollments, eq(schema.certificates.enrollmentId, schema.enrollments.id))
       .where(eq(schema.enrollments.studentId, userId)),
-    listActiveSessions(db, userId),
+    db.query.refreshSessions.findMany({
+      where: eq(schema.refreshSessions.userId, userId),
+      orderBy: [desc(schema.refreshSessions.createdAt)],
+    }),
   ]);
   return {
     enrollmentCount: Number(enrollmentCount),
@@ -354,7 +358,7 @@ export const transitionUserStatus = async (
     action: string;
   },
 ) =>
-  db.transaction(async (tx) => {
+  db.transaction(async (tx: any) => {
     const user = await tx.query.users.findFirst({ where: eq(schema.users.id, input.userId) });
     if (!user) throw new Error('USER_NOT_FOUND');
     if (input.actorId === input.userId) throw new Error('CANNOT_MODIFY_OWN_STATUS');
@@ -447,3 +451,5 @@ export const listUserActivity = async (
     .orderBy(desc(schema.activityLogs.createdAt), desc(schema.activityLogs.id))
     .limit(input.limit)
     .offset(input.offset);
+
+export const updateUserStatus = transitionUserStatus;

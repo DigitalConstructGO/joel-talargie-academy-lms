@@ -828,7 +828,6 @@ export class CatalogRepository {
     const searchTerm = query.search?.trim();
     const searchCondition = searchTerm
       ? or(
-          sql`${schema.courses.searchVector} @@ websearch_to_tsquery('simple', ${searchTerm})`,
           ilike(
             schema.courses.title,
             `%${searchTerm.replace(/[%_\\]/g, '\\$&')}%`,
@@ -966,7 +965,19 @@ export class CatalogRepository {
           publicOnly ? isNull(schema.categories.archivedAt) : undefined,
         ),
       );
-    return { items, total: Number(total) };
+    const mappedItems = items.map((item) => {
+      const key = item.thumbnailKey ?? null;
+      const thumbnailUrl = key
+        ? key.startsWith('http://') || key.startsWith('https://') || key.startsWith('/')
+          ? key
+          : `/api/v1/storage/course-thumbnails/${key.replace(/^course-thumbnails\//, '')}`
+        : null;
+      return {
+        ...item,
+        thumbnailUrl,
+      };
+    });
+    return { items: mappedItems, total: Number(total) };
   }
 
   createSection(actorId: string, courseId: string, dto: CreateSectionDto) {

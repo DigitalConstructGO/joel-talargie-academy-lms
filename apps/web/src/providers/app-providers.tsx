@@ -9,6 +9,8 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthBootstrap } from '@/components/auth/auth-bootstrap';
 import { NotificationSocketProvider } from '@/providers/notification-socket-provider';
 
+import { LanguageProvider } from '@/lib/i18n/language-provider';
+
 function createQueryClient() {
   return new QueryClient({
     defaultOptions: {
@@ -32,14 +34,16 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         themes={['light', 'dark']}
         disableTransitionOnChange
       >
-        {/* Makes every framer-motion animation site-wide (Reveal, page transitions, etc.) honor the OS-level reduced-motion preference, not just new usages. */}
-        <MotionConfig reducedMotion="user">
-          <TooltipProvider delayDuration={200}>
-            <AuthBootstrap />
-            <NotificationSocketProvider>{children}</NotificationSocketProvider>
-            <Toaster position="top-right" richColors closeButton expand />
-          </TooltipProvider>
-        </MotionConfig>
+        <LanguageProvider>
+          {/* Makes every framer-motion animation site-wide (Reveal, page transitions, etc.) honor the OS-level reduced-motion preference, not just new usages. */}
+          <MotionConfig reducedMotion="user">
+            <TooltipProvider delayDuration={200}>
+              <AuthBootstrap />
+              <NotificationSocketProvider>{children}</NotificationSocketProvider>
+              <Toaster position="top-right" richColors closeButton expand />
+            </TooltipProvider>
+          </MotionConfig>
+        </LanguageProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

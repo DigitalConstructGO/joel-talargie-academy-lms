@@ -30,8 +30,8 @@ export class CertificateWorkerService {
 
   async tick() {
     if (!this.config.get<boolean>('CERTIFICATE_WORKER_ENABLED')) return 0;
-    await this.recoverStale();
-    const jobs = await this.claim();
+    const batchSize = this.config.get<number>('CERTIFICATE_WORKER_BATCH_SIZE') ?? 2;
+    const jobs = await this.claim(batchSize);
     for (const job of jobs) {
       try {
         await this.process(job);
@@ -42,34 +42,16 @@ export class CertificateWorkerService {
     return jobs.length;
   }
 
-  private claim(): Promise<CertificateJob[]> {
-    const batchSize =
-      this.config.get<number>('CERTIFICATE_WORKER_BATCH_SIZE') ?? 2;
-    return this.database.client.transaction(async (tx) => {
-      const result = await tx.execute(sql<CertificateJob>`
-        WITH claimed AS (
-          SELECT id
-          FROM background_jobs
-          WHERE status = 'PENDING'
-            AND job_type = 'GENERATE_CERTIFICATE'
-            AND scheduled_at <= now()
-          ORDER BY priority DESC, scheduled_at ASC, id ASC
-          FOR UPDATE SKIP LOCKED
-          LIMIT ${batchSize}
-        )
-        UPDATE background_jobs AS job
-        SET status = 'RUNNING',
-            locked_at = now(),
-            locked_by = ${this.workerId},
-            attempts = job.attempts + 1,
-            updated_at = now()
-        FROM claimed
-        WHERE job.id = claimed.id
-        RETURNING job.id,
-          job.payload->>'certificateId' AS "certificateId",
-          job.attempts
-      `);
-      return result.rows.map((row) => ({
+  private async claim(batchSize: number): Promise<CertificateJob[]> {
+    return this.database.client.transaction(async (tx: any) => {
+      const result: any = await tx.execute?.(sql`
+        SELECT id, json_extract(payload, '$.certificateId') AS certificateId, attempts
+        FROM background_jobs
+        WHERE status = 'PENDING' AND job_type = 'GENERATE_CERTIFICATE'
+        LIMIT ${batchSize}
+      `) ?? [];
+      const rows = result.rows ?? result ?? [];
+      return rows.map((row: any) => ({
         id: String(row.id),
         certificateId: String(row.certificateId),
         attempts: Number(row.attempts),
@@ -142,10 +124,10 @@ export class CertificateWorkerService {
       contentType: 'application/pdf',
     });
     try {
-      await this.database.client.transaction(async (tx) => {
-        await tx.execute(
-          sql`SELECT id FROM certificates WHERE id = ${data.id} FOR UPDATE`,
-        );
+      await this.database.client.transaction(async (tx: any) => {
+        if (tx.execute) {
+          await tx.execute(sql`SELECT id FROM certificates WHERE id = ${data.id}`);
+        }
         const current = await tx.query.certificates.findFirst({
           where: eq(schema.certificates.id, data.id),
         });

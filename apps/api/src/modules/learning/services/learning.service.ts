@@ -141,7 +141,8 @@ export class LearningService {
         : null,
       videoUrl:
         lesson.lessonType === 'VIDEO'
-          ? this.safeHttpsUrl(lesson.videoUrl)
+          ? (this.safeHttpsUrl(lesson.videoUrl) ??
+            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4')
           : null,
       externalUrl:
         lesson.lessonType === 'EXTERNAL_LINK'

@@ -11,6 +11,7 @@ export interface CourseProgressCardProps {
   category: string;
   categorySlug?: string;
   thumbnailKey?: string | null;
+  thumbnailUrl?: string | null;
   /** Overall completion, 0-100 - real enrollment data only tracks this, not per-lesson state. */
   progressPercent: number;
   /**
@@ -31,6 +32,7 @@ export function CourseProgressCard({
   category,
   categorySlug,
   thumbnailKey,
+  thumbnailUrl,
   progressPercent,
   completedLessons,
   totalLessons,
@@ -52,6 +54,7 @@ export function CourseProgressCard({
         categoryName={category}
         categorySlug={categorySlug}
         thumbnailKey={thumbnailKey}
+        thumbnailUrl={thumbnailUrl}
         showBadge={false}
         className="size-20 shrink-0 rounded-xl transition-transform duration-500 group-hover:scale-110"
       />

@@ -57,6 +57,21 @@ export class S3StorageProvider implements StorageService {
     );
   }
 
+  async exists(key: string): Promise<boolean> {
+    try {
+      this.assertConfigured();
+      await this.client.send(
+        new (require('@aws-sdk/client-s3').HeadObjectCommand)({
+          Bucket: this.bucket,
+          Key: key,
+        }),
+      );
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async getSignedUrl(
     key: string,
     expiresInSeconds = 300,

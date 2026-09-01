@@ -4,6 +4,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
 import { NotificationBell } from '@/components/layout/notification-bell';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
+import { LanguageToggle } from '@/components/layout/language-toggle';
 import { ProfileMenu } from '@/components/layout/profile-menu';
 import { CommandPalette } from '@/components/dashboard/command-palette';
 import { ROUTES } from '@/constants/routes';
@@ -48,6 +49,7 @@ export function SiteHeader({
           onOpenChange={onCommandPaletteOpenChange}
         />
         <NotificationBell />
+        <LanguageToggle />
         <div className="hidden sm:block">
           <ThemeToggle />
         </div>

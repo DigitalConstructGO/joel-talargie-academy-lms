@@ -72,7 +72,7 @@ interface YouTubeIframeApi {
       events?: {
         onReady?: (event: YouTubePlayerEvent) => void;
         onStateChange?: (event: YouTubePlayerEvent) => void;
-        onError?: () => void;
+        onError?: (event: { data?: number }) => void;
       };
     },
   ) => YouTubePlayerInstance;
@@ -114,7 +114,7 @@ function loadYouTubeIframeApi(): Promise<YouTubeIframeApi> {
         setYouTubeSessionBlocked(true);
         reject(new Error('YouTube API load timed out'));
       }
-    }, 2500);
+    }, 7000);
 
     const previousCallback = window.onYouTubeIframeAPIReady;
     window.onYouTubeIframeAPIReady = () => {
@@ -171,7 +171,8 @@ function YouTubeLessonPlayer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackError, setPlaybackError] = useState(() => checkYouTubeSessionBlocked());
   const [useNativePlayer, setUseNativePlayer] = useState(false);
-  const [useNoCookie, setUseNoCookie] = useState(true);
+  const [useNoCookie, setUseNoCookie] = useState(false);
+  const [errorCode, setErrorCode] = useState<'NONE' | 'EMBED_DISABLED' | 'PRIVATE_VIDEO' | 'NETWORK_OR_OTHER'>('NONE');
   const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
@@ -190,6 +191,7 @@ function YouTubeLessonPlayer({
     setReady(false);
     setIsPlaying(false);
     setPlaybackError(false);
+    setErrorCode('NONE');
 
     const mount = mountRef.current;
     if (!mount) return;
@@ -198,15 +200,15 @@ function YouTubeLessonPlayer({
     target.className = 'size-full';
     mount.appendChild(target);
 
-    const originParam = typeof window !== 'undefined' ? window.location.origin : undefined;
-
-    // Watchdog: allow up to 15s for slow connections to initialize YouTube player
+    // Watchdog: allow up to 12s for slow connections to initialize YouTube player
     const readyTimeout = setTimeout(() => {
       if (!cancelled && !ready) {
+        setErrorCode('NETWORK_OR_OTHER');
         setPlaybackError(true);
       }
-    }, 15000);
+    }, 12000);
 
+    const appOrigin = typeof window !== 'undefined' ? window.location.origin : '';
     const host = useNoCookie ? 'https://www.youtube-nocookie.com' : 'https://www.youtube.com';
 
     loadYouTubeIframeApi()
@@ -219,8 +221,8 @@ function YouTubeLessonPlayer({
             rel: 0,
             modestbranding: 1,
             enablejsapi: 1,
+            origin: appOrigin,
             playsinline: 1,
-            ...(originParam ? { origin: originParam } : {}),
             ...(!isCompleted ? { disablekb: 1 } : {}),
             start: 0,
           },
@@ -233,10 +235,18 @@ function YouTubeLessonPlayer({
               setReady(true);
               setPlaybackError(false);
             },
-            onError: () => {
+            onError: (event: { data?: number }) => {
               clearTimeout(readyTimeout);
               if (!cancelled) {
-                setYouTubeSessionBlocked(true);
+                const code = event?.data;
+                if (code === 101 || code === 150) {
+                  setErrorCode('EMBED_DISABLED');
+                } else if (code === 100) {
+                  setErrorCode('PRIVATE_VIDEO');
+                } else {
+                  setErrorCode('NETWORK_OR_OTHER');
+                  setYouTubeSessionBlocked(true);
+                }
                 setPlaybackError(true);
               }
             },
@@ -265,6 +275,7 @@ function YouTubeLessonPlayer({
       .catch(() => {
         clearTimeout(readyTimeout);
         if (cancelled) return;
+        setErrorCode('NETWORK_OR_OTHER');
         setYouTubeSessionBlocked(true);
         setPlaybackError(true);
       });
@@ -280,7 +291,6 @@ function YouTubeLessonPlayer({
 
   useEffect(() => {
     if (!isPlaying) return;
-    // Check completion and update max watched smoothly
     const interval = setInterval(() => {
       const player = playerRef.current;
       if (!player) return;
@@ -300,7 +310,6 @@ function YouTubeLessonPlayer({
 
   useEffect(() => {
     if (!isPlaying) return;
-    // Periodic progress save every 20 seconds
     const saveInterval = setInterval(() => {
       const player = playerRef.current;
       if (player) onProgress(Math.floor(player.getCurrentTime()));
@@ -370,6 +379,30 @@ function YouTubeLessonPlayer({
     </div>
   );
 
+  const getOverlayInfo = () => {
+    if (errorCode === 'EMBED_DISABLED') {
+      return {
+        title: 'Embedding Disabled by Video Owner',
+        subtitle:
+          'The owner of this video does not allow inline website embeds. You can watch it directly on YouTube or play the Academy stream below:',
+      };
+    }
+    if (errorCode === 'PRIVATE_VIDEO') {
+      return {
+        title: 'Private or Unavailable Video',
+        subtitle:
+          'This YouTube video is set to private or requires account authorization on YouTube. Watch it on YouTube or play the Academy stream:',
+      };
+    }
+    return {
+      title: 'YouTube Player Restricted on Network',
+      subtitle:
+        'YouTube embed connections are restricted on your current network or local environment. Choose how you’d like to continue:',
+    };
+  };
+
+  const overlayInfo = getOverlayInfo();
+
   return (
     <div className="space-y-2">
       {topBar}
@@ -381,7 +414,7 @@ function YouTubeLessonPlayer({
             {/* Background Thumbnail preview */}
             {!imgError && (
               <img
-                src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+                src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
                 alt="Lesson Thumbnail"
                 onError={() => setImgError(true)}
                 className="absolute inset-0 size-full object-cover opacity-20 filter blur-xs"
@@ -395,12 +428,10 @@ function YouTubeLessonPlayer({
 
               <div className="space-y-1.5">
                 <h3 className="text-base font-semibold text-white tracking-tight">
-                  YouTube Player Restricted on Network
+                  {overlayInfo.title}
                 </h3>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  YouTube embed connections are blocked on your current network (
-                  <code className="text-red-400 font-mono text-[11px]">ERR_EMPTY_RESPONSE</code>).
-                  Choose how you&apos;d like to continue:
+                  {overlayInfo.subtitle}
                 </p>
               </div>
 
@@ -436,7 +467,7 @@ function YouTubeLessonPlayer({
                     setUseNoCookie((prev) => !prev);
                   }}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-3 py-2.5 text-xs font-medium text-white hover:bg-white/20 transition-all"
-                  title="Retry connecting to YouTube if you turned on a VPN"
+                  title="Retry connecting to YouTube"
                 >
                   <span>Retry Embed</span>
                 </button>

@@ -137,6 +137,7 @@ export function CourseThumbnailUploader({
               title={title}
               categoryName={categoryName}
               categorySlug={categorySlug}
+              thumbnailKey={value}
               thumbnailUrl={previewUrl}
               className="aspect-video w-full"
             />

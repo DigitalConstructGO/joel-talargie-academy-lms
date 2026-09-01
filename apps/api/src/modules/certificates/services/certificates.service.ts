@@ -22,6 +22,7 @@ import type {
   UpdateCertificateTemplateDto,
 } from '../dto/certificates.dto';
 import { CertificatesRepository } from '../repositories/certificates.repository';
+import { generateCertificatePdf } from '../generators/certificate.generator';
 import { NotificationsService } from '../../notifications/services/notifications.service';
 
 @Injectable()
@@ -319,6 +320,36 @@ export class CertificatesService {
         code: 'CERTIFICATE_FILE_NOT_FOUND',
         message: 'Certificate file not found',
       });
+
+    // If the physical PDF file does not exist on storage (e.g. fresh DB restore), regenerate it on the fly!
+    const exists = this.storage.exists
+      ? await this.storage.exists(file.storageKey).catch(() => false)
+      : true;
+    if (!exists && certificate) {
+      try {
+        const base = (
+          this.config.get<string>('CERTIFICATE_PUBLIC_BASE_URL') ?? 'http://localhost:3000/certificates/verify'
+        ).replace(/\/$/, '');
+        const pdf = await generateCertificatePdf({
+          academyName: 'Joel Talargie Academy',
+          title: 'Certificate of Completion',
+          studentName: certificate.studentName ?? 'Student',
+          courseTitle: certificate.courseTitle ?? 'Course',
+          completionDate: certificate.completionDate ? new Date(certificate.completionDate) : new Date(),
+          certificateNumber: certificate.certificateNumber ?? 'JTA-CERT',
+          verificationUrl: `${base}/${certificate.verificationToken || certificate.id}`,
+          footerText: 'Issued by Joel Talargie Academy',
+        });
+        await this.storage.upload({
+          key: file.storageKey,
+          body: pdf,
+          contentType: 'application/pdf',
+        });
+      } catch (error) {
+        // Log & proceed to signed URL attempt
+      }
+    }
+
     const safeStudent = (certificate?.studentName ?? 'Student')
       .replace(/[/\\?%*:|"<>]/g, '')
       .trim();

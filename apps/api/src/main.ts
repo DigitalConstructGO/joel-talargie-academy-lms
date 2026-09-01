@@ -143,6 +143,28 @@ async function bootstrap() {
       contentSecurityPolicy: {
         directives: {
           ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+          'script-src': [
+            "'self'",
+            "'unsafe-inline'",
+            "'unsafe-eval'",
+            'https://www.youtube.com',
+            'https://s.ytimg.com',
+          ],
+          'frame-src': [
+            "'self'",
+            'https://www.youtube.com',
+            'https://www.youtube-nocookie.com',
+          ],
+          'img-src': [
+            "'self'",
+            'data:',
+            'blob:',
+            'https:',
+            'https://*.youtube.com',
+            'https://*.ytimg.com',
+          ],
+          'media-src': ["'self'", 'blob:', 'https:', 'https://*.googleapis.com'],
+          'connect-src': ["'self'", 'https:', 'wss:', 'ws:'],
           'frame-ancestors': [
             "'self'",
             ...allowedOrigins,

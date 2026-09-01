@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type Database from 'better-sqlite3';
 import { DatabaseService } from './database.service';
 import type { AcademyDatabase } from './database.types';
 
@@ -10,8 +10,8 @@ describe('DatabaseService', () => {
 
   it('checks a configured connection and closes its single pool', async () => {
     const pool = {
-      end: jest.fn().mockResolvedValue(undefined),
-    } as unknown as Pool;
+      close: jest.fn(),
+    } as unknown as Database.Database;
     const database = {
       execute: jest.fn().mockResolvedValue({ rows: [{ '?column?': 1 }] }),
     } as unknown as AcademyDatabase;
@@ -20,7 +20,7 @@ describe('DatabaseService', () => {
     await expect(service.checkConnection()).resolves.toBe('available');
     await service.onApplicationShutdown();
     expect(database.execute).toHaveBeenCalledTimes(1);
-    expect(pool.end).toHaveBeenCalledTimes(1);
+    expect(pool.close).toHaveBeenCalledTimes(1);
   });
 
   it('returns a sanitized unavailable status for connection failures', async () => {

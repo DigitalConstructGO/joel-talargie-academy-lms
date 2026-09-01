@@ -95,16 +95,16 @@ export const mockUsersApi = {
   },
 
   activate: async (userId: string): Promise<ManagedUser> => delay(transition(userId, 'ACTIVE')),
-  suspend: async (userId: string, _reason: string): Promise<ManagedUser> =>
+  suspend: async (userId: string, _reason?: string): Promise<ManagedUser> =>
     delay(transition(userId, 'SUSPENDED')),
-  archive: async (userId: string, _reason: string): Promise<ManagedUser> =>
+  archive: async (userId: string, _reason?: string): Promise<ManagedUser> =>
     delay(transition(userId, 'ARCHIVED')),
   restore: async (userId: string): Promise<ManagedUser> => delay(transition(userId, 'ACTIVE')),
 
-  triggerPasswordReset: async (_userId: string): Promise<{ sent: boolean }> =>
+  triggerPasswordReset: async (): Promise<{ sent: boolean }> =>
     delay({ sent: true }),
 
-  activity: async (_userId: string, _params: UserActivityParams): Promise<UserActivityEntry[]> =>
+  activity: async (): Promise<UserActivityEntry[]> =>
     delay([]),
 
   listRoles: async (userId: string): Promise<UserRoleAssignment[]> => {

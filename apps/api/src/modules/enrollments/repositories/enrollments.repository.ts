@@ -29,7 +29,7 @@ export class EnrollmentsRepository {
   create(studentId: string, courseId: string, redemptionId?: string) {
     return this.db.transaction(async (tx) => {
       await tx.execute(
-        sql`SELECT id FROM courses WHERE id = ${courseId} FOR UPDATE`,
+        sql`SELECT id FROM courses WHERE id = ${courseId}`,
       );
       const [user, course] = await Promise.all([
         tx.query.users.findFirst({ where: eq(schema.users.id, studentId) }),
@@ -112,7 +112,7 @@ export class EnrollmentsRepository {
       let redemption: typeof schema.promoRedemptions.$inferSelect | undefined;
       if (redemptionId) {
         await tx.execute(
-          sql`SELECT id FROM promo_redemptions WHERE id = ${redemptionId} FOR UPDATE`,
+          sql`SELECT id FROM promo_redemptions WHERE id = ${redemptionId}`,
         );
         redemption = await tx.query.promoRedemptions.findFirst({
           where: eq(schema.promoRedemptions.id, redemptionId),
@@ -362,7 +362,7 @@ export class EnrollmentsRepository {
   ) {
     return this.db.transaction(async (tx) => {
       await tx.execute(
-        sql`SELECT id FROM enrollments WHERE id = ${enrollmentId} FOR UPDATE`,
+        sql`SELECT id FROM enrollments WHERE id = ${enrollmentId}`,
       );
       const enrollment = await tx.query.enrollments.findFirst({
         where: eq(schema.enrollments.id, enrollmentId),

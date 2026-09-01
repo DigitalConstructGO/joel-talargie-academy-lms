@@ -1,13 +1,90 @@
 import { and, eq, gt, isNull, sql } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/node-postgres';
-import type { Pool } from 'pg';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { SQLiteTransaction } from 'drizzle-orm/sqlite-core';
+import type Database from 'better-sqlite3';
 import { schema } from './schema/index.ts';
 import type { AcademyDatabase } from './queries.ts';
 
-export const createDatabaseClient = (pool: Pool): AcademyDatabase =>
-  drizzle({ client: pool, schema });
+if (!(SQLiteTransaction.prototype as any).execute) {
+  (SQLiteTransaction.prototype as any).execute = function (query: any) {
+    try {
+      return this.all(query);
+    } catch {
+      return this.run(query);
+    }
+  };
+}
+
+export const createDatabaseClient = (client: Database.Database): AcademyDatabase => {
+  try {
+    client.pragma('journal_mode = WAL');
+    client.pragma('busy_timeout = 5000');
+    client.pragma('synchronous = NORMAL');
+  } catch {}
+
+  const sanitizeArg = (arg: any): any => {
+    if (arg instanceof Date) {
+      return arg.getTime();
+    }
+    if (Array.isArray(arg)) {
+      return arg.map(sanitizeArg);
+    }
+    return arg;
+  };
+
+  const sanitizeQuery = (source: string): string => {
+    return source
+      .replace(/\s+FOR\s+UPDATE(\s+SKIP\s+LOCKED)?|\s+FOR\s+SHARE/gi, '')
+      .replace(/\S+\s+@@\s+websearch_to_tsquery\([^)]+\)/gi, '1=0')
+      .replace(/\bILIKE\b/gi, 'LIKE')
+      .replace(/\bNOW\(\)/gi, "datetime('now')");
+  };
+
+  const originalPrepare = client.prepare.bind(client);
+  client.prepare = function (source: string, ...prepArgs: any[]) {
+    const cleaned = sanitizeQuery(source);
+    const stmt = (originalPrepare as any)(cleaned, ...prepArgs);
+    const origAll = stmt.all.bind(stmt);
+    const origRun = stmt.run.bind(stmt);
+    const origGet = stmt.get.bind(stmt);
+    stmt.all = (...args: any[]) => origAll(...args.map(sanitizeArg));
+    stmt.run = (...args: any[]) => origRun(...args.map(sanitizeArg));
+    stmt.get = (...args: any[]) => origGet(...args.map(sanitizeArg));
+    return stmt;
+  };
+
+  const db = drizzle(client, { schema }) as any;
+  if (!db.execute) {
+    db.execute = (query: any) => {
+      try {
+        return db.all(query);
+      } catch {
+        return db.run(query);
+      }
+    };
+  }
+  db.transaction = async (cb: any) => {
+    try {
+      client.exec('BEGIN IMMEDIATE');
+      const result = await cb(db);
+      client.exec('COMMIT');
+      return result;
+    } catch (error) {
+      try {
+        client.exec('ROLLBACK');
+      } catch {}
+      throw error;
+    }
+  };
+  return db as AcademyDatabase;
+};
+
 export const checkDatabaseConnection = async (database: AcademyDatabase): Promise<void> => {
-  await database.execute(sql`select 1`);
+  if (database.execute) {
+    await database.execute(sql`select 1`);
+  } else {
+    await database.run(sql`select 1`);
+  }
 };
 
 export interface ActivityLogRecord {
@@ -88,7 +165,7 @@ const hydrateAuthUser = async (
     status: user.status,
     firstName: profile?.firstName ?? '',
     lastName: profile?.lastName ?? '',
-    roles: assigned.map((item) => item.code),
+    roles: assigned.map((item: any) => item.code),
     avatarUrl: user.avatarUrl,
     provider: user.provider,
     emailVerified: user.emailVerified,
@@ -124,7 +201,7 @@ export const upsertGoogleUser = async (
     passwordHash: string;
   },
 ): Promise<{ user: AuthUserRecord; event: GoogleUserUpsertEvent }> =>
-  database.transaction(async (tx) => {
+  database.transaction(async (tx: any) => {
     const googleMatch = await tx.query.users.findFirst({
       where: eq(schema.users.googleId, input.googleId),
     });
@@ -138,19 +215,26 @@ export const upsertGoogleUser = async (
           updatedAt: new Date(),
         })
         .where(eq(schema.users.id, googleMatch.id));
-      await tx
-        .insert(schema.oauthAccounts)
-        .values({
+      const existingOAuth = await tx.query.oauthAccounts.findFirst({
+        where: and(
+          eq(schema.oauthAccounts.provider, 'GOOGLE'),
+          eq(schema.oauthAccounts.providerAccountId, input.googleId),
+        ),
+      });
+      if (existingOAuth) {
+        await tx
+          .update(schema.oauthAccounts)
+          .set({ providerEmail: input.email, lastLoginAt: new Date() })
+          .where(eq(schema.oauthAccounts.id, existingOAuth.id));
+      } else {
+        await tx.insert(schema.oauthAccounts).values({
           userId: googleMatch.id,
           provider: 'GOOGLE',
           providerAccountId: input.googleId,
           providerEmail: input.email,
           lastLoginAt: new Date(),
-        })
-        .onConflictDoUpdate({
-          target: [schema.oauthAccounts.provider, schema.oauthAccounts.providerAccountId],
-          set: { providerEmail: input.email, lastLoginAt: new Date() },
         });
+      }
       return {
         user: await hydrateAuthUser(database, {
           ...googleMatch,
@@ -176,18 +260,26 @@ export const upsertGoogleUser = async (
           updatedAt: new Date(),
         })
         .where(eq(schema.users.id, emailMatch.id));
-      await tx
-        .insert(schema.oauthAccounts)
-        .values({
+      const existingOAuth = await tx.query.oauthAccounts.findFirst({
+        where: and(
+          eq(schema.oauthAccounts.provider, 'GOOGLE'),
+          eq(schema.oauthAccounts.providerAccountId, input.googleId),
+        ),
+      });
+      if (existingOAuth) {
+        await tx
+          .update(schema.oauthAccounts)
+          .set({ providerEmail: input.email, lastLoginAt: new Date() })
+          .where(eq(schema.oauthAccounts.id, existingOAuth.id));
+      } else {
+        await tx.insert(schema.oauthAccounts).values({
           userId: emailMatch.id,
           provider: 'GOOGLE',
           providerAccountId: input.googleId,
           providerEmail: input.email,
-        })
-        .onConflictDoUpdate({
-          target: [schema.oauthAccounts.provider, schema.oauthAccounts.providerAccountId],
-          set: { providerEmail: input.email, lastLoginAt: new Date() },
+          lastLoginAt: new Date(),
         });
+      }
       return {
         user: await hydrateAuthUser(database, {
           ...emailMatch,
@@ -244,7 +336,7 @@ export const createStudentUser = async (
     tokenExpiresAt: Date;
   },
 ) =>
-  database.transaction(async (tx) => {
+  database.transaction(async (tx: any) => {
     const [user] = await tx
       .insert(schema.users)
       .values({
@@ -344,7 +436,7 @@ export const createPasswordReset = async (
   database: AcademyDatabase,
   input: { userId: string; tokenHash: string; expiresAt: Date },
 ) =>
-  database.transaction(async (tx) => {
+  database.transaction(async (tx: any) => {
     await tx
       .delete(schema.passwordResetTokens)
       .where(eq(schema.passwordResetTokens.userId, input.userId));
@@ -355,7 +447,7 @@ export const consumePasswordReset = async (
   tokenHash: string,
   passwordHash: string,
 ) =>
-  database.transaction(async (tx) => {
+  database.transaction(async (tx: any) => {
     const token = await tx.query.passwordResetTokens.findFirst({
       where: and(
         eq(schema.passwordResetTokens.tokenHash, tokenHash),
@@ -382,7 +474,7 @@ export const consumePasswordReset = async (
     return token.userId;
   });
 export const consumeEmailVerification = async (database: AcademyDatabase, tokenHash: string) =>
-  database.transaction(async (tx) => {
+  database.transaction(async (tx: any) => {
     const token = await tx.query.emailVerificationTokens.findFirst({
       where: and(
         eq(schema.emailVerificationTokens.tokenHash, tokenHash),

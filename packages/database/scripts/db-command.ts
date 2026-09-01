@@ -1,10 +1,9 @@
 import { config as loadEnvironment } from 'dotenv';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { migrate } from 'drizzle-orm/node-postgres/migrator';
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { Pool } from 'pg';
-import { getDirectDatabaseUrl } from '../src/config.ts';
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import Database from 'better-sqlite3';
 import { schema } from '../src/schema/index.ts';
 import { permissionSeed } from '../src/permission-catalog.ts';
 import { eq } from 'drizzle-orm';
@@ -28,8 +27,6 @@ loadEnvironment({ path: resolve(scriptDirectory, '../.env'), quiet: true, overri
 
 type DatabaseCommand = 'check' | 'migrate' | 'seed';
 
-// Derived from the same map that defines each code's actual content, so the
-// two can never drift apart.
 const emailTemplateCodes = Object.keys(EMAIL_TEMPLATE_CONTENT) as EmailTemplateCode[];
 
 async function run(): Promise<void> {
@@ -37,27 +34,20 @@ async function run(): Promise<void> {
   if (!command || !['check', 'migrate', 'seed'].includes(command)) {
     throw new Error('A supported database command is required');
   }
-  if (!process.env.DATABASE_DIRECT_URL) {
-    throw new Error('DATABASE_DIRECT_URL_MISSING');
-  }
 
-  const pool = new Pool({
-    connectionString: getDirectDatabaseUrl(),
-    max: 1,
-    connectionTimeoutMillis: 10_000,
-    idleTimeoutMillis: 10_000,
-  });
+  const dbPath = process.env.DATABASE_URL || 'sqlite.db';
+  const client = new Database(dbPath);
 
   try {
     if (command === 'migrate') {
-      await migrate(drizzle({ client: pool }), { migrationsFolder: './migrations' });
+      await migrate(drizzle(client), { migrationsFolder: './migrations-sqlite' });
       process.stdout.write('Database migrations completed safely.\n');
       return;
     }
 
     if (command === 'seed') {
-      const database = drizzle({ client: pool, schema });
-      await database.transaction(async (tx) => {
+      const database: any = drizzle(client, { schema });
+      await database.transaction(async (tx: any) => {
         await tx
           .insert(schema.permissions)
           .values(permissionSeed)
@@ -90,7 +80,7 @@ async function run(): Promise<void> {
         if (!administrator || !student) throw new Error('System roles could not be seeded');
         await tx
           .insert(schema.rolePermissions)
-          .values(permissions.map(({ id }) => ({ roleId: administrator.id, permissionId: id })))
+          .values(permissions.map(({ id }: any) => ({ roleId: administrator.id, permissionId: id })))
           .onConflictDoNothing();
         await tx
           .insert(schema.platformSettings)
@@ -158,13 +148,13 @@ async function run(): Promise<void> {
 
       const alreadySeeded = await demoDataAlreadySeeded(database);
       if (alreadySeeded) {
-        await database.transaction(async (tx) => {
+        await database.transaction(async (tx: any) => {
           const instructor = await tx.query.users.findFirst({
             where: eq(schema.users.emailNormalized, normalizeEmail(INSTRUCTOR_PERSON.email)),
           });
           if (instructor) {
             const categoryBySlug = await seedCategories(tx);
-            await seedCourses(tx, categoryBySlug, instructor.id);
+            await seedCourses(tx, categoryBySlug as any, instructor.id);
           }
         });
         process.stdout.write('RBAC roles, categories, and course catalog synced.\n');
@@ -176,10 +166,10 @@ async function run(): Promise<void> {
       process.stdout.write(`Demo dataset seeded: ${JSON.stringify(demoCounts)}\n`);
       return;
     }
-    await pool.query('select 1');
+    client.exec('select 1');
     process.stdout.write('Database connection check passed.\n');
   } finally {
-    await pool.end();
+    client.close();
   }
 }
 

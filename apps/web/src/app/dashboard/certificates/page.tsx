@@ -71,11 +71,13 @@ export default function CertificatesPage() {
           certificate.certificateNumber.toLowerCase().includes(needle),
       );
     }
-    return [...items].sort((a, b) =>
-      sort === 'newest'
-        ? b.createdAt.localeCompare(a.createdAt)
-        : a.createdAt.localeCompare(b.createdAt),
-    );
+    return [...items].sort((a, b) => {
+      const aDate = String(a.createdAt ?? (a as unknown as Record<string, unknown>).issuedAt ?? '');
+      const bDate = String(b.createdAt ?? (b as unknown as Record<string, unknown>).issuedAt ?? '');
+      return sort === 'newest'
+        ? bDate.localeCompare(aDate)
+        : aDate.localeCompare(bDate);
+    });
   }, [certificatesQuery.data, search, sort]);
 
   const hasMore = (certificatesQuery.data?.length ?? 0) === pageSize;

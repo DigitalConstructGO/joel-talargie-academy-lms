@@ -9,8 +9,8 @@ loadEnvironment({ path: resolve(packageDirectory, '../../.env'), quiet: true });
 loadEnvironment({ path: resolve(packageDirectory, '.env'), quiet: true, override: false });
 
 export default defineConfig({
-  dialect: 'postgresql',
+  dialect: 'sqlite',
   schema: './src/schema/index.ts',
-  out: './migrations',
-  dbCredentials: { url: getDirectDatabaseUrl() },
+  out: './migrations-sqlite',
+  dbCredentials: { url: process.env.DATABASE_URL || 'sqlite.db' },
 });

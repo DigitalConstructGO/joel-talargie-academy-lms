@@ -38,6 +38,7 @@ export interface DemoCourse {
   certificateEnabled: boolean;
   estimatedDurationMinutes: number;
   presenterName?: string;
+  thumbnailKey?: string;
   outcomes: string[];
   requirements: string[];
   sections: DemoSection[];

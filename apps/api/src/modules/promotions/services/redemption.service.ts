@@ -105,7 +105,7 @@ export class RedemptionService {
       const code = await this.repository.findCode(result.codeId);
       if (code?.affiliateId) {
         affiliateId = code.affiliateId;
-        const affiliate = await this.repository.findAffiliate(affiliateId);
+        const affiliate = await this.repository.findAffiliate(affiliateId!);
         if (affiliate)
           affiliateCommission = computeAffiliateCommission(
             affiliate,

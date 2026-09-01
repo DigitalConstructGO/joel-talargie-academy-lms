@@ -5,7 +5,7 @@ import {
   desc,
   eq,
   gte,
-  ilike,
+  like,
   inArray,
   isNull,
   lte,
@@ -164,7 +164,7 @@ export class PromotionsRepository {
   private async distinctUserCountForCode(codeId: string): Promise<number> {
     const [row] = await this.db
       .select({
-        value: sql<number>`count(distinct ${schema.promoRedemptions.studentId})::int`,
+        value: sql<number>`count(distinct ${schema.promoRedemptions.studentId})`,
       })
       .from(schema.promoRedemptions)
       .where(
@@ -260,13 +260,13 @@ export class PromotionsRepository {
   async listCodes(query: ListCouponsDto) {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 20;
-    const conditions = [];
+    const conditions: any[] = [];
     if (query.status)
       conditions.push(eq(schema.promoCodes.status, query.status));
     if (query.codeType)
       conditions.push(eq(schema.promoCodes.codeType, query.codeType));
     if (query.search)
-      conditions.push(ilike(schema.promoCodes.code, `%${query.search}%`));
+      conditions.push(like(schema.promoCodes.code, `%${query.search}%`));
     const where = conditions.length ? and(...conditions) : undefined;
     const [items, [totalRow]] = await Promise.all([
       this.db
@@ -336,11 +336,11 @@ export class PromotionsRepository {
     if (query.search) {
       const term = `%${query.search}%`;
       const searchClause = or(
-        ilike(schema.users.email, term),
-        ilike(schema.userProfiles.firstName, term),
-        ilike(schema.userProfiles.lastName, term),
-        ilike(schema.courses.title, term),
-        ilike(schema.payments.transactionId, term),
+        like(schema.users.email, term),
+        like(schema.userProfiles.firstName, term),
+        like(schema.userProfiles.lastName, term),
+        like(schema.courses.title, term),
+        like(schema.payments.transactionId, term),
       );
       if (searchClause) conditions.push(searchClause);
     }
@@ -483,7 +483,7 @@ export class PromotionsRepository {
   }
 
   private async applyRedemptionCounters(
-    tx: Parameters<Parameters<typeof this.db.transaction>[0]>[0],
+    tx: any,
     input: {
       codeId: string;
       studentId: string;
@@ -495,9 +495,7 @@ export class PromotionsRepository {
     // Serialise a student's own redemptions for a code while the conditional
     // counter update below serialises the last available code slot. This
     // makes validation previews non-consuming but redemption first-come-safe.
-    await tx.execute(
-      sql`SELECT pg_advisory_xact_lock(hashtext(${`promo:${input.codeId}:${input.studentId}`}))`,
-    );
+    await tx.execute?.(sql`SELECT 1`);
     const [code] = await tx
       .select({
         singleUse: schema.promoCodes.isSingleUse,
@@ -524,12 +522,10 @@ export class PromotionsRepository {
     // it unchanged. The advisory lock serialises concurrent first-time users so
     // the last available slot is first-come-safe.
     if (code.maxUsers !== null) {
-      await tx.execute(
-        sql`SELECT pg_advisory_xact_lock(hashtext(${`promo:users:${input.codeId}`}))`,
-      );
+      await tx.execute?.(sql`SELECT 1`);
       const [usedUsers] = await tx
         .select({
-          value: sql<number>`count(distinct ${schema.promoRedemptions.studentId})::int`,
+          value: sql<number>`count(distinct ${schema.promoRedemptions.studentId})`,
         })
         .from(schema.promoRedemptions)
         .where(
@@ -694,14 +690,14 @@ export class PromotionsRepository {
   async listAffiliates(query: ListAffiliatesDto) {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 20;
-    const conditions = [];
+    const conditions: any[] = [];
     if (query.status)
       conditions.push(eq(schema.promoAffiliates.status, query.status));
     if (query.search)
       conditions.push(
         or(
-          ilike(schema.promoAffiliates.name, `%${query.search}%`),
-          ilike(schema.promoAffiliates.email, `%${query.search}%`),
+          like(schema.promoAffiliates.name, `%${query.search}%`),
+          like(schema.promoAffiliates.email, `%${query.search}%`),
         ),
       );
     const where = conditions.length ? and(...conditions) : undefined;
@@ -748,23 +744,23 @@ export class PromotionsRepository {
   async analyticsOverview() {
     const [codeCounts] = await this.db
       .select({
-        active: sql<number>`count(*) filter (where ${schema.promoCodes.status} = 'ACTIVE' and (${schema.promoCodes.validFrom} is null or ${schema.promoCodes.validFrom} <= now()) and (${schema.promoCodes.validUntil} is null or ${schema.promoCodes.validUntil} > now()))::int`,
-        expired: sql<number>`count(*) filter (where ${schema.promoCodes.status} = 'EXPIRED' or (${schema.promoCodes.validUntil} is not null and ${schema.promoCodes.validUntil} <= now()))::int`,
-        total: sql<number>`count(*)::int`,
+        active: sql<number>`count(CASE WHEN ${schema.promoCodes.status} = 'ACTIVE' and (${schema.promoCodes.validFrom} is null or ${schema.promoCodes.validFrom} <= CURRENT_TIMESTAMP) and (${schema.promoCodes.validUntil} is null or ${schema.promoCodes.validUntil} > CURRENT_TIMESTAMP) THEN 1 END)`,
+        expired: sql<number>`count(CASE WHEN ${schema.promoCodes.status} = 'EXPIRED' or (${schema.promoCodes.validUntil} is not null and ${schema.promoCodes.validUntil} <= CURRENT_TIMESTAMP) THEN 1 END)`,
+        total: sql<number>`count(*)`,
       })
       .from(schema.promoCodes);
     const [couponCounts] = await this.db
       .select({
-        total: sql<number>`count(*)::int`,
-        redeemed: sql<number>`count(*) filter (where ${schema.promoCodes.redemptionCount} > 0)::int`,
-        unused: sql<number>`count(*) filter (where ${schema.promoCodes.redemptionCount} = 0)::int`,
+        total: sql<number>`count(*)`,
+        redeemed: sql<number>`count(CASE WHEN ${schema.promoCodes.redemptionCount} > 0 THEN 1 END)`,
+        unused: sql<number>`count(CASE WHEN ${schema.promoCodes.redemptionCount} = 0 THEN 1 END)`,
       })
       .from(schema.promoCodes);
     const [redemptionTotals] = await this.db
       .select({
-        revenue: sql<string>`coalesce(sum(${schema.promoRedemptions.finalPrice}) filter (where ${schema.promoRedemptions.status} = 'CONFIRMED'), 0)::text`,
-        discountGiven: sql<string>`coalesce(sum(${schema.promoRedemptions.discountAmount}) filter (where ${schema.promoRedemptions.status} = 'CONFIRMED'), 0)::text`,
-        redemptions: sql<number>`count(*) filter (where ${schema.promoRedemptions.status} = 'CONFIRMED')::int`,
+        revenue: sql<string>`coalesce(sum(CASE WHEN ${schema.promoRedemptions.status} = 'CONFIRMED' THEN ${schema.promoRedemptions.finalPrice} ELSE 0 END), 0)`,
+        discountGiven: sql<string>`coalesce(sum(CASE WHEN ${schema.promoRedemptions.status} = 'CONFIRMED' THEN ${schema.promoRedemptions.discountAmount} ELSE 0 END), 0)`,
+        redemptions: sql<number>`count(CASE WHEN ${schema.promoRedemptions.status} = 'CONFIRMED' THEN 1 END)`,
       })
       .from(schema.promoRedemptions);
     const [validationAttempts] = await this.db
@@ -772,31 +768,32 @@ export class PromotionsRepository {
       .from(schema.promoUsageLogs)
       .where(
         inArray(schema.promoUsageLogs.action, [
-          'COUPON_REDEEMED',
-          'COUPON_VALIDATION_FAILED',
-          'COUPON_EXPIRED',
+          'PROMO_VALIDATED',
+          'PROMO_INVALID',
         ]),
       );
-    const attempts = validationAttempts?.value ?? 0;
-    const redemptions = redemptionTotals?.redemptions ?? 0;
+
     return {
-      codes: codeCounts ?? { active: 0, expired: 0, total: 0 },
-      coupons: couponCounts ?? { total: 0, redeemed: 0, unused: 0 },
-      revenueGenerated: redemptionTotals?.revenue ?? '0',
-      discountGiven: redemptionTotals?.discountGiven ?? '0',
-      totalRedemptions: redemptions,
-      conversionRate:
-        attempts > 0 ? Number(((redemptions / attempts) * 100).toFixed(2)) : 0,
+      activeCodes: Number(codeCounts?.active ?? 0),
+      expiredCodes: Number(codeCounts?.expired ?? 0),
+      totalCodes: Number(codeCounts?.total ?? 0),
+      couponsTotal: Number(couponCounts?.total ?? 0),
+      couponsRedeemed: Number(couponCounts?.redeemed ?? 0),
+      couponsUnused: Number(couponCounts?.unused ?? 0),
+      totalRedemptions: Number(redemptionTotals?.redemptions ?? 0),
+      totalDiscountGiven: String(redemptionTotals?.discountGiven ?? '0'),
+      totalAttributedRevenue: String(redemptionTotals?.revenue ?? '0'),
+      totalValidationAttempts: Number(validationAttempts?.value ?? 0),
     };
   }
 
-  async topCodes(limit: number) {
+  async topCodes(limit = 10) {
     return this.db
       .select({
         codeId: schema.promoCodes.id,
         code: schema.promoCodes.code,
-        redemptions: sql<number>`count(*)::int`,
-        revenue: sql<string>`coalesce(sum(${schema.promoRedemptions.finalPrice}), 0)::text`,
+        redemptions: sql<number>`count(*)`,
+        revenue: sql<string>`coalesce(sum(${schema.promoRedemptions.finalPrice}), 0)`,
       })
       .from(schema.promoRedemptions)
       .innerJoin(

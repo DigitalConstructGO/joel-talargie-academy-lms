@@ -71,11 +71,13 @@ export default function StudentNotificationsPage() {
   // Search/read-state are already applied backend-side (see useMyNotifications
   // above) - only sort order (no backend param for it yet) is applied here.
   const filtered = useMemo(() => {
-    return [...(notificationsData ?? [])].sort((a, b) =>
-      sort === 'newest'
-        ? b.createdAt.localeCompare(a.createdAt)
-        : a.createdAt.localeCompare(b.createdAt),
-    );
+    return [...(notificationsData ?? [])].sort((a, b) => {
+      const aDate = String(a.createdAt ?? '');
+      const bDate = String(b.createdAt ?? '');
+      return sort === 'newest'
+        ? bDate.localeCompare(aDate)
+        : aDate.localeCompare(bDate);
+    });
   }, [notificationsData, sort]);
   const hasUnread = (notificationsData ?? []).some((notification) => notification.readAt === null);
   const hasActiveFilters = readState !== 'ALL' || Boolean(search);

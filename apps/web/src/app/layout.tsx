@@ -26,7 +26,12 @@ export const metadata: Metadata = {
   },
   description: 'Digital Construct learning management system',
   icons: {
-    icon: [{ url: '/favicon.ico' }, { url: '/icon.svg', type: 'image/svg+xml' }],
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/icon.png', type: 'image/png' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    apple: [{ url: '/apple-touch-icon.png' }],
   },
 };
 export default function RootLayout({ children }: { children: React.ReactNode }) {

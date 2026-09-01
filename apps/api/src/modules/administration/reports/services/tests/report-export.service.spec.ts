@@ -21,10 +21,16 @@ describe('ReportExportService', () => {
   };
   const audit = { logCustom: jest.fn() };
   const storage = { getSignedUrl: jest.fn() };
+  const reports = { query: jest.fn() };
+  const csv = { generate: jest.fn() };
+  const pdf = { generate: jest.fn() };
   const service = new ReportExportService(
     db as never,
     registry as never,
     audit as never,
+    reports as never,
+    csv as never,
+    pdf as never,
     storage as never,
   );
 

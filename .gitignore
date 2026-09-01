@@ -16,3 +16,8 @@ Thumbs.db
 *.tsbuildinfo
 backups/
 *.sql
+*.db
+*.sqlite
+*.db-shm
+*.db-wal
+

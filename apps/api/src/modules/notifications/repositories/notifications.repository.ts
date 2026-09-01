@@ -4,6 +4,7 @@ import {
   desc,
   eq,
   ilike,
+  inArray,
   isNull,
   or,
   schema,
@@ -89,8 +90,8 @@ export class NotificationsRepository {
       isNull(schema.notifications.archivedAt),
       isNull(schema.notifications.readAt),
     ];
-    if (ids)
-      conditions.push(sql`${schema.notifications.id} = ANY(${ids}::uuid[])`);
+    if (ids && ids.length)
+      conditions.push(inArray(schema.notifications.id, ids));
     return this.db
       .update(schema.notifications)
       .set({ readAt: new Date(), updatedAt: new Date() })
@@ -236,7 +237,7 @@ export class NotificationsRepository {
   ) {
     return this.db.transaction(async (tx) => {
       await tx.execute(
-        sql`SELECT id FROM email_deliveries WHERE id = ${id} FOR UPDATE`,
+        sql`SELECT id FROM email_deliveries WHERE id = ${id}`,
       );
       const delivery = await tx.query.emailDeliveries.findFirst({
         where: eq(schema.emailDeliveries.id, id),
@@ -318,27 +319,25 @@ export class NotificationsRepository {
   }
 
   async claimSmsDelivery(workerId: string) {
-    const result = await this.db.execute(
-      sql`WITH candidate AS (
-        SELECT id FROM sms_deliveries
-        WHERE status IN ('QUEUED', 'RETRY_SCHEDULED')
-          AND scheduled_at <= now()
-        ORDER BY priority DESC, scheduled_at ASC, id ASC
-        FOR UPDATE SKIP LOCKED
-        LIMIT 1
-      )
-      UPDATE sms_deliveries s
-      SET status = 'PROCESSING',
-          attempt_count = attempt_count + 1,
-          last_attempt_at = now(),
-          locked_at = now(),
-          locked_by = ${workerId},
-          updated_at = now()
-      FROM candidate
-      WHERE s.id = candidate.id
-      RETURNING s.*`,
-    );
-    return (result as any).rows?.[0] ?? (result as any)[0] ?? null;
+    const candidate = await this.db
+      .select({ id: schema.smsDeliveries.id })
+      .from(schema.smsDeliveries)
+      .where(inArray(schema.smsDeliveries.status, ['QUEUED', 'RETRY_SCHEDULED']))
+      .limit(1);
+    if (!candidate.length) return null;
+    const [row] = await this.db
+      .update(schema.smsDeliveries)
+      .set({
+        status: 'PROCESSING',
+        attemptCount: sql`${schema.smsDeliveries.attemptCount} + 1`,
+        lastAttemptAt: new Date(),
+        lockedAt: new Date(),
+        lockedBy: workerId,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.smsDeliveries.id, candidate[0].id))
+      .returning();
+    return row ?? null;
   }
 
   async markSmsDeliverySuccess(

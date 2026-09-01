@@ -325,12 +325,89 @@ export class StorageService {
         } catch {
           // Fall through to 404
         }
+      } else if (verification.payload.key.startsWith('exports/')) {
+        try {
+          const healed = await this.healReportExportFile(
+            verification.payload.key,
+          );
+          if (healed) {
+            const descriptor = await this.local.readDescriptor(
+              verification.payload.key,
+            );
+            return {
+              ...descriptor,
+              disposition: verification.payload.disposition,
+            };
+          }
+        } catch {
+          // Fall through to 404
+        }
       }
       throw new NotFoundException({
         code: 'FILE_NOT_FOUND',
         message: 'File not found',
       });
     }
+  }
+
+  private async healReportExportFile(storageKey: string): Promise<boolean> {
+    const [exportData] = await this.database.client
+      .select({
+        id: schema.reportExports.id,
+        reportType: schema.reportExports.reportType,
+        format: schema.reportExports.format,
+        filtersJson: schema.reportExports.filtersJson,
+        requestedBy: schema.reportExports.requestedBy,
+      })
+      .from(schema.reportExports)
+      .where(eq(schema.reportExports.fileStorageKey, storageKey));
+
+    if (!exportData) return false;
+
+    const reportType = exportData.reportType;
+    const filtersJson = (exportData.filtersJson ?? {}) as Record<string, unknown>;
+    const format = exportData.format;
+
+    // Dynamically instantiate report repository & exporters
+    const reportRepo = new (require('../administration/reports/repositories/report.repository').ReportRepository)(this.database);
+    const pdfExporter = new (require('../administration/reports/exporters/report.exporters').PdfReportExporter)();
+    const csvExporter = new (require('../administration/reports/exporters/report.exporters').CsvReportExporter)(
+      new (require('../administration/reports/services/report-privacy.service').ReportPrivacyService)()
+    );
+
+    const all: Record<string, unknown>[] = [];
+    let page = 1,
+      total = 0;
+    do {
+      const part = await reportRepo.query(reportType as any, {
+        ...filtersJson,
+        page,
+        pageSize: 100,
+        sortDirection: 'asc',
+      } as any);
+      all.push(...(part.rows as any));
+      total = part.total;
+      page++;
+      if (all.length > Number(process.env.REPORT_EXPORT_MAX_ROWS ?? 100000)) break;
+    } while (all.length < total);
+
+    const body =
+      format === 'CSV'
+        ? csvExporter.generate(all)
+        : await pdfExporter.generate(all, reportType as any, {
+            filters: filtersJson,
+          });
+
+    const contentType =
+      format === 'CSV' ? 'text/csv; charset=utf-8' : 'application/pdf';
+
+    await this.local.upload({
+      key: storageKey,
+      body,
+      contentType,
+    });
+
+    return true;
   }
 
   private async healCertificateFile(

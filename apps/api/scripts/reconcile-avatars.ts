@@ -8,7 +8,7 @@ import {
   schema,
   validateDatabaseUrl,
 } from '@joel-academy/database';
-import { Pool } from 'pg';
+import Database from 'better-sqlite3';
 
 loadEnvironment({ path: resolve(process.cwd(), '../../.env'), quiet: true });
 loadEnvironment({
@@ -18,17 +18,10 @@ loadEnvironment({
 });
 
 async function run() {
-  if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL_MISSING');
-  const pool = new Pool({
-    connectionString: validateDatabaseUrl(process.env.DATABASE_URL, {
-      requireNeon: true,
-      requirePooled: true,
-    }),
-    max: 1,
-    connectionTimeoutMillis: 10_000,
-  });
+  const dbPath = process.env.DATABASE_URL || 'sqlite.db';
+  const client = new Database(dbPath);
   try {
-    const database = createDatabaseClient(pool);
+    const database = createDatabaseClient(client);
     const activeAvatars = await database
       .select({
         userId: schema.uploadedFiles.relatedUserId,
@@ -56,7 +49,7 @@ async function run() {
       `Avatar reconciliation completed: ${updatedCount} user avatar URLs updated in database.\n`,
     );
   } finally {
-    await pool.end();
+    client.close();
   }
 }
 

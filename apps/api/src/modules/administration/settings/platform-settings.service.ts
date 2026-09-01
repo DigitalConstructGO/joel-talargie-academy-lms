@@ -29,7 +29,7 @@ export class PlatformSettingsService {
             d.description.toLowerCase().includes(q.search.toLowerCase())),
       )
       .map((d) => {
-        const r = map.get(d.key);
+        const r = map.get(d.key) as any;
         return {
           ...d,
           value: r?.value ?? d.defaultValue,
@@ -84,7 +84,7 @@ export class PlatformSettingsService {
       return { ...i, d };
     });
     return this.db.client.transaction(async (tx) => {
-      const out = [];
+      const out: any[] = [];
       for (const item of validated) {
         const [old] = await tx
           .select()
@@ -122,7 +122,7 @@ export class PlatformSettingsService {
           value: saved.value,
           updatedAt: saved.updatedAt,
           updatedBy: actorId,
-        });
+        } as any);
       }
       return out;
     });
@@ -285,35 +285,44 @@ export class PlatformSettingsService {
       )
       .limit(courseLimit);
 
-    const featuredCoursesList = rawCourses.map((c) => ({
-      id: c.id,
-      title: c.title,
-      slug: c.slug,
-      shortDescription: c.shortDescription ?? '',
-      description: c.description ?? '',
-      thumbnailUrl: c.thumbnailKey ?? null,
-      price: c.price ? Number(c.price) : 0,
-      currency: c.currency ?? 'ETB',
-      accessType: c.accessType,
-      difficulty: c.difficulty,
-      ratingAverage: 5.0,
-      ratingCount: 0,
-      enrollmentCount: 0,
-      durationMinutes: c.durationMinutes ?? 0,
-      isFeatured: c.featured ?? false,
-      category: c.categoryName
-        ? {
-            id: c.categoryId!,
-            name: c.categoryName,
-            slug: c.categorySlug ?? '',
-          }
-        : undefined,
-      instructor: {
-        name:
-          c.presenterName ||
-          `${c.instructorFirstName ?? 'Joel'} ${c.instructorLastName ?? 'Talargie'}`.trim(),
-      },
-    }));
+    const featuredCoursesList = rawCourses.map((c) => {
+      const key = c.thumbnailKey ?? null;
+      const thumbnailUrl = key
+        ? key.startsWith('http://') || key.startsWith('https://') || key.startsWith('/')
+          ? key
+          : `/api/v1/storage/course-thumbnails/${key.replace(/^course-thumbnails\//, '')}`
+        : null;
+      return {
+        id: c.id,
+        title: c.title,
+        slug: c.slug,
+        shortDescription: c.shortDescription ?? '',
+        description: c.description ?? '',
+        thumbnailKey: key,
+        thumbnailUrl,
+        price: c.price ? Number(c.price) : 0,
+        currency: c.currency ?? 'ETB',
+        accessType: c.accessType,
+        difficulty: c.difficulty,
+        ratingAverage: 5.0,
+        ratingCount: 0,
+        enrollmentCount: 0,
+        durationMinutes: c.durationMinutes ?? 0,
+        isFeatured: c.featured ?? false,
+        category: c.categoryName
+          ? {
+              id: c.categoryId!,
+              name: c.categoryName,
+              slug: c.categorySlug ?? '',
+            }
+          : undefined,
+        instructor: {
+          name:
+            c.presenterName ||
+            `${c.instructorFirstName ?? 'Joel'} ${c.instructorLastName ?? 'Talargie'}`.trim(),
+        },
+      };
+    });
 
     // 3. Query Real Categories with Course Counts
     const catLimit = (catConfig as any)?.limit ?? 8;

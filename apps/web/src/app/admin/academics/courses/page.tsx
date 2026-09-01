@@ -183,6 +183,7 @@ export default function AdminCoursesPage() {
                 categoryName={row.original.categoryName}
                 categorySlug={row.original.categorySlug}
                 thumbnailKey={row.original.thumbnailKey}
+                thumbnailUrl={row.original.thumbnailUrl}
                 showBadge={false}
                 className="h-10 w-16 rounded-none object-cover"
               />

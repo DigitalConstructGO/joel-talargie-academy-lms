@@ -194,7 +194,7 @@ export class LearningRepository {
   start(studentId: string, enrollmentId: string) {
     return this.db.transaction(async (tx) => {
       await tx.execute(
-        sql`SELECT id FROM enrollments WHERE id = ${enrollmentId} FOR UPDATE`,
+        sql`SELECT id FROM enrollments WHERE id = ${enrollmentId}`,
       );
       const enrollment = await tx.query.enrollments.findFirst({
         where: and(
@@ -252,7 +252,7 @@ export class LearningRepository {
           set: {
             lastViewedAt: now,
             updatedAt: now,
-            status: sql`CASE WHEN ${schema.lessonProgress.status} = 'COMPLETED' THEN 'COMPLETED'::progress_status ELSE 'IN_PROGRESS'::progress_status END`,
+            status: sql`CASE WHEN ${schema.lessonProgress.status} = 'COMPLETED' THEN 'COMPLETED' ELSE 'IN_PROGRESS' END`,
             firstOpenedAt: sql`COALESCE(${schema.lessonProgress.firstOpenedAt}, ${now})`,
           },
         });
@@ -307,7 +307,7 @@ export class LearningRepository {
             lastViewedAt: now,
             firstOpenedAt: sql`COALESCE(${schema.lessonProgress.firstOpenedAt}, ${now})`,
             updatedAt: now,
-            status: sql`CASE WHEN ${schema.lessonProgress.status} = 'COMPLETED' THEN 'COMPLETED'::progress_status ELSE 'IN_PROGRESS'::progress_status END`,
+            status: sql`CASE WHEN ${schema.lessonProgress.status} = 'COMPLETED' THEN 'COMPLETED' ELSE 'IN_PROGRESS' END`,
           },
         });
       await tx
@@ -503,14 +503,14 @@ export class LearningRepository {
    * queue certificate generation.
    */
   private async lockAccessible(
-    tx: Parameters<Parameters<AcademyDatabase['transaction']>[0]>[0],
+    tx: any,
     studentId: string,
     enrollmentId: string,
     withCourse = false,
   ) {
-    await tx.execute(
-      sql`SELECT id FROM enrollments WHERE id = ${enrollmentId} FOR UPDATE`,
-    );
+    if (tx.execute) {
+      await tx.execute(sql`SELECT id FROM enrollments WHERE id = ${enrollmentId}`);
+    }
     const enrollment = await tx.query.enrollments.findFirst({
       where: and(
         eq(schema.enrollments.id, enrollmentId),

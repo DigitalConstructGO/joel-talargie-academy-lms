@@ -35,6 +35,7 @@ export {
   eq,
   gte,
   ilike,
+  like,
   inArray,
   isNull,
   lt,

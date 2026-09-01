@@ -7,7 +7,6 @@ import { CtaBannerSection } from '@/features/home/components/cta-banner-section'
 import { FeatureCard } from '@/components/marketing/feature-card';
 import { Timeline } from '@/components/marketing/timeline';
 import { Card } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
 import { siteConfig } from '@/config/site.config';
 import { LEADERSHIP_TEAM } from '@/features/about/data/leadership-team.data';
 

@@ -6,7 +6,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { createHash, randomUUID } from 'crypto';
-import { and, eq, schema, sql } from '@joel-academy/database';
+import { and, eq, lte, schema, sql } from '@joel-academy/database';
 import { DatabaseService } from '../../../../common/database/database.service';
 import { STORAGE_SERVICE } from '../../../storage/storage.interface';
 import type { StorageService } from '../../../storage/storage.interface';
@@ -68,10 +68,23 @@ export class ReportExportProcessor implements OnModuleInit, OnModuleDestroy {
     }
   }
   async claim(workerId: string) {
-    const result = await this.db.client.execute(
-      sql`WITH candidate AS (SELECT id FROM report_exports WHERE status='QUEUED' ORDER BY requested_at,id FOR UPDATE SKIP LOCKED LIMIT 1) UPDATE report_exports e SET status='PROCESSING',started_at=now(),attempt_count=attempt_count+1,updated_at=now() FROM candidate WHERE e.id=candidate.id RETURNING e.*`,
-    );
-    return (result as any).rows?.[0] ?? (result as any)[0] ?? null;
+    const candidates = await this.db.client
+      .select({ id: schema.reportExports.id })
+      .from(schema.reportExports)
+      .where(eq(schema.reportExports.status, 'QUEUED'))
+      .limit(1);
+    if (!candidates.length) return null;
+    const [row] = await this.db.client
+      .update(schema.reportExports)
+      .set({
+        status: 'PROCESSING',
+        startedAt: new Date(),
+        attemptCount: sql`${schema.reportExports.attemptCount} + 1`,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.reportExports.id, candidates[0].id))
+      .returning();
+    return row ?? null;
   }
   async processOne(workerId: string) {
     const row = await this.claim(workerId);
@@ -82,11 +95,15 @@ export class ReportExportProcessor implements OnModuleInit, OnModuleDestroy {
       const all: Record<string, unknown>[] = [];
       let page = 1,
         total = 0;
+      const reportType = row.reportType ?? (row as any).report_type;
+      const filtersJson = (row.filtersJson ?? (row as any).filters_json) ?? {};
+      const requestedBy = row.requestedBy ?? (row as any).requested_by;
+
       do {
         const part = await this.reports.query(
-          row.report_type as ReportType,
+          reportType as ReportType,
           {
-            ...(row.filters_json ?? {}),
+            ...filtersJson,
             page,
             pageSize: 100,
             sortDirection: 'asc',
@@ -101,12 +118,12 @@ export class ReportExportProcessor implements OnModuleInit, OnModuleDestroy {
       const body =
         row.format === 'CSV'
           ? this.csv.generate(all)
-          : await this.pdf.generate(all, row.report_type, {
-              filters: row.filters_json ?? {},
+          : await this.pdf.generate(all, reportType as ReportType, {
+              filters: filtersJson,
             });
       const mimeType =
         row.format === 'CSV' ? 'text/csv; charset=utf-8' : 'application/pdf';
-      const key = this.exports.key(row.requested_by, row.id, row.format);
+      const key = this.exports.key(requestedBy, row.id, row.format);
       await this.storage.upload({ key, body, contentType: mimeType });
       const checksum = createHash('sha256').update(body).digest('hex');
       await this.db.client
@@ -120,7 +137,7 @@ export class ReportExportProcessor implements OnModuleInit, OnModuleDestroy {
           ),
           rowCount: all.length,
           fileStorageKey: key,
-          originalFileName: `Joel-Talargie-Academy-${row.report_type}.${row.format.toLowerCase()}`,
+          originalFileName: `Joel-Talargie-Academy-${reportType}.${row.format.toLowerCase()}`,
           mimeType,
           fileSize: body.length,
           checksum,
@@ -167,7 +184,7 @@ export class ReportExportProcessor implements OnModuleInit, OnModuleDestroy {
       .where(
         and(
           eq(schema.reportExports.status, 'COMPLETED'),
-          sql`${schema.reportExports.expiresAt} <= now()`,
+          lte(schema.reportExports.expiresAt, new Date()),
         ),
       );
     for (const row of rows) {

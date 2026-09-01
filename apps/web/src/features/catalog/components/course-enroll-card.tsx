@@ -65,6 +65,7 @@ export function CourseEnrollCard({ course }: { course: CourseDetail }) {
         categoryName={course.categoryName}
         categorySlug={course.categorySlug}
         thumbnailKey={course.thumbnailKey}
+        thumbnailUrl={course.thumbnailUrl}
         showBadge={false}
         className="aspect-video w-full rounded-t-xl rounded-b-none"
       />

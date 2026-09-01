@@ -27,11 +27,11 @@ export const getAuthorizationContext = async (
     .leftJoin(schema.rolePermissions, eq(schema.rolePermissions.roleId, schema.roles.id))
     .leftJoin(schema.permissions, eq(schema.rolePermissions.permissionId, schema.permissions.id))
     .where(eq(schema.userRoles.userId, userId));
-  const roles = [...new Set(rows.map((row) => row.role))];
-  const permissions = [...new Set(rows.flatMap((row) => (row.permission ? [row.permission] : [])))];
+  const roles = [...new Set(rows.map((row: any) => row.role))].filter(Boolean) as string[];
+  const permissions = [...new Set(rows.flatMap((row: any) => (row.permission ? [row.permission] : [])))].filter(Boolean) as string[];
   return {
     userId,
-    status: user.status,
+    status: user.status as any,
     roles,
     permissions,
     isAdministrator: roles.includes('ADMINISTRATOR'),
@@ -92,7 +92,7 @@ export const listRoles = async (
     .limit(input.limit)
     .offset(input.offset);
   const [{ total = 0 } = {}] = await db.select({ total: count() }).from(schema.roles).where(where);
-  const ids = items.map((role) => role.id);
+  const ids = items.map((role: any) => role.id);
   if (!ids.length) return { items: [], total };
   const permissionCounts = await db
     .select({ roleId: schema.rolePermissions.roleId, value: count() })
@@ -105,10 +105,10 @@ export const listRoles = async (
     .where(inArray(schema.userRoles.roleId, ids))
     .groupBy(schema.userRoles.roleId);
   return {
-    items: items.map((role) => ({
+    items: items.map((role: any) => ({
       ...role,
-      permissionCount: Number(permissionCounts.find((x) => x.roleId === role.id)?.value ?? 0),
-      userCount: Number(userCounts.find((x) => x.roleId === role.id)?.value ?? 0),
+      permissionCount: Number(permissionCounts.find((x: any) => x.roleId === role.id)?.value ?? 0),
+      userCount: Number(userCounts.find((x: any) => x.roleId === role.id)?.value ?? 0),
     })),
     total: Number(total),
   };
@@ -154,7 +154,7 @@ export const createRoleWithPermissions = async (
     permissionIds: string[];
   },
 ) =>
-  db.transaction(async (tx) => {
+  db.transaction(async (tx: any) => {
     const permissions = await getPermissionsByIds(tx as AcademyDatabase, input.permissionIds);
     if (permissions.length !== input.permissionIds.length) throw new Error('INVALID_PERMISSION');
     const actor = await getAuthorizationContext(tx as AcademyDatabase, input.actorId);
@@ -192,7 +192,7 @@ export const updateCustomRole = async (
   db: AcademyDatabase,
   input: { actorId: string; roleId: string; name?: string; description?: string },
 ) =>
-  db.transaction(async (tx) => {
+  db.transaction(async (tx: any) => {
     const role = await tx.query.roles.findFirst({ where: eq(schema.roles.id, input.roleId) });
     if (!role) throw new Error('ROLE_NOT_FOUND');
     if (role.isSystem) throw new Error('SYSTEM_ROLE');
@@ -219,7 +219,7 @@ export const replaceCustomRolePermissions = async (
   db: AcademyDatabase,
   input: { actorId: string; roleId: string; permissionIds: string[] },
 ) =>
-  db.transaction(async (tx) => {
+  db.transaction(async (tx: any) => {
     const role = await tx.query.roles.findFirst({ where: eq(schema.roles.id, input.roleId) });
     if (!role) throw new Error('ROLE_NOT_FOUND');
     if (role.isSystem) throw new Error('SYSTEM_ROLE');
@@ -248,31 +248,34 @@ export const replaceCustomRolePermissions = async (
       action: 'role.permissions.updated',
       entityType: 'role',
       entityId: role.id,
-      before: { permissions: before.map((x) => x.code) },
-      after: { permissions: permissions.map((x) => x.code) },
+      before: { permissions: before.map((x: any) => x.code) },
+      after: { permissions: permissions.map((x: any) => x.code) },
     });
     return getRoleDetails(tx as AcademyDatabase, role.id);
   });
 export const archiveCustomRole = async (db: AcademyDatabase, actorId: string, roleId: string) =>
-  db.transaction(async (tx) => {
+  db.transaction(async (tx: any) => {
     const role = await tx.query.roles.findFirst({ where: eq(schema.roles.id, roleId) });
     if (!role) throw new Error('ROLE_NOT_FOUND');
     if (role.isSystem) throw new Error('SYSTEM_ROLE');
-    await tx.delete(schema.rolePermissions).where(eq(schema.rolePermissions.roleId, roleId));
-    await tx.delete(schema.userRoles).where(eq(schema.userRoles.roleId, roleId));
-    const [deleted] = await tx
-      .delete(schema.roles)
-      .where(eq(schema.roles.id, roleId))
-      .returning();
+    const assignedCount = await tx
+      .select({ count: count() })
+      .from(schema.userRoles)
+      .where(eq(schema.userRoles.roleId, roleId));
+    if (Number(assignedCount[0]?.count ?? 0) > 0) throw new Error('ROLE_IN_USE');
+    await tx
+      .update(schema.roles)
+      .set({ archivedAt: new Date(), updatedAt: new Date() })
+      .where(eq(schema.roles.id, roleId));
     await log(tx as AcademyDatabase, {
       actorId,
-      action: 'role.deleted',
+      action: 'role.archived',
       entityType: 'role',
       entityId: roleId,
-      before: { name: role.name, code: role.code },
-      after: {},
+      before: { archivedAt: null },
+      after: { archivedAt: new Date() },
     });
-    return deleted ?? role;
+    return true;
   });
 export const listUserRoles = async (db: AcademyDatabase, userId: string) =>
   db
@@ -291,7 +294,7 @@ export const assignRoleToUser = async (
   db: AcademyDatabase,
   input: { actorId: string; userId: string; roleId: string },
 ) =>
-  db.transaction(async (tx) => {
+  db.transaction(async (tx: any) => {
     const [user, role] = await Promise.all([
       tx.query.users.findFirst({
         where: and(eq(schema.users.id, input.userId), isNull(schema.users.archivedAt)),
@@ -309,7 +312,7 @@ export const assignRoleToUser = async (
       actor.status !== 'ACTIVE' ||
       (role.code === 'ADMINISTRATOR' && !actor.isAdministrator) ||
       (!actor.isAdministrator &&
-        target?.permissions.some((permission) => !actor.permissions.includes(permission.code)))
+        target?.permissions.some((permission: any) => !actor.permissions.includes(permission.code)))
     )
       throw new Error('PRIVILEGE_ESCALATION');
     const existing = await tx.query.userRoles.findFirst({
@@ -344,7 +347,7 @@ export const removeRoleFromUser = async (
   db: AcademyDatabase,
   input: { actorId: string; userId: string; roleId: string },
 ) =>
-  db.transaction(async (tx) => {
+  db.transaction(async (tx: any) => {
     const role = await tx.query.roles.findFirst({ where: eq(schema.roles.id, input.roleId) });
     if (!role) throw new Error('ROLE_NOT_FOUND');
     const assignment = await tx.query.userRoles.findFirst({

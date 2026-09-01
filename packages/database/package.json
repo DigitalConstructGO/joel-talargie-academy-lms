@@ -13,10 +13,12 @@
     "db:seed": "tsx scripts/db-command.ts seed",
     "db:seed:performance": "tsx scripts/performance-seed.ts",
     "db:export": "tsx scripts/export-db.ts",
+    "db:import": "tsx scripts/import-sqlite.ts",
     "db:check": "tsx scripts/db-command.ts check"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
+    "@types/better-sqlite3": "^9.6.0",
     "@types/pg": "^8.20.3",
     "dotenv": "^17.4.1",
     "drizzle-kit": "^0.31.10",
@@ -26,6 +28,7 @@
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "better-sqlite3": "^13.0.3",
     "drizzle-orm": "^0.45.2",
     "pg": "^8.22.0"
   }

@@ -13,12 +13,19 @@ import { STORAGE_SERVICE } from '../../../storage/storage.interface';
 import type { StorageService } from '../../../storage/storage.interface';
 import { CreateReportExportDto, ExportListQueryDto } from '../dto/reports.dto';
 import { ReportRegistryService } from './report-registry.service';
+import { ReportRepository } from '../repositories/report.repository';
+import { CsvReportExporter, PdfReportExporter } from '../exporters/report.exporters';
+import type { ReportType } from '../report.types';
+
 @Injectable()
 export class ReportExportService {
   constructor(
     private readonly db: DatabaseService,
     private readonly registry: ReportRegistryService,
     private readonly audit: AuditService,
+    private readonly reports: ReportRepository,
+    private readonly csv: CsvReportExporter,
+    private readonly pdf: PdfReportExporter,
     @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
   ) {}
   private present(row: any) {
@@ -47,7 +54,7 @@ export class ReportExportService {
       !permissions.includes('audit.export')
     )
       throw new ForbiddenException('Audit export permission required');
-    const dedup = createHash('sha256')
+    const dedup = `${createHash('sha256')
       .update(
         JSON.stringify([
           actorId,
@@ -57,7 +64,7 @@ export class ReportExportService {
           dto.selectedColumns,
         ]),
       )
-      .digest('hex');
+      .digest('hex').slice(0, 16)}:${Date.now()}`;
     let created: any;
     try {
       await this.db.client.transaction(async (tx) => {
@@ -145,6 +152,15 @@ export class ReportExportService {
       throw new ConflictException('Export is not available');
     if (row.expiresAt && row.expiresAt <= new Date())
       throw new ConflictException('Export has expired');
+
+    // Check if the export file exists on disk storage. If missing, rebuild it on the fly!
+    const exists = this.storage.exists
+      ? await this.storage.exists(row.fileStorageKey).catch(() => false)
+      : true;
+    if (!exists) {
+      await this.ensureReportExportFile(row);
+    }
+
     const url = await this.storage.getSignedUrl(row.fileStorageKey, 300);
     await this.audit.logCustom({
       actorId,
@@ -153,6 +169,50 @@ export class ReportExportService {
       entityId: id,
     });
     return { url, expiresInSeconds: 300, fileName: row.originalFileName };
+  }
+
+  private async ensureReportExportFile(row: any) {
+    try {
+      const all: Record<string, unknown>[] = [];
+      let page = 1,
+        total = 0;
+      const reportType = row.reportType ?? row.report_type;
+      const filtersJson = (row.filtersJson ?? row.filters_json) ?? {};
+
+      do {
+        const part = await this.reports.query(
+          reportType as ReportType,
+          {
+            ...filtersJson,
+            page,
+            pageSize: 100,
+            sortDirection: 'asc',
+          } as any,
+        );
+        all.push(...(part.rows as any));
+        total = part.total;
+        page++;
+        if (all.length > Number(process.env.REPORT_EXPORT_MAX_ROWS ?? 100000))
+          break;
+      } while (all.length < total);
+
+      const body =
+        row.format === 'CSV'
+          ? this.csv.generate(all)
+          : await this.pdf.generate(all, reportType as ReportType, {
+              filters: filtersJson,
+            });
+      const mimeType =
+        row.format === 'CSV' ? 'text/csv; charset=utf-8' : 'application/pdf';
+
+      await this.storage.upload({
+        key: row.fileStorageKey,
+        body,
+        contentType: mimeType,
+      });
+    } catch {
+      // Proceed to signed URL attempt
+    }
   }
   async retry(actorId: string, id: string, reason: string, all = false) {
     const row = await this.one(actorId, id, all);

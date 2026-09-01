@@ -10,6 +10,7 @@ export interface AdminCourseSummary {
   slug: string;
   shortDescription: string;
   thumbnailKey: string | null;
+  thumbnailUrl?: string | null;
   presenterName: string;
   categoryId: string;
   categoryName: string;

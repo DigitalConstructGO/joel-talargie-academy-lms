@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Award,
   CheckCircle2,
@@ -16,6 +18,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { FeatureCard } from '@/components/marketing/feature-card';
+import { useLanguage } from '@/lib/i18n/language-provider';
 import type { WhyChooseUsItem } from '@/features/settings/types/settings.types';
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -35,53 +38,54 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Star,
 };
 
-const DEFAULT_FEATURES: WhyChooseUsItem[] = [
-  {
-    id: '1',
-    icon: 'Clock',
-    title: 'Learn at your own pace',
-    description:
-      'Courses are self-paced with full lifetime access, so you can learn on your schedule.',
-    displayOrder: 1,
-    isActive: true,
-  },
-  {
-    id: '2',
-    icon: 'Award',
-    title: 'Earn certificates',
-    description: 'Complete eligible courses to earn a certificate of completion you can share.',
-    displayOrder: 2,
-    isActive: true,
-  },
-  {
-    id: '3',
-    icon: 'ShieldCheck',
-    title: 'Vetted instructors',
-    description: 'Every course is reviewed before publishing to keep quality high.',
-    displayOrder: 3,
-    isActive: true,
-  },
-  {
-    id: '4',
-    icon: 'Smartphone',
-    title: 'Learn anywhere',
-    description: 'A fully responsive experience across desktop, tablet, and mobile.',
-    displayOrder: 4,
-    isActive: true,
-  },
-];
-
 export function WhyChooseUsSection({ items }: { items?: WhyChooseUsItem[] }) {
-  const displayItems = items && items.length > 0 ? items : DEFAULT_FEATURES;
+  const { t } = useLanguage();
+
+  const defaultFeatures: WhyChooseUsItem[] = [
+    {
+      id: '1',
+      icon: 'Clock',
+      title: t('whyUs.card1Title'),
+      description: t('whyUs.card1Desc'),
+      displayOrder: 1,
+      isActive: true,
+    },
+    {
+      id: '2',
+      icon: 'Award',
+      title: t('whyUs.card3Title'),
+      description: t('whyUs.card3Desc'),
+      displayOrder: 2,
+      isActive: true,
+    },
+    {
+      id: '3',
+      icon: 'ShieldCheck',
+      title: t('whyUs.card2Title'),
+      description: t('whyUs.card2Desc'),
+      displayOrder: 3,
+      isActive: true,
+    },
+    {
+      id: '4',
+      icon: 'Smartphone',
+      title: t('whyUs.card1Title'),
+      description: t('whyUs.card1Desc'),
+      displayOrder: 4,
+      isActive: true,
+    },
+  ];
+
+  const displayItems = items && items.length > 0 ? items : defaultFeatures;
 
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6">
       <div className="mb-8 text-center">
         <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-          Why Choose the Academy
+          {t('whyUs.title')}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Everything you need to learn effectively, in one place.
+          {t('whyUs.subtitle')}
         </p>
       </div>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">

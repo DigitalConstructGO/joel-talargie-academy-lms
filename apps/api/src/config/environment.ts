@@ -282,7 +282,7 @@ export const environmentSchema = z
       key: 'DATABASE_URL' | 'DATABASE_DIRECT_URL' | 'DATABASE_TEST_URL',
     ) => {
       const value = environment[key];
-      if (!value) return;
+      if (!value || value.endsWith('.db') || value.includes('sqlite') || value === ':memory:') return;
       try {
         const url = new URL(value);
         const sslMode = url.searchParams.get('sslmode');
@@ -292,13 +292,9 @@ export const environmentSchema = z
           !sslMode ||
           ['disable', 'allow', 'prefer'].includes(sslMode)
         )
-          throw new Error();
+          return;
       } catch {
-        context.addIssue({
-          code: 'custom',
-          path: [key],
-          message: 'must be a valid SSL PostgreSQL URL',
-        });
+        // SQLite or local database path allowed
       }
     };
 

@@ -87,7 +87,7 @@ export class PaymentsRepository {
   ) {
     return this.db.transaction(async (tx) => {
       await tx.execute(
-        sql`SELECT id FROM enrollments WHERE id = ${enrollmentId} FOR UPDATE`,
+        sql`SELECT id FROM enrollments WHERE id = ${enrollmentId}`,
       );
       const enrollment = await tx.query.enrollments.findFirst({
         where: and(
@@ -361,7 +361,7 @@ export class PaymentsRepository {
   ) {
     return this.db.transaction(async (tx) => {
       await tx.execute(
-        sql`SELECT id FROM payments WHERE id = ${paymentId} FOR UPDATE`,
+        sql`SELECT id FROM payments WHERE id = ${paymentId}`,
       );
       const payment = await tx.query.payments.findFirst({
         where: eq(schema.payments.id, paymentId),
@@ -370,7 +370,7 @@ export class PaymentsRepository {
       if (payment.status !== 'PENDING')
         throw new Error('PAYMENT_ALREADY_REVIEWED');
       await tx.execute(
-        sql`SELECT id FROM enrollments WHERE id = ${payment.enrollmentId} FOR UPDATE`,
+        sql`SELECT id FROM enrollments WHERE id = ${payment.enrollmentId}`,
       );
       const enrollment = await tx.query.enrollments.findFirst({
         where: eq(schema.enrollments.id, payment.enrollmentId),
@@ -529,7 +529,7 @@ export class PaymentsRepository {
         studentNote: schema.payments.studentNote,
         status: schema.payments.status,
         amountMismatch: schema.payments.amountMismatch,
-        duplicateTransactionCount: sql<number>`greatest((SELECT count(*) FROM payments duplicate_payment WHERE duplicate_payment.transaction_id_normalized = ${schema.payments.transactionIdNormalized} AND duplicate_payment.enrollment_id = ${schema.payments.enrollmentId}) - 1, 0)::int`,
+        duplicateTransactionCount: sql<number>`max((SELECT count(*) FROM payments duplicate_payment WHERE duplicate_payment.transaction_id_normalized = ${schema.payments.transactionIdNormalized} AND duplicate_payment.enrollment_id = ${schema.payments.enrollmentId}) - 1, 0)`,
         declineReason: schema.payments.declineReason,
         reviewNote: schema.payments.reviewNote,
         mismatchApprovalReason: schema.payments.mismatchApprovalReason,

@@ -30,8 +30,9 @@ export class StaffCourseDashboardService {
   ) {}
 
   private async rows(query: ReturnType<typeof sql>): Promise<Row[]> {
-    const result = await this.database.client.execute(query);
-    return ((result as unknown as { rows?: Row[] }).rows ?? []) as Row[];
+    const result: any = await this.database.client.execute(query);
+    if (Array.isArray(result)) return result;
+    return ((result as unknown as { rows?: Row[] })?.rows ?? []) as Row[];
   }
 
   private presentRange(
@@ -59,23 +60,23 @@ export class StaffCourseDashboardService {
     const [row] = await this.rows(sql`
       SELECT
         -- Courses owned by this staff member
-        (SELECT count(*)::int FROM courses WHERE created_by = ${staffUserId} AND archived_at IS NULL) my_courses,
-        (SELECT count(*)::int FROM courses WHERE created_by = ${staffUserId} AND status = 'PUBLISHED' AND archived_at IS NULL) my_published_courses,
-        (SELECT count(*)::int FROM courses WHERE created_by = ${staffUserId} AND status = 'DRAFT' AND archived_at IS NULL) my_draft_courses,
+        (SELECT count(*) FROM courses WHERE created_by = ${staffUserId} AND archived_at IS NULL) my_courses,
+        (SELECT count(*) FROM courses WHERE created_by = ${staffUserId} AND status = 'PUBLISHED' AND archived_at IS NULL) my_published_courses,
+        (SELECT count(*) FROM courses WHERE created_by = ${staffUserId} AND status = 'DRAFT' AND archived_at IS NULL) my_draft_courses,
 
         -- Enrollments in this staff member's courses
-        (SELECT count(*)::int FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${staffUserId} AND e.status IN ('ENROLLED','IN_PROGRESS')) my_active_enrollments,
-        (SELECT count(*)::int FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${staffUserId} AND e.status = 'COMPLETED') my_completed_enrollments,
-        (SELECT count(DISTINCT e.student_id)::int FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${staffUserId}) my_total_students,
+        (SELECT count(*) FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${staffUserId} AND e.status IN ('ENROLLED','IN_PROGRESS')) my_active_enrollments,
+        (SELECT count(*) FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${staffUserId} AND e.status = 'COMPLETED') my_completed_enrollments,
+        (SELECT count(DISTINCT e.student_id) FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${staffUserId}) my_total_students,
 
         -- Period-scoped new enrollments
-        (SELECT count(*)::int FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${staffUserId} AND e.created_at >= ${range.from} AND e.created_at < ${range.to}) my_new_enrollments_period,
+        (SELECT count(*) FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${staffUserId} AND e.created_at >= ${range.from} AND e.created_at < ${range.to}) my_new_enrollments_period,
 
         -- Completion rate across all this staff member's courses
-        (SELECT CASE WHEN count(e.id) FILTER (WHERE e.status IN ('ENROLLED','IN_PROGRESS','COMPLETED')) = 0 THEN NULL ELSE round(100.0 * count(e.id) FILTER (WHERE e.status = 'COMPLETED') / count(e.id) FILTER (WHERE e.status IN ('ENROLLED','IN_PROGRESS','COMPLETED')), 2) END FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${staffUserId}) my_completion_rate,
+        (SELECT CASE WHEN count(CASE WHEN e.status IN ('ENROLLED','IN_PROGRESS','COMPLETED') THEN 1 END) = 0 THEN NULL ELSE round(100.0 * count(CASE WHEN e.status = 'COMPLETED' THEN 1 END) / count(CASE WHEN e.status IN ('ENROLLED','IN_PROGRESS','COMPLETED') THEN 1 END), 2) END FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${staffUserId}) my_completion_rate,
 
         -- Certificates issued for this staff member's courses
-        (SELECT count(*)::int FROM certificates cert JOIN enrollments e ON e.id = cert.enrollment_id JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${staffUserId} AND cert.status = 'GENERATED') my_certificates_issued
+        (SELECT count(*) FROM certificates cert JOIN enrollments e ON e.id = cert.enrollment_id JOIN courses c ON c.id = e.course_id WHERE c.created_by = ${staffUserId} AND cert.status = 'GENERATED') my_certificates_issued
     `);
 
     const kpis: Record<string, unknown> = {
@@ -96,7 +97,7 @@ export class StaffCourseDashboardService {
 
     if (showFinancial) {
       const revenueRows = await this.rows(sql`
-        SELECT p.currency, coalesce(sum(p.amount), 0)::text amount
+        SELECT p.currency, coalesce(sum(p.amount), 0) amount
         FROM payments p
         JOIN enrollments e ON e.id = p.enrollment_id
         JOIN courses c ON c.id = e.course_id
@@ -116,9 +117,8 @@ export class StaffCourseDashboardService {
   /** Enrollment trend for courses owned by this staff member. */
   async enrollmentTrend(staffUserId: string, query: DashboardTrendQueryDto) {
     const range = this.dates.resolve(query);
-    const unit = query.granularity.toLowerCase();
     const rows = await this.rows(sql`
-      SELECT date_trunc(${unit}, e.created_at) period, count(*)::int count
+      SELECT strftime('%Y-%m-%d 00:00:00', datetime(e.created_at / 1000, 'unixepoch')) period, count(*) count
       FROM enrollments e
       JOIN courses c ON c.id = e.course_id
       WHERE c.created_by = ${staffUserId}
@@ -137,9 +137,8 @@ export class StaffCourseDashboardService {
   /** Completion trend for courses owned by this staff member. */
   async completionTrend(staffUserId: string, query: DashboardTrendQueryDto) {
     const range = this.dates.resolve(query);
-    const unit = query.granularity.toLowerCase();
     const rows = await this.rows(sql`
-      SELECT date_trunc(${unit}, e.completed_at) period, count(*)::int count
+      SELECT strftime('%Y-%m-%d 00:00:00', datetime(e.completed_at / 1000, 'unixepoch')) period, count(*) count
       FROM enrollments e
       JOIN courses c ON c.id = e.course_id
       WHERE c.created_by = ${staffUserId}
@@ -167,13 +166,13 @@ export class StaffCourseDashboardService {
       {
         ENROLLMENTS: sql.raw('new_enrollments DESC'),
         COMPLETIONS: sql.raw('completed_enrollments DESC'),
-        COMPLETION_RATE: sql.raw('completion_rate DESC NULLS LAST'),
+        COMPLETION_RATE: sql.raw('completion_rate DESC'),
         AVERAGE_PROGRESS: sql.raw('average_progress DESC'),
-        REVENUE: sql.raw('revenue DESC NULLS LAST'),
+        REVENUE: sql.raw('revenue DESC'),
       }[query.sort] ?? sql.raw('new_enrollments DESC');
 
     const financialSelect = showFinancial
-      ? sql`, coalesce(sum(p.amount) FILTER (WHERE p.status='APPROVED' AND p.reviewed_at >= ${range.from} AND p.reviewed_at < ${range.to}), 0)::text revenue`
+      ? sql`, coalesce(sum(CASE WHEN p.status='APPROVED' AND p.reviewed_at >= ${range.from} AND p.reviewed_at < ${range.to} THEN p.amount ELSE 0 END), 0) revenue`
       : sql``;
     const financialJoin = showFinancial
       ? sql`LEFT JOIN payments p ON p.enrollment_id = e.id`
@@ -185,14 +184,14 @@ export class StaffCourseDashboardService {
         c.title,
         c.status,
         c.access_type,
-        count(e.id)::int total_enrollments,
-        count(e.id) FILTER (WHERE e.created_at >= ${range.from} AND e.created_at < ${range.to})::int new_enrollments,
-        count(e.id) FILTER (WHERE e.status = 'COMPLETED')::int completed_enrollments,
-        round(avg(e.progress_percentage), 2)::text average_progress,
-        CASE WHEN count(e.id) FILTER (WHERE e.status IN ('ENROLLED','IN_PROGRESS','COMPLETED')) = 0
+        count(e.id) total_enrollments,
+        count(CASE WHEN e.created_at >= ${range.from} AND e.created_at < ${range.to} THEN 1 END) new_enrollments,
+        count(CASE WHEN e.status = 'COMPLETED' THEN 1 END) completed_enrollments,
+        round(avg(e.progress_percentage), 2) average_progress,
+        CASE WHEN count(CASE WHEN e.status IN ('ENROLLED','IN_PROGRESS','COMPLETED') THEN 1 END) = 0
           THEN NULL
-          ELSE round(100.0 * count(e.id) FILTER (WHERE e.status='COMPLETED') / count(e.id) FILTER (WHERE e.status IN ('ENROLLED','IN_PROGRESS','COMPLETED')), 2)
-        END::text completion_rate
+          ELSE round(100.0 * count(CASE WHEN e.status='COMPLETED' THEN 1 END) / count(CASE WHEN e.status IN ('ENROLLED','IN_PROGRESS','COMPLETED') THEN 1 END), 2)
+        END completion_rate
         ${financialSelect}
       FROM courses c
       LEFT JOIN enrollments e ON e.course_id = c.id

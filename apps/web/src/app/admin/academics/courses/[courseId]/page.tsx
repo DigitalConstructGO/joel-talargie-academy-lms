@@ -316,6 +316,7 @@ export default function AdminCourseDetailPage() {
                   categoryName={course.categoryName}
                   categorySlug={course.categorySlug}
                   thumbnailKey={course.thumbnailKey}
+                  thumbnailUrl={course.thumbnailUrl}
                   className="rounded-none aspect-video w-full"
                 />
               </Card>

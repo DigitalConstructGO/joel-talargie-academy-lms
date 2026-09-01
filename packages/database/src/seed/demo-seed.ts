@@ -155,7 +155,7 @@ async function seedCustomRoles(tx: AcademyDatabase) {
   const allPermissions = await tx
     .select({ id: schema.permissions.id, code: schema.permissions.code })
     .from(schema.permissions);
-  const byCode = new Map(allPermissions.map((permission) => [permission.code, permission.id]));
+  const byCode = new Map(allPermissions.map((permission: any) => [permission.code, permission.id]));
 
   const rolePermissionRows = [
     ...instructorPermissionCodes.flatMap((code) => {
@@ -239,7 +239,7 @@ export async function seedCategories(tx: AcademyDatabase) {
     .values(CATEGORY_CATALOG.map((category, index) => ({ ...category, sortOrder: index })))
     .onConflictDoNothing({ target: schema.categories.slug });
   const categories = await tx.select().from(schema.categories);
-  return new Map(categories.map((category) => [category.slug, category]));
+  return new Map(categories.map((category: any) => [category.slug, category]));
 }
 
 interface SeededCourse {
@@ -282,6 +282,7 @@ export async function seedCourses(
         slug: courseData.slug,
         shortDescription: courseData.shortDescription,
         description: courseData.description,
+        thumbnailKey: courseData.thumbnailKey ?? null,
         presenterName:
           courseData.presenterName ??
           `${INSTRUCTOR_PERSON.firstName} ${INSTRUCTOR_PERSON.lastName}`,
@@ -574,7 +575,7 @@ async function seedEnrollmentsProgressAndPayments(
     const persisted =
       enrollment ??
       (await tx.query.enrollments.findFirst({
-        where: (fields, { and, eq: equals }) =>
+        where: (fields: any, { and, eq: equals }: any) =>
           and(equals(fields.studentId, student.id), equals(fields.courseId, course.id)),
       }));
     if (!persisted) continue;
@@ -808,7 +809,7 @@ async function seedSessions(tx: AcademyDatabase, users: { id: string }[]) {
 }
 
 export async function seedDemoData(database: AcademyDatabase): Promise<DemoSeedCounts> {
-  return database.transaction(async (rawTx) => {
+  return database.transaction(async (rawTx: any) => {
     const tx = rawTx as AcademyDatabase;
 
     const administratorRole = await tx.query.roles.findFirst({
@@ -836,7 +837,7 @@ export async function seedDemoData(database: AcademyDatabase): Promise<DemoSeedC
       sectionCount,
       lessonCount,
       resourceCount,
-    } = await seedCourses(tx, categoryBySlug, instructor.id);
+    } = await seedCourses(tx, categoryBySlug as any, instructor.id);
 
     const { enrollmentCount, progressCount, paymentCount } =
       await seedEnrollmentsProgressAndPayments(tx, students, courseBySlug, admin.id);

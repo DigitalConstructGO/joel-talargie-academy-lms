@@ -1,6 +1,6 @@
 import { Inject, Injectable, OnApplicationShutdown } from '@nestjs/common';
 import { checkDatabaseConnection } from '@joel-academy/database';
-import type { Pool } from 'pg';
+import type Database from 'better-sqlite3';
 import { DATABASE_CLIENT, DATABASE_POOL } from './database.constants';
 import type { AcademyDatabase } from './database.types';
 
@@ -10,7 +10,7 @@ export type DatabaseConnectionStatus =
 @Injectable()
 export class DatabaseService implements OnApplicationShutdown {
   constructor(
-    @Inject(DATABASE_POOL) private readonly pool: Pool | null,
+    @Inject(DATABASE_POOL) private readonly pool: Database.Database | null,
     @Inject(DATABASE_CLIENT) private readonly database: AcademyDatabase | null,
   ) {}
 
@@ -29,7 +29,7 @@ export class DatabaseService implements OnApplicationShutdown {
     }
   }
 
-  async onApplicationShutdown(): Promise<void> {
-    await this.pool?.end();
+  onApplicationShutdown(): void {
+    this.pool?.close();
   }
 }

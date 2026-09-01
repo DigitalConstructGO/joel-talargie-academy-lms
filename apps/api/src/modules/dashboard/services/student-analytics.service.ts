@@ -30,8 +30,9 @@ export class StudentAnalyticsService {
   ) {}
 
   private async rows(query: ReturnType<typeof sql>): Promise<Row[]> {
-    const result = await this.database.client.execute(query);
-    return ((result as unknown as { rows?: Row[] }).rows ?? []) as Row[];
+    const result: any = await this.database.client.execute(query);
+    if (Array.isArray(result)) return result;
+    return ((result as unknown as { rows?: Row[] })?.rows ?? []) as Row[];
   }
 
   private presentRange(
@@ -50,15 +51,15 @@ export class StudentAnalyticsService {
     const range = this.dates.resolve(query);
     const [row] = await this.rows(sql`
       SELECT
-        (SELECT count(*)::int FROM enrollments WHERE student_id = ${studentId}) total_enrolled,
-        (SELECT count(*)::int FROM enrollments WHERE student_id = ${studentId} AND status IN ('ENROLLED','IN_PROGRESS')) in_progress,
-        (SELECT count(*)::int FROM enrollments WHERE student_id = ${studentId} AND status = 'COMPLETED') completed,
-        (SELECT count(*)::int FROM certificates cert JOIN enrollments e ON e.id = cert.enrollment_id WHERE e.student_id = ${studentId} AND cert.status = 'GENERATED') certificates_earned,
+        (SELECT count(*) FROM enrollments WHERE student_id = ${studentId}) total_enrolled,
+        (SELECT count(*) FROM enrollments WHERE student_id = ${studentId} AND status IN ('ENROLLED','IN_PROGRESS')) in_progress,
+        (SELECT count(*) FROM enrollments WHERE student_id = ${studentId} AND status = 'COMPLETED') completed,
+        (SELECT count(*) FROM certificates cert JOIN enrollments e ON e.id = cert.enrollment_id WHERE e.student_id = ${studentId} AND cert.status = 'GENERATED') certificates_earned,
         (SELECT round(avg(progress_percentage), 2) FROM enrollments WHERE student_id = ${studentId} AND status IN ('ENROLLED','IN_PROGRESS','COMPLETED')) avg_progress,
-        (SELECT count(*)::int FROM enrollments WHERE student_id = ${studentId} AND created_at >= ${range.from} AND created_at < ${range.to}) new_enrollments_period,
-        (SELECT count(*)::int FROM enrollments WHERE student_id = ${studentId} AND completed_at >= ${range.from} AND completed_at < ${range.to}) completions_period,
+        (SELECT count(*) FROM enrollments WHERE student_id = ${studentId} AND created_at >= ${range.from} AND created_at < ${range.to}) new_enrollments_period,
+        (SELECT count(*) FROM enrollments WHERE student_id = ${studentId} AND completed_at >= ${range.from} AND completed_at < ${range.to}) completions_period,
         -- Estimate total learning time from lesson progress
-        (SELECT coalesce(sum(lp.last_position_seconds), 0)::int FROM lesson_progress lp JOIN enrollments e ON e.id = lp.enrollment_id WHERE e.student_id = ${studentId}) total_learning_seconds
+        (SELECT coalesce(sum(lp.last_position_seconds), 0) FROM lesson_progress lp JOIN enrollments e ON e.id = lp.enrollment_id WHERE e.student_id = ${studentId}) total_learning_seconds
     `);
 
     return {
@@ -68,7 +69,7 @@ export class StudentAnalyticsService {
         inProgress: Number(row?.in_progress ?? 0),
         completed: Number(row?.completed ?? 0),
         certificatesEarned: Number(row?.certificates_earned ?? 0),
-        averageProgress: row?.avg_progress ? String(row.avg_progress) : null,
+        avgProgress: Number(row?.avg_progress ?? 0),
         newEnrollmentsDuringPeriod: Number(row?.new_enrollments_period ?? 0),
         completionsDuringPeriod: Number(row?.completions_period ?? 0),
         totalLearningSeconds: Number(row?.total_learning_seconds ?? 0),
@@ -110,15 +111,14 @@ export class StudentAnalyticsService {
     `);
   }
 
-  /** Learning activity over time (lesson completions) for this student. */
+  /** Learning activity trend for a student (lessons completed over time). */
   async learningActivityTrend(
     studentId: string,
     query: DashboardTrendQueryDto,
   ) {
     const range = this.dates.resolve(query);
-    const unit = query.granularity.toLowerCase();
     const rows = await this.rows(sql`
-      SELECT date_trunc(${unit}, lp.completed_at) period, count(*)::int count
+      SELECT strftime('%Y-%m-%d 00:00:00', datetime(lp.completed_at / 1000, 'unixepoch')) period, count(*) count
       FROM lesson_progress lp
       JOIN enrollments e ON e.id = lp.enrollment_id
       WHERE e.student_id = ${studentId}
@@ -138,9 +138,8 @@ export class StudentAnalyticsService {
   /** Enrollment trend for this student (when they enrolled in courses). */
   async enrollmentTrend(studentId: string, query: DashboardTrendQueryDto) {
     const range = this.dates.resolve(query);
-    const unit = query.granularity.toLowerCase();
     const rows = await this.rows(sql`
-      SELECT date_trunc(${unit}, e.created_at) period, count(*)::int count
+      SELECT strftime('%Y-%m-%d 00:00:00', datetime(e.created_at / 1000, 'unixepoch')) period, count(*) count
       FROM enrollments e
       WHERE e.student_id = ${studentId}
         AND e.created_at >= ${range.from}

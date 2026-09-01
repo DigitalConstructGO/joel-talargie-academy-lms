@@ -26,8 +26,30 @@ import { ROUTES } from '@/constants/routes';
 import { siteConfig } from '@/config/site.config';
 import { SidebarUserFooter } from '@/components/layout/sidebar-user-footer';
 import { Badge } from '@/components/ui/badge';
+import { useLanguage } from '@/lib/i18n/language-provider';
+import type { TranslationKey } from '@/lib/i18n/translations/en';
 import { cn } from '@/lib/utils';
 import type { NavBadge, NavItem, NavSection } from '@/types';
+
+const SIDEBAR_LABEL_MAP: Record<string, TranslationKey> = {
+  Dashboard: 'sidebar.dashboard',
+  Overview: 'sidebar.dashboard',
+  'My Courses': 'sidebar.myCourses',
+  'Browse Catalog': 'sidebar.browseCourses',
+  'Browse Courses': 'sidebar.browseCourses',
+  Certificates: 'sidebar.certificates',
+  Notifications: 'sidebar.notifications',
+  Wishlist: 'sidebar.wishlist',
+  'Profile & Settings': 'sidebar.profile',
+  Profile: 'sidebar.profile',
+  Security: 'sidebar.security',
+  'Admin Panel': 'sidebar.admin',
+  Academics: 'sidebar.academics',
+  'Users & Roles': 'sidebar.users',
+  Financial: 'sidebar.financial',
+  'Analytics & Reports': 'sidebar.reports',
+  'System Settings': 'sidebar.system',
+};
 
 export interface AppSidebarProps {
   sections: NavSection[];
@@ -150,7 +172,13 @@ export function AppSidebar({
   hasPermission = () => true,
   badgeFor,
 }: AppSidebarProps) {
+  const { t } = useLanguage();
   const pathname = usePathname();
+
+  const getLabel = (label: string) => {
+    const key = SIDEBAR_LABEL_MAP[label];
+    return key ? t(key) : label;
+  };
 
   return (
     <Sidebar collapsible="icon" className="shadow-sidebar">
@@ -175,13 +203,14 @@ export function AppSidebar({
             <SidebarGroup key={section.label ?? index}>
               {section.label && (
                 <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-wider text-sidebar-foreground/60">
-                  {section.label}
+                  {getLabel(section.label)}
                 </SidebarGroupLabel>
               )}
               <SidebarGroupContent>
                 <SidebarMenu className="gap-2">
                   {items.map((item) => {
                     const badge = item.badge ?? badgeFor?.(item);
+                    const itemLabel = getLabel(item.label);
                     return item.items?.length ? (
                       <Collapsible
                         key={item.href}
@@ -190,9 +219,9 @@ export function AppSidebar({
                       >
                         <SidebarMenuItem>
                           <CollapsibleTrigger asChild>
-                            <SidebarMenuButton tooltip={item.label} className={navItemClassName}>
+                            <SidebarMenuButton tooltip={itemLabel} className={navItemClassName}>
                               {item.icon && <item.icon />}
-                              <span className={navLabelClassName}>{item.label}</span>
+                              <span className={navLabelClassName}>{itemLabel}</span>
                               <ChevronRight className="ml-auto shrink-0 transition-transform group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden" />
                             </SidebarMenuButton>
                           </CollapsibleTrigger>
@@ -200,6 +229,7 @@ export function AppSidebar({
                             <SidebarMenuSub>
                               {item.items.map((child) => {
                                 const badge = child.badge ?? badgeFor?.(child);
+                                const childLabel = getLabel(child.label);
                                 return (
                                   <SidebarMenuSubItem key={child.href} className="relative">
                                     <SidebarMenuSubButton
@@ -209,7 +239,7 @@ export function AppSidebar({
                                     >
                                       <Link href={child.href}>
                                         {child.icon && <child.icon />}
-                                        <span className={navLabelClassName}>{child.label}</span>
+                                        <span className={navLabelClassName}>{childLabel}</span>
                                       </Link>
                                     </SidebarMenuSubButton>
                                     {badge && <SidebarItemBadge badge={badge} />}
@@ -224,14 +254,14 @@ export function AppSidebar({
                       <SidebarMenuItem key={item.href}>
                         <SidebarMenuButton
                           aria-disabled="true"
-                          tooltip={item.label}
+                          tooltip={itemLabel}
                           className={cn(
                             navItemClassName,
                             'pointer-events-none cursor-not-allowed opacity-60',
                           )}
                         >
                           {item.icon && <item.icon />}
-                          <span className={navLabelClassName}>{item.label}</span>
+                          <span className={navLabelClassName}>{itemLabel}</span>
                         </SidebarMenuButton>
                         {badge && <SidebarItemBadge badge={badge} />}
                       </SidebarMenuItem>
@@ -240,12 +270,12 @@ export function AppSidebar({
                         <SidebarMenuButton
                           asChild
                           isActive={isItemActive(pathname, item, rootHref, items)}
-                          tooltip={item.label}
+                          tooltip={itemLabel}
                           className={navItemClassName}
                         >
                           <Link href={item.href}>
                             {item.icon && <item.icon />}
-                            <span className={navLabelClassName}>{item.label}</span>
+                            <span className={navLabelClassName}>{itemLabel}</span>
                           </Link>
                         </SidebarMenuButton>
                         {badge && <SidebarItemBadge badge={badge} />}
