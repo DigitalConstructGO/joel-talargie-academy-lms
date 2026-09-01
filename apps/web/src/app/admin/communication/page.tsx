@@ -25,25 +25,43 @@ const QUICK_LINKS = [
   },
 ];
 
+import { useLanguage } from '@/lib/i18n/language-provider';
+
 export default function AdminCommunicationPage() {
+  const { t } = useLanguage();
   const unreadQuery = useUnreadNotificationsCount();
   const templatesQuery = useEmailTemplates();
 
+  const quickLinks = [
+    {
+      icon: Bell,
+      label: t('sidebar.notifications'),
+      description: 'Your notification inbox',
+      href: ROUTES.admin.communicationNotifications,
+    },
+    {
+      icon: Mail,
+      label: 'Email Templates',
+      description: 'Preview transactional email templates',
+      href: ROUTES.admin.communicationEmailTemplates,
+    },
+  ];
+
   return (
     <ContentContainer>
-      <PageHeader title="Communication" description="Notifications and email templates overview." />
+      <PageHeader title={t('sidebar.notifications')} description={t('categories.subtitle')} />
 
       <Reveal>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <StatCard
             icon={Bell}
-            label="Unread notifications"
+            label={t('sidebar.notifications')}
             value={unreadQuery.data?.unreadCount ?? (unreadQuery.isLoading ? '—' : 0)}
             tone="warning"
           />
           <StatCard
             icon={Mail}
-            label="Email templates"
+            label="Email Templates"
             value={templatesQuery.data?.length ?? (templatesQuery.isLoading ? '—' : 0)}
             tone="info"
           />
@@ -52,7 +70,7 @@ export default function AdminCommunicationPage() {
 
       <Reveal delaySeconds={0.05}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {QUICK_LINKS.map((link) => (
+          {quickLinks.map((link) => (
             <QuickActionCard key={link.label} {...link} />
           ))}
         </div>

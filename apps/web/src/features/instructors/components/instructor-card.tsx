@@ -14,7 +14,10 @@ function getInitials(name: string): string {
   return (name.trim().slice(0, 2) || 'IN').toUpperCase();
 }
 
+import { useLanguage } from '@/lib/i18n/language-provider';
+
 export function InstructorCard({ instructor }: { instructor: Instructor }) {
+  const { t } = useLanguage();
   const [imgError, setImgError] = useState(false);
   const photo = instructor.photoUrl || instructor.avatarUrl;
 
@@ -47,7 +50,10 @@ export function InstructorCard({ instructor }: { instructor: Instructor }) {
             <p className="mt-0.5 text-[11px] font-medium text-brand">{instructor.title}</p>
           )}
           <p className="mt-1 text-xs text-muted-foreground">
-            {instructor.courseCount} {instructor.courseCount === 1 ? 'course' : 'courses'}
+            {instructor.courseCount}{' '}
+            {instructor.courseCount === 1
+              ? t('catalog.courseCountOne')
+              : t('catalog.courseCountOther')}
           </p>
         </div>
       </Link>

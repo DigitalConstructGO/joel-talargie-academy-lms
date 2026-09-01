@@ -35,7 +35,10 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+import { useLanguage, translateRoleName } from '@/lib/i18n/language-provider';
+
 export default function AdminRoleEditPage() {
+  const { locale } = useLanguage();
   const { roleId } = useParams<{ roleId: string }>();
   const router = useRouter();
   const roleQuery = useRole(roleId);
@@ -71,7 +74,7 @@ export default function AdminRoleEditPage() {
         input: { name: values.name.trim(), description: values.description?.trim() || undefined },
       });
     } catch {
-      toast.error('Could not update this role');
+      toast.error(locale === 'am' ? 'ሚናውን ማሻሻል አልተቻለም' : 'Could not update this role');
       return;
     }
 
@@ -84,14 +87,16 @@ export default function AdminRoleEditPage() {
         await replacePermissions.mutateAsync({ roleId, permissionIds });
       } catch {
         toast.error(
-          'Could not update permissions',
-          'Check you hold every permission you selected.',
+          locale === 'am' ? 'ፈቃዶችን ማሻሻል አልተቻለም' : 'Could not update permissions',
+          locale === 'am'
+            ? 'የመረጧቸውን ሁሉንም ፈቃዶች መያዝዎን ያረጋግጡ።'
+            : 'Check you hold every permission you selected.',
         );
         return;
       }
     }
 
-    toast.success('Role updated');
+    toast.success(locale === 'am' ? 'ሚናው ተሻሽሏል' : 'Role updated');
     router.push(ROUTES.admin.systemRoleDetail(roleId));
   }
 
@@ -101,11 +106,17 @@ export default function AdminRoleEditPage() {
         <StatusPage
           icon={ShieldAlert}
           code="403"
-          title="Access restricted"
-          description="You don't have permission to edit roles."
+          title={locale === 'am' ? 'መዳረሻ ተከልክሏል' : 'Access restricted'}
+          description={
+            locale === 'am'
+              ? 'ሚናዎችን ለማስተካከል ፈቃድ የለዎትም።'
+              : "You don't have permission to edit roles."
+          }
           action={
             <Button asChild>
-              <Link href={ROUTES.admin.systemRoles}>Back to roles</Link>
+              <Link href={ROUTES.admin.systemRoles}>
+                {locale === 'am' ? 'ወደ ሚናዎች ተመለስ' : 'Back to roles'}
+              </Link>
             </Button>
           }
         />
@@ -116,8 +127,11 @@ export default function AdminRoleEditPage() {
   if (roleQuery.isError) {
     return (
       <ContentContainer>
-        <PageHeader title="Edit role" />
-        <ErrorState onRetry={() => roleQuery.refetch()} description="Unable to load this role." />
+        <PageHeader title={locale === 'am' ? 'ሚና አስተካክል' : 'Edit role'} />
+        <ErrorState
+          onRetry={() => roleQuery.refetch()}
+          description={locale === 'am' ? 'ይህንን ሚና መጫን አልተቻለም።' : 'Unable to load this role.'}
+        />
       </ContentContainer>
     );
   }
@@ -125,15 +139,20 @@ export default function AdminRoleEditPage() {
   if (role?.isSystem) {
     return (
       <ContentContainer>
-        <PageHeader title="Edit role" description={role.name} />
+        <PageHeader
+          title={locale === 'am' ? 'ሚና አስተካክል' : 'Edit role'}
+          description={translateRoleName(role.name, locale)}
+        />
         <p className="rounded-lg border border-border bg-muted/40 px-4 py-6 text-sm text-muted-foreground">
-          System roles are protected and cannot be edited.{' '}
+          {locale === 'am'
+            ? 'የሲስተም ሚናዎች የተጠበቁ ናቸው፣ ማስተካከል አይቻልም።'
+            : 'System roles are protected and cannot be edited.'}{' '}
           <button
             type="button"
             className="underline"
             onClick={() => router.push(ROUTES.admin.systemRoleDetail(roleId))}
           >
-            Back to role details
+            {locale === 'am' ? 'ወደ ሚና ዝርዝር ተመለስ' : 'Back to role details'}
           </button>
         </p>
       </ContentContainer>
@@ -146,16 +165,19 @@ export default function AdminRoleEditPage() {
     <ContentContainer>
       <PageBreadcrumb
         items={[
-          { label: 'Dashboard', href: ROUTES.admin.root },
-          { label: 'Roles', href: ROUTES.admin.systemRoles },
+          { label: locale === 'am' ? 'ዳሽቦርድ' : 'Dashboard', href: ROUTES.admin.root },
+          { label: locale === 'am' ? 'ሚናዎች' : 'Roles', href: ROUTES.admin.systemRoles },
           {
-            label: role?.name ?? 'Role',
+            label: role ? translateRoleName(role.name, locale) : locale === 'am' ? 'ሚና' : 'Role',
             href: role ? ROUTES.admin.systemRoleDetail(roleId) : undefined,
           },
-          { label: 'Edit' },
+          { label: locale === 'am' ? 'አስተካክል' : 'Edit' },
         ]}
       />
-      <PageHeader title="Edit role" description={role?.name} />
+      <PageHeader
+        title={locale === 'am' ? 'ሚና አስተካክል' : 'Edit role'}
+        description={role ? translateRoleName(role.name, locale) : undefined}
+      />
 
       {roleQuery.isLoading || !role ? (
         <Skeleton className="h-96" />
@@ -164,16 +186,18 @@ export default function AdminRoleEditPage() {
           <Card>
             <CardContent className="grid gap-4 pt-6 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
+                <Label htmlFor="name">{locale === 'am' ? 'ስም' : 'Name'}</Label>
                 <Input id="name" {...register('name')} />
                 {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="code">Code</Label>
+                <Label htmlFor="code">{locale === 'am' ? 'ኮድ' : 'Code'}</Label>
                 <Input id="code" value={role.code} readOnly disabled />
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="description">Description (optional)</Label>
+                <Label htmlFor="description">
+                  {locale === 'am' ? 'መግለጫ (አማራጭ)' : 'Description (optional)'}
+                </Label>
                 <Textarea id="description" rows={2} {...register('description')} />
                 {errors.description && (
                   <p className="text-sm text-destructive">{errors.description.message}</p>
@@ -185,9 +209,11 @@ export default function AdminRoleEditPage() {
           <Card>
             <CardContent className="space-y-4 pt-6">
               <div>
-                <Label className="text-base">Permissions</Label>
+                <Label className="text-base">{locale === 'am' ? 'ፈቃዶች' : 'Permissions'}</Label>
                 <p className="text-sm text-muted-foreground">
-                  You can only assign permissions you personally hold.
+                  {locale === 'am'
+                    ? 'እርስዎ በግልዎ የሚይዟቸውን ፈቃዶች ብቻ መስጠት ይችላሉ።'
+                    : 'You can only assign permissions you personally hold.'}
                 </p>
               </div>
               <PermissionPicker selected={permissionIds} onChange={setPermissionIds} />
@@ -197,14 +223,14 @@ export default function AdminRoleEditPage() {
           <div className="flex gap-2">
             <Button type="submit" disabled={isSaving}>
               {isSaving && <Loader2 className="mr-2 size-4 animate-spin" />}
-              Save changes
+              {locale === 'am' ? 'ለወጦችን አስቀምጥ' : 'Save changes'}
             </Button>
             <Button
               type="button"
               variant="outline"
               onClick={() => router.push(ROUTES.admin.systemRoleDetail(roleId))}
             >
-              Cancel
+              {locale === 'am' ? 'ሰርዝ' : 'Cancel'}
             </Button>
           </div>
         </form>

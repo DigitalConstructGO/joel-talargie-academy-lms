@@ -61,6 +61,7 @@ import { ROUTES } from '@/constants/routes';
 import { formatDate } from '@/lib/date';
 import { formatCurrency } from '@/lib/format';
 import { toast } from '@/lib/toast';
+import { useLanguage } from '@/lib/i18n/language-provider';
 
 const PAGE_SIZE = 20;
 
@@ -73,22 +74,6 @@ interface CouponsFilters {
 
 const DEFAULT_FILTERS: CouponsFilters = { status: 'ALL', codeType: 'ALL', search: undefined };
 
-const STATUS_OPTIONS = [
-  { label: 'Active', value: 'ACTIVE' },
-  { label: 'Paused', value: 'PAUSED' },
-  { label: 'Expired', value: 'EXPIRED' },
-  { label: 'Revoked', value: 'REVOKED' },
-];
-
-const CODE_TYPE_OPTIONS = [
-  { label: 'Manual', value: 'MANUAL' },
-  { label: 'Referral', value: 'REFERRAL' },
-  { label: 'Affiliate', value: 'AFFILIATE' },
-  { label: 'Corporate', value: 'CORPORATE' },
-  { label: 'University partner', value: 'UNIVERSITY_PARTNER' },
-  { label: 'System generated', value: 'SYSTEM_GENERATED' },
-];
-
 const STATUS_VARIANT: Record<PromoCodeStatus, 'success' | 'warning' | 'outline' | 'destructive'> = {
   ACTIVE: 'success',
   PAUSED: 'warning',
@@ -96,16 +81,33 @@ const STATUS_VARIANT: Record<PromoCodeStatus, 'success' | 'warning' | 'outline' 
   REVOKED: 'destructive',
 };
 
-const CREATE_STATUS_OPTIONS: { label: string; value: PromoCodeStatus }[] = [
-  { label: 'Active', value: 'ACTIVE' },
-  { label: 'Paused', value: 'PAUSED' },
-];
+function formatStatusLabel(status: PromoCodeStatus, locale: string): string {
+  if (locale !== 'am') return status;
 
-const DISCOUNT_TYPE_OPTIONS: { label: string; value: PromoDiscountType }[] = [
-  { label: 'Percentage', value: 'PERCENTAGE' },
-  { label: 'Fixed amount', value: 'FIXED' },
-  { label: 'Free', value: 'FREE' },
-];
+  const STATUS_MAP_AM: Record<PromoCodeStatus, string> = {
+    ACTIVE: 'ንቁ',
+    PAUSED: 'የቆመ',
+    EXPIRED: 'ጊዜው ያለፈበት',
+    REVOKED: 'የተሰረዘ',
+  };
+
+  return STATUS_MAP_AM[status] || status;
+}
+
+function formatCodeTypeLabel(type: PromoCodeType, locale: string): string {
+  if (locale !== 'am') return type;
+
+  const TYPE_MAP_AM: Record<PromoCodeType, string> = {
+    MANUAL: 'በእጅ',
+    REFERRAL: 'ሪፈራል',
+    AFFILIATE: 'አፊሊየት',
+    CORPORATE: 'ድርጅታዊ',
+    UNIVERSITY_PARTNER: 'የዩኒቨርሲቲ አጋር',
+    SYSTEM_GENERATED: 'በሲስተም የተፈጠረ',
+  };
+
+  return TYPE_MAP_AM[type] || type;
+}
 
 function generatePromoCode(): string {
   const random = Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -113,6 +115,7 @@ function generatePromoCode(): string {
 }
 
 function CreateCouponDialog() {
+  const { locale } = useLanguage();
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState('');
   const [status, setStatus] = useState<PromoCodeStatus>('ACTIVE');
@@ -127,6 +130,29 @@ function CreateCouponDialog() {
   const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>([]);
   const [error, setError] = useState('');
   const createCoupon = useCreateCoupon();
+
+  const createStatusOptions = useMemo(
+    () => [
+      { label: locale === 'am' ? 'ንቁ' : 'Active', value: 'ACTIVE' as PromoCodeStatus },
+      { label: locale === 'am' ? 'የቆመ' : 'Paused', value: 'PAUSED' as PromoCodeStatus },
+    ],
+    [locale],
+  );
+
+  const discountTypeOptions = useMemo(
+    () => [
+      {
+        label: locale === 'am' ? 'በመቶኛ (%)' : 'Percentage',
+        value: 'PERCENTAGE' as PromoDiscountType,
+      },
+      {
+        label: locale === 'am' ? 'የተወሰነ መጠን' : 'Fixed amount',
+        value: 'FIXED' as PromoDiscountType,
+      },
+      { label: locale === 'am' ? 'ነፃ' : 'Free', value: 'FREE' as PromoDiscountType },
+    ],
+    [locale],
+  );
 
   function handleTargetTypeChange(value: CouponTargetType) {
     setTargetType(value);
@@ -156,7 +182,7 @@ function CreateCouponDialog() {
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (discountType !== 'FREE' && !discountValue.trim()) {
-      setError('Enter a discount value.');
+      setError(locale === 'am' ? 'የቅናሽ መጠን ያስገቡ።' : 'Enter a discount value.');
       return;
     }
     const finalCode = code.trim() || generatePromoCode();
@@ -173,11 +199,17 @@ function CreateCouponDialog() {
         courseIds: selectedCourseIds.length ? selectedCourseIds : undefined,
         categoryIds: selectedCategoryIds.length ? selectedCategoryIds : undefined,
       });
-      toast.success(`Promo code ${finalCode} created`);
+      toast.success(
+        locale === 'am' ? `የፕሮሞ ኮድ ${finalCode} ተፈጥሯል` : `Promo code ${finalCode} created`,
+      );
       setOpen(false);
       resetForm();
     } catch {
-      setError('Could not create this promo code. The code may already be in use.');
+      setError(
+        locale === 'am'
+          ? 'ይህንን የፕሮሞ ኮድ መፍጠር አልተቻለም። ኮዱ ቀደም ብሎ ስራ ላይ ውሎ ሊሆን ይችላል።'
+          : 'Could not create this promo code. The code may already be in use.',
+      );
     }
   }
 
@@ -193,17 +225,21 @@ function CreateCouponDialog() {
     >
       <Can permission="promotions.manage_coupons">
         <Button className="gap-2" onClick={() => setOpen(true)}>
-          <Plus className="size-4" /> New promo code
+          <Plus className="size-4" /> {locale === 'am' ? 'አዲስ ፕሮሞ ኮድ' : 'New promo code'}
         </Button>
       </Can>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>New promo code</DialogTitle>
+          <DialogTitle>{locale === 'am' ? 'አዲስ ፕሮሞ ኮድ' : 'New promo code'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="create-code">Code (optional - auto-generated if empty)</Label>
+              <Label htmlFor="create-code">
+                {locale === 'am'
+                  ? 'ኮድ (አማራጭ - ባዶ ከሆነ በራስ-ሰር ይፈጠራል)'
+                  : 'Code (optional - auto-generated if empty)'}
+              </Label>
               <Input
                 id="create-code"
                 value={code}
@@ -212,13 +248,13 @@ function CreateCouponDialog() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-status">Status</Label>
+              <Label htmlFor="create-status">{locale === 'am' ? 'ሁኔታ' : 'Status'}</Label>
               <Select value={status} onValueChange={(value) => setStatus(value as PromoCodeStatus)}>
                 <SelectTrigger id="create-status">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {CREATE_STATUS_OPTIONS.map((option) => (
+                  {createStatusOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -229,7 +265,9 @@ function CreateCouponDialog() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="create-discount-type">Discount type</Label>
+              <Label htmlFor="create-discount-type">
+                {locale === 'am' ? 'የቅናሽ አይነት' : 'Discount type'}
+              </Label>
               <Select
                 value={discountType}
                 onValueChange={(value) => setDiscountType(value as PromoDiscountType)}
@@ -238,7 +276,7 @@ function CreateCouponDialog() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {DISCOUNT_TYPE_OPTIONS.map((option) => (
+                  {discountTypeOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -248,13 +286,21 @@ function CreateCouponDialog() {
             </div>
             {discountType === 'FREE' ? (
               <div className="space-y-2">
-                <Label htmlFor="create-discount-value">Discount value</Label>
-                <Input id="create-discount-value" value="100% off" disabled />
+                <Label htmlFor="create-discount-value">
+                  {locale === 'am' ? 'የቅናሽ መጠን' : 'Discount value'}
+                </Label>
+                <Input
+                  id="create-discount-value"
+                  value={locale === 'am' ? '100% ነፃ' : '100% off'}
+                  disabled
+                />
               </div>
             ) : (
               <div className="space-y-2">
                 <Label htmlFor="create-discount-value">
-                  Discount value {discountType === 'PERCENTAGE' ? '(%)' : '(amount)'}
+                  {locale === 'am'
+                    ? `የቅናሽ መጠን ${discountType === 'PERCENTAGE' ? '(%)' : '(መጠን)'}`
+                    : `Discount value ${discountType === 'PERCENTAGE' ? '(%)' : '(amount)'}`}
                 </Label>
                 <Input
                   id="create-discount-value"
@@ -269,7 +315,9 @@ function CreateCouponDialog() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="create-valid-from">Valid from (blank = immediately)</Label>
+              <Label htmlFor="create-valid-from">
+                {locale === 'am' ? 'የሚጀምርበት ቀን (ባዶ = ወዲያውኑ)' : 'Valid from (blank = immediately)'}
+              </Label>
               <Input
                 id="create-valid-from"
                 type="date"
@@ -278,7 +326,9 @@ function CreateCouponDialog() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-valid-until">Valid until (blank = never)</Label>
+              <Label htmlFor="create-valid-until">
+                {locale === 'am' ? 'የሚያልፍበት ቀን (ባዶ = አያልፍም)' : 'Valid until (blank = never)'}
+              </Label>
               <Input
                 id="create-valid-until"
                 type="date"
@@ -288,7 +338,9 @@ function CreateCouponDialog() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="create-max-users">Max users (blank = unlimited)</Label>
+            <Label htmlFor="create-max-users">
+              {locale === 'am' ? 'ከፍተኛ የተጠቃሚዎች ብዛት (ባዶ = ያልተገደበ)' : 'Max users (blank = unlimited)'}
+            </Label>
             <Input
               id="create-max-users"
               type="number"
@@ -297,8 +349,9 @@ function CreateCouponDialog() {
               onChange={(e) => setMaxUsers(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              Limit the code to the first N students who use it (e.g. 50 for a &quot;first 50&quot;
-              offer).
+              {locale === 'am'
+                ? 'ኮዱን ለመጀመሪያዎቹ N ተማሪዎች ገድብ።'
+                : 'Limit the code to the first N students who use it.'}
             </p>
           </div>
           <div className="flex items-center gap-3 rounded-lg border border-border px-4 py-3">
@@ -309,17 +362,21 @@ function CreateCouponDialog() {
             />
             <div>
               <Label htmlFor="create-single-use" className="font-medium">
-                Single use
+                {locale === 'am' ? 'አንድ ጊዜ ብቻ የሚጠቅም' : 'Single use'}
               </Label>
               <p className="text-xs text-muted-foreground">
-                Each student can redeem this code once.
+                {locale === 'am'
+                  ? 'እያንዳንዱ ተማሪ ይህንን ኮድ መጠቀም የሚችለው አንድ ጊዜ ብቻ ነው።'
+                  : 'Each student can redeem this code once.'}
               </p>
             </div>
           </div>
           <div className="space-y-1">
-            <Label>Targeting</Label>
+            <Label>{locale === 'am' ? 'ዒላማ ማድረጊያ' : 'Targeting'}</Label>
             <p className="text-sm text-muted-foreground">
-              Choose which courses this promo code applies to.
+              {locale === 'am'
+                ? 'ይህ ፕሮሞ ኮድ የሚሰራባቸውን ኮርሶች ይምረጡ።'
+                : 'Choose which courses this promo code applies to.'}
             </p>
           </div>
           <CouponTargetingFields
@@ -334,7 +391,7 @@ function CreateCouponDialog() {
           <DialogFooter>
             <Button type="submit" disabled={isPending}>
               {isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-              Create promo code
+              {locale === 'am' ? 'ፕሮሞ ኮድ ፍጠር' : 'Create promo code'}
             </Button>
           </DialogFooter>
         </form>
@@ -344,6 +401,7 @@ function CreateCouponDialog() {
 }
 
 export default function AdminPromoCodesPage() {
+  const { locale } = useLanguage();
   const { filters, page, pageSize, setFilter, setPage } = useQueryFilters<CouponsFilters>({
     defaults: DEFAULT_FILTERS,
     pageSize: PAGE_SIZE,
@@ -351,6 +409,31 @@ export default function AdminPromoCodesPage() {
   const { status, codeType, search } = filters;
   const archiveCoupon = useArchiveCoupon();
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
+
+  const statusOptions = useMemo(
+    () => [
+      { label: locale === 'am' ? 'ንቁ' : 'Active', value: 'ACTIVE' },
+      { label: locale === 'am' ? 'የቆመ' : 'Paused', value: 'PAUSED' },
+      { label: locale === 'am' ? 'ጊዜው ያለፈበት' : 'Expired', value: 'EXPIRED' },
+      { label: locale === 'am' ? 'የተሰረዘ' : 'Revoked', value: 'REVOKED' },
+    ],
+    [locale],
+  );
+
+  const codeTypeOptions = useMemo(
+    () => [
+      { label: locale === 'am' ? 'በእጅ' : 'Manual', value: 'MANUAL' },
+      { label: locale === 'am' ? 'ሪፈራል' : 'Referral', value: 'REFERRAL' },
+      { label: locale === 'am' ? 'አፊሊየት' : 'Affiliate', value: 'AFFILIATE' },
+      { label: locale === 'am' ? 'ድርጅታዊ' : 'Corporate', value: 'CORPORATE' },
+      {
+        label: locale === 'am' ? 'የዩኒቨርሲቲ አጋር' : 'University partner',
+        value: 'UNIVERSITY_PARTNER',
+      },
+      { label: locale === 'am' ? 'በሲስተም የተፈጠረ' : 'System generated', value: 'SYSTEM_GENERATED' },
+    ],
+    [locale],
+  );
 
   const couponsQuery = useAdminCoupons({
     page,
@@ -365,43 +448,59 @@ export default function AdminPromoCodesPage() {
   async function handleArchive(couponId: string) {
     try {
       await archiveCoupon.mutateAsync(couponId);
-      toast.success('Promo code revoked');
+      toast.success(locale === 'am' ? 'የፕሮሞ ኮዱ ተሰርዟል' : 'Promo code revoked');
     } catch {
-      toast.error('Could not revoke this promo code');
+      toast.error(
+        locale === 'am' ? 'ይህንን የፕሮሞ ኮድ መሰረዝ አልተቻለም' : 'Could not revoke this promo code',
+      );
     }
   }
 
   const columns = useMemo<ColumnDef<Coupon, unknown>[]>(
     () => [
-      { accessorKey: 'code', header: 'Code', cell: ({ row }) => <code>{row.original.code}</code> },
-      { accessorKey: 'codeType', header: 'Type' },
+      {
+        accessorKey: 'code',
+        header: locale === 'am' ? 'ኮድ' : 'Code',
+        cell: ({ row }) => <code>{row.original.code}</code>,
+      },
+      {
+        accessorKey: 'codeType',
+        header: locale === 'am' ? 'ዓይነት' : 'Type',
+        cell: ({ row }) => formatCodeTypeLabel(row.original.codeType, locale),
+      },
       {
         accessorKey: 'status',
-        header: 'Status',
+        header: locale === 'am' ? 'ሁኔታ' : 'Status',
         cell: ({ row }) => (
-          <Badge variant={STATUS_VARIANT[row.original.status]}>{row.original.status}</Badge>
+          <Badge variant={STATUS_VARIANT[row.original.status]}>
+            {formatStatusLabel(row.original.status, locale)}
+          </Badge>
         ),
       },
       {
         accessorKey: 'discountValue',
-        header: 'Discount',
+        header: locale === 'am' ? 'ቅናሽ' : 'Discount',
         cell: ({ row }) => {
           const coupon = row.original;
-          if (coupon.discountType === 'FREE') return 'Free';
+          if (coupon.discountType === 'FREE') return locale === 'am' ? 'ነፃ' : 'Free';
           if (coupon.discountType === 'PERCENTAGE') return `${Number(coupon.discountValue)}%`;
           return formatCurrency(coupon.discountValue);
         },
       },
       {
         accessorKey: 'redemptionCount',
-        header: 'Used',
+        header: locale === 'am' ? 'ስራ ላይ የዋለ' : 'Used',
         cell: ({ row }) => `${row.original.redemptionCount}`,
       },
       {
         accessorKey: 'validUntil',
-        header: 'Expires',
+        header: locale === 'am' ? 'የሚያልፍበት ቀን' : 'Expires',
         cell: ({ row }) =>
-          row.original.validUntil ? formatDate(row.original.validUntil) : 'Never',
+          row.original.validUntil
+            ? formatDate(row.original.validUntil)
+            : locale === 'am'
+              ? 'አያልፍም'
+              : 'Never',
       },
       {
         id: 'actions',
@@ -417,7 +516,7 @@ export default function AdminPromoCodesPage() {
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild className="gap-2">
                 <Link href={ROUTES.admin.financialPromoCodeDetail(row.original.id)}>
-                  <Eye className="size-4" /> View
+                  <Eye className="size-4" /> {locale === 'am' ? 'እይ' : 'View'}
                 </Link>
               </DropdownMenuItem>
               <Can permission="promotions.manage_coupons">
@@ -428,7 +527,7 @@ export default function AdminPromoCodesPage() {
                   }}
                   className="gap-2"
                 >
-                  <Pencil className="size-4" /> Edit
+                  <Pencil className="size-4" /> {locale === 'am' ? 'አስተካክል' : 'Edit'}
                 </DropdownMenuItem>
                 <ConfirmDialog
                   trigger={
@@ -436,12 +535,16 @@ export default function AdminPromoCodesPage() {
                       onSelect={(event) => event.preventDefault()}
                       className="gap-2 text-destructive focus:text-destructive"
                     >
-                      <Trash2 className="size-4" /> Revoke
+                      <Trash2 className="size-4" /> {locale === 'am' ? 'ሰርዝ' : 'Revoke'}
                     </DropdownMenuItem>
                   }
-                  title="Revoke this promo code?"
-                  description="It can no longer be redeemed."
-                  confirmLabel="Revoke"
+                  title={locale === 'am' ? 'ይህንን የፕሮሞ ኮድ መሰረዝ ይፈልጋሉ?' : 'Revoke this promo code?'}
+                  description={
+                    locale === 'am'
+                      ? 'ከእንግዲህ በድጋሚ ጥቅም ላይ መዋል አይችልም።'
+                      : 'It can no longer be redeemed.'
+                  }
+                  confirmLabel={locale === 'am' ? 'ሰርዝ' : 'Revoke'}
                   variant="destructive"
                   onConfirm={() => handleArchive(row.original.id)}
                 />
@@ -451,22 +554,26 @@ export default function AdminPromoCodesPage() {
         ),
       },
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleArchive is stable per render via archiveCoupon mutation identity
-    [],
+    [locale],
   );
 
   return (
     <ContentContainer>
       <PageBreadcrumb
         items={[
-          { label: 'Dashboard', href: ROUTES.admin.root },
-          { label: 'Financial Management', href: ROUTES.admin.financial },
-          { label: 'Promo Codes' },
+          { label: locale === 'am' ? 'ዳሽቦርድ' : 'Dashboard', href: ROUTES.admin.root },
+          {
+            label: locale === 'am' ? 'የፋይናንስ አስተዳደር' : 'Financial Management',
+            href: ROUTES.admin.financial,
+          },
+          { label: locale === 'am' ? 'ፕሮሞ ኮዶች' : 'Promo Codes' },
         ]}
       />
       <PageHeader
-        title="Promo Codes"
-        description="Discount codes for student purchases."
+        title={locale === 'am' ? 'ፕሮሞ ኮዶች' : 'Promo Codes'}
+        description={
+          locale === 'am' ? 'ለተማሪዎች ግዢዎች የቅናሽ ኮዶች።' : 'Discount codes for student purchases.'
+        }
         actions={
           <div className="flex gap-2">
             <CreateCouponDialog />
@@ -476,31 +583,31 @@ export default function AdminPromoCodesPage() {
 
       <FilterBar>
         <SearchBar
-          placeholder="Search codes..."
+          placeholder={locale === 'am' ? 'ኮዶችን ፈልግ...' : 'Search codes...'}
           defaultValue={search ?? ''}
           onSearch={(value) => setFilter('search', value || undefined)}
           className="w-full sm:w-64"
         />
         <SelectFilter
-          label="Status"
+          label={locale === 'am' ? 'ሁኔታ' : 'Status'}
           value={status === 'ALL' ? undefined : status}
           onChange={(value) => setFilter('status', (value ?? 'ALL') as CouponsFilters['status'])}
-          options={STATUS_OPTIONS}
+          options={statusOptions}
         />
         <SelectFilter
-          label="Type"
+          label={locale === 'am' ? 'ዓይነት' : 'Type'}
           value={codeType === 'ALL' ? undefined : codeType}
           onChange={(value) =>
             setFilter('codeType', (value ?? 'ALL') as CouponsFilters['codeType'])
           }
-          options={CODE_TYPE_OPTIONS}
+          options={codeTypeOptions}
         />
       </FilterBar>
 
       {couponsQuery.isError ? (
         <ErrorState
           onRetry={() => couponsQuery.refetch()}
-          description="Unable to load promo codes."
+          description={locale === 'am' ? 'የፕሮሞ ኮዶችን መጫን አልተቻለም።' : 'Unable to load promo codes.'}
         />
       ) : (
         <>
@@ -508,8 +615,12 @@ export default function AdminPromoCodesPage() {
             columns={columns}
             data={couponsQuery.data?.items ?? []}
             isLoading={couponsQuery.isLoading}
-            emptyTitle="No promo codes found"
-            emptyDescription="No promo codes match your filters."
+            emptyTitle={locale === 'am' ? 'ምንም የፕሮሞ ኮድ አልተገኘም' : 'No promo codes found'}
+            emptyDescription={
+              locale === 'am'
+                ? 'ከማጣሪያዎችዎ ጋር የሚዛመድ የፕሮሞ ኮድ የለም።'
+                : 'No promo codes match your filters.'
+            }
             manualPagination
           />
           {!couponsQuery.isLoading && (couponsQuery.data?.items.length ?? 0) > 0 && (

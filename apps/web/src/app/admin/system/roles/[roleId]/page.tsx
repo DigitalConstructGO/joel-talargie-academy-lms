@@ -18,7 +18,15 @@ import { ROUTES } from '@/constants/routes';
 import { formatDate } from '@/lib/date';
 import { toast } from '@/lib/toast';
 
+import {
+  useLanguage,
+  translateRoleName,
+  translateRoleDescription,
+  translateModuleName,
+} from '@/lib/i18n/language-provider';
+
 export default function AdminRoleDetailPage() {
+  const { locale } = useLanguage();
   const { roleId } = useParams<{ roleId: string }>();
   const router = useRouter();
   const roleQuery = useRole(roleId);
@@ -28,18 +36,21 @@ export default function AdminRoleDetailPage() {
   async function handleArchive() {
     try {
       await archiveRole.mutateAsync(roleId);
-      toast.success('Role archived');
+      toast.success(locale === 'am' ? 'ሚናው ተቀምጧል' : 'Role archived');
       router.push(ROUTES.admin.systemRoles);
     } catch {
-      toast.error('Could not archive this role');
+      toast.error(locale === 'am' ? 'ሚናውን ማስቀመጥ አልተቻለም' : 'Could not archive this role');
     }
   }
 
   if (roleQuery.isError) {
     return (
       <ContentContainer>
-        <PageHeader title="Role details" />
-        <ErrorState onRetry={() => roleQuery.refetch()} description="Unable to load this role." />
+        <PageHeader title={locale === 'am' ? 'የሚና ዝርዝር' : 'Role details'} />
+        <ErrorState
+          onRetry={() => roleQuery.refetch()}
+          description={locale === 'am' ? 'ይህንን ሚና መጫን አልተቻለም።' : 'Unable to load this role.'}
+        />
       </ContentContainer>
     );
   }
@@ -57,14 +68,26 @@ export default function AdminRoleDetailPage() {
     <ContentContainer>
       <PageBreadcrumb
         items={[
-          { label: 'Dashboard', href: ROUTES.admin.root },
-          { label: 'Roles', href: ROUTES.admin.systemRoles },
-          { label: role?.name ?? 'Role details' },
+          { label: locale === 'am' ? 'ዳሽቦርድ' : 'Dashboard', href: ROUTES.admin.root },
+          { label: locale === 'am' ? 'ሚናዎች' : 'Roles', href: ROUTES.admin.systemRoles },
+          {
+            label: role
+              ? translateRoleName(role.name, locale)
+              : locale === 'am'
+                ? 'የሚና ዝርዝር'
+                : 'Role details',
+          },
         ]}
       />
       <PageHeader
-        title={role?.name ?? 'Role details'}
-        description={role?.description ?? undefined}
+        title={
+          role
+            ? translateRoleName(role.name, locale)
+            : locale === 'am'
+              ? 'የሚና ዝርዝር'
+              : 'Role details'
+        }
+        description={role ? translateRoleDescription(role.description, locale) : undefined}
         actions={
           role &&
           !role.isSystem && (
@@ -72,7 +95,7 @@ export default function AdminRoleDetailPage() {
               <Can permission="roles.update">
                 <Button asChild variant="outline" className="gap-2">
                   <Link href={ROUTES.admin.systemRoleEdit(roleId)}>
-                    <Pencil className="size-4" /> Edit
+                    <Pencil className="size-4" /> {locale === 'am' ? 'አስተካክል' : 'Edit'}
                   </Link>
                 </Button>
               </Can>
@@ -83,12 +106,16 @@ export default function AdminRoleDetailPage() {
                       variant="outline"
                       className="gap-2 text-destructive hover:text-destructive"
                     >
-                      <Trash2 className="size-4" /> Archive
+                      <Trash2 className="size-4" /> {locale === 'am' ? 'አስቀምጥ' : 'Archive'}
                     </Button>
                   }
-                  title="Archive this role?"
-                  description="Users assigned this role keep it, but it can no longer be assigned to new users."
-                  confirmLabel="Archive"
+                  title={locale === 'am' ? 'ይህንን ሚና ማስቀመጥ ይፈልጋሉ?' : 'Archive this role?'}
+                  description={
+                    locale === 'am'
+                      ? 'ይህ ሚና የተሰጣቸው ተጠቃሚዎች ይይዙታል፣ ነገር ግን ከአሁን በኋላ ለአዳዲስ ተማሪዎች ሊሰጥ አይችልም።'
+                      : 'Users assigned this role keep it, but it can no longer be assigned to new users.'
+                  }
+                  confirmLabel={locale === 'am' ? 'አስቀምጥ' : 'Archive'}
                   variant="destructive"
                   onConfirm={handleArchive}
                 />
@@ -105,21 +132,31 @@ export default function AdminRoleDetailPage() {
           <Card>
             <CardContent className="grid gap-4 pt-6 sm:grid-cols-4">
               <div>
-                <p className="text-xs text-muted-foreground">Code</p>
+                <p className="text-xs text-muted-foreground">{locale === 'am' ? 'ኮድ' : 'Code'}</p>
                 <p className="font-medium text-foreground">{role.code}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Scope</p>
+                <p className="text-xs text-muted-foreground">{locale === 'am' ? 'ወሰን' : 'Scope'}</p>
                 <Badge variant={role.isSystem ? 'secondary' : 'outline'}>
-                  {role.isSystem ? 'System' : 'Custom'}
+                  {role.isSystem
+                    ? locale === 'am'
+                      ? 'ሲስተም'
+                      : 'System'
+                    : locale === 'am'
+                      ? 'የተበጀ'
+                      : 'Custom'}
                 </Badge>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Users assigned</p>
+                <p className="text-xs text-muted-foreground">
+                  {locale === 'am' ? 'የተመደቡ ተጠቃሚዎች' : 'Users assigned'}
+                </p>
                 <p className="font-medium text-foreground">{role.userCount}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Created</p>
+                <p className="text-xs text-muted-foreground">
+                  {locale === 'am' ? 'የተፈጠረበት' : 'Created'}
+                </p>
                 <p className="font-medium text-foreground">{formatDate(role.createdAt)}</p>
               </div>
             </CardContent>
@@ -127,24 +164,31 @@ export default function AdminRoleDetailPage() {
 
           {role.isSystem && (
             <p className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-              System roles are protected and cannot be edited or archived.
+              {locale === 'am'
+                ? 'የሲስተም ሚናዎች የተጠበቁ ናቸው፣ ማስተካከል ወይም ማስቀመጥ አይቻልም።'
+                : 'System roles are protected and cannot be edited or archived.'}
             </p>
           )}
 
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <ShieldCheck className="size-4" /> Permissions ({role.permissionCount})
+                <ShieldCheck className="size-4" />{' '}
+                {locale === 'am'
+                  ? `ፈቃዶች (${role.permissionCount})`
+                  : `Permissions (${role.permissionCount})`}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {groups.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No permissions assigned.</p>
+                <p className="text-sm text-muted-foreground">
+                  {locale === 'am' ? 'ምንም የተሰጠ ፈቃድ የለም።' : 'No permissions assigned.'}
+                </p>
               ) : (
                 groups.map(([module, permissions]) => (
                   <div key={module}>
                     <p className="mb-2 text-xs font-semibold capitalize text-muted-foreground">
-                      {module}
+                      {translateModuleName(module, locale)}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {permissions.map((permission) => (

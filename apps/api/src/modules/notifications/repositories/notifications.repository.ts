@@ -236,9 +236,7 @@ export class NotificationsRepository {
     reason: string,
   ) {
     return this.db.transaction(async (tx) => {
-      await tx.execute(
-        sql`SELECT id FROM email_deliveries WHERE id = ${id}`,
-      );
+      await tx.execute(sql`SELECT id FROM email_deliveries WHERE id = ${id}`);
       const delivery = await tx.query.emailDeliveries.findFirst({
         where: eq(schema.emailDeliveries.id, id),
       });
@@ -322,7 +320,9 @@ export class NotificationsRepository {
     const candidate = await this.db
       .select({ id: schema.smsDeliveries.id })
       .from(schema.smsDeliveries)
-      .where(inArray(schema.smsDeliveries.status, ['QUEUED', 'RETRY_SCHEDULED']))
+      .where(
+        inArray(schema.smsDeliveries.status, ['QUEUED', 'RETRY_SCHEDULED']),
+      )
       .limit(1);
     if (!candidate.length) return null;
     const [row] = await this.db

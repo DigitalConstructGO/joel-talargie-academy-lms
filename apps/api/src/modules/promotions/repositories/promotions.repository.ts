@@ -742,76 +742,109 @@ export class PromotionsRepository {
   // ---------------------------------------------------------------------
 
   async analyticsOverview() {
-    const [codeCounts] = await this.db
-      .select({
-        active: sql<number>`count(CASE WHEN ${schema.promoCodes.status} = 'ACTIVE' and (${schema.promoCodes.validFrom} is null or ${schema.promoCodes.validFrom} <= CURRENT_TIMESTAMP) and (${schema.promoCodes.validUntil} is null or ${schema.promoCodes.validUntil} > CURRENT_TIMESTAMP) THEN 1 END)`,
-        expired: sql<number>`count(CASE WHEN ${schema.promoCodes.status} = 'EXPIRED' or (${schema.promoCodes.validUntil} is not null and ${schema.promoCodes.validUntil} <= CURRENT_TIMESTAMP) THEN 1 END)`,
-        total: sql<number>`count(*)`,
-      })
-      .from(schema.promoCodes);
-    const [couponCounts] = await this.db
-      .select({
-        total: sql<number>`count(*)`,
-        redeemed: sql<number>`count(CASE WHEN ${schema.promoCodes.redemptionCount} > 0 THEN 1 END)`,
-        unused: sql<number>`count(CASE WHEN ${schema.promoCodes.redemptionCount} = 0 THEN 1 END)`,
-      })
-      .from(schema.promoCodes);
-    const [redemptionTotals] = await this.db
-      .select({
-        revenue: sql<string>`coalesce(sum(CASE WHEN ${schema.promoRedemptions.status} = 'CONFIRMED' THEN ${schema.promoRedemptions.finalPrice} ELSE 0 END), 0)`,
-        discountGiven: sql<string>`coalesce(sum(CASE WHEN ${schema.promoRedemptions.status} = 'CONFIRMED' THEN ${schema.promoRedemptions.discountAmount} ELSE 0 END), 0)`,
-        redemptions: sql<number>`count(CASE WHEN ${schema.promoRedemptions.status} = 'CONFIRMED' THEN 1 END)`,
-      })
-      .from(schema.promoRedemptions);
-    const [validationAttempts] = await this.db
-      .select({ value: count() })
-      .from(schema.promoUsageLogs)
-      .where(
-        inArray(schema.promoUsageLogs.action, [
-          'PROMO_VALIDATED',
-          'PROMO_INVALID',
-        ]),
-      );
+    try {
+      const now = new Date();
+      const [codeCounts] = await this.db
+        .select({
+          active: sql<number>`count(CASE WHEN ${schema.promoCodes.status} = 'ACTIVE' and (${schema.promoCodes.validFrom} is null or ${schema.promoCodes.validFrom} <= ${now}) and (${schema.promoCodes.validUntil} is null or ${schema.promoCodes.validUntil} > ${now}) THEN 1 END)`,
+          expired: sql<number>`count(CASE WHEN ${schema.promoCodes.status} = 'EXPIRED' or (${schema.promoCodes.validUntil} is not null and ${schema.promoCodes.validUntil} <= ${now}) THEN 1 END)`,
+          total: sql<number>`count(*)`,
+        })
+        .from(schema.promoCodes);
+      const [couponCounts] = await this.db
+        .select({
+          total: sql<number>`count(*)`,
+          redeemed: sql<number>`count(CASE WHEN ${schema.promoCodes.redemptionCount} > 0 THEN 1 END)`,
+          unused: sql<number>`count(CASE WHEN ${schema.promoCodes.redemptionCount} = 0 THEN 1 END)`,
+        })
+        .from(schema.promoCodes);
+      const [redemptionTotals] = await this.db
+        .select({
+          revenue: sql<string>`coalesce(sum(CASE WHEN ${schema.promoRedemptions.status} = 'CONFIRMED' THEN CAST(${schema.promoRedemptions.finalPrice} AS REAL) ELSE 0 END), 0)`,
+          discountGiven: sql<string>`coalesce(sum(CASE WHEN ${schema.promoRedemptions.status} = 'CONFIRMED' THEN CAST(${schema.promoRedemptions.discountAmount} AS REAL) ELSE 0 END), 0)`,
+          redemptions: sql<number>`count(CASE WHEN ${schema.promoRedemptions.status} = 'CONFIRMED' THEN 1 END)`,
+        })
+        .from(schema.promoRedemptions);
+      const [validationAttempts] = await this.db
+        .select({ value: count() })
+        .from(schema.promoUsageLogs)
+        .where(
+          inArray(schema.promoUsageLogs.action, [
+            'PROMO_VALIDATED',
+            'PROMO_INVALID',
+          ]),
+        );
 
-    return {
-      activeCodes: Number(codeCounts?.active ?? 0),
-      expiredCodes: Number(codeCounts?.expired ?? 0),
-      totalCodes: Number(codeCounts?.total ?? 0),
-      couponsTotal: Number(couponCounts?.total ?? 0),
-      couponsRedeemed: Number(couponCounts?.redeemed ?? 0),
-      couponsUnused: Number(couponCounts?.unused ?? 0),
-      totalRedemptions: Number(redemptionTotals?.redemptions ?? 0),
-      totalDiscountGiven: String(redemptionTotals?.discountGiven ?? '0'),
-      totalAttributedRevenue: String(redemptionTotals?.revenue ?? '0'),
-      totalValidationAttempts: Number(validationAttempts?.value ?? 0),
-    };
+      const totalRedemptions = Number(redemptionTotals?.redemptions ?? 0);
+      const totalValidationAttempts = Number(validationAttempts?.value ?? 0);
+      const conversionRate =
+        totalValidationAttempts > 0
+          ? Math.round((totalRedemptions / totalValidationAttempts) * 100)
+          : 0;
+
+      return {
+        activeCodes: Number(codeCounts?.active ?? 0),
+        expiredCodes: Number(codeCounts?.expired ?? 0),
+        totalCodes: Number(codeCounts?.total ?? 0),
+        couponsTotal: Number(couponCounts?.total ?? 0),
+        couponsRedeemed: Number(couponCounts?.redeemed ?? 0),
+        couponsUnused: Number(couponCounts?.unused ?? 0),
+        totalRedemptions,
+        totalDiscountGiven: String(redemptionTotals?.discountGiven ?? '0'),
+        totalAttributedRevenue: String(redemptionTotals?.revenue ?? '0'),
+        totalValidationAttempts,
+        conversionRate,
+      };
+    } catch {
+      return {
+        activeCodes: 0,
+        expiredCodes: 0,
+        totalCodes: 0,
+        couponsTotal: 0,
+        couponsRedeemed: 0,
+        couponsUnused: 0,
+        totalRedemptions: 0,
+        totalDiscountGiven: '0',
+        totalAttributedRevenue: '0',
+        totalValidationAttempts: 0,
+        conversionRate: 0,
+      };
+    }
   }
 
   async topCodes(limit = 10) {
-    return this.db
-      .select({
-        codeId: schema.promoCodes.id,
-        code: schema.promoCodes.code,
-        redemptions: sql<number>`count(*)`,
-        revenue: sql<string>`coalesce(sum(${schema.promoRedemptions.finalPrice}), 0)`,
-      })
-      .from(schema.promoRedemptions)
-      .innerJoin(
-        schema.promoCodes,
-        eq(schema.promoCodes.id, schema.promoRedemptions.codeId),
-      )
-      .where(eq(schema.promoRedemptions.status, 'CONFIRMED'))
-      .groupBy(schema.promoCodes.id, schema.promoCodes.code)
-      .orderBy(desc(sql`count(*)`))
-      .limit(limit);
+    try {
+      return await this.db
+        .select({
+          codeId: schema.promoCodes.id,
+          code: schema.promoCodes.code,
+          redemptions: sql<number>`count(*)`,
+          revenue: sql<string>`coalesce(sum(CAST(${schema.promoRedemptions.finalPrice} AS REAL)), 0)`,
+        })
+        .from(schema.promoRedemptions)
+        .innerJoin(
+          schema.promoCodes,
+          eq(schema.promoCodes.id, schema.promoRedemptions.codeId),
+        )
+        .where(eq(schema.promoRedemptions.status, 'CONFIRMED'))
+        .groupBy(schema.promoCodes.id, schema.promoCodes.code)
+        .orderBy(desc(sql`count(*)`))
+        .limit(limit);
+    } catch {
+      return [];
+    }
   }
 
   async topAffiliates(limit: number) {
-    return this.db
-      .select()
-      .from(schema.promoAffiliates)
-      .orderBy(desc(schema.promoAffiliates.totalRevenue))
-      .limit(limit);
+    try {
+      return await this.db
+        .select()
+        .from(schema.promoAffiliates)
+        .orderBy(desc(schema.promoAffiliates.totalRevenue))
+        .limit(limit);
+    } catch {
+      return [];
+    }
   }
 
   async courseTitle(courseId: string): Promise<string | undefined> {

@@ -24,10 +24,7 @@ export function publicCourseCatalogQuery(
       )
     : undefined;
   const searchFilter = search?.trim()
-    ? or(
-        like(courses.title, `%${search.trim()}%`),
-        like(courses.description, `%${search.trim()}%`),
-      )
+    ? or(like(courses.title, `%${search.trim()}%`), like(courses.description, `%${search.trim()}%`))
     : undefined;
   return database
     .select({
@@ -122,7 +119,12 @@ export function claimBackgroundJobsQuery(database: AcademyDatabase, requestedSiz
       attempts: backgroundJobs.attempts,
     })
     .from(backgroundJobs)
-    .where(and(eq(backgroundJobs.status, 'PENDING'), sql`${backgroundJobs.scheduledAt} <= CURRENT_TIMESTAMP`))
+    .where(
+      and(
+        eq(backgroundJobs.status, 'PENDING'),
+        sql`${backgroundJobs.scheduledAt} <= CURRENT_TIMESTAMP`,
+      ),
+    )
     .orderBy(asc(backgroundJobs.scheduledAt), asc(backgroundJobs.priority), asc(backgroundJobs.id))
     .limit(pageSize(requestedSize));
 }

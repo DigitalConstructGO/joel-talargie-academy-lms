@@ -23,7 +23,13 @@ export const DEFAULT_LEAD_INSTRUCTOR: Instructor = {
 
 export function deriveInstructors(
   courses: CourseSummary[],
-  extraUsers: { name: string; title?: string; photoUrl?: string; avatarUrl?: string; bio?: string }[] = [],
+  extraUsers: {
+    name: string;
+    title?: string;
+    photoUrl?: string;
+    avatarUrl?: string;
+    bio?: string;
+  }[] = [],
 ): Instructor[] {
   const byName = new Map<string, CourseSummary[]>();
   for (const course of courses) {
@@ -63,10 +69,10 @@ export function deriveInstructors(
     const resolvedPhoto = isJoel
       ? DEFAULT_LEAD_INSTRUCTOR.photoUrl
       : (mockProfile?.photoUrl ??
-         (isCurrentUser ? currentUser?.avatarUrl : undefined) ??
-         extraUser?.photoUrl ??
-         extraUser?.avatarUrl ??
-         undefined);
+        (isCurrentUser ? currentUser?.avatarUrl : undefined) ??
+        extraUser?.photoUrl ??
+        extraUser?.avatarUrl ??
+        undefined);
 
     return {
       id: isJoel ? DEFAULT_LEAD_INSTRUCTOR.id : `instr-${name.toLowerCase().replace(/\s+/g, '-')}`,
@@ -79,9 +85,7 @@ export function deriveInstructors(
       avatarUrl: resolvedPhoto,
       bio: isJoel ? DEFAULT_LEAD_INSTRUCTOR.bio : (mockProfile?.bio ?? extraUser?.bio),
       skills: isJoel ? DEFAULT_LEAD_INSTRUCTOR.skills : mockProfile?.skills,
-      achievements: isJoel
-        ? DEFAULT_LEAD_INSTRUCTOR.achievements
-        : mockProfile?.achievements,
+      achievements: isJoel ? DEFAULT_LEAD_INSTRUCTOR.achievements : mockProfile?.achievements,
       courseCount: instructorCourses.length,
       courses: instructorCourses,
     };

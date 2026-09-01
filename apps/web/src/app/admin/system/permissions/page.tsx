@@ -18,12 +18,67 @@ import { useQueryFilters } from '@/hooks/use-query-filters';
 import { usePermissionCatalog } from '@/features/permissions/hooks/use-permission-catalog';
 import { ROUTES } from '@/constants/routes';
 
+import { useLanguage, translateModuleName } from '@/lib/i18n/language-provider';
+
 interface PermissionsFilters {
   [key: string]: string | undefined;
   search: string | undefined;
 }
 
+const ACTION_MAP_AM: Record<string, string> = {
+  activate: 'ማንቃት',
+  archive: 'ማስቀመጥ',
+  cancel: 'መሰረዝ',
+  create: 'መፍጠር',
+  download: 'ማውረድ',
+  duplicate: 'ማባዛት',
+  export: 'ኤክስፖርት',
+  generate: 'ማመንጨት',
+  manage_all: 'ሁሉንም ማኔጅ ማድረግ',
+  manage_certificate_settings: 'የሰርተፊኬት መቼቶች',
+  manage_pricing: 'የዋጋ መቼቶች',
+  manage_resources: 'የሃብቶች አስተዳደር',
+  manage_templates: 'የቴምፕሌት አስተዳደር',
+  manage_visibility: 'የታይነት አስተዳደር',
+  manage_preview: 'የቅድመ-ዕይታ አስተዳደር',
+  publish: 'ማተም',
+  read: 'መመልከት',
+  read_administrator_activity: 'የአስተዳዳሪ እንቅስቃሴዎችን መመልከት',
+  read_financial: 'የፋይናንስ መረጃዎችን መመልከት',
+  read_operational_health: 'የሲስተም ጤናን መመልከት',
+  read_sensitive: 'ሚስጥራዊ መረጃዎችን መመልከት',
+  regenerate: 'ድጋሚ ማመንጨት',
+  reorder: 'ቅደም ተከተል መቀየር',
+  restore: 'መመለስ',
+  retry: 'ድጋሚ መሞከር',
+  revoke: 'መዳረሻ ማንሳት',
+  unpublish: 'ህትመት ማንሳት',
+  update: 'ማሻሻል',
+  view_activity: 'እንቅስቃሴዎችን መመልከት',
+  view_events: 'ክስተቶችን መመልከት',
+  view_file_history: 'የፋይል ታሪክ መመልከት',
+  view_student_progress: 'የተማሪ እድገትን መመልከት',
+};
+
+function translatePermissionDescription(
+  code: string | undefined,
+  desc: string | null | undefined,
+  locale: string,
+): string | undefined {
+  if (locale !== 'am' || !code) return desc ?? undefined;
+
+  const parts = code.split('.');
+  if (parts.length === 2 && parts[0] && parts[1]) {
+    const modAm = translateModuleName(parts[0], 'am');
+    const actAm = ACTION_MAP_AM[parts[1].toLowerCase()] || parts[1].replaceAll('_', ' ');
+    return `${modAm} ${actAm}`;
+  }
+
+  return desc ?? undefined;
+}
+
 export default function AdminPermissionsPage() {
+  const { locale } = useLanguage();
   const { filters, setFilter } = useQueryFilters<PermissionsFilters>({
     defaults: { search: undefined },
   });
@@ -32,15 +87,26 @@ export default function AdminPermissionsPage() {
   return (
     <ContentContainer>
       <PageBreadcrumb
-        items={[{ label: 'Dashboard', href: ROUTES.admin.root }, { label: 'Permissions' }]}
+        items={[
+          { label: locale === 'am' ? 'ዳሽቦርድ' : 'Dashboard', href: ROUTES.admin.root },
+          { label: locale === 'am' ? 'ፈቃዶች' : 'Permissions' },
+        ]}
       />
       <PageHeader
-        title="Permissions"
-        description="The system-managed permission catalog, grouped by module. Assign these to roles from Role Management."
+        title={locale === 'am' ? 'ፈቃዶች' : 'Permissions'}
+        description={
+          locale === 'am'
+            ? 'የሲስተሙን የፈቃዶች ስብስብ እና ሞጁሎችን ይመልከቱ።'
+            : 'View system permission codes and modules.'
+        }
       />
 
       <SearchBar
-        placeholder="Search by permission code or description..."
+        placeholder={
+          locale === 'am'
+            ? 'በፈቃድ ኮድ ወይም መግለጫ ፈልግ...'
+            : 'Search by permission code or description...'
+        }
         defaultValue={filters.search ?? ''}
         onSearch={(value) => setFilter('search', value || undefined)}
         className="w-full sm:w-80"
@@ -49,7 +115,7 @@ export default function AdminPermissionsPage() {
       {catalogQuery.isError ? (
         <ErrorState
           onRetry={() => catalogQuery.refetch()}
-          description="Unable to load permissions."
+          description={locale === 'am' ? 'ፈቃዶችን መጫን አልተቻለም።' : 'Unable to load permissions.'}
         />
       ) : catalogQuery.isLoading ? (
         <div className="space-y-3">
@@ -58,13 +124,16 @@ export default function AdminPermissionsPage() {
           ))}
         </div>
       ) : !catalogQuery.data?.groups.length ? (
-        <EmptyState title="No permissions found" description="Try a different search term." />
+        <EmptyState
+          title={locale === 'am' ? 'ምንም ፈቃድ አልተገኘም' : 'No permissions found'}
+          description={locale === 'am' ? 'የተለየ የፍለጋ ቃል ይሞክሩ።' : 'Try a different search term.'}
+        />
       ) : (
         <Accordion type="multiple" className="rounded-xl border border-border bg-card px-2">
           {catalogQuery.data.groups.map((group) => (
             <AccordionItem key={group.module} value={group.module}>
               <AccordionTrigger className="capitalize">
-                {group.module}
+                {translateModuleName(group.module, locale)}
                 <Badge variant="secondary" className="ml-2">
                   {group.permissions.length}
                 </Badge>
@@ -77,11 +146,13 @@ export default function AdminPermissionsPage() {
                       className="flex flex-col gap-0.5 rounded-lg border border-border/60 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
                     >
                       <code className="text-sm font-medium text-foreground">{permission.code}</code>
-                      {permission.description && (
-                        <span className="text-sm text-muted-foreground">
-                          {permission.description}
-                        </span>
-                      )}
+                      <span className="text-sm text-muted-foreground">
+                        {translatePermissionDescription(
+                          permission.code,
+                          permission.description,
+                          locale,
+                        )}
+                      </span>
                     </li>
                   ))}
                 </ul>

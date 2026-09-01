@@ -1,8 +1,15 @@
+'use client';
+
 import Link from 'next/link';
 import { CheckCircle2, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { CourseThumbnail } from '@/features/catalog/components/course-thumbnail';
+import {
+  useLanguage,
+  translateCategoryName,
+  translateCourseTitle,
+} from '@/lib/i18n/language-provider';
 import { cn } from '@/lib/utils';
 
 export interface CourseProgressCardProps {
@@ -14,18 +21,11 @@ export interface CourseProgressCardProps {
   thumbnailUrl?: string | null;
   /** Overall completion, 0-100 - real enrollment data only tracks this, not per-lesson state. */
   progressPercent: number;
-  /**
-   * Optional "x/y Lessons" badge. Real enrollment data has no lesson-level
-   * completion, so when shown this is an estimate derived from
-   * `progressPercent` against the course's total lesson count, not an
-   * exact count - omit both to hide the badge entirely.
-   */
   completedLessons?: number;
   totalLessons?: number;
   className?: string;
 }
 
-/** A "my courses" list row - thumbnail, category, lesson count, and a progress bar (or a completed badge at 100%). */
 export function CourseProgressCard({
   href,
   title,
@@ -38,8 +38,12 @@ export function CourseProgressCard({
   totalLessons,
   className,
 }: CourseProgressCardProps) {
+  const { t, locale } = useLanguage();
   const percent = Math.min(Math.max(Math.round(progressPercent), 0), 100);
   const isComplete = percent >= 100;
+
+  const displayCategory = translateCategoryName(category, locale);
+  const displayTitle = translateCourseTitle(title, locale);
 
   return (
     <Link
@@ -50,8 +54,8 @@ export function CourseProgressCard({
       )}
     >
       <CourseThumbnail
-        title={title}
-        categoryName={category}
+        title={displayTitle}
+        categoryName={displayCategory}
         categorySlug={categorySlug}
         thumbnailKey={thumbnailKey}
         thumbnailUrl={thumbnailUrl}
@@ -61,21 +65,21 @@ export function CourseProgressCard({
       <div className="min-w-0 flex-1">
         <div className="mb-1 flex items-center justify-between gap-2">
           <Badge variant="secondary" className="uppercase tracking-wide">
-            {category}
+            {displayCategory}
           </Badge>
           {completedLessons !== undefined && totalLessons !== undefined && (
             <span className="shrink-0 text-xs text-muted-foreground">
-              {completedLessons}/{totalLessons} Lessons
+              {completedLessons}/{totalLessons} {t('catalog.lessons')}
             </span>
           )}
         </div>
-        <h4 className="mb-3 truncate font-semibold text-foreground">{title}</h4>
+        <h4 className="mb-3 truncate font-semibold text-foreground">{displayTitle}</h4>
         <Progress value={percent} />
       </div>
       {isComplete ? (
         <Badge className="shrink-0 gap-1 border border-primary/20 bg-primary/10 text-primary hover:bg-primary/10">
           <CheckCircle2 className="size-3.5" />
-          Completed
+          {t('dashboard.completedCourses')}
         </Badge>
       ) : (
         <span className="flex size-10 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground">

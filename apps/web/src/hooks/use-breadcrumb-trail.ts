@@ -50,19 +50,65 @@ function specialCaseCrumbs(pathname: string, home: BreadcrumbCrumb): BreadcrumbC
  * root page is just "Home > Dashboard", and a flat nav item is
  * "Home > My Courses" rather than "Home > Dashboard > My Courses".
  */
+import { useLanguage } from '@/lib/i18n/language-provider';
+
+const BREADCRUMB_LABEL_MAP_AM: Record<string, string> = {
+  Home: 'መነሻ',
+  Dashboard: 'ዳሽቦርድ',
+  Overview: 'ዳሽቦርድ',
+  'Browse Catalog': 'ኮርሶች ይፈልጉ',
+  'Browse Courses': 'ኮርሶች ይፈልጉ',
+  'My Courses': 'የእኔ ኮርሶች',
+  Payments: 'ክፍያዎች',
+  Notifications: 'ማስታወቂያዎች',
+  'Profile & Security': 'መገለጫ እና ደህንነት',
+  Profile: 'መገለጫ እና ደህንነት',
+  Wishlist: 'የምኞት ዝርዝር',
+  Certificates: 'ሰርተፊኬቶች',
+  'Academic Management': 'ትምህርት አስተዳደር',
+  'User Management': 'ተጠቃሚዎች',
+  'Financial Management': 'ፋይናንስ',
+  'Certificate Management': 'ሰርተፊኬቶች',
+  'Verify Certificate': 'ሰርተፊኬት ማረጋገጫ',
+  'Reports & Analytics': 'ሪፖርቶች',
+  Communication: 'ማስታወቂያዎች',
+  System: 'ሲስተም',
+  Users: 'ተጠቃሚዎች',
+  Roles: 'ሚናዎች',
+  Permissions: 'ፈቃዶች',
+  Courses: 'ኮርሶች',
+  Categories: 'ምድቦች',
+  Enrollments: 'ምዝገባዎች',
+  Instructors: 'አስተማሪዎች',
+  'Promo Codes': 'ፕሮሞ ኮዶች',
+  'Payment Methods': 'የክፍያ መንገዶች',
+  'Email Templates': 'የኢሜይል ቴምፕሌቶች',
+  'Activity Logs': 'የእንቅስቃሴ መዝገቦች',
+  'Academy Settings': 'የአካዳሚ መቼቶች',
+};
+
 export function useBreadcrumbTrail(
   sections: NavSection[],
   portalLabel: string,
   rootHref: string,
 ): BreadcrumbCrumb[] {
   const pathname = usePathname();
+  const { locale } = useLanguage();
 
   return useMemo(() => {
-    const home: BreadcrumbCrumb = { label: 'Home', href: ROUTES.home };
-    if (!pathname || pathname === rootHref) return [home, { label: portalLabel }];
+    const translateLabel = (label: string) =>
+      locale === 'am' ? BREADCRUMB_LABEL_MAP_AM[label] || label : label;
+
+    const home: BreadcrumbCrumb = { label: translateLabel('Home'), href: ROUTES.home };
+    if (!pathname || pathname === rootHref) return [home, { label: translateLabel(portalLabel) }];
 
     const special = specialCaseCrumbs(pathname, home);
-    if (special) return special;
+    if (special) {
+      return special.map((crumb) => ({
+        ...crumb,
+        label: translateLabel(crumb.label),
+      }));
+    }
 
     for (const section of sections) {
       const chain = findChain(section.items, pathname);
@@ -70,13 +116,13 @@ export function useBreadcrumbTrail(
         return [
           home,
           ...chain.map((item, index) => ({
-            label: item.label,
+            label: translateLabel(item.label),
             href: index === chain.length - 1 ? undefined : item.href,
           })),
         ];
       }
     }
 
-    return [home, { label: portalLabel }];
-  }, [sections, pathname, portalLabel, rootHref]);
+    return [home, { label: translateLabel(portalLabel) }];
+  }, [sections, pathname, portalLabel, rootHref, locale]);
 }

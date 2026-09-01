@@ -20,9 +20,7 @@ export function FeaturedCoursesSection({ courses }: { courses: CourseSummary[] }
             <h2 className="text-2xl font-semibold tracking-tight text-foreground">
               {t('featured.title')}
             </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t('featured.subtitle')}
-            </p>
+            <p className="mt-1 text-sm text-muted-foreground">{t('featured.subtitle')}</p>
           </div>
           <Button variant="ghost" asChild className="hidden sm:inline-flex">
             <Link href={ROUTES.courses.list}>
@@ -32,11 +30,7 @@ export function FeaturedCoursesSection({ courses }: { courses: CourseSummary[] }
           </Button>
         </div>
         {courses.length === 0 ? (
-          <EmptyState
-            icon={BookOpen}
-            title={t('featured.empty')}
-            description=""
-          />
+          <EmptyState icon={BookOpen} title={t('featured.empty')} description="" />
         ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {courses.map((course) => (

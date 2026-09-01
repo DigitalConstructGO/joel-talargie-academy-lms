@@ -43,16 +43,16 @@ async function importToSqlite() {
 
   // 1. Create tables in SQLite dynamically based on schema definitions
   process.stdout.write('Initializing SQLite schema...\n');
-  
+
   // We can use drizzle push / raw SQL DDL or table creation statements
   // For SQLite, creating tables if not exists:
   const tables = Object.keys(schema) as (keyof typeof schema)[];
-  
+
   // We execute sqlite table creation
   // Or we can use Drizzle's db.run statements
   // Let's create schema using raw queries if tables don't exist
   // Or we can use sqliteClient statements for each table in backupData
-  
+
   for (const [tableName, rows] of Object.entries(backupData)) {
     if (!rows || rows.length === 0) continue;
 
@@ -61,7 +61,7 @@ async function importToSqlite() {
     // Get table columns from the first row
     const firstRow = rows[0];
     const columns = Object.keys(firstRow);
-    
+
     // Create table if not exists with generic text/numeric/integer columns
     const colDefs = columns.map((col) => `"${col}" TEXT`).join(', ');
     sqliteClient.exec(`CREATE TABLE IF NOT EXISTS "${tableName}" (${colDefs})`);
@@ -72,7 +72,7 @@ async function importToSqlite() {
     // Insert rows
     const placeholders = columns.map(() => '?').join(', ');
     const insertStmt = sqliteClient.prepare(
-      `INSERT INTO "${tableName}" (${columns.map((c) => `"${c}"`).join(', ')}) VALUES (${placeholders})`
+      `INSERT INTO "${tableName}" (${columns.map((c) => `"${c}"`).join(', ')}) VALUES (${placeholders})`,
     );
 
     const insertMany = sqliteClient.transaction((items: any[]) => {

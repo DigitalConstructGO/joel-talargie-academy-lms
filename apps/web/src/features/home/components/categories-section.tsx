@@ -1,11 +1,15 @@
+'use client';
+
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CategoryCard } from '@/features/catalog/components/category-card';
 import { ROUTES } from '@/constants/routes';
+import { useLanguage } from '@/lib/i18n/language-provider';
 import type { Category } from '@/features/catalog/types/catalog.types';
 
 export function CategoriesSection({ categories }: { categories: Category[] }) {
+  const { t } = useLanguage();
   if (categories.length === 0) return null;
 
   return (
@@ -13,15 +17,13 @@ export function CategoriesSection({ categories }: { categories: Category[] }) {
       <div className="mb-8 flex items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-            Popular categories
+            {t('categories.title')}
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Find courses organized by subject area.
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{t('categories.subtitle')}</p>
         </div>
         <Button variant="ghost" asChild className="hidden sm:inline-flex">
           <Link href={ROUTES.categories.list}>
-            View all
+            {t('categories.browseAll')}
             <ArrowRight className="size-4" />
           </Link>
         </Button>

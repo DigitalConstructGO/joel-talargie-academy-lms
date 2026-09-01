@@ -29,7 +29,52 @@ export interface PermissionPickerProps {
  * so the picker never lets someone assign a permission the server would
  * reject with a 403.
  */
+import { useLanguage, translateModuleName } from '@/lib/i18n/language-provider';
+
+export interface PermissionPickerProps {
+  selected: string[];
+  onChange: (permissionIds: string[]) => void;
+  disabled?: boolean;
+}
+
+function translatePermissionDescription(
+  desc: string | undefined,
+  locale: string,
+): string | undefined {
+  if (!desc || locale !== 'am') return desc;
+
+  const DESC_MAP_AM: Record<string, string> = {
+    'Audit Export': 'ኦዲት ኤክስፖርት',
+    'Audit Read': 'ኦዲት ንባብ',
+    'Audit Read_sensitive': 'ኦዲት ሚስጥራዊ ንባብ',
+    'Full system control': 'ሙሉ የሲስተም ቁጥጥር',
+    'Manage all courses': 'ሁሉንም ኮርሶች አስተዳድር',
+    'Create new courses': 'አዲስ ኮርሶችን ፍጠር',
+    'Update existing courses': 'ነባር ኮርሶችን አሻሽል',
+    'Publish courses': 'ኮርሶችን አትም',
+    'Archive courses': 'ኮርሶችን አስቀምጥ',
+    'Manage categories': 'ምድቦችን አስተዳድር',
+    'Manage enrollments': 'ምዝገባዎችን አስተዳድር',
+    'View audit logs': 'የኦዲት ምዝግብ ማስታወሻዎችን እይ',
+    'Manage users': 'ተጠቃሚዎችን አስተዳድር',
+    'Manage roles': 'ሚናዎችን አስተዳድር',
+    'Manage settings': 'መቼቶችን አስተዳድር',
+    'View reports': 'ሪፖርቶችን እይ',
+  };
+
+  return DESC_MAP_AM[desc] || desc;
+}
+
+/**
+ * Module-grouped permission checkbox picker for role create/edit. Mirrors
+ * the backend's privilege-escalation rule (`RolesService.assertAssignable`)
+ * by only offering permissions the *acting* admin personally holds -
+ * bypassed for a true administrator, same as `usePermissions()` elsewhere -
+ * so the picker never lets someone assign a permission the server would
+ * reject with a 403.
+ */
 export function PermissionPicker({ selected, onChange, disabled }: PermissionPickerProps) {
+  const { locale } = useLanguage();
   const catalogQuery = usePermissionCatalog();
   const { can, isAdministrator } = usePermissions();
 
@@ -63,7 +108,11 @@ export function PermissionPicker({ selected, onChange, disabled }: PermissionPic
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{selected.length} permission(s) selected</p>
+        <p className="text-sm text-muted-foreground">
+          {locale === 'am'
+            ? `${selected.length} ፈቃድ(ዶች) ተመርጠዋል`
+            : `${selected.length} permission(s) selected`}
+        </p>
         <div className="flex gap-2">
           <Button
             type="button"
@@ -76,7 +125,7 @@ export function PermissionPicker({ selected, onChange, disabled }: PermissionPic
               )
             }
           >
-            Select all
+            {locale === 'am' ? 'ሁሉንም ምረጥ' : 'Select all'}
           </Button>
           <Button
             type="button"
@@ -85,7 +134,7 @@ export function PermissionPicker({ selected, onChange, disabled }: PermissionPic
             disabled={disabled}
             onClick={() => onChange([])}
           >
-            Clear all
+            {locale === 'am' ? 'ሁሉንም አጽዳ' : 'Clear all'}
           </Button>
         </div>
       </div>
@@ -101,7 +150,7 @@ export function PermissionPicker({ selected, onChange, disabled }: PermissionPic
             <AccordionItem key={group.module} value={group.module}>
               <AccordionTrigger className="px-4 capitalize">
                 <span className="flex items-center gap-2">
-                  {group.module}
+                  {translateModuleName(group.module, locale)}
                   <Badge variant="secondary">
                     {selectedInGroup.length}/{group.permissions.length}
                   </Badge>
@@ -114,7 +163,9 @@ export function PermissionPicker({ selected, onChange, disabled }: PermissionPic
                     disabled={disabled || assignableInGroup.length === 0}
                     onCheckedChange={(checked) => toggleGroup(group.permissions, Boolean(checked))}
                   />
-                  Select all in {group.module}
+                  {locale === 'am'
+                    ? `በ ${translateModuleName(group.module, locale)} ሁሉንም ምረጥ`
+                    : `Select all in ${group.module}`}
                 </label>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {group.permissions.map((permission) => {
@@ -122,22 +173,31 @@ export function PermissionPicker({ selected, onChange, disabled }: PermissionPic
                     return (
                       <Label
                         key={permission.id}
-                        className="flex items-start gap-2 text-sm font-normal"
+                        className="flex items-start justify-between gap-2 text-sm font-normal"
                       >
-                        <Checkbox
-                          checked={selected.includes(permission.id)}
-                          disabled={disabled || !permitted}
-                          onCheckedChange={(checked) => toggle(permission, Boolean(checked))}
-                          className="mt-0.5"
-                        />
-                        <span>
-                          <code className="text-xs">{permission.code}</code>
-                          {!permitted && (
-                            <span className="ml-1 text-xs text-muted-foreground">
-                              (you don&apos;t hold this permission)
-                            </span>
-                          )}
+                        <span className="flex items-start gap-2">
+                          <Checkbox
+                            checked={selected.includes(permission.id)}
+                            disabled={disabled || !permitted}
+                            onCheckedChange={(checked) => toggle(permission, Boolean(checked))}
+                            className="mt-0.5"
+                          />
+                          <span>
+                            <code className="text-xs">{permission.code}</code>
+                            {!permitted && (
+                              <span className="ml-1 text-xs text-muted-foreground">
+                                {locale === 'am'
+                                  ? '(ይህ ፈቃድ የለዎትም)'
+                                  : "(you don't hold this permission)"}
+                              </span>
+                            )}
+                          </span>
                         </span>
+                        {permission.description && (
+                          <span className="text-xs text-muted-foreground">
+                            {translatePermissionDescription(permission.description, locale)}
+                          </span>
+                        )}
                       </Label>
                     );
                   })}

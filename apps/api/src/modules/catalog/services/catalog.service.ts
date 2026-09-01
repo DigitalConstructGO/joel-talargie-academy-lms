@@ -459,7 +459,11 @@ export class CatalogService {
       ? await this.repository.courseCategory(course.categoryId)
       : undefined;
 
-    if (!allowPreview && category && (category.isActive === false || category.archivedAt))
+    if (
+      !allowPreview &&
+      category &&
+      (category.isActive === false || category.archivedAt)
+    )
       throw new NotFoundException({
         code: 'COURSE_NOT_FOUND',
         message: 'Course not found',
@@ -495,7 +499,8 @@ export class CatalogService {
         (x: { outcome?: string; text?: string }) => x.text ?? x.outcome ?? '',
       ),
       requirements: detail.requirements.map(
-        (x: { requirement?: string; text?: string }) => x.text ?? x.requirement ?? '',
+        (x: { requirement?: string; text?: string }) =>
+          x.text ?? x.requirement ?? '',
       ),
       sections: detail.sections
         .filter((s: { archivedAt: Date | null }) => !s.archivedAt)

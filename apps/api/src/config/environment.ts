@@ -282,7 +282,13 @@ export const environmentSchema = z
       key: 'DATABASE_URL' | 'DATABASE_DIRECT_URL' | 'DATABASE_TEST_URL',
     ) => {
       const value = environment[key];
-      if (!value || value.endsWith('.db') || value.includes('sqlite') || value === ':memory:') return;
+      if (
+        !value ||
+        value.endsWith('.db') ||
+        value.includes('sqlite') ||
+        value === ':memory:'
+      )
+        return;
       try {
         const url = new URL(value);
         const sslMode = url.searchParams.get('sslmode');

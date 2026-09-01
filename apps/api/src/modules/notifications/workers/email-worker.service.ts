@@ -39,7 +39,9 @@ export class EmailWorkerService {
     const candidates = await this.database.client
       .select({ id: schema.emailDeliveries.id })
       .from(schema.emailDeliveries)
-      .where(inArray(schema.emailDeliveries.status, ['QUEUED', 'RETRY_SCHEDULED']))
+      .where(
+        inArray(schema.emailDeliveries.status, ['QUEUED', 'RETRY_SCHEDULED']),
+      )
       .limit(size);
     if (!candidates.length) return [];
     const ids = candidates.map((c: any) => c.id);

@@ -80,6 +80,16 @@ const EXPORT_STATUS_VARIANT: Record<ReportExportStatus, NonNullable<BadgeProps['
   EXPIRED: 'outline',
 };
 
+const REPORT_TYPE_LABELS_AM: Record<string, string> = {
+  USER_REGISTRATIONS: 'የተጠቃሚዎች ምዝገባ',
+  COURSE_ENROLLMENTS: 'የኮርሶች ምዝገባ',
+  PAYMENT_TRANSACTIONS: 'የክፍያ እንቅስቃሴዎች',
+  STUDENT_PROGRESS: 'የተማሪዎች የትምህርት ሂደት',
+  CERTIFICATE_ISSUANCES: 'የተሰጡ ሰርተፊኬቶች',
+  MENTOR_PERFORMANCE: 'የአስተማሪዎች አፈፃፀም',
+  ACTIVITY_LOGS: 'የሲስተም እንቅስቃሴ መዝገብ',
+};
+
 function ExportMenu({
   reportType,
   filters,
@@ -87,6 +97,7 @@ function ExportMenu({
   reportType: ReportType;
   filters: Record<string, unknown>;
 }) {
+  const { locale } = useLanguage();
   const createExport = useCreateReportExport();
 
   async function exportReport(format: ReportFormat) {
@@ -134,12 +145,16 @@ function ExportMenu({
             ) : (
               <Download className="size-4" />
             )}
-            Export <ChevronDown className="size-4" />
+            {locale === 'am' ? 'ላክ (Export)' : 'Export'} <ChevronDown className="size-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => void exportReport('CSV')}>Export CSV</DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => void exportReport('PDF')}>Export PDF</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => void exportReport('CSV')}>
+            {locale === 'am' ? 'በCSV ላክ' : 'Export CSV'}
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => void exportReport('PDF')}>
+            {locale === 'am' ? 'በPDF ላክ' : 'Export PDF'}
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </Can>
@@ -147,6 +162,7 @@ function ExportMenu({
 }
 
 function ExportsList() {
+  const { locale } = useLanguage();
   const exportsQuery = useReportExports({ pageSize: 5 });
   const download = useDownloadReportExport();
 
@@ -173,7 +189,9 @@ function ExportsList() {
   return (
     <Card>
       <CardContent className="space-y-2 pt-6">
-        <p className="text-sm font-semibold text-foreground">Recent exports</p>
+        <p className="text-sm font-semibold text-foreground">
+          {locale === 'am' ? 'የቅርብ ጊዜ ኤክስፖርቶች' : 'Recent exports'}
+        </p>
         {exports.map((entry) => (
           <div
             key={entry.id}
@@ -195,7 +213,8 @@ function ExportsList() {
                     onClick={() => handleDownload(entry.id)}
                     disabled={download.isPending}
                   >
-                    <Download className="size-3.5" /> Download
+                    <Download className="size-3.5" />
+                    {locale === 'am' ? 'አውርድ' : 'Download'}
                   </Button>
                 </Can>
               )}
@@ -207,9 +226,15 @@ function ExportsList() {
   );
 }
 
+import {
+  useLanguage,
+  translateCourseTitle,
+  translateCategoryName,
+} from '@/lib/i18n/language-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
 export default function AdminReportsPage() {
+  const { t, locale } = useLanguage();
   const { canAny, isAdministrator } = usePermissions();
 
   const visibleGroups = REPORT_GROUPS.filter(
@@ -225,11 +250,11 @@ export default function AdminReportsPage() {
   const coursesQuery = useAdminCourses({ pageSize: 100 });
   const categoriesQuery = useAdminCategories({ pageSize: 100 });
   const courseOptions = (coursesQuery.data?.items ?? []).map((course) => ({
-    label: course.title,
+    label: translateCourseTitle(course.title, locale),
     value: course.id,
   }));
   const categoryOptions = (categoriesQuery.data?.items ?? []).map((category) => ({
-    label: category.name,
+    label: translateCategoryName(category.name, locale),
     value: category.id,
   }));
 
@@ -253,14 +278,13 @@ export default function AdminReportsPage() {
     <ContentContainer>
       <PageBreadcrumb
         items={[
-          { label: 'Dashboard', href: ROUTES.admin.root },
-          { label: 'Reports & Analytics' },
-          { label: 'Reports' },
+          { label: t('sidebar.dashboard'), href: ROUTES.admin.root },
+          { label: t('sidebar.reports') },
         ]}
       />
       <PageHeader
-        title="Reports"
-        description="Generate and export platform reports."
+        title={t('sidebar.reports')}
+        description={t('categories.subtitle')}
         actions={
           <ExportMenu
             reportType={type}
@@ -282,7 +306,9 @@ export default function AdminReportsPage() {
                 </p>
                 {group.types.map((reportType) => (
                   <SelectItem key={reportType} value={reportType}>
-                    {reportType.replaceAll('_', ' ')}
+                    {locale === 'am' && REPORT_TYPE_LABELS_AM[reportType]
+                      ? REPORT_TYPE_LABELS_AM[reportType]
+                      : reportType.replaceAll('_', ' ')}
                   </SelectItem>
                 ))}
               </div>
@@ -290,7 +316,7 @@ export default function AdminReportsPage() {
           </SelectContent>
         </Select>
         <SearchBar
-          placeholder="Search..."
+          placeholder={locale === 'am' ? 'ፈልግ...' : 'Search...'}
           defaultValue={search ?? ''}
           onSearch={(value) => setFilter('search', value || undefined)}
           className="w-full sm:w-64"
@@ -305,29 +331,35 @@ export default function AdminReportsPage() {
           }
         />
         <SelectFilter
-          label="Status"
+          label={t('common.status')}
           value={status}
           onChange={(value) => setFilter('status', value)}
           options={[
-            { label: 'Pending', value: 'PENDING' },
-            { label: 'Approved', value: 'APPROVED' },
-            { label: 'Declined', value: 'DECLINED' },
-            { label: 'Enrolled', value: 'ENROLLED' },
-            { label: 'Completed', value: 'COMPLETED' },
-            { label: 'Active', value: 'ACTIVE' },
-            { label: 'Suspended', value: 'SUSPENDED' },
-            { label: 'Generated', value: 'GENERATED' },
-            { label: 'Revoked', value: 'REVOKED' },
+            { label: locale === 'am' ? 'ንቁ' : t('common.active'), value: 'ACTIVE' },
+            {
+              label: locale === 'am' ? 'ማረጋገጫ በመጠባበቅ ላይ' : t('common.pending'),
+              value: 'PENDING_VERIFICATION',
+            },
+            { label: locale === 'am' ? 'የተቀመጠ' : t('common.archived'), value: 'ARCHIVED' },
+            {
+              label: locale === 'am' ? 'የተጠናቀቀ' : t('dashboard.completedCourses'),
+              value: 'COMPLETED',
+            },
+            {
+              label: locale === 'am' ? 'በሂደት ላይ' : t('dashboard.enrolledCourses'),
+              value: 'IN_PROGRESS',
+            },
+            { label: locale === 'am' ? 'የታገደ' : 'Suspended', value: 'SUSPENDED' },
           ]}
         />
         <SelectFilter
-          label="Course"
+          label={t('nav.courses')}
           value={courseId}
           onChange={(value) => setFilter('courseId', value)}
           options={courseOptions}
         />
         <SelectFilter
-          label="Category"
+          label={t('nav.categories')}
           value={categoryId}
           onChange={(value) => setFilter('categoryId', value)}
           options={categoryOptions}

@@ -40,6 +40,8 @@ async function loadInstructors() {
   }
 }
 
+import { InstructorsPageHeader } from '@/features/instructors/components/instructors-page-header';
+
 export default async function InstructorsPage() {
   const instructors = await loadInstructors();
 
@@ -51,7 +53,7 @@ export default async function InstructorsPage() {
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-10 sm:px-6">
       {itemListEntries.length > 0 && <JsonLd data={buildItemListJsonLd(itemListEntries)} />}
-      <PageHeader title="Instructors" description="Meet the people behind our courses." />
+      <InstructorsPageHeader />
       {instructors.length === 0 ? (
         <EmptyState icon={UserRound} title="No instructors found" />
       ) : (

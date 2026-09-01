@@ -48,63 +48,17 @@ async function loadPriceRange() {
   }
 }
 
+import { PricingPageContent } from '@/features/pricing/components/pricing-page-content';
+
 export default async function PricingPage() {
   const { lowest, highest, freeCount, paidCount } = await loadPriceRange();
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-4 py-10 sm:px-6">
-      <PageHeader
-        title="Pricing"
-        description="No subscriptions or hidden fees - just simple, one-time, per-course pricing."
-      />
-
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-        <Card className="flex flex-col gap-3 p-6">
-          <span className="flex size-11 items-center justify-center rounded-full bg-success/10 text-success">
-            <Gift className="size-5" />
-          </span>
-          <h3 className="text-base font-semibold text-foreground">Free courses</h3>
-          <p className="text-sm text-muted-foreground">
-            {freeCount} free {freeCount === 1 ? 'course is' : 'courses are'} available right now,
-            with no payment required.
-          </p>
-        </Card>
-        <Card className="flex flex-col gap-3 p-6">
-          <span className="flex size-11 items-center justify-center rounded-full bg-brand/10 text-brand">
-            <Tag className="size-5" />
-          </span>
-          <h3 className="text-base font-semibold text-foreground">Paid courses</h3>
-          <p className="text-sm text-muted-foreground">
-            {paidCount} paid {paidCount === 1 ? 'course' : 'courses'}
-            {lowest && highest
-              ? `, ranging from ${formatCurrency(lowest.discountPrice ?? lowest.price, lowest.currency)} to ${formatCurrency(highest.discountPrice ?? highest.price, highest.currency)}.`
-              : '.'}
-          </p>
-        </Card>
-        <Card className="flex flex-col gap-3 p-6">
-          <span className="flex size-11 items-center justify-center rounded-full bg-info/10 text-info">
-            <InfinityIcon className="size-5" />
-          </span>
-          <h3 className="text-base font-semibold text-foreground">Lifetime access</h3>
-          <p className="text-sm text-muted-foreground">
-            Once you enroll, the course is yours to revisit any time, with no expiration.
-          </p>
-        </Card>
-      </div>
-
-      <div className="flex justify-center">
-        <Button size="lg" asChild>
-          <Link href={ROUTES.courses.list}>
-            Browse courses
-            <ArrowRight className="size-4" />
-          </Link>
-        </Button>
-      </div>
-
-      <div className="mx-auto w-full max-w-2xl">
-        <h2 className="mb-4 text-center text-xl font-semibold text-foreground">Pricing FAQ</h2>
-        <FaqAccordion items={PRICING_FAQ} />
-      </div>
-    </div>
+    <PricingPageContent
+      lowest={lowest}
+      highest={highest}
+      freeCount={freeCount}
+      paidCount={paidCount}
+    />
   );
 }

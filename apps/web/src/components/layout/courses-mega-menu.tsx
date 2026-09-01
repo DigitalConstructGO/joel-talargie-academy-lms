@@ -8,7 +8,10 @@ import { useCategories } from '@/features/catalog/hooks/use-categories';
 import { ROUTES } from '@/constants/routes';
 import { cn } from '@/lib/utils';
 
+import { useLanguage, translateCategoryName } from '@/lib/i18n/language-provider';
+
 export function CoursesMegaMenu() {
+  const { t, locale } = useLanguage();
   const { data, isLoading } = useCategories({ pageSize: 8 });
 
   return (
@@ -18,12 +21,12 @@ export function CoursesMegaMenu() {
           'flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent hover:text-foreground',
         )}
       >
-        Courses
+        {t('nav.courses')}
         <ChevronDown className="size-3.5" aria-hidden="true" />
       </PopoverTrigger>
       <PopoverContent align="start" className="w-[420px] p-4">
         <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Popular categories
+          {t('categories.title')}
         </p>
         {isLoading ? (
           <div className="grid grid-cols-2 gap-2">
@@ -40,7 +43,7 @@ export function CoursesMegaMenu() {
                 className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground/80 hover:bg-accent hover:text-foreground"
               >
                 <Layers className="size-3.5 shrink-0 text-muted-foreground" />
-                <span className="truncate">{category.name}</span>
+                <span className="truncate">{translateCategoryName(category.name, locale)}</span>
               </Link>
             ))}
           </div>
@@ -50,14 +53,14 @@ export function CoursesMegaMenu() {
             href={ROUTES.courses.list}
             className="flex items-center justify-between rounded-md px-2 py-1.5 text-sm font-medium text-brand hover:bg-accent"
           >
-            Browse all courses
+            {t('featured.browseAll')}
             <ArrowRight className="size-3.5" />
           </Link>
           <Link
             href={ROUTES.categories.list}
             className="flex items-center justify-between rounded-md px-2 py-1.5 text-sm text-foreground/80 hover:bg-accent hover:text-foreground"
           >
-            View all categories
+            {t('categories.browseAll')}
             <ArrowRight className="size-3.5" />
           </Link>
         </div>

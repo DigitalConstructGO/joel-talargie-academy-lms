@@ -37,22 +37,49 @@ const QUICK_LINKS = [
   },
 ];
 
+import { useLanguage } from '@/lib/i18n/language-provider';
+
 export default function AdminAcademicsPage() {
+  const { t } = useLanguage();
   const overviewQuery = useDashboardOverview();
   const categoriesQuery = useAdminCategories({ pageSize: 1 });
 
+  const quickLinks = [
+    {
+      icon: BookOpen,
+      label: t('nav.courses'),
+      description: 'Create and manage courses',
+      href: ROUTES.admin.academicsCourses,
+    },
+    {
+      icon: Layers,
+      label: t('nav.categories'),
+      description: 'Organize the course catalog',
+      href: ROUTES.admin.academicsCategories,
+    },
+    {
+      icon: UserCog,
+      label: t('nav.instructors'),
+      description: 'See who is presenting your courses',
+      href: ROUTES.admin.academicsInstructors,
+    },
+    {
+      icon: GraduationCap,
+      label: t('dashboard.enrolledCourses'),
+      description: 'Every student enrollment',
+      href: ROUTES.admin.academicsEnrollments,
+    },
+  ];
+
   return (
     <ContentContainer>
-      <PageHeader
-        title="Academic Management"
-        description="Courses, categories, and instructors overview."
-      />
+      <PageHeader title={t('sidebar.academics')} description={t('categories.subtitle')} />
 
       <Reveal>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             icon={BookOpen}
-            label="Published courses"
+            label={t('nav.courses')}
             value={
               overviewQuery.data?.kpis?.courses?.published ?? (overviewQuery.isLoading ? '—' : 0)
             }
@@ -65,13 +92,13 @@ export default function AdminAcademicsPage() {
           />
           <StatCard
             icon={Layers}
-            label="Categories"
+            label={t('nav.categories')}
             value={categoriesQuery.data?.total ?? (categoriesQuery.isLoading ? '—' : 0)}
             tone="info"
           />
           <StatCard
             icon={GraduationCap}
-            label="Active enrollments"
+            label={t('dashboard.activeCourses')}
             value={
               overviewQuery.data?.kpis?.enrollments?.active ?? (overviewQuery.isLoading ? '—' : 0)
             }
@@ -79,7 +106,7 @@ export default function AdminAcademicsPage() {
           />
           <StatCard
             icon={GraduationCap}
-            label="Completed enrollments"
+            label={t('dashboard.completedCourses')}
             value={
               overviewQuery.data?.kpis?.enrollments?.completed ??
               (overviewQuery.isLoading ? '—' : 0)
@@ -91,7 +118,7 @@ export default function AdminAcademicsPage() {
 
       <Reveal delaySeconds={0.05}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {QUICK_LINKS.map((link) => (
+          {quickLinks.map((link) => (
             <QuickActionCard key={link.label} {...link} />
           ))}
         </div>

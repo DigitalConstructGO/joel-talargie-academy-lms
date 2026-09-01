@@ -4,7 +4,7 @@ import { useLanguage } from '@/lib/i18n/language-provider';
 import type { HowItWorksItem } from '@/features/settings/types/settings.types';
 
 export function HowItWorksSection({ items }: { items?: HowItWorksItem[] }) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
 
   const defaultSteps: HowItWorksItem[] = [
     {
@@ -36,7 +36,7 @@ export function HowItWorksSection({ items }: { items?: HowItWorksItem[] }) {
     },
   ];
 
-  const displaySteps = items && items.length > 0 ? items : defaultSteps;
+  const displaySteps = items && items.length > 0 && locale === 'en' ? items : defaultSteps;
 
   return (
     <section className="bg-surface-dark text-surface-dark-foreground">

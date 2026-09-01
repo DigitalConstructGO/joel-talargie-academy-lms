@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { SavedFilterPreset } from '@/hooks/use-saved-filters';
 
+import { useLanguage } from '@/lib/i18n/language-provider';
+
 export interface SavedFiltersMenuProps<T extends Record<string, string | undefined>> {
   presets: SavedFilterPreset<T>[];
   currentFilters: T;
@@ -23,6 +25,7 @@ export function SavedFiltersMenu<T extends Record<string, string | undefined>>({
   onApply,
   onRemove,
 }: SavedFiltersMenuProps<T>) {
+  const { locale } = useLanguage();
   const [name, setName] = useState('');
 
   return (
@@ -30,7 +33,7 @@ export function SavedFiltersMenu<T extends Record<string, string | undefined>>({
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
           <Bookmark className="size-4" />
-          Saved filters
+          {locale === 'am' ? 'የተቀመጡ ማጣሪያዎች' : 'Saved filters'}
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72">

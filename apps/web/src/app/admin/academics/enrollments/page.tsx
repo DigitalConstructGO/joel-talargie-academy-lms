@@ -41,6 +41,7 @@ import { formatCurrency } from '@/lib/format';
 import { formatDateTime } from '@/lib/date';
 import { toast } from '@/lib/toast';
 import { ROUTES } from '@/constants/routes';
+import { useLanguage, translateCourseTitle } from '@/lib/i18n/language-provider';
 
 const PAGE_SIZE = 20;
 
@@ -278,7 +279,24 @@ function EnrollmentDetailSheet({
   );
 }
 
+function formatEnrollmentStatus(status: EnrollmentStatus, locale: string): string {
+  if (locale !== 'am') return status;
+
+  const STATUS_MAP_AM: Record<EnrollmentStatus, string> = {
+    PENDING_PAYMENT: 'ክፍያ በመጠባበቅ ላይ',
+    WAITING_APPROVAL: 'ማጽደቅ በመጠባበቅ ላይ',
+    ENROLLED: 'የተመዘገበ',
+    IN_PROGRESS: 'በሂደት ላይ',
+    COMPLETED: 'ተጠናቋል',
+    CANCELLED: 'የተሰረዘ',
+    ACCESS_REVOKED: 'መዳረሻ የተከለከለ',
+  };
+
+  return STATUS_MAP_AM[status] || status;
+}
+
 export default function AdminEnrollmentsPage() {
+  const { t, locale } = useLanguage();
   const { filters, page, pageSize, setFilter, setPage } = useQueryFilters<EnrollmentsFilters>({
     defaults: DEFAULT_FILTERS,
     pageSize: PAGE_SIZE,
@@ -293,13 +311,26 @@ export default function AdminEnrollmentsPage() {
     status: status === 'ALL' ? undefined : status,
   });
 
+  const statusOptions = useMemo(
+    () => [
+      { label: locale === 'am' ? 'ክፍያ በመጠባበቅ ላይ' : 'Pending payment', value: 'PENDING_PAYMENT' },
+      { label: locale === 'am' ? 'ማጽደቅ በመጠባበቅ ላይ' : 'Waiting approval', value: 'WAITING_APPROVAL' },
+      { label: locale === 'am' ? 'የተመዘገበ' : 'Enrolled', value: 'ENROLLED' },
+      { label: locale === 'am' ? 'በሂደት ላይ' : 'In progress', value: 'IN_PROGRESS' },
+      { label: locale === 'am' ? 'ተጠናቋል' : 'Completed', value: 'COMPLETED' },
+      { label: locale === 'am' ? 'የተሰረዘ' : 'Cancelled', value: 'CANCELLED' },
+      { label: locale === 'am' ? 'መዳረሻ የተከለከለ' : 'Access revoked', value: 'ACCESS_REVOKED' },
+    ],
+    [locale],
+  );
+
   const totalPages = Math.max(1, Math.ceil((enrollmentsQuery.data?.total ?? 0) / pageSize));
 
   const columns = useMemo<ColumnDef<AdminEnrollment, unknown>[]>(
     () => [
       {
         id: 'student',
-        header: 'Student',
+        header: locale === 'am' ? 'ስም' : 'Name',
         cell: ({ row }) => (
           <div>
             <p className="font-medium text-foreground">
@@ -310,61 +341,74 @@ export default function AdminEnrollmentsPage() {
           </div>
         ),
       },
-      { accessorKey: 'courseTitle', header: 'Course' },
+      {
+        accessorKey: 'courseTitle',
+        header: locale === 'am' ? 'ኮርሶች' : 'Courses',
+        cell: ({ row }) => translateCourseTitle(row.original.courseTitle, locale),
+      },
       {
         accessorKey: 'progressPercentage',
-        header: 'Progress',
+        header: locale === 'am' ? 'እድገት' : 'Progress',
         cell: ({ row }) => `${row.original.progressPercentage}%`,
       },
       {
         accessorKey: 'status',
-        header: 'Status',
+        header: locale === 'am' ? 'ሁኔታ' : 'Status',
         cell: ({ row }) => (
-          <Badge variant={STATUS_VARIANT[row.original.status]}>{row.original.status}</Badge>
+          <Badge variant={STATUS_VARIANT[row.original.status]}>
+            {formatEnrollmentStatus(row.original.status, locale)}
+          </Badge>
         ),
       },
       {
         accessorKey: 'enrolledAt',
-        header: 'Enrolled',
+        header: locale === 'am' ? 'የተፈጠረበት' : 'Created',
         cell: ({ row }) =>
           row.original.enrolledAt ? formatDateTime(row.original.enrolledAt) : '—',
       },
     ],
-    [],
+    [locale],
   );
 
   return (
     <ContentContainer>
       <PageBreadcrumb
         items={[
-          { label: 'Dashboard', href: ROUTES.admin.root },
-          { label: 'Academic Management', href: ROUTES.admin.academics },
-          { label: 'Enrollments' },
+          { label: locale === 'am' ? 'ዳሽቦርድ' : 'Dashboard', href: ROUTES.admin.root },
+          { label: locale === 'am' ? 'ትምህርት አስተዳደር' : 'Academics', href: ROUTES.admin.academics },
+          { label: locale === 'am' ? 'የተመዘገቡ ኮርሶች' : 'Enrolled Courses' },
         ]}
       />
-      <PageHeader title="Enrollments" description="Every student enrollment across all courses." />
+      <PageHeader
+        title={locale === 'am' ? 'የተመዘገቡ ኮርሶች' : 'Enrolled Courses'}
+        description={
+          locale === 'am'
+            ? 'የተመዘገቡ ተማሪዎችን እና የኮርስ እድገታቸውን ያስተዳድሩ።'
+            : 'Manage student enrollments and course progress.'
+        }
+      />
 
       <FilterBar>
         <SearchBar
-          placeholder="Search by student or course..."
+          placeholder={locale === 'am' ? 'በተማሪ ወይም በኮርስ ፈልግ...' : 'Search by student or course...'}
           defaultValue={search ?? ''}
           onSearch={(value) => setFilter('search', value || undefined)}
           className="w-full sm:w-64"
         />
         <SelectFilter
-          label="Status"
+          label={locale === 'am' ? 'ሁኔታ' : 'Status'}
           value={status === 'ALL' ? undefined : status}
           onChange={(value) =>
             setFilter('status', (value ?? 'ALL') as EnrollmentsFilters['status'])
           }
-          options={STATUS_OPTIONS}
+          options={statusOptions}
         />
       </FilterBar>
 
       {enrollmentsQuery.isError ? (
         <ErrorState
           onRetry={() => enrollmentsQuery.refetch()}
-          description="Unable to load enrollments."
+          description={locale === 'am' ? 'የተመዘገቡ ኮርሶችን መጫን አልተቻለም።' : 'Unable to load enrollments.'}
         />
       ) : (
         <>
@@ -372,8 +416,10 @@ export default function AdminEnrollmentsPage() {
             columns={columns}
             data={enrollmentsQuery.data?.items ?? []}
             isLoading={enrollmentsQuery.isLoading}
-            emptyTitle="No enrollments found"
-            emptyDescription="No enrollments match your filters."
+            emptyTitle={locale === 'am' ? 'ምንም ምዝገባ አልተገኘም' : 'No enrollments found'}
+            emptyDescription={
+              locale === 'am' ? 'ከማጣሪያዎችዎ ጋር የሚዛመድ ምዝገባ የለም።' : 'No enrollments match your filters.'
+            }
             manualPagination
             onRowClick={(row) => setSelectedId(row.id)}
           />

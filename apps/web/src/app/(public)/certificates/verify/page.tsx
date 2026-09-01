@@ -26,6 +26,8 @@ async function resolveVerification(identifier?: string): Promise<CertificateVeri
   }
 }
 
+import { VerifyCertificatePageHeader } from '@/features/certificates/components/verify-certificate-header';
+
 export default async function VerifyCertificateLookupPage({
   searchParams,
 }: VerifyCertificateLookupPageProps) {
@@ -50,19 +52,7 @@ export default async function VerifyCertificateLookupPage({
       />
 
       <div className="mx-auto flex w-full max-w-xl flex-col items-center gap-6 px-4 sm:px-6">
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-brand/20 bg-brand/5 px-3 py-1 text-xs font-semibold text-brand">
-            <ShieldCheck className="size-3.5" />
-            Official Credential Verification
-          </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
-            Verify a Certificate
-          </h1>
-          <p className="mx-auto max-w-md text-sm text-muted-foreground">
-            Confirm that a Joel Talargie Academy certificate of completion is genuine, verified, and
-            active.
-          </p>
-        </div>
+        <VerifyCertificatePageHeader />
 
         <Card className="w-full border-border/80 bg-card/80 shadow-xl backdrop-blur-sm">
           <CardContent className="p-6 sm:p-8">

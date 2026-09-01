@@ -19,7 +19,6 @@ const timestamps = {
 };
 const tsvector = (colName: string) => text(colName);
 
-
 export const pgEnum = <T extends string>(_name: string, values: [T, ...T[]]) => {
   return (colName: string) => text(colName, { enum: values });
 };
@@ -166,7 +165,9 @@ export const promoAffiliateStatus = pgEnum('promo_affiliate_status', [
 export const users = sqliteTable(
   'users',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     email: text('email').notNull(),
     emailNormalized: text('email_normalized').notNull(),
     passwordHash: text('password_hash').notNull(),
@@ -190,7 +191,9 @@ export const users = sqliteTable(
 );
 
 export const userProfiles = sqliteTable('user_profiles', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   userId: text('user_id')
     .notNull()
     .unique()
@@ -205,7 +208,9 @@ export const userProfiles = sqliteTable('user_profiles', {
 export const refreshSessions = sqliteTable(
   'refresh_sessions',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
@@ -229,7 +234,9 @@ export const refreshSessions = sqliteTable(
 export const oauthAccounts = sqliteTable(
   'oauth_accounts',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
@@ -247,7 +254,9 @@ export const oauthAccounts = sqliteTable(
 );
 
 export const userNotificationPreferences = sqliteTable('user_notification_preferences', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   userId: text('user_id')
     .notNull()
     .unique()
@@ -269,7 +278,9 @@ export const userNotificationPreferences = sqliteTable('user_notification_prefer
 export const emailVerificationTokens = sqliteTable(
   'email_verification_tokens',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
@@ -282,7 +293,9 @@ export const emailVerificationTokens = sqliteTable(
 export const passwordResetTokens = sqliteTable(
   'password_reset_tokens',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
@@ -295,7 +308,9 @@ export const passwordResetTokens = sqliteTable(
 export const loginAttempts = sqliteTable(
   'login_attempts',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
     emailNormalized: text('email_normalized').notNull(),
     successful: integer('successful', { mode: 'boolean' }).notNull(),
@@ -309,7 +324,9 @@ export const loginAttempts = sqliteTable(
 export const roles = sqliteTable(
   'roles',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     code: text('code').notNull().unique(),
     name: text('name').notNull().unique(),
     description: text('description'),
@@ -321,7 +338,9 @@ export const roles = sqliteTable(
   (table) => [index('roles_active_code_idx').on(table.archivedAt, table.code)],
 );
 export const permissions = sqliteTable('permissions', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   code: text('code').notNull().unique(),
   module: text('module').notNull(),
   description: text('description'),
@@ -364,7 +383,9 @@ export const rolePermissions = sqliteTable(
 export const categories = sqliteTable(
   'categories',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     parentId: text('parent_id').references((): AnySQLiteColumn => categories.id, {
       onDelete: 'restrict',
     }),
@@ -389,7 +410,9 @@ export const categories = sqliteTable(
 export const courses = sqliteTable(
   'courses',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     categoryId: text('category_id')
       .notNull()
       .references(() => categories.id, { onDelete: 'restrict' }),
@@ -411,7 +434,9 @@ export const courses = sqliteTable(
     currency: text('currency').notNull().default('ETB'),
     difficulty: courseDifficulty('difficulty').notNull().default('ALL_LEVELS'),
     estimatedDurationMinutes: integer('estimated_duration_minutes'),
-    certificateEnabled: integer('certificate_enabled', { mode: 'boolean' }).notNull().default(false),
+    certificateEnabled: integer('certificate_enabled', { mode: 'boolean' })
+      .notNull()
+      .default(false),
     enrollmentOpenAt: integer('enrollment_open_at', { mode: 'timestamp' }),
     enrollmentCloseAt: integer('enrollment_close_at', { mode: 'timestamp' }),
     capacity: integer('capacity'),
@@ -431,11 +456,7 @@ export const courses = sqliteTable(
     index('courses_category_catalog_idx').on(table.categoryId, table.status, table.visibility),
     index('courses_access_catalog_idx').on(table.accessType, table.status, table.visibility),
     index('courses_difficulty_catalog_idx').on(table.difficulty, table.status, table.visibility),
-    index('courses_featured_catalog_idx').on(
-      table.featured,
-      table.status,
-      desc(table.publishedAt),
-    ),
+    index('courses_featured_catalog_idx').on(table.featured, table.status, desc(table.publishedAt)),
     index('courses_published_public_idx')
       .on(desc(table.publishedAt), table.id)
       .where(
@@ -448,7 +469,9 @@ export const courses = sqliteTable(
 export const courseOutcomes = sqliteTable(
   'course_outcomes',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     courseId: text('course_id')
       .notNull()
       .references(() => courses.id, { onDelete: 'cascade' }),
@@ -462,7 +485,9 @@ export const courseOutcomes = sqliteTable(
 export const courseRequirements = sqliteTable(
   'course_requirements',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     courseId: text('course_id')
       .notNull()
       .references(() => courses.id, { onDelete: 'cascade' }),
@@ -476,7 +501,9 @@ export const courseRequirements = sqliteTable(
 export const courseSections = sqliteTable(
   'course_sections',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     courseId: text('course_id')
       .notNull()
       .references(() => courses.id, { onDelete: 'cascade' }),
@@ -491,7 +518,9 @@ export const courseSections = sqliteTable(
 export const lessons = sqliteTable(
   'lessons',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     courseId: text('course_id')
       .notNull()
       .references(() => courses.id, { onDelete: 'cascade' }),
@@ -526,7 +555,9 @@ export const lessons = sqliteTable(
 export const lessonResources = sqliteTable(
   'lesson_resources',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     lessonId: text('lesson_id')
       .notNull()
       .references(() => lessons.id, { onDelete: 'cascade' }),
@@ -547,7 +578,9 @@ export const lessonResources = sqliteTable(
 export const enrollments = sqliteTable(
   'enrollments',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     studentId: text('student_id')
       .notNull()
       .references(() => users.id, { onDelete: 'restrict' }),
@@ -558,9 +591,7 @@ export const enrollments = sqliteTable(
     status: enrollmentStatus('status').notNull().default('PENDING_PAYMENT'),
     priceAtEnrollment: text('price_at_enrollment').notNull(),
     currencyAtEnrollment: text('currency_at_enrollment').notNull(),
-    discountAtEnrollment: text('discount_at_enrollment')
-      .notNull()
-      .default('0'),
+    discountAtEnrollment: text('discount_at_enrollment').notNull().default('0'),
     progressPercentage: integer('progress_percentage').notNull().default(0),
     enrolledAt: integer('enrolled_at', { mode: 'timestamp' }),
     startedAt: integer('started_at', { mode: 'timestamp' }),
@@ -603,7 +634,9 @@ export const enrollments = sqliteTable(
 export const lessonProgress = sqliteTable(
   'lesson_progress',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     enrollmentId: text('enrollment_id')
       .notNull()
       .references(() => enrollments.id, { onDelete: 'cascade' }),
@@ -637,7 +670,9 @@ export const lessonProgress = sqliteTable(
 export const paymentMethods = sqliteTable(
   'payment_methods',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     code: text('code').notNull().unique(),
     name: text('name').notNull(),
     description: text('description'),
@@ -658,7 +693,9 @@ export const paymentMethods = sqliteTable(
 export const payments = sqliteTable(
   'payments',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     enrollmentId: text('enrollment_id')
       .notNull()
       .references(() => enrollments.id, { onDelete: 'restrict' }),
@@ -670,9 +707,7 @@ export const payments = sqliteTable(
     transactionId: text('transaction_id'),
     transactionIdNormalized: text('transaction_id_normalized'),
     amount: text('amount').notNull(),
-    expectedAmountSnapshot: text('expected_amount_snapshot')
-      .notNull()
-      .default('0'),
+    expectedAmountSnapshot: text('expected_amount_snapshot').notNull().default('0'),
     currency: text('currency').notNull(),
     paymentDate: integer('payment_date', { mode: 'timestamp' }),
     studentNote: text('student_note'),
@@ -711,7 +746,9 @@ export const payments = sqliteTable(
 export const paymentReceipts = sqliteTable(
   'payment_receipts',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     paymentId: text('payment_id')
       .notNull()
       .references(() => payments.id, { onDelete: 'cascade' }),
@@ -732,7 +769,9 @@ export const paymentReceipts = sqliteTable(
 export const certificateTemplates = sqliteTable(
   'certificate_templates',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     name: text('name').notNull(),
     version: integer('version').notNull(),
     configuration: text('configuration', { mode: 'json' }).notNull(),
@@ -752,7 +791,9 @@ export const certificateTemplates = sqliteTable(
 export const certificates = sqliteTable(
   'certificates',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     enrollmentId: text('enrollment_id')
       .notNull()
       .references(() => enrollments.id, { onDelete: 'restrict' }),
@@ -798,7 +839,9 @@ export const certificates = sqliteTable(
 export const certificateFiles = sqliteTable(
   'certificate_files',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     certificateId: text('certificate_id')
       .notNull()
       .references(() => certificates.id, { onDelete: 'restrict' }),
@@ -830,7 +873,9 @@ export const certificateFiles = sqliteTable(
 export const certificateEvents = sqliteTable(
   'certificate_events',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     certificateId: text('certificate_id')
       .notNull()
       .references(() => certificates.id, { onDelete: 'cascade' }),
@@ -852,7 +897,9 @@ export const certificateEvents = sqliteTable(
 export const notifications = sqliteTable(
   'notifications',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
@@ -905,7 +952,9 @@ export const notifications = sqliteTable(
 export const emailTemplates = sqliteTable(
   'email_templates',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     code: text('code').notNull(),
     name: text('name').notNull(),
     subjectTemplate: text('subject_template').notNull(),
@@ -935,7 +984,9 @@ export const emailTemplates = sqliteTable(
 export const emailDeliveries = sqliteTable(
   'email_deliveries',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
     recipientEmail: text('recipient_email').notNull(),
     recipientName: text('recipient_name'),
@@ -982,7 +1033,9 @@ export const emailDeliveries = sqliteTable(
 export const emailDeliveryAttempts = sqliteTable(
   'email_delivery_attempts',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     deliveryId: text('delivery_id')
       .notNull()
       .references(() => emailDeliveries.id, { onDelete: 'restrict' }),
@@ -1009,7 +1062,9 @@ export const emailDeliveryAttempts = sqliteTable(
 export const smsDeliveries = sqliteTable(
   'sms_deliveries',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
     recipientPhone: text('recipient_phone').notNull(),
     messageText: text('message_text').notNull(),
@@ -1051,7 +1106,9 @@ export const smsDeliveries = sqliteTable(
 export const smsDeliveryAttempts = sqliteTable(
   'sms_delivery_attempts',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     deliveryId: text('delivery_id')
       .notNull()
       .references(() => smsDeliveries.id, { onDelete: 'cascade' }),
@@ -1079,7 +1136,9 @@ export const smsDeliveryAttempts = sqliteTable(
 export const notificationEvents = sqliteTable(
   'notification_events',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'restrict' }),
@@ -1107,7 +1166,9 @@ export const notificationEvents = sqliteTable(
 export const activityLogs = sqliteTable(
   'activity_logs',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     actorId: text('actor_id').references(() => users.id, { onDelete: 'restrict' }),
     action: text('action').notNull(),
     entityType: text('entity_type').notNull(),
@@ -1132,7 +1193,9 @@ export const activityLogs = sqliteTable(
 export const platformSettings = sqliteTable(
   'platform_settings',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     key: text('key').notNull().unique(),
     value: text('value', { mode: 'json' }).notNull(),
     updatedBy: text('updated_by').references(() => users.id, { onDelete: 'restrict' }),
@@ -1143,7 +1206,9 @@ export const platformSettings = sqliteTable(
 export const reportExports = sqliteTable(
   'report_exports',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     requestedBy: text('requested_by')
       .notNull()
       .references(() => users.id, { onDelete: 'restrict' }),
@@ -1196,7 +1261,9 @@ export const reportExports = sqliteTable(
 export const backgroundJobs = sqliteTable(
   'background_jobs',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     jobType: text('job_type').notNull(),
     status: jobStatus('status').notNull().default('PENDING'),
     payload: text('payload', { mode: 'json' }).notNull(),
@@ -1226,7 +1293,9 @@ export const backgroundJobs = sqliteTable(
 export const uploadedFiles = sqliteTable(
   'uploaded_files',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     category: uploadCategory('category').notNull(),
     storageKey: text('storage_key').notNull().unique(),
     variantStorageKey: text('variant_storage_key'),
@@ -1257,7 +1326,9 @@ export const uploadedFiles = sqliteTable(
 export const promoAffiliates = sqliteTable(
   'promo_affiliates',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
     name: text('name').notNull(),
     email: text('email').notNull(),
@@ -1268,9 +1339,7 @@ export const promoAffiliates = sqliteTable(
     totalClicks: integer('total_clicks').notNull().default(0),
     totalEnrollments: integer('total_enrollments').notNull().default(0),
     totalRevenue: text('total_revenue').notNull().default('0'),
-    totalCommission: text('total_commission')
-      .notNull()
-      .default('0'),
+    totalCommission: text('total_commission').notNull().default('0'),
     notes: text('notes'),
     createdBy: text('created_by')
       .notNull()
@@ -1295,7 +1364,9 @@ export const promoAffiliates = sqliteTable(
 export const promoCodes = sqliteTable(
   'promo_codes',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     code: text('code').notNull(),
     codeType: promoCodeType('code_type').notNull().default('MANUAL'),
     status: promoCodeStatus('status').notNull().default('ACTIVE'),
@@ -1337,7 +1408,9 @@ export const promoCodes = sqliteTable(
 export const promoCodeCourseRules = sqliteTable(
   'promo_code_course_rules',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     codeId: text('code_id')
       .notNull()
       .references(() => promoCodes.id, { onDelete: 'cascade' }),
@@ -1355,7 +1428,9 @@ export const promoCodeCourseRules = sqliteTable(
 export const promoCodeCategoryRules = sqliteTable(
   'promo_code_category_rules',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     codeId: text('code_id')
       .notNull()
       .references(() => promoCodes.id, { onDelete: 'cascade' }),
@@ -1373,7 +1448,9 @@ export const promoCodeCategoryRules = sqliteTable(
 export const promoCodeUserRules = sqliteTable(
   'promo_code_user_rules',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     codeId: text('code_id')
       .notNull()
       .references(() => promoCodes.id, { onDelete: 'cascade' }),
@@ -1391,7 +1468,9 @@ export const promoCodeUserRules = sqliteTable(
 export const promoRedemptions = sqliteTable(
   'promo_redemptions',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     codeId: text('code_id')
       .notNull()
       .references(() => promoCodes.id, { onDelete: 'restrict' }),
@@ -1442,7 +1521,9 @@ export const promoRedemptions = sqliteTable(
 export const promoUsageLogs = sqliteTable(
   'promo_usage_logs',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     codeId: text('code_id').references(() => promoCodes.id, { onDelete: 'set null' }),
     actorId: text('actor_id').references(() => users.id, { onDelete: 'set null' }),
     action: text('action').notNull(),
@@ -1459,7 +1540,9 @@ export const promoUsageLogs = sqliteTable(
 export const newsletterSubscribers = sqliteTable(
   'newsletter_subscribers',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     email: text('email').notNull().unique(),
     status: newsletterStatus('status').notNull().default('ACTIVE'),
     subscribedAt: integer('subscribed_at', { mode: 'timestamp' }).notNull().defaultNow(),

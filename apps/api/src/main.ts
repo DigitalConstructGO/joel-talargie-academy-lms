@@ -163,7 +163,12 @@ async function bootstrap() {
             'https://*.youtube.com',
             'https://*.ytimg.com',
           ],
-          'media-src': ["'self'", 'blob:', 'https:', 'https://*.googleapis.com'],
+          'media-src': [
+            "'self'",
+            'blob:',
+            'https:',
+            'https://*.googleapis.com',
+          ],
           'connect-src': ["'self'", 'https:', 'wss:', 'ws:'],
           'frame-ancestors': [
             "'self'",

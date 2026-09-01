@@ -509,7 +509,9 @@ export class LearningRepository {
     withCourse = false,
   ) {
     if (tx.execute) {
-      await tx.execute(sql`SELECT id FROM enrollments WHERE id = ${enrollmentId}`);
+      await tx.execute(
+        sql`SELECT id FROM enrollments WHERE id = ${enrollmentId}`,
+      );
     }
     const enrollment = await tx.query.enrollments.findFirst({
       where: and(

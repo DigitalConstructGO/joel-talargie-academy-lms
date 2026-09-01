@@ -73,6 +73,8 @@ function buildPageRange(
   return range;
 }
 
+import { useLanguage } from '@/lib/i18n/language-provider';
+
 function GoToPageInput({
   totalPages,
   onPageChange,
@@ -82,6 +84,7 @@ function GoToPageInput({
   onPageChange: (page: number) => void;
   disabled?: boolean;
 }) {
+  const { locale } = useLanguage();
   const [value, setValue] = useState('');
 
   function submit(event: React.FormEvent) {
@@ -97,7 +100,7 @@ function GoToPageInput({
   return (
     <form onSubmit={submit} className="flex items-center gap-1.5 text-sm text-muted-foreground">
       <label htmlFor="go-to-page" className="whitespace-nowrap">
-        Go to
+        {locale === 'am' ? 'ወደ ገጽ ሂድ' : 'Go to'}
       </label>
       <Input
         id="go-to-page"
@@ -126,6 +129,7 @@ export function DynamicPagination({
   showGoToPage = false,
   isLoading = false,
 }: DynamicPaginationProps) {
+  const { locale } = useLanguage();
   if (totalPages <= 1 && !pageSize) return null;
   const pages = buildPageRange(page, totalPages, siblingCount);
 
@@ -135,7 +139,9 @@ export function DynamicPagination({
     >
       {pageSize !== undefined && onPageSizeChange && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="whitespace-nowrap">Rows per page</span>
+          <span className="whitespace-nowrap">
+            {locale === 'am' ? 'በአንድ ገጽ ረድፎች' : 'Rows per page'}
+          </span>
           <Select
             value={String(pageSize)}
             onValueChange={(value) => onPageSizeChange(Number(value))}

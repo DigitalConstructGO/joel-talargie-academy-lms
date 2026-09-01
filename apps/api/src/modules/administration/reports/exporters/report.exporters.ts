@@ -9,7 +9,12 @@ function safeIsoDate(value: unknown): string {
       const iso = value.toISOString();
       return iso.startsWith('+') ? iso.slice(1, 11) : iso.slice(0, 10);
     }
-    if (typeof value === 'number' && Number.isFinite(value) && value > 100000000000 && value < 3000000000000) {
+    if (
+      typeof value === 'number' &&
+      Number.isFinite(value) &&
+      value > 100000000000 &&
+      value < 3000000000000
+    ) {
       const d = new Date(value);
       if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
     }
@@ -33,7 +38,10 @@ export class CsvReportExporter {
     const headers = Object.keys(rows[0] ?? {});
     const cell = (v: unknown) => {
       let val = v;
-      if (v instanceof Date || (typeof v === 'number' && v > 100000000000 && v < 3000000000000)) {
+      if (
+        v instanceof Date ||
+        (typeof v === 'number' && v > 100000000000 && v < 3000000000000)
+      ) {
         val = safeIsoDate(v);
       }
       return `"${this.privacy.spreadsheet(val).replace(/"/g, '""')}"`;
@@ -88,7 +96,9 @@ export class PdfReportExporter {
         document.on('end', () => resolve(Buffer.concat(chunks)));
 
         const generatedAt = context.generatedAt ?? new Date();
-        const reportTitle = this.safeText(title.replace(/[\r\n]/g, ' ').slice(0, 120));
+        const reportTitle = this.safeText(
+          title.replace(/[\r\n]/g, ' ').slice(0, 120),
+        );
         const filters = Object.entries(context.filters ?? {}).filter(
           ([, value]) => value !== undefined && value !== null && value !== '',
         );
@@ -120,11 +130,7 @@ export class PdfReportExporter {
             .font('Helvetica')
             .fontSize(8)
             .fillColor('#4B5563')
-            .text(
-              `Generated ${safeIsoDate(generatedAt)} UTC`,
-              42,
-              132,
-            );
+            .text(`Generated ${safeIsoDate(generatedAt)} UTC`, 42, 132);
         };
 
         const addFooter = (currentPage: number) => {
@@ -132,13 +138,23 @@ export class PdfReportExporter {
             .font('Helvetica')
             .fontSize(7)
             .fillColor('#6B7280')
-            .text('Joel Talargie Academy  •  Confidential Report', 42, footerY, {
-              width: 330,
-            });
-          document.text(`Page ${currentPage}`, document.page.width - 124, footerY, {
-            width: 82,
-            align: 'right',
-          });
+            .text(
+              'Joel Talargie Academy  •  Confidential Report',
+              42,
+              footerY,
+              {
+                width: 330,
+              },
+            );
+          document.text(
+            `Page ${currentPage}`,
+            document.page.width - 124,
+            footerY,
+            {
+              width: 82,
+              align: 'right',
+            },
+          );
         };
 
         let page = 1;
@@ -146,7 +162,13 @@ export class PdfReportExporter {
 
         if (filters.length) {
           document
-            .roundedRect(42, 156, tableWidth, 30 + Math.ceil(filters.length / 3) * 16, 6)
+            .roundedRect(
+              42,
+              156,
+              tableWidth,
+              30 + Math.ceil(filters.length / 3) * 16,
+              6,
+            )
             .fillAndStroke('#F0FDFA', '#99F6E4');
           document
             .fillColor('#115E59')
@@ -230,7 +252,9 @@ export class PdfReportExporter {
         const widths = headers.map((header) => {
           const longest = Math.max(
             label(header).length,
-            ...rows.slice(0, 100).map((row) => String(row[header] ?? '').length),
+            ...rows
+              .slice(0, 100)
+              .map((row) => String(row[header] ?? '').length),
           );
           return Math.max(50, Math.min(150, longest * 5.5));
         });

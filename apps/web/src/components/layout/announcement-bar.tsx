@@ -5,10 +5,13 @@ import Link from 'next/link';
 import { Sparkles, X } from 'lucide-react';
 import { ROUTES } from '@/constants/routes';
 
+import { useLanguage } from '@/lib/i18n/language-provider';
+
 const ANNOUNCEMENT_ID = 'summer-2026-launch';
 const STORAGE_KEY = `joel-academy-announcement-dismissed-${ANNOUNCEMENT_ID}`;
 
 export function AnnouncementBar() {
+  const { t } = useLanguage();
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
@@ -20,12 +23,12 @@ export function AnnouncementBar() {
   return (
     <div className="flex items-center justify-center gap-2 bg-brand px-4 py-2 text-center text-xs font-medium text-brand-foreground sm:text-sm">
       <span>
-        New this month: dozens of courses across cloud, security, and AI.{' '}
+        {t('hero.badge')}{' '}
         <Link
           href={ROUTES.courses.list}
           className="underline underline-offset-2 hover:no-underline"
         >
-          Explore the catalog
+          {t('hero.ctaBrowse')}
         </Link>
       </span>
       <button

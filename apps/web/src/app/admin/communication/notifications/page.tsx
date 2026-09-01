@@ -33,6 +33,7 @@ import {
 import { formatRelativeTime } from '@/lib/format';
 import { toast } from '@/lib/toast';
 import { ROUTES } from '@/constants/routes';
+import { useLanguage } from '@/lib/i18n/language-provider';
 
 interface NotificationsFilters {
   [key: string]: string | undefined;
@@ -47,8 +48,28 @@ const DEFAULT_FILTERS: NotificationsFilters = {
   sort: 'newest',
 };
 
+function translateNotificationText(text: string, locale: string): string {
+  if (locale !== 'am') return text;
+
+  const NOTIFICATION_TEXT_MAP_AM: Record<string, string> = {
+    'New Google sign-in': 'አዲስ የ Google መግቢያ',
+    'A new sign-in to your academy account with Google was detected.':
+      'በ Google መለያዎ አዲስ መግቢያ ተመዝግቧል።',
+    'New login detected': 'አዲስ መግቢያ ተመዝግቧል',
+    'Password changed successfully': 'የይለፍ ቃል በተሳካ ሁኔታ ተቀይሯል',
+    'Certificate generated': 'ሰርተፊኬት ተዘጋጅቷል',
+    'Payment submitted': 'ክፍያ ቀርቧል',
+    'Payment approved': 'ክፍያ ተጸድቋል',
+    'Payment declined': 'ክፍያ ውድቅ ተደርጓል',
+    'Course enrollment confirmed': 'የኮርስ ምዝገባ ተረጋገጠ',
+  };
+
+  return NOTIFICATION_TEXT_MAP_AM[text] || text;
+}
+
 /** Reuses `features/notifications/` - `/me/notifications` is role-agnostic (no `@Roles()` guard), so this is the admin's own notification inbox, the exact same real data as the student Notifications page. */
 export default function AdminNotificationsPage() {
+  const { locale } = useLanguage();
   const { filters, setFilter, resetFilters } = useQueryFilters<NotificationsFilters>({
     defaults: DEFAULT_FILTERS,
   });
@@ -70,9 +91,7 @@ export default function AdminNotificationsPage() {
     return [...(notificationsData ?? [])].sort((a, b) => {
       const aDate = String(a.createdAt ?? '');
       const bDate = String(b.createdAt ?? '');
-      return sort === 'newest'
-        ? bDate.localeCompare(aDate)
-        : aDate.localeCompare(bDate);
+      return sort === 'newest' ? bDate.localeCompare(aDate) : aDate.localeCompare(bDate);
     });
   }, [notificationsData, sort]);
   const hasUnread = (notificationsData ?? []).some((notification) => notification.readAt === null);
@@ -80,22 +99,39 @@ export default function AdminNotificationsPage() {
 
   function handleMarkAllRead() {
     markAllRead.mutate(undefined, {
-      onSuccess: () => toast.success('All notifications marked as read'),
-      onError: () => toast.error('Could not mark notifications as read', 'Please try again.'),
+      onSuccess: () =>
+        toast.success(
+          locale === 'am' ? 'ሁሉም ማሳወቂያዎች እንደተነበቡ ተደርገዋል' : 'All notifications marked as read',
+        ),
+      onError: () =>
+        toast.error(
+          locale === 'am' ? 'ማሳወቂያዎችን እንደተነበበ ማድረግ አልተቻለም' : 'Could not mark notifications as read',
+          locale === 'am' ? 'እባክዎ እንደገና ይሞክሩ።' : 'Please try again.',
+        ),
     });
   }
 
   function handleArchive(id: string) {
     archiveNotification.mutate(id, {
-      onSuccess: () => toast.success('Notification archived'),
-      onError: () => toast.error('Could not archive that notification', 'Please try again.'),
+      onSuccess: () => toast.success(locale === 'am' ? 'ማሳወቂያው ተቀምጧል' : 'Notification archived'),
+      onError: () =>
+        toast.error(
+          locale === 'am' ? 'ማሳወቂያውን ማስቀመጥ አልተቻለም' : 'Could not archive that notification',
+          locale === 'am' ? 'እባክዎ እንደገና ይሞክሩ።' : 'Please try again.',
+        ),
     });
   }
 
   function handleMarkRead(id: string) {
     markRead.mutate([id], {
-      onSuccess: () => toast.success('Marked as read'),
-      onError: () => toast.error('Could not mark that notification as read', 'Please try again.'),
+      onSuccess: () => toast.success(locale === 'am' ? 'እንደተነበበ ተደርጓል' : 'Marked as read'),
+      onError: () =>
+        toast.error(
+          locale === 'am'
+            ? 'ማሳወቂያውን እንደተነበበ ማድረግ አልተቻለም'
+            : 'Could not mark that notification as read',
+          locale === 'am' ? 'እባክዎ እንደገና ይሞክሩ።' : 'Please try again.',
+        ),
     });
   }
 
@@ -103,14 +139,16 @@ export default function AdminNotificationsPage() {
     <ContentContainer>
       <PageBreadcrumb
         items={[
-          { label: 'Dashboard', href: ROUTES.admin.root },
-          { label: 'Communication', href: ROUTES.admin.communication },
-          { label: 'Notifications' },
+          { label: locale === 'am' ? 'ዳሽቦርድ' : 'Dashboard', href: ROUTES.admin.root },
+          { label: locale === 'am' ? 'ኮሙኒኬሽን' : 'Communication', href: ROUTES.admin.communication },
+          { label: locale === 'am' ? 'ማሳወቂያዎች' : 'Notifications' },
         ]}
       />
       <PageHeader
-        title="Notifications"
-        description="Your notifications as an administrator."
+        title={locale === 'am' ? 'ማሳወቂያዎች' : 'Notifications'}
+        description={
+          locale === 'am' ? 'እንደ አስተዳዳሪ የእርስዎ ማሳወቂያዎች።' : 'Your notifications as an administrator.'
+        }
         actions={
           hasUnread && (
             <Button
@@ -121,7 +159,7 @@ export default function AdminNotificationsPage() {
               className="gap-2"
             >
               <CheckCheck className="size-4" />
-              Mark all as read
+              {locale === 'am' ? 'ሁሉንም እንደተነበበ ምልክት አድርግ' : 'Mark all as read'}
             </Button>
           )
         }
@@ -135,17 +173,17 @@ export default function AdminNotificationsPage() {
           }
         >
           <TabsList>
-            <TabsTrigger value="ALL">All</TabsTrigger>
-            <TabsTrigger value="UNREAD">Unread</TabsTrigger>
-            <TabsTrigger value="READ">Read</TabsTrigger>
+            <TabsTrigger value="ALL">{locale === 'am' ? 'ሁሉም' : 'All'}</TabsTrigger>
+            <TabsTrigger value="UNREAD">{locale === 'am' ? 'ያልተነበቡ' : 'Unread'}</TabsTrigger>
+            <TabsTrigger value="READ">{locale === 'am' ? 'የተነበቡ' : 'Read'}</TabsTrigger>
           </TabsList>
         </Tabs>
         <SearchBar
-          placeholder="Search notifications..."
+          placeholder={locale === 'am' ? 'ማሳወቂያዎችን ፈልግ...' : 'Search notifications...'}
           defaultValue={search ?? ''}
           onSearch={(value) => setFilter('search', value || undefined)}
           className="w-full sm:w-64"
-          aria-label="Search notifications"
+          aria-label={locale === 'am' ? 'ማሳወቂያዎችን ፈልግ' : 'Search notifications'}
         />
       </div>
 
@@ -154,12 +192,12 @@ export default function AdminNotificationsPage() {
           value={sort}
           onValueChange={(value) => setFilter('sort', value as NotificationsFilters['sort'])}
         >
-          <SelectTrigger className="w-40" aria-label="Sort">
+          <SelectTrigger className="w-40" aria-label={locale === 'am' ? 'ደርድር' : 'Sort'}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="newest">Newest first</SelectItem>
-            <SelectItem value="oldest">Oldest first</SelectItem>
+            <SelectItem value="newest">{locale === 'am' ? 'በቅድሚያ አዲስ' : 'Newest first'}</SelectItem>
+            <SelectItem value="oldest">{locale === 'am' ? 'በቅድሚያ ቀዳሚ' : 'Oldest first'}</SelectItem>
           </SelectContent>
         </Select>
       </FilterBar>
@@ -173,7 +211,7 @@ export default function AdminNotificationsPage() {
           <NoSearchResultsEmptyState
             action={
               <Button variant="outline" onClick={resetFilters}>
-                Reset filters
+                {locale === 'am' ? 'ማጣሪያዎችን አጽዳ' : 'Reset filters'}
               </Button>
             }
           />
@@ -186,9 +224,13 @@ export default function AdminNotificationsPage() {
             <li key={notification.id}>
               <NotificationCard
                 icon={Bell}
-                title={notification.title}
-                description={notification.message}
-                timestamp={formatRelativeTime(notification.createdAt)}
+                title={translateNotificationText(notification.title, locale)}
+                description={
+                  notification.message
+                    ? translateNotificationText(notification.message, locale)
+                    : undefined
+                }
+                timestamp={formatRelativeTime(notification.createdAt, locale)}
                 read={notification.readAt !== null}
                 onClick={
                   notification.readAt === null ? () => handleMarkRead(notification.id) : undefined

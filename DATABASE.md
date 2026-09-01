@@ -56,41 +56,41 @@ erDiagram
 
 ### User & Security Domain
 
-| Table Name | Primary Key | Key Columns | Purpose |
-|---|---|---|---|
-| `users` | `id` (UUID) | `email`, `emailNormalized`, `passwordHash`, `status` | Core user identity & authentication credentials |
-| `user_profiles` | `id` (UUID) | `userId` (FK), `firstName`, `lastName`, `avatarUrl`, `phone` | Extended student/instructor profile details |
-| `user_sessions` | `id` (UUID) | `userId` (FK), `tokenHash`, `ipAddress`, `expiresAt` | Active refresh token session tracking |
-| `roles` | `id` (UUID) | `code`, `name`, `description`, `isSystem` | System roles (`ADMINISTRATOR`, `INSTRUCTOR`, `STUDENT`) |
-| `permissions` | `id` (UUID) | `code`, `module`, `name`, `description` | Fine-grained permission codes (e.g. `courses.create`) |
-| `role_permissions` | Composite | `roleId` (FK), `permissionId` (FK) | Many-to-many role to permission assignment |
+| Table Name         | Primary Key | Key Columns                                                  | Purpose                                                 |
+| ------------------ | ----------- | ------------------------------------------------------------ | ------------------------------------------------------- |
+| `users`            | `id` (UUID) | `email`, `emailNormalized`, `passwordHash`, `status`         | Core user identity & authentication credentials         |
+| `user_profiles`    | `id` (UUID) | `userId` (FK), `firstName`, `lastName`, `avatarUrl`, `phone` | Extended student/instructor profile details             |
+| `user_sessions`    | `id` (UUID) | `userId` (FK), `tokenHash`, `ipAddress`, `expiresAt`         | Active refresh token session tracking                   |
+| `roles`            | `id` (UUID) | `code`, `name`, `description`, `isSystem`                    | System roles (`ADMINISTRATOR`, `INSTRUCTOR`, `STUDENT`) |
+| `permissions`      | `id` (UUID) | `code`, `module`, `name`, `description`                      | Fine-grained permission codes (e.g. `courses.create`)   |
+| `role_permissions` | Composite   | `roleId` (FK), `permissionId` (FK)                           | Many-to-many role to permission assignment              |
 
 ### Academic & Catalog Domain
 
-| Table Name | Primary Key | Key Columns | Purpose |
-|---|---|---|---|
-| `categories` | `id` (UUID) | `name`, `slug`, `parentId` (FK), `isActive`, `sortOrder` | Category tree hierarchy for course organization |
-| `courses` | `id` (UUID) | `title`, `slug`, `price`, `currency`, `accessType`, `status`, `visibility` | Main course catalog records and pricing details |
-| `course_sections` | `id` (UUID) | `courseId` (FK), `title`, `sortOrder` | Curriculum section modules |
-| `lessons` | `id` (UUID) | `sectionId` (FK), `courseId` (FK), `title`, `slug`, `videoUrl`, `durationSeconds` | Individual lesson content items and video metadata |
-| `lesson_resources` | `id` (UUID) | `lessonId` (FK), `title`, `fileKey`, `fileSizeBytes` | Downloadable lesson attachments (PDFs, ZIPs) |
+| Table Name         | Primary Key | Key Columns                                                                       | Purpose                                            |
+| ------------------ | ----------- | --------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `categories`       | `id` (UUID) | `name`, `slug`, `parentId` (FK), `isActive`, `sortOrder`                          | Category tree hierarchy for course organization    |
+| `courses`          | `id` (UUID) | `title`, `slug`, `price`, `currency`, `accessType`, `status`, `visibility`        | Main course catalog records and pricing details    |
+| `course_sections`  | `id` (UUID) | `courseId` (FK), `title`, `sortOrder`                                             | Curriculum section modules                         |
+| `lessons`          | `id` (UUID) | `sectionId` (FK), `courseId` (FK), `title`, `slug`, `videoUrl`, `durationSeconds` | Individual lesson content items and video metadata |
+| `lesson_resources` | `id` (UUID) | `lessonId` (FK), `title`, `fileKey`, `fileSizeBytes`                              | Downloadable lesson attachments (PDFs, ZIPs)       |
 
 ### Enrollment, Payment & Learning Domain
 
-| Table Name | Primary Key | Key Columns | Purpose |
-|---|---|---|---|
-| `enrollments` | `id` (UUID) | `studentId` (FK), `courseId` (FK), `status`, `priceAtEnrollment` | Student course enrollment state (`ACTIVE`, `PENDING`) |
-| `lesson_progress` | `id` (UUID) | `enrollmentId` (FK), `lessonId` (FK), `status`, `progressPercent` | Student lesson completion & viewing activity |
-| `payment_methods` | `id` (UUID) | `name`, `code`, `type`, `accountDetails`, `isActive` | Bank transfer & mobile money account configurations |
-| `payments` | `id` (UUID) | `enrollmentId` (FK), `studentId` (FK), `transactionId`, `submittedAmount`, `currency`, `status` | Manual bank payment receipt verification records |
-| `certificates` | `id` (UUID) | `enrollmentId` (FK), `studentId` (FK), `certificateNumber`, `verificationToken`, `pdfUrl` | Verified course completion certificate records |
+| Table Name        | Primary Key | Key Columns                                                                                     | Purpose                                               |
+| ----------------- | ----------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `enrollments`     | `id` (UUID) | `studentId` (FK), `courseId` (FK), `status`, `priceAtEnrollment`                                | Student course enrollment state (`ACTIVE`, `PENDING`) |
+| `lesson_progress` | `id` (UUID) | `enrollmentId` (FK), `lessonId` (FK), `status`, `progressPercent`                               | Student lesson completion & viewing activity          |
+| `payment_methods` | `id` (UUID) | `name`, `code`, `type`, `accountDetails`, `isActive`                                            | Bank transfer & mobile money account configurations   |
+| `payments`        | `id` (UUID) | `enrollmentId` (FK), `studentId` (FK), `transactionId`, `submittedAmount`, `currency`, `status` | Manual bank payment receipt verification records      |
+| `certificates`    | `id` (UUID) | `enrollmentId` (FK), `studentId` (FK), `certificateNumber`, `verificationToken`, `pdfUrl`       | Verified course completion certificate records        |
 
 ### System & Audit Domain
 
-| Table Name | Primary Key | Key Columns | Purpose |
-|---|---|---|---|
-| `platform_settings` | `key` (varchar) | `value` (JSONB), `updatedBy` (FK), `updatedAt` | Dynamic key-value configuration and Landing CMS |
-| `activity_logs` | `id` (UUID) | `actorId` (FK), `action`, `entityType`, `entityId`, `before`, `after` | Administrative action audit logging |
+| Table Name          | Primary Key     | Key Columns                                                           | Purpose                                         |
+| ------------------- | --------------- | --------------------------------------------------------------------- | ----------------------------------------------- |
+| `platform_settings` | `key` (varchar) | `value` (JSONB), `updatedBy` (FK), `updatedAt`                        | Dynamic key-value configuration and Landing CMS |
+| `activity_logs`     | `id` (UUID)     | `actorId` (FK), `action`, `entityType`, `entityId`, `before`, `after` | Administrative action audit logging             |
 
 ---
 
@@ -106,6 +106,7 @@ erDiagram
 Database schema definitions are located in `packages/database/src/schema/index.ts`.
 
 ### Migration Commands
+
 ```bash
 # 1. Generate SQL migration files after schema edits
 npm run db:generate
@@ -142,4 +143,5 @@ To visually inspect tables, execute custom queries, or inspect database records 
 ```bash
 npm run db:studio
 ```
-*Drizzle Studio opens an interactive web GUI at `http://localhost:4983`.*
+
+_Drizzle Studio opens an interactive web GUI at `http://localhost:4983`._

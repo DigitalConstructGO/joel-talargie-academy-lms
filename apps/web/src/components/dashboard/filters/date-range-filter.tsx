@@ -8,6 +8,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { formatDate } from '@/lib/date';
 import { cn } from '@/lib/utils';
 
+import { useLanguage } from '@/lib/i18n/language-provider';
+
 export interface DateRangeFilterProps {
   value: DateRange | undefined;
   onChange: (value: DateRange | undefined) => void;
@@ -16,17 +18,16 @@ export interface DateRangeFilterProps {
 }
 
 /** A date-range picker filter, e.g. for filtering a table by created/updated date. */
-export function DateRangeFilter({
-  value,
-  onChange,
-  placeholder = 'Date range',
-  className,
-}: DateRangeFilterProps) {
+export function DateRangeFilter({ value, onChange, placeholder, className }: DateRangeFilterProps) {
+  const { locale } = useLanguage();
+  const defaultPlaceholder = locale === 'am' ? 'የቀን ገደብ' : 'Date range';
+  const effectivePlaceholder = placeholder ?? defaultPlaceholder;
+
   const label = value?.from
     ? value.to
       ? `${formatDate(value.from)} – ${formatDate(value.to)}`
       : formatDate(value.from)
-    : placeholder;
+    : effectivePlaceholder;
 
   return (
     <Popover>

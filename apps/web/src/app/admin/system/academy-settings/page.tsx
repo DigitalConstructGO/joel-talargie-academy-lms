@@ -16,27 +16,27 @@ import { LandingCmsManager } from '@/features/settings/components/landing-cms-ma
 import { PublicSettingsForm } from '@/features/settings/components/public-settings-form';
 import { ROUTES } from '@/constants/routes';
 
+import { useLanguage } from '@/lib/i18n/language-provider';
+
 export default function AdminAcademySettingsPage() {
+  const { t, locale } = useLanguage();
   const structuredQuery = useStructuredAcademySettings();
 
   return (
     <ContentContainer>
       <PageBreadcrumb
         items={[
-          { label: 'Dashboard', href: ROUTES.admin.root },
-          { label: 'System', href: ROUTES.admin.system },
-          { label: 'Academy Settings' },
+          { label: t('sidebar.dashboard'), href: ROUTES.admin.root },
+          { label: t('sidebar.system'), href: ROUTES.admin.system },
+          { label: t('sidebar.academySettings') },
         ]}
       />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <PageHeader
-          title="Academy Settings & Landing CMS"
-          description="Manage institutional branding, landing page dynamic content, and platform configuration."
-        />
+        <PageHeader title={t('sidebar.academySettings')} description={t('categories.subtitle')} />
         <Button variant="outline" size="sm" asChild className="shrink-0 gap-1.5 shadow-xs">
           <Link href={ROUTES.home} target="_blank" rel="noopener noreferrer">
             <ExternalLink className="size-4" />
-            Preview Landing Page
+            {locale === 'am' ? 'የመነሻ ገጽ እይ' : 'Preview Landing Page'}
           </Link>
         </Button>
       </div>
@@ -60,19 +60,19 @@ export default function AdminAcademySettingsPage() {
           <TabsList className="flex-wrap bg-muted/60 p-1">
             <TabsTrigger value="general" className="gap-2 data-[state=active]:bg-background">
               <Globe className="size-4" />
-              General
+              {locale === 'am' ? 'አጠቃላይ' : 'General'}
             </TabsTrigger>
             <TabsTrigger value="branding" className="gap-2 data-[state=active]:bg-background">
               <Palette className="size-4" />
-              Branding
+              {locale === 'am' ? 'ብራንዲንግ' : 'Branding'}
             </TabsTrigger>
             <TabsTrigger value="landing" className="gap-2 data-[state=active]:bg-background">
               <Layout className="size-4" />
-              Landing Page CMS
+              {locale === 'am' ? 'የመነሻ ገጽ ይዘት' : 'Landing Page CMS'}
             </TabsTrigger>
             <TabsTrigger value="public" className="gap-2 data-[state=active]:bg-background">
               <Settings className="size-4" />
-              Public Settings
+              {locale === 'am' ? 'ይፋዊ መቼቶች' : 'Public Settings'}
             </TabsTrigger>
           </TabsList>
 

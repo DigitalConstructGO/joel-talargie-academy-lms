@@ -1,10 +1,11 @@
-import { formatDistanceToNow } from 'date-fns';
+import { formatRelativeTime as formatRelativeTimeBase } from './date';
 
-/** Formats an ISO timestamp as relative time (e.g. "2 hours ago"). */
-export function formatRelativeTime(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return '—';
-  return formatDistanceToNow(date, { addSuffix: true });
+/** Formats an ISO or numeric timestamp as relative time (e.g. "2 hours ago" / "ከ 2 ሰዓት በፊት"). */
+export function formatRelativeTime(
+  iso: string | number | Date | null | undefined,
+  locale: string = 'en',
+): string {
+  return formatRelativeTimeBase(iso, locale);
 }
 
 /** Formats a number as currency. Defaults to ETB to match the academy's primary market. */

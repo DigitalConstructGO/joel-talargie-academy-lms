@@ -1,44 +1,43 @@
+'use client';
+
 import Link from 'next/link';
 import { GraduationCap } from 'lucide-react';
 import { ROUTES } from '@/constants/routes';
 import { siteConfig } from '@/config/site.config';
 import { NewsletterForm } from '@/components/common/newsletter-form';
 
-const FOOTER_SECTIONS = [
+import { useLanguage } from '@/lib/i18n/language-provider';
+import type { TranslationKey } from '@/lib/i18n/translations/en';
+
+const FOOTER_SECTIONS: {
+  titleKey: TranslationKey;
+  links: { labelKey: TranslationKey; href: string }[];
+}[] = [
   {
-    title: 'Platform',
+    titleKey: 'footer.platform',
     links: [
-      { label: 'Courses', href: ROUTES.courses.list },
-      { label: 'Categories', href: ROUTES.categories.list },
-      { label: 'Instructors', href: ROUTES.instructors.list },
-      { label: 'Pricing', href: ROUTES.pricing },
-      { label: 'Verify certificate', href: ROUTES.certificates.verifyLookup },
+      { labelKey: 'nav.courses', href: ROUTES.courses.list },
+      { labelKey: 'nav.categories', href: ROUTES.categories.list },
+      { labelKey: 'nav.instructors', href: ROUTES.instructors.list },
+      { labelKey: 'nav.pricing', href: ROUTES.pricing },
+      { labelKey: 'nav.verifyCertificate', href: ROUTES.certificates.verifyLookup },
     ],
   },
   {
-    title: 'Company',
+    titleKey: 'footer.company',
     links: [
-      { label: 'About', href: ROUTES.about },
-      { label: 'Contact', href: ROUTES.contact },
-      { label: 'FAQ', href: ROUTES.faq },
-      { label: 'Help center', href: ROUTES.helpCenter },
-    ],
-  },
-  {
-    title: 'Legal',
-    links: [
-      { label: 'Privacy policy', href: ROUTES.privacyPolicy },
-      { label: 'Terms of service', href: ROUTES.terms },
-      { label: 'Cookie policy', href: ROUTES.cookiePolicy },
-      { label: 'System status', href: ROUTES.health },
+      { labelKey: 'nav.about', href: ROUTES.about },
+      { labelKey: 'nav.contact', href: ROUTES.contact },
     ],
   },
 ];
 
 export function PublicFooter() {
+  const { t } = useLanguage();
+
   return (
     <footer className="border-t border-border bg-muted/20">
-      <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+      <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr]">
         <div className="flex flex-col gap-3">
           <Link href={ROUTES.home} className="flex items-center gap-2">
             <span className="flex size-8 items-center justify-center rounded-lg bg-brand text-brand-foreground">
@@ -48,14 +47,14 @@ export function PublicFooter() {
           </Link>
           <p className="max-w-xs text-sm text-muted-foreground">{siteConfig.description}</p>
           <div className="mt-2">
-            <p className="mb-2 text-sm font-medium text-foreground">Get course updates</p>
+            <p className="mb-2 text-sm font-medium text-foreground">{t('footer.updates')}</p>
             <NewsletterForm className="max-w-sm" />
           </div>
         </div>
 
         {FOOTER_SECTIONS.map((section) => (
-          <div key={section.title} className="flex flex-col gap-3">
-            <h3 className="text-sm font-semibold text-foreground">{section.title}</h3>
+          <div key={section.titleKey} className="flex flex-col gap-3">
+            <h3 className="text-sm font-semibold text-foreground">{t(section.titleKey)}</h3>
             <ul className="flex flex-col gap-2">
               {section.links.map((link) => (
                 <li key={link.href}>
@@ -63,7 +62,7 @@ export function PublicFooter() {
                     href={link.href}
                     className="text-sm text-muted-foreground hover:text-foreground"
                   >
-                    {link.label}
+                    {t(link.labelKey)}
                   </Link>
                 </li>
               ))}
@@ -75,7 +74,7 @@ export function PublicFooter() {
       <div className="border-t border-border">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-4 py-6 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <p>
-            &copy; {new Date().getFullYear()} {siteConfig.name}. All rights reserved.
+            &copy; {new Date().getFullYear()} {siteConfig.name}. {t('footer.allRightsReserved')}
           </p>
         </div>
       </div>

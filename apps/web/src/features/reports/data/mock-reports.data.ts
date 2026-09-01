@@ -1,4 +1,3 @@
-
 import type { ReportExport, ReportType } from '../types/report.types';
 
 const SAMPLE_ROWS: Partial<Record<ReportType, Record<string, unknown>[]>> = {

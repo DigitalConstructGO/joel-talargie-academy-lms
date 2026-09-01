@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Select,
   SelectContent,
@@ -6,6 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { FilterOption } from './filter-types';
+import { useLanguage } from '@/lib/i18n/language-provider';
 
 const ALL_VALUE = '__all__';
 
@@ -27,6 +30,9 @@ export function SelectFilter({
   placeholder,
   className,
 }: SelectFilterProps) {
+  const { locale } = useLanguage();
+  const allLabel = locale === 'am' ? `ሁሉም ${label}` : `All ${label.toLowerCase()}`;
+
   return (
     <Select
       value={value ?? ALL_VALUE}
@@ -36,7 +42,7 @@ export function SelectFilter({
         <SelectValue placeholder={placeholder ?? label} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value={ALL_VALUE}>All {label.toLowerCase()}</SelectItem>
+        <SelectItem value={ALL_VALUE}>{allLabel}</SelectItem>
         {options.map((option) => (
           <SelectItem key={option.value} value={option.value}>
             {option.label}

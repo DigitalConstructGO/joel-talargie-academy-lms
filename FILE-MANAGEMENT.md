@@ -46,6 +46,7 @@ graph TD
 The system is configured to use the **Local Storage Driver (`STORAGE_DRIVER=local`)** as its primary active storage driver.
 
 ### 1. Local Storage Driver (`STORAGE_DRIVER=local`) — Active Default
+
 - **Primary Driver**: Used by default across development and production VPS environments (Hostinger / Ubuntu).
 - **Root Directory**: All uploaded files are stored directly on the server's local filesystem inside `storage/` located at the project root directory.
 - **Subdirectory Structure**:
@@ -57,6 +58,7 @@ The system is configured to use the **Local Storage Driver (`STORAGE_DRIVER=loca
 - **Asset Serving**: Files are served directly via NestJS streaming responses through `/api/v1/storage/*` API controllers.
 
 ### 2. S3 Object Storage Driver (`STORAGE_DRIVER=s3`) — Optional Plugin
+
 - **Optional Plugin**: Available as an alternative cloud driver for S3-compatible services (AWS S3, Cloudflare R2, DigitalOcean Spaces, MinIO) if remote cloud storage is configured in the future.
 - **Configuration**: Activated by changing `STORAGE_DRIVER=s3` in environment configuration.
 
@@ -66,13 +68,13 @@ The system is configured to use the **Local Storage Driver (`STORAGE_DRIVER=loca
 
 Assets are partitioned into isolated folder categories:
 
-| Folder Category | Target Directory | Max File Size | Allowed Types | Purpose |
-|---|---|---|---|---|
-| `avatars` | `storage/avatars/` | 5 MB | JPG, PNG, WebP | User profile pictures & mentor spotlight photos |
-| `course-thumbnails` | `storage/course-thumbnails/` | 10 MB | JPG, PNG, WebP | Course banner graphics & category card images |
-| `lesson-resources` | `storage/lesson-resources/` | 50 MB | PDF, ZIP, TXT, DOCX | Downloadable exercise attachments & source code |
-| `payment-receipts` | `storage/payment-receipts/` | 10 MB | JPG, PNG, PDF | Submitted bank transfer proof & receipt images |
-| `certificates` | `storage/certificates/` | 5 MB | PDF | Generated PDF course completion certificates |
+| Folder Category     | Target Directory             | Max File Size | Allowed Types       | Purpose                                         |
+| ------------------- | ---------------------------- | ------------- | ------------------- | ----------------------------------------------- |
+| `avatars`           | `storage/avatars/`           | 5 MB          | JPG, PNG, WebP      | User profile pictures & mentor spotlight photos |
+| `course-thumbnails` | `storage/course-thumbnails/` | 10 MB         | JPG, PNG, WebP      | Course banner graphics & category card images   |
+| `lesson-resources`  | `storage/lesson-resources/`  | 50 MB         | PDF, ZIP, TXT, DOCX | Downloadable exercise attachments & source code |
+| `payment-receipts`  | `storage/payment-receipts/`  | 10 MB         | JPG, PNG, PDF       | Submitted bank transfer proof & receipt images  |
+| `certificates`      | `storage/certificates/`      | 5 MB          | PDF                 | Generated PDF course completion certificates    |
 
 ---
 
@@ -81,7 +83,9 @@ Assets are partitioned into isolated folder categories:
 Before any file is written to storage, it passes through a multi-stage security pipeline:
 
 ### 1. Filename Sanitization (`filename.util.ts`)
+
 Original client filenames are stripped of path separators, shell escape characters, and control codes:
+
 ```typescript
 export function sanitizeOriginalFileName(name: string): string {
   const base = name.split(/[/\\]/).pop() ?? name;
@@ -91,7 +95,9 @@ export function sanitizeOriginalFileName(name: string): string {
 ```
 
 ### 2. Double Extension Defense (`filename.util.ts`)
+
 To prevent malicious double-extension execution exploits (e.g. `receipt.pdf.exe`), the validator detects extra dots in the filename:
+
 ```typescript
 export function hasDoubleExtension(name: string, matchedExtension: string): boolean {
   const withoutMatched = name.slice(0, name.length - matchedExtension.length);
@@ -140,18 +146,18 @@ const token = storageService.generateSignedToken({
 
 **Public Access Route**:
 `GET /api/v1/storage/signed/:token`
-*The server verifies token HMAC signature and expiration before streaming the file content.*
+_The server verifies token HMAC signature and expiration before streaming the file content._
 
 ---
 
 ## 8. API Endpoints Reference
 
-| Method | Endpoint Path | Protection | Description |
-|---|---|---|---|
-| `POST` | `/api/v1/storage/avatar` | Authenticated | Upload & process user avatar photo |
-| `POST` | `/api/v1/storage/course-thumbnail` | `@RequirePermissions('courses.update')` | Upload & process course banner image |
-| `POST` | `/api/v1/storage/receipt` | Authenticated | Upload bank transfer payment receipt image/PDF |
-| `POST` | `/api/v1/storage/upload` | Authenticated | Generic multipart upload with folder category parameter |
-| `GET` | `/api/v1/storage/avatar/:id` | Public | Stream user avatar image or WebP variant |
-| `GET` | `/api/v1/storage/course-thumbnails/:key` | Public | Stream course thumbnail graphic |
-| `GET` | `/api/v1/storage/signed/:token` | Signed Token | Stream private file using time-bound HMAC token |
+| Method | Endpoint Path                            | Protection                              | Description                                             |
+| ------ | ---------------------------------------- | --------------------------------------- | ------------------------------------------------------- |
+| `POST` | `/api/v1/storage/avatar`                 | Authenticated                           | Upload & process user avatar photo                      |
+| `POST` | `/api/v1/storage/course-thumbnail`       | `@RequirePermissions('courses.update')` | Upload & process course banner image                    |
+| `POST` | `/api/v1/storage/receipt`                | Authenticated                           | Upload bank transfer payment receipt image/PDF          |
+| `POST` | `/api/v1/storage/upload`                 | Authenticated                           | Generic multipart upload with folder category parameter |
+| `GET`  | `/api/v1/storage/avatar/:id`             | Public                                  | Stream user avatar image or WebP variant                |
+| `GET`  | `/api/v1/storage/course-thumbnails/:key` | Public                                  | Stream course thumbnail graphic                         |
+| `GET`  | `/api/v1/storage/signed/:token`          | Signed Token                            | Stream private file using time-bound HMAC token         |

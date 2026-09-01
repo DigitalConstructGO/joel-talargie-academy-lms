@@ -71,13 +71,16 @@ export async function generateCertificatePdf(
 ): Promise<Buffer> {
   const input: CertificateDocumentInput = {
     ...rawInput,
-    academyName: safeWinAnsiText(rawInput.academyName) || 'Joel Talargie Academy',
+    academyName:
+      safeWinAnsiText(rawInput.academyName) || 'Joel Talargie Academy',
     title: safeWinAnsiText(rawInput.title) || 'Certificate of Completion',
     studentName: safeWinAnsiText(rawInput.studentName) || 'Student',
     courseTitle: safeWinAnsiText(rawInput.courseTitle) || 'Course',
     certificateNumber: safeWinAnsiText(rawInput.certificateNumber),
     verificationUrl: safeWinAnsiText(rawInput.verificationUrl),
-    footerText: rawInput.footerText ? safeWinAnsiText(rawInput.footerText) : undefined,
+    footerText: rawInput.footerText
+      ? safeWinAnsiText(rawInput.footerText)
+      : undefined,
   };
 
   const qrCode = await QRCode.toBuffer(input.verificationUrl, {

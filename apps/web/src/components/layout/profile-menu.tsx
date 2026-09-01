@@ -17,11 +17,14 @@ import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/stores';
 import { useLogout } from '@/hooks/use-logout';
 
+import { useLanguage } from '@/lib/i18n/language-provider';
+
 function initials(firstName: string, lastName: string) {
   return `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase() || 'U';
 }
 
 export function ProfileMenu() {
+  const { t } = useLanguage();
   const user = useAuthStore((state) => state.user);
   const handleLogout = useLogout();
   const [loggingOut, setLoggingOut] = useState(false);
@@ -53,7 +56,7 @@ export function ProfileMenu() {
         <DropdownMenuItem asChild>
           <Link href={ROUTES.dashboard.profile}>
             <UserCircle className="size-4" />
-            Profile
+            {t('sidebar.profile')}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
@@ -65,12 +68,12 @@ export function ProfileMenu() {
           {loggingOut ? (
             <>
               <Loader2 className="size-4 animate-spin text-destructive" />
-              <span>Signing out...</span>
+              <span>{t('nav.signingOut')}</span>
             </>
           ) : (
             <>
               <LogOut className="size-4" />
-              <span>Sign out</span>
+              <span>{t('nav.logout')}</span>
             </>
           )}
         </DropdownMenuItem>

@@ -42,7 +42,10 @@ function flattenNavItems(sections: NavSection[]): NavItem[] {
  * field (not a centered modal), so it doesn't dim the page and reads like
  * VS Code / Notion / Linear command search.
  */
+import { useLanguage } from '@/lib/i18n/language-provider';
+
 export function CommandPalette({ sections, open, onOpenChange }: CommandPaletteProps) {
+  const { locale } = useLanguage();
   const router = useRouter();
   const { setTheme } = useTheme();
   const handleLogout = useLogout();
@@ -63,7 +66,7 @@ export function CommandPalette({ sections, open, onOpenChange }: CommandPaletteP
         >
           <Search className="size-4 shrink-0" />
           <span className="hidden flex-1 truncate text-left lg:inline">
-            Search courses, mentors…
+            {locale === 'am' ? 'ኮርሶችን ፈልግ...' : 'Search courses, mentors…'}
           </span>
           <kbd className="pointer-events-none hidden h-5 shrink-0 select-none items-center gap-0.5 rounded border border-border bg-background px-1.5 font-mono text-[10px] font-medium lg:inline-flex">
             ⌘K
@@ -72,10 +75,12 @@ export function CommandPalette({ sections, open, onOpenChange }: CommandPaletteP
       </PopoverTrigger>
       <PopoverContent align="start" sideOffset={8} className="w-90 p-0">
         <Command>
-          <CommandInput placeholder="Search pages and actions…" />
+          <CommandInput
+            placeholder={locale === 'am' ? 'ገጾችን እና እርምጃዎችን ፈልግ...' : 'Search pages and actions…'}
+          />
           <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup heading="Navigation">
+            <CommandEmpty>{locale === 'am' ? 'ምንም ውጤት አልተገኘም።' : 'No results found.'}</CommandEmpty>
+            <CommandGroup heading={locale === 'am' ? 'ዳሰሳ' : 'Navigation'}>
               {navItems.map((item) => (
                 <CommandItem key={item.href} value={item.label} onSelect={() => go(item.href)}>
                   {item.icon ? <item.icon /> : <LayoutDashboard />}
@@ -84,10 +89,10 @@ export function CommandPalette({ sections, open, onOpenChange }: CommandPaletteP
               ))}
             </CommandGroup>
             <CommandSeparator />
-            <CommandGroup heading="Quick actions">
+            <CommandGroup heading={locale === 'am' ? 'ፈጣን እርምጃዎች' : 'Quick actions'}>
               <CommandItem value="View profile" onSelect={() => go(ROUTES.dashboard.profile)}>
                 <UserCircle />
-                <span>View profile</span>
+                <span>{locale === 'am' ? 'መገለጫ አሳይ' : 'View profile'}</span>
               </CommandItem>
               <CommandItem
                 value="Switch to light theme"
@@ -97,7 +102,7 @@ export function CommandPalette({ sections, open, onOpenChange }: CommandPaletteP
                 }}
               >
                 <Sun />
-                <span>Switch to light theme</span>
+                <span>{locale === 'am' ? 'ወደ ብርሃን ገጽታ ቀይር' : 'Switch to light theme'}</span>
               </CommandItem>
               <CommandItem
                 value="Switch to dark theme"
@@ -107,7 +112,7 @@ export function CommandPalette({ sections, open, onOpenChange }: CommandPaletteP
                 }}
               >
                 <Moon />
-                <span>Switch to dark theme</span>
+                <span>{locale === 'am' ? 'ወደ ጨለማ ገጽታ ቀይር' : 'Switch to dark theme'}</span>
               </CommandItem>
               <CommandItem
                 value="Sign out"
@@ -117,7 +122,7 @@ export function CommandPalette({ sections, open, onOpenChange }: CommandPaletteP
                 }}
               >
                 <LogOut />
-                <span>Sign out</span>
+                <span>{locale === 'am' ? 'ውጣ' : 'Sign out'}</span>
                 <CommandShortcut>⌘K</CommandShortcut>
               </CommandItem>
             </CommandGroup>

@@ -360,9 +360,7 @@ export class PaymentsRepository {
     input: { reason?: string; reviewNote?: string },
   ) {
     return this.db.transaction(async (tx) => {
-      await tx.execute(
-        sql`SELECT id FROM payments WHERE id = ${paymentId}`,
-      );
+      await tx.execute(sql`SELECT id FROM payments WHERE id = ${paymentId}`);
       const payment = await tx.query.payments.findFirst({
         where: eq(schema.payments.id, paymentId),
       });

@@ -96,7 +96,7 @@ export class ReportExportProcessor implements OnModuleInit, OnModuleDestroy {
       let page = 1,
         total = 0;
       const reportType = row.reportType ?? (row as any).report_type;
-      const filtersJson = (row.filtersJson ?? (row as any).filters_json) ?? {};
+      const filtersJson = row.filtersJson ?? (row as any).filters_json ?? {};
       const requestedBy = row.requestedBy ?? (row as any).requested_by;
 
       do {

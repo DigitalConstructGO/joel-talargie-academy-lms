@@ -300,7 +300,8 @@ export default function AdminCourseDetailPage() {
                     <ul className="list-inside list-disc text-sm text-foreground">
                       {course.requirements.map((requirement) => (
                         <li key={requirement.id}>
-                          {requirement.text || (requirement as unknown as { requirement: string }).requirement}
+                          {requirement.text ||
+                            (requirement as unknown as { requirement: string }).requirement}
                         </li>
                       ))}
                     </ul>

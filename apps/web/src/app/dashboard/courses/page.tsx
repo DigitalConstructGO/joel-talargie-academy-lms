@@ -32,6 +32,8 @@ import { useAuthStore } from '@/stores';
 import { CoursesGridSkeleton } from '@/features/catalog/components/course-card-skeleton';
 import type { EnrollmentStatus } from '@/features/enrollments/types/enrollment.types';
 
+import { useLanguage } from '@/lib/i18n/language-provider';
+
 const PAGE_SIZE = 8;
 
 interface MyCoursesFilters {
@@ -58,6 +60,7 @@ function CoursesListSkeleton() {
 }
 
 export default function CoursesPage() {
+  const { t } = useLanguage();
   const { filters, page, setFilter, setFilters, setPage, resetFilters } =
     useQueryFilters<MyCoursesFilters>({ defaults: DEFAULT_FILTERS, pageSize: PAGE_SIZE });
   const { status, categoryId, search } = filters;
@@ -99,8 +102,8 @@ export default function CoursesPage() {
   return (
     <ContentContainer>
       <PageHeader
-        title="My Courses"
-        description="Courses you're enrolled in - active, in progress, and completed."
+        title={t('sidebar.myCourses')}
+        description={t('page.browseCourses.subtitle')}
         actions={<ViewSwitcher view={view} onChange={setView} />}
       />
 
@@ -109,9 +112,9 @@ export default function CoursesPage() {
         onValueChange={(value) => setFilter('status', value as MyCoursesFilters['status'])}
       >
         <TabsList>
-          <TabsTrigger value="ALL">All</TabsTrigger>
-          <TabsTrigger value="IN_PROGRESS">In Progress</TabsTrigger>
-          <TabsTrigger value="COMPLETED">Completed</TabsTrigger>
+          <TabsTrigger value="ALL">{t('common.allLevels')}</TabsTrigger>
+          <TabsTrigger value="IN_PROGRESS">{t('dashboard.activeCourses')}</TabsTrigger>
+          <TabsTrigger value="COMPLETED">{t('dashboard.completedCourses')}</TabsTrigger>
         </TabsList>
       </Tabs>
 

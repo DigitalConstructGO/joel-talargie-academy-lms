@@ -98,7 +98,9 @@ STORAGE_SIGNED_URL_TTL_SECONDS=900
 ## 3. Hostinger VPS / Ubuntu Deployment Guide
 
 ### Step 1: System Preparation
+
 On your Hostinger VPS (Ubuntu 22.04 / 24.04 LTS):
+
 ```bash
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y git nginx certbot python3-certbot-nginx
@@ -108,6 +110,7 @@ sudo npm install -g pm2
 ```
 
 ### Step 2: Clone and Install
+
 ```bash
 cd /var/www
 sudo git clone <repository-url> joel-academy
@@ -117,12 +120,14 @@ npm install
 ```
 
 ### Step 3: Run Database Migrations
+
 ```bash
 npm run db:migrate
 npm run db:seed
 ```
 
 ### Step 4: Build Production Assets
+
 ```bash
 npm run build
 ```
@@ -132,7 +137,9 @@ npm run build
 ## 4. Nginx Reverse Proxy & SSL Setup
 
 ### Step 1: Create Nginx Site Configuration
+
 Create `/etc/nginx/sites-available/joelacademy`:
+
 ```nginx
 # 1. Frontend Web App Proxy
 server {
@@ -170,6 +177,7 @@ server {
 ```
 
 ### Step 2: Enable Configuration and Issue SSL Certificates
+
 ```bash
 sudo ln -s /etc/nginx/sites-available/joelacademy /etc/nginx/sites-enabled/
 sudo nginx -t
@@ -184,6 +192,7 @@ sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com -d api.yourdomain.c
 Launch and daemonize application processes using PM2:
 
 ### Start Processes
+
 ```bash
 # 1. Start Backend API
 cd /var/www/joel-academy/apps/api
@@ -199,6 +208,7 @@ pm2 startup
 ```
 
 ### Useful PM2 Monitoring Commands
+
 ```bash
 pm2 status                  # Check running process status
 pm2 logs                    # View live application log output
@@ -211,12 +221,14 @@ pm2 restart all             # Restart all services after deployment update
 ## 6. Vercel & Render Alternative Setup
 
 ### Vercel (Frontend Deployment)
+
 - Root Directory: `apps/web`
 - Build Command: `npm run build`
 - Output Directory: `.next`
 - Environment Variables: Set `NEXT_PUBLIC_API_URL` to `https://api.yourdomain.com/api/v1`.
 
 ### Render (Backend Deployment)
+
 - Environment: Node
 - Build Command: `npm run build:api`
 - Start Command: `npm run start:prod -w @joel-academy/api`
@@ -227,16 +239,20 @@ pm2 restart all             # Restart all services after deployment update
 ## 7. Production Verification & Monitoring
 
 1. **API Health Check**:
+
    ```bash
    curl -I https://api.yourdomain.com/api/v1/health
    ```
-   *Expected Response: HTTP/1.1 200 OK*
+
+   _Expected Response: HTTP/1.1 200 OK_
 
 2. **Frontend Availability**:
+
    ```bash
    curl -I https://yourdomain.com
    ```
-   *Expected Response: HTTP/1.1 200 OK*
+
+   _Expected Response: HTTP/1.1 200 OK_
 
 3. **Database Connectivity Verification**:
    ```bash
@@ -248,6 +264,7 @@ pm2 restart all             # Restart all services after deployment update
 ## 8. Backup & Maintenance Procedures
 
 ### Applying Zero-Downtime Code Updates
+
 ```bash
 cd /var/www/joel-academy
 git pull origin main
@@ -258,7 +275,9 @@ pm2 reload all
 ```
 
 ### Database Backup
+
 Neon PostgreSQL handles continuous automated point-in-time backups. To create a manual logical backup:
+
 ```bash
 pg_dump "$DATABASE_DIRECT_URL" > joel_academy_backup_$(date +%F).sql
 ```

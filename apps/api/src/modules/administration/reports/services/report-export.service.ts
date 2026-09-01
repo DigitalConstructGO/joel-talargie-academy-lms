@@ -14,7 +14,10 @@ import type { StorageService } from '../../../storage/storage.interface';
 import { CreateReportExportDto, ExportListQueryDto } from '../dto/reports.dto';
 import { ReportRegistryService } from './report-registry.service';
 import { ReportRepository } from '../repositories/report.repository';
-import { CsvReportExporter, PdfReportExporter } from '../exporters/report.exporters';
+import {
+  CsvReportExporter,
+  PdfReportExporter,
+} from '../exporters/report.exporters';
 import type { ReportType } from '../report.types';
 
 @Injectable()
@@ -64,7 +67,8 @@ export class ReportExportService {
           dto.selectedColumns,
         ]),
       )
-      .digest('hex').slice(0, 16)}:${Date.now()}`;
+      .digest('hex')
+      .slice(0, 16)}:${Date.now()}`;
     let created: any;
     try {
       await this.db.client.transaction(async (tx) => {
@@ -177,7 +181,7 @@ export class ReportExportService {
       let page = 1,
         total = 0;
       const reportType = row.reportType ?? row.report_type;
-      const filtersJson = (row.filtersJson ?? row.filters_json) ?? {};
+      const filtersJson = row.filtersJson ?? row.filters_json ?? {};
 
       do {
         const part = await this.reports.query(

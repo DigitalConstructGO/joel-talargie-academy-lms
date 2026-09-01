@@ -28,6 +28,8 @@ import type { CertificateStatus } from '@/features/certificates/types/certificat
 import { ROUTES } from '@/constants/routes';
 import { formatDate } from '@/lib/date';
 
+import { useLanguage, translateCourseTitle } from '@/lib/i18n/language-provider';
+
 const PAGE_SIZE = 20;
 
 interface CertificatesFilters {
@@ -43,13 +45,6 @@ const DEFAULT_FILTERS: CertificatesFilters = {
   search: undefined,
 };
 
-const STATUS_OPTIONS = [
-  { label: 'Pending', value: 'PENDING' },
-  { label: 'Issued', value: 'GENERATED' },
-  { label: 'Failed', value: 'FAILED' },
-  { label: 'Revoked', value: 'REVOKED' },
-];
-
 const STATUS_VARIANT: Record<CertificateStatus, NonNullable<BadgeProps['variant']>> = {
   PENDING: 'warning',
   GENERATED: 'success',
@@ -58,15 +53,23 @@ const STATUS_VARIANT: Record<CertificateStatus, NonNullable<BadgeProps['variant'
 };
 
 export default function AdminCertificatesPage() {
+  const { t, locale } = useLanguage();
   const { filters, pageSize, setFilter, setPageSize, resetFilters } =
     useQueryFilters<CertificatesFilters>({ defaults: DEFAULT_FILTERS, pageSize: PAGE_SIZE });
   const { status, courseId, search } = filters;
 
   const coursesQuery = useAdminCourses({ pageSize: 100 });
   const courseOptions = (coursesQuery.data?.items ?? []).map((course) => ({
-    label: course.title,
+    label: translateCourseTitle(course.title, locale),
     value: course.id,
   }));
+
+  const statusOptions = [
+    { label: t('common.pending'), value: 'PENDING' },
+    { label: t('common.active'), value: 'GENERATED' },
+    { label: 'Failed', value: 'FAILED' },
+    { label: t('common.archived'), value: 'REVOKED' },
+  ];
 
   const certificatesQuery = useAdminCertificates({
     page: 1,
@@ -83,12 +86,12 @@ export default function AdminCertificatesPage() {
   return (
     <ContentContainer>
       <PageBreadcrumb
-        items={[{ label: 'Dashboard', href: ROUTES.admin.root }, { label: 'Certificates' }]}
+        items={[
+          { label: t('sidebar.dashboard'), href: ROUTES.admin.root },
+          { label: t('sidebar.certificates') },
+        ]}
       />
-      <PageHeader
-        title="Certificate Management"
-        description="Every certificate issued across the platform."
-      />
+      <PageHeader title={t('sidebar.certificates')} description={t('categories.subtitle')} />
 
       <FilterBar>
         <SearchBar
@@ -98,15 +101,15 @@ export default function AdminCertificatesPage() {
           className="w-full sm:w-72"
         />
         <SelectFilter
-          label="Status"
+          label={t('common.status')}
           value={status === 'ALL' ? undefined : status}
           onChange={(value) =>
             setFilter('status', (value ?? 'ALL') as CertificatesFilters['status'])
           }
-          options={STATUS_OPTIONS}
+          options={statusOptions}
         />
         <SelectFilter
-          label="Course"
+          label={t('nav.courses')}
           value={courseId}
           onChange={(value) => setFilter('courseId', value)}
           options={courseOptions}
@@ -141,11 +144,11 @@ export default function AdminCertificatesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Certificate</TableHead>
-                <TableHead>Student</TableHead>
-                <TableHead>Course</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Issued</TableHead>
+                <TableHead>{t('sidebar.certificates')}</TableHead>
+                <TableHead>{t('common.name')}</TableHead>
+                <TableHead>{t('nav.courses')}</TableHead>
+                <TableHead>{t('common.status')}</TableHead>
+                <TableHead>{t('common.created')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -165,7 +168,9 @@ export default function AdminCertificatesPage() {
                       <p className="text-xs text-muted-foreground">{certificate.studentEmail}</p>
                     </div>
                   </TableCell>
-                  <TableCell className="max-w-52 truncate">{certificate.courseTitle}</TableCell>
+                  <TableCell className="max-w-52 truncate">
+                    {translateCourseTitle(certificate.courseTitle, locale)}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={STATUS_VARIANT[certificate.status]}>{certificate.status}</Badge>
                   </TableCell>

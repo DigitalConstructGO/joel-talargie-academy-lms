@@ -79,7 +79,10 @@ function initials(firstName?: string, lastName?: string) {
   return `${firstName?.[0] ?? ''}${lastName?.[0] ?? ''}`.toUpperCase() || 'U';
 }
 
+import { useLanguage } from '@/lib/i18n/language-provider';
+
 export default function AdminProfilePage() {
+  const { t, locale } = useLanguage();
   const profileQuery = useProfile();
   const updateProfile = useUpdateProfile();
   const profile = profileQuery.data;
@@ -192,15 +195,12 @@ export default function AdminProfilePage() {
       <ContentContainer>
         <PageBreadcrumb
           items={[
-            { label: 'Dashboard', href: ROUTES.admin.root },
-            { label: 'System', href: ROUTES.admin.system },
-            { label: 'Profile & Security' },
+            { label: t('sidebar.dashboard'), href: ROUTES.admin.root },
+            { label: t('sidebar.system'), href: ROUTES.admin.system },
+            { label: t('sidebar.profile') },
           ]}
         />
-        <PageHeader
-          title="Profile & Security"
-          description="Manage your account profile and security settings."
-        />
+        <PageHeader title={t('sidebar.profile')} description={t('categories.subtitle')} />
         <ErrorState
           onRetry={() => profileQuery.refetch()}
           description="Unable to load your profile."
@@ -213,14 +213,14 @@ export default function AdminProfilePage() {
     <ContentContainer>
       <PageBreadcrumb
         items={[
-          { label: 'Dashboard', href: ROUTES.admin.root },
-          { label: 'System', href: ROUTES.admin.system },
-          { label: 'Profile & Security' },
+          { label: t('sidebar.dashboard'), href: ROUTES.admin.root },
+          { label: t('sidebar.system'), href: ROUTES.admin.system },
+          { label: t('sidebar.profile') },
         ]}
       />
       <PageHeader
-        title="Profile & Security"
-        description="Manage your administrator profile, avatar, credentials, and platform security."
+        title={t('sidebar.profile')}
+        description={t('categories.subtitle')}
         actions={
           <ShieldCheck
             className="hidden size-5 text-muted-foreground sm:block"
@@ -262,14 +262,14 @@ export default function AdminProfilePage() {
                     className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[11px] font-medium"
                   >
                     <ShieldCheck className="mr-1 size-3 text-emerald-600 dark:text-emerald-400" />
-                    Administrator
+                    {locale === 'am' ? 'አስተዳዳሪ' : 'Administrator'}
                   </Badge>
                   <Badge
                     variant="outline"
                     className="text-muted-foreground text-[11px] font-normal"
                   >
                     <CheckCircle2 className="mr-1 size-3 text-emerald-600 dark:text-emerald-400" />
-                    Verified
+                    {locale === 'am' ? 'የተረጋገጠ' : 'Verified'}
                   </Badge>
                 </div>
                 <p className="mt-0.5 text-xs text-muted-foreground flex items-center justify-center sm:justify-start gap-1.5">
@@ -300,7 +300,13 @@ export default function AdminProfilePage() {
                 ) : (
                   <Camera className="size-3.5 text-muted-foreground" />
                 )}
-                {uploadAvatar.isPending ? 'Uploading...' : 'Change Photo'}
+                {uploadAvatar.isPending
+                  ? locale === 'am'
+                    ? 'በመጫን ላይ...'
+                    : 'Uploading...'
+                  : locale === 'am'
+                    ? 'ፎቶ ቀይር'
+                    : 'Change Photo'}
               </Button>
               {avatar.url && (
                 <ConfirmDialog
@@ -317,12 +323,12 @@ export default function AdminProfilePage() {
                       ) : (
                         <Trash2 className="size-3.5" />
                       )}
-                      Remove
+                      {locale === 'am' ? 'አስወግድ' : 'Remove'}
                     </Button>
                   }
-                  title="Remove profile photo?"
+                  title={locale === 'am' ? 'የመገለጫ ፎቶ ይወገድ?' : 'Remove profile photo?'}
                   description="Your avatar will revert to your name initials."
-                  confirmLabel="Remove photo"
+                  confirmLabel={locale === 'am' ? 'ፎቶ አስወግድ' : 'Remove photo'}
                   variant="destructive"
                   onConfirm={handleAvatarRemove}
                 />
@@ -340,10 +346,14 @@ export default function AdminProfilePage() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <User className="size-4 text-brand" />
-                <CardTitle className="text-base">Personal Information</CardTitle>
+                <CardTitle className="text-base">
+                  {locale === 'am' ? 'የግል መረጃ' : 'Personal Information'}
+                </CardTitle>
               </div>
               <CardDescription>
-                Update your personal details and how your name is displayed across the platform.
+                {locale === 'am'
+                  ? 'የግል ዝርዝሮችዎን እና ስምዎ በሲስተሙ ላይ የሚታይበትን መንገድ ያዘምኑ።'
+                  : 'Update your personal details and how your name is displayed across the platform.'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -356,7 +366,7 @@ export default function AdminProfilePage() {
               ) : (
                 <form className="space-y-4" onSubmit={profileForm.handleSubmit(onProfileSubmit)}>
                   <div className="space-y-1.5">
-                    <Label htmlFor="fullName">Full Name</Label>
+                    <Label htmlFor="fullName">{locale === 'am' ? 'ሙሉ ስም' : 'Full Name'}</Label>
                     <Input
                       id="fullName"
                       placeholder="e.g. Habtamu Baye"
@@ -372,7 +382,7 @@ export default function AdminProfilePage() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-1.5">
                       <Label htmlFor="email" className="flex items-center gap-1.5">
-                        <span>Email Address</span>
+                        <span>{locale === 'am' ? 'የኢሜይል አድራሻ' : 'Email Address'}</span>
                         <Lock className="size-3 text-muted-foreground" />
                       </Label>
                       <Input
@@ -383,12 +393,14 @@ export default function AdminProfilePage() {
                         className="bg-muted/50 cursor-not-allowed text-muted-foreground"
                       />
                       <p className="text-[11px] text-muted-foreground">
-                        Managed via system administrator
+                        {locale === 'am'
+                          ? 'በሲስተም አስተዳዳሪ በኩል የሚተዳደር'
+                          : 'Managed via system administrator'}
                       </p>
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label htmlFor="phone">Phone Number</Label>
+                      <Label htmlFor="phone">{locale === 'am' ? 'ስልክ ቁጥር' : 'Phone Number'}</Label>
                       <div className="relative">
                         <Input
                           id="phone"
@@ -407,7 +419,9 @@ export default function AdminProfilePage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="bio">Biography / Role Summary</Label>
+                    <Label htmlFor="bio">
+                      {locale === 'am' ? 'ስለ እኔ / የሙያ ማጠቃለያ' : 'Biography / Role Summary'}
+                    </Label>
                     <Textarea
                       id="bio"
                       rows={4}
@@ -427,7 +441,13 @@ export default function AdminProfilePage() {
                       disabled={!profileForm.formState.isDirty || updateProfile.isPending}
                     >
                       {updateProfile.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-                      {updateProfile.isPending ? 'Saving...' : 'Save Changes'}
+                      {updateProfile.isPending
+                        ? locale === 'am'
+                          ? 'በማስቀመጥ ላይ...'
+                          : 'Saving...'
+                        : locale === 'am'
+                          ? 'ለውጦችን አስቀምጥ'
+                          : 'Save Changes'}
                     </Button>
                   </div>
                 </form>
@@ -443,21 +463,29 @@ export default function AdminProfilePage() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <KeyRound className="size-4 text-brand" />
-                <CardTitle className="text-base">Change Password</CardTitle>
+                <CardTitle className="text-base">
+                  {locale === 'am' ? 'የይለፍ ቃል ቀይር' : 'Change Password'}
+                </CardTitle>
               </div>
               <CardDescription>
-                Ensure your account is using a long, random password to stay secure.
+                {locale === 'am'
+                  ? 'መለያዎን ደህንነቱ የተጠበቀ ለማድረግ ረጅም እና አስተማማኝ የይለፍ ቃል ይጠቀሙ።'
+                  : 'Ensure your account is using a long, random password to stay secure.'}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-3.5">
                 <div className="space-y-1.5">
-                  <Label htmlFor="currentPassword">Current Password</Label>
+                  <Label htmlFor="currentPassword">
+                    {locale === 'am' ? 'የአሁኑ የይለፍ ቃል' : 'Current Password'}
+                  </Label>
                   <div className="relative">
                     <Input
                       id="currentPassword"
                       type={showCurrentPassword ? 'text' : 'password'}
-                      placeholder="Enter current password"
+                      placeholder={
+                        locale === 'am' ? 'የአሁኑን የይለፍ ቃል ያስገቡ' : 'Enter current password'
+                      }
                       className="pr-10"
                       {...passwordForm.register('currentPassword')}
                     />
@@ -482,12 +510,16 @@ export default function AdminProfilePage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="newPassword">New Password</Label>
+                  <Label htmlFor="newPassword">
+                    {locale === 'am' ? 'አዲስ የይለፍ ቃል' : 'New Password'}
+                  </Label>
                   <div className="relative">
                     <Input
                       id="newPassword"
                       type={showNewPassword ? 'text' : 'password'}
-                      placeholder="Create a strong password"
+                      placeholder={
+                        locale === 'am' ? 'ጠንካራ የይለፍ ቃል ይፍጠሩ' : 'Create a strong password'
+                      }
                       className="pr-10"
                       {...passwordForm.register('newPassword')}
                     />
@@ -508,12 +540,16 @@ export default function AdminProfilePage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <Label htmlFor="confirmPassword">
+                    {locale === 'am' ? 'አዲስ የይለፍ ቃል ያረጋግጡ' : 'Confirm New Password'}
+                  </Label>
                   <div className="relative">
                     <Input
                       id="confirmPassword"
                       type={showConfirmPassword ? 'text' : 'password'}
-                      placeholder="Re-type new password"
+                      placeholder={
+                        locale === 'am' ? 'አዲሱን የይለፍ ቃል እንደገና ያስገቡ' : 'Re-type new password'
+                      }
                       className="pr-10"
                       {...passwordForm.register('confirmPassword')}
                     />
@@ -538,11 +574,19 @@ export default function AdminProfilePage() {
                 </div>
 
                 <div className="rounded-md border border-border/70 bg-muted/40 p-3 text-[11px] text-muted-foreground">
-                  <p className="font-semibold text-foreground">Password requirements:</p>
+                  <p className="font-semibold text-foreground">
+                    {locale === 'am' ? 'የይለፍ ቃል መስፈርቶች፡' : 'Password requirements:'}
+                  </p>
                   <ul className="mt-1 list-disc pl-4 space-y-0.5">
-                    <li>Minimum 8 characters long</li>
-                    <li>Uppercase and lowercase letters</li>
-                    <li>At least one number &amp; one symbol</li>
+                    <li>{locale === 'am' ? 'ቢያንስ 8 ቁምፊዎች ርዝመት' : 'Minimum 8 characters long'}</li>
+                    <li>
+                      {locale === 'am' ? 'ትልቅ እና ትንሽ ፊደላት' : 'Uppercase and lowercase letters'}
+                    </li>
+                    <li>
+                      {locale === 'am'
+                        ? 'ቢያንስ አንድ ቁጥር እና አንድ ምልክት'
+                        : 'At least one number & one symbol'}
+                    </li>
                   </ul>
                 </div>
 
@@ -554,8 +598,10 @@ export default function AdminProfilePage() {
                   {isChangingPassword ? (
                     <>
                       <Loader2 className="mr-2 size-4 animate-spin" />
-                      Updating...
+                      {locale === 'am' ? 'በማዘመን ላይ...' : 'Updating...'}
                     </>
+                  ) : locale === 'am' ? (
+                    'የይለፍ ቃል አዘምን'
                   ) : (
                     'Update Password'
                   )}
@@ -569,18 +615,30 @@ export default function AdminProfilePage() {
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="size-4 text-brand" />
-                <CardTitle className="text-base">Role &amp; Permissions</CardTitle>
+                <CardTitle className="text-base">
+                  {locale === 'am' ? 'ሚና እና ፈቃዶች' : 'Role & Permissions'}
+                </CardTitle>
               </div>
-              <CardDescription>Active platform privileges for this account.</CardDescription>
+              <CardDescription>
+                {locale === 'am'
+                  ? 'ለዚህ መለያ የተሰጡ ንቁ የሲስተም ፈቃዶች።'
+                  : 'Active platform privileges for this account.'}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {isAdministrator ? (
                 <div className="flex items-center gap-2.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs text-emerald-800 dark:text-emerald-200">
                   <ShieldCheck className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                  <span>Full administrator access across all system entities.</span>
+                  <span>
+                    {locale === 'am'
+                      ? 'በሁሉም የሲስተም ክፍሎች ላይ ሙሉ የአስተዳዳሪ መዳረሻ።'
+                      : 'Full administrator access across all system entities.'}
+                  </span>
                 </div>
               ) : Object.keys(permissionsByModule).length === 0 ? (
-                <p className="text-xs text-muted-foreground">Standard permissions assigned.</p>
+                <p className="text-xs text-muted-foreground">
+                  {locale === 'am' ? 'መደበኛ ፈቃዶች የተመደቡ።' : 'Standard permissions assigned.'}
+                </p>
               ) : (
                 <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1">
                   {Object.entries(permissionsByModule).map(([module, codes]) => (

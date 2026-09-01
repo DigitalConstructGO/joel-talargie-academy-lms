@@ -11,6 +11,8 @@ import { toast } from '@/lib/toast';
 import { useUpdateSettingsBatch } from '../hooks/use-settings';
 import type { AcademyGeneralSettings } from '../types/settings.types';
 
+import { useLanguage } from '@/lib/i18n/language-provider';
+
 export function AcademyGeneralForm({
   initialData,
   disabled = false,
@@ -18,6 +20,7 @@ export function AcademyGeneralForm({
   initialData: AcademyGeneralSettings;
   disabled?: boolean;
 }) {
+  const { locale } = useLanguage();
   const updateBatch = useUpdateSettingsBatch();
   const [form, setForm] = useState<AcademyGeneralSettings>(initialData);
 
@@ -63,15 +66,17 @@ export function AcademyGeneralForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Academy Identity</CardTitle>
+          <CardTitle>{locale === 'am' ? 'የአካዳሚው ማንነት' : 'Academy Identity'}</CardTitle>
           <CardDescription>
-            General institution details displayed throughout the public website and emails.
+            {locale === 'am'
+              ? 'በይፋዊ ድህረ ገፅ እና በኢሜይሎች ላይ የሚታዩ አጠቃላይ የተቋም ዝርዝሮች።'
+              : 'General institution details displayed throughout the public website and emails.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="academyName">Academy Name</Label>
+              <Label htmlFor="academyName">{locale === 'am' ? 'የአካዳሚው ስም' : 'Academy Name'}</Label>
               <Input
                 id="academyName"
                 value={form.academyName}
@@ -81,7 +86,9 @@ export function AcademyGeneralForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="shortDescription">Short Tagline</Label>
+              <Label htmlFor="shortDescription">
+                {locale === 'am' ? 'አጭር መሪ ቃል' : 'Short Tagline'}
+              </Label>
               <Input
                 id="shortDescription"
                 value={form.shortDescription}
@@ -93,7 +100,7 @@ export function AcademyGeneralForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Full Description</Label>
+            <Label htmlFor="description">{locale === 'am' ? 'ሙሉ መግለጫ' : 'Full Description'}</Label>
             <Textarea
               id="description"
               rows={3}
@@ -108,15 +115,19 @@ export function AcademyGeneralForm({
 
       <Card>
         <CardHeader>
-          <CardTitle>Contact & Location</CardTitle>
+          <CardTitle>{locale === 'am' ? 'ግንኙነት እና አድራሻ' : 'Contact & Location'}</CardTitle>
           <CardDescription>
-            Public contact details for learner inquiries and support.
+            {locale === 'am'
+              ? 'ለተማሪዎች ጥያቄ እና ድጋፍ የሚሆኑ ይፋዊ የእውቂያ ዝርዝሮች።'
+              : 'Public contact details for learner inquiries and support.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="contactEmail">Contact Email</Label>
+              <Label htmlFor="contactEmail">
+                {locale === 'am' ? 'የእውቂያ ኢሜይል' : 'Contact Email'}
+              </Label>
               <Input
                 id="contactEmail"
                 type="email"
@@ -127,7 +138,9 @@ export function AcademyGeneralForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="contactPhone">Contact Phone</Label>
+              <Label htmlFor="contactPhone">
+                {locale === 'am' ? 'የእውቂያ ስልክ' : 'Contact Phone'}
+              </Label>
               <Input
                 id="contactPhone"
                 value={form.contactPhone}
@@ -137,7 +150,9 @@ export function AcademyGeneralForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="website">Website URL</Label>
+              <Label htmlFor="website">
+                {locale === 'am' ? 'የድህረ ገጽ አድራሻ (URL)' : 'Website URL'}
+              </Label>
               <Input
                 id="website"
                 type="url"
@@ -148,7 +163,7 @@ export function AcademyGeneralForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="address">Physical Address</Label>
+              <Label htmlFor="address">{locale === 'am' ? 'አካላዊ አድራሻ' : 'Physical Address'}</Label>
               <Input
                 id="address"
                 value={form.address}
@@ -163,9 +178,11 @@ export function AcademyGeneralForm({
 
       <Card>
         <CardHeader>
-          <CardTitle>Social Media Links</CardTitle>
+          <CardTitle>{locale === 'am' ? 'የማህበራዊ ሚዲያ ሊንኮች' : 'Social Media Links'}</CardTitle>
           <CardDescription>
-            Official social profile links displayed in the footer and headers.
+            {locale === 'am'
+              ? 'በታችኛው ክፍል እና ርዕሶች ላይ የሚታዩ ይፋዊ ማህበራዊ ገጾች።'
+              : 'Official social profile links displayed in the footer and headers.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -229,12 +246,12 @@ export function AcademyGeneralForm({
           {updateBatch.isPending ? (
             <>
               <Loader2 className="mr-2 size-4 animate-spin" />
-              Saving...
+              {locale === 'am' ? 'በማስቀመጥ ላይ...' : 'Saving...'}
             </>
           ) : (
             <>
               <Save className="mr-2 size-4" />
-              Save General Info
+              {locale === 'am' ? 'አጠቃላይ መረጃ አስቀምጥ' : 'Save General Info'}
             </>
           )}
         </Button>

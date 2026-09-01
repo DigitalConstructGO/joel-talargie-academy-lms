@@ -13,7 +13,10 @@ import { useCourses } from '@/features/catalog/hooks/use-courses';
 import { useWishlistStore } from '@/stores';
 import { ROUTES } from '@/constants/routes';
 
+import { useLanguage } from '@/lib/i18n/language-provider';
+
 export default function WishlistPage() {
+  const { t, locale } = useLanguage();
   const courseIds = useWishlistStore((state) => state.courseIds);
   const coursesQuery = useCourses({ pageSize: 100 });
 
@@ -23,16 +26,13 @@ export default function WishlistPage() {
 
   return (
     <ContentContainer>
-      <PageHeader
-        title="Wishlist"
-        description="Courses you've saved for later - stored on this device only, not synced across browsers."
-      />
+      <PageHeader title={t('sidebar.wishlist')} description={t('categories.subtitle')} />
 
       {courseIds.length === 0 ? (
         <NoWishlistEmptyState
           action={
             <Button asChild>
-              <Link href={ROUTES.dashboard.browseCourses}>Browse courses</Link>
+              <Link href={ROUTES.dashboard.browseCourses}>{t('sidebar.browseCourses')}</Link>
             </Button>
           }
         />
@@ -54,7 +54,13 @@ export default function WishlistPage() {
                   }
                 >
                   <ShoppingCart className="size-4" />
-                  {course.accessType === 'FREE' ? 'Enroll Free' : 'Move to Checkout'}
+                  {course.accessType === 'FREE'
+                    ? locale === 'am'
+                      ? 'በነጻ ተመዝገብ'
+                      : 'Enroll Free'
+                    : locale === 'am'
+                      ? 'ወደ ክፍያ ሂድ'
+                      : 'Move to Checkout'}
                 </Link>
               </Button>
             </div>

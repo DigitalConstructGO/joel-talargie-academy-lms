@@ -69,6 +69,8 @@ const fieldIcons: Record<string, typeof Mail> = {
   firstName: User,
   lastName: User,
 };
+import { useLanguage } from '@/lib/i18n/language-provider';
+
 const copy: Record<Kind, [string, string]> = {
   login: ['Welcome Back', `Sign in to ${siteConfig.name}`],
   register: ['Create your account', `Join ${siteConfig.name}`],
@@ -76,24 +78,24 @@ const copy: Record<Kind, [string, string]> = {
   reset: ['Reset password', 'Choose a new secure password'],
   verify: ['Verify your email', 'Activate your academy account'],
 };
-const submitLoadingText: Record<Kind, string> = {
-  login: 'Signing in...',
-  register: 'Creating account...',
-  forgot: 'Sending...',
-  reset: 'Resetting...',
-  verify: 'Verifying...',
-};
+
 export function AuthForm({ kind }: { kind: Kind }) {
+  const { t } = useLanguage();
   const router = useRouter();
   const search = useSearchParams();
   const store = useAuthStore();
-  const [title, subtitle] = copy[kind];
+  const [defaultTitle, defaultSubtitle] = copy[kind];
+  const title =
+    kind === 'login' ? t('nav.signIn') : kind === 'register' ? t('nav.getStarted') : defaultTitle;
+  const subtitle = defaultSubtitle;
+
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [redirectingText, setRedirectingText] = useState<string | null>(null);
   const redirectParam = search.get('redirect');
   const redirectQuery = isSafeRedirectPath(redirectParam)
     ? `?redirect=${encodeURIComponent(redirectParam)}`
     : '';
+
   const form = useForm<Values>({
     resolver: zodResolver(schemas[kind]) as unknown as Resolver<Values>,
     defaultValues: {
@@ -164,8 +166,10 @@ export function AuthForm({ kind }: { kind: Kind }) {
       }
     }
   });
+
   const has = (name: string) => fields[kind].includes(name);
   const isSocial = kind === 'login' || kind === 'register';
+
   return (
     <div>
       <h2 className="text-center text-2xl font-bold text-foreground">{title}</h2>
@@ -235,7 +239,7 @@ export function AuthForm({ kind }: { kind: Kind }) {
               onCheckedChange={(checked) => form.setValue('rememberMe', checked === true)}
             />
             <Label htmlFor="rememberMe" className="text-sm font-normal text-muted-foreground">
-              Remember me for 30 days
+              Remember me
             </Label>
           </div>
         )}
@@ -251,9 +255,9 @@ export function AuthForm({ kind }: { kind: Kind }) {
           type="submit"
           className="w-full"
           loading={isBusy}
-          loadingText={redirectingText || submitLoadingText[kind]}
+          loadingText={redirectingText || (kind === 'login' ? t('nav.signingOut') : 'Loading...')}
         >
-          {title === 'Welcome Back' ? 'Sign In' : title}
+          {kind === 'login' ? t('nav.signIn') : kind === 'register' ? t('nav.getStarted') : title}
         </LoadingButton>
       </form>
       <div className="mt-6 text-center text-sm">
@@ -264,7 +268,7 @@ export function AuthForm({ kind }: { kind: Kind }) {
               href={`${ROUTES.auth.register}${redirectQuery}`}
               className="font-medium text-brand hover:underline"
             >
-              Create an Account
+              {t('nav.getStarted')}
             </Link>
           </p>
         ) : (
@@ -272,7 +276,7 @@ export function AuthForm({ kind }: { kind: Kind }) {
             href={`${ROUTES.auth.login}${redirectQuery}`}
             className="font-medium text-brand hover:underline"
           >
-            Back to sign in
+            {t('nav.signIn')}
           </Link>
         )}
       </div>

@@ -8,7 +8,8 @@ const db = createDatabaseClient(client);
 
 async function testAllQueries() {
   console.log('--- Testing All Database Queries & Operators on SQLite ---');
-  let pass = 0, fail = 0;
+  let pass = 0,
+    fail = 0;
 
   async function check(name: string, fn: () => any) {
     try {
@@ -46,19 +47,21 @@ async function testAllQueries() {
   await check('Promo Codes list', () => db.query.promoCodes.findMany({ limit: 5 }));
 
   await check('Case-insensitive search query (LIKE / ILIKE / ilike)', () =>
-    db.execute(sql`SELECT id, title FROM courses WHERE title LIKE '%web%' OR title ILIKE '%web%'`)
+    db.execute(sql`SELECT id, title FROM courses WHERE title LIKE '%web%' OR title ILIKE '%web%'`),
   );
 
   await check('Sanitized FOR UPDATE query', () =>
-    db.execute(sql`SELECT id FROM courses WHERE id = '123' FOR UPDATE`)
+    db.execute(sql`SELECT id FROM courses WHERE id = '123' FOR UPDATE`),
   );
 
   await check('Sanitized FTS @@ query', () =>
-    db.execute(sql`SELECT id FROM courses WHERE search_vector @@ websearch_to_tsquery('simple', 'web')`)
+    db.execute(
+      sql`SELECT id FROM courses WHERE search_vector @@ websearch_to_tsquery('simple', 'web')`,
+    ),
   );
 
   await check('Sanitized NOW() query', () =>
-    db.execute(sql`SELECT id FROM courses WHERE created_at <= NOW()`)
+    db.execute(sql`SELECT id FROM courses WHERE created_at <= NOW()`),
   );
 
   console.log('\n==============================');

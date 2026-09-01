@@ -30,7 +30,8 @@ export class CertificateWorkerService {
 
   async tick() {
     if (!this.config.get<boolean>('CERTIFICATE_WORKER_ENABLED')) return 0;
-    const batchSize = this.config.get<number>('CERTIFICATE_WORKER_BATCH_SIZE') ?? 2;
+    const batchSize =
+      this.config.get<number>('CERTIFICATE_WORKER_BATCH_SIZE') ?? 2;
     const jobs = await this.claim(batchSize);
     for (const job of jobs) {
       try {
@@ -44,12 +45,13 @@ export class CertificateWorkerService {
 
   private async claim(batchSize: number): Promise<CertificateJob[]> {
     return this.database.client.transaction(async (tx: any) => {
-      const result: any = await tx.execute?.(sql`
+      const result: any =
+        (await tx.execute?.(sql`
         SELECT id, json_extract(payload, '$.certificateId') AS certificateId, attempts
         FROM background_jobs
         WHERE status = 'PENDING' AND job_type = 'GENERATE_CERTIFICATE'
         LIMIT ${batchSize}
-      `) ?? [];
+      `)) ?? [];
       const rows = result.rows ?? result ?? [];
       return rows.map((row: any) => ({
         id: String(row.id),
@@ -126,7 +128,9 @@ export class CertificateWorkerService {
     try {
       await this.database.client.transaction(async (tx: any) => {
         if (tx.execute) {
-          await tx.execute(sql`SELECT id FROM certificates WHERE id = ${data.id}`);
+          await tx.execute(
+            sql`SELECT id FROM certificates WHERE id = ${data.id}`,
+          );
         }
         const current = await tx.query.certificates.findFirst({
           where: eq(schema.certificates.id, data.id),

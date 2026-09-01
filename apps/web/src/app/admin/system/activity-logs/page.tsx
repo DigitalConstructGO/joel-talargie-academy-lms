@@ -56,7 +56,10 @@ function ActivityDetailDialog({
   );
 }
 
+import { useLanguage } from '@/lib/i18n/language-provider';
+
 export default function AdminActivityLogsPage() {
+  const { t, locale } = useLanguage();
   const { filters, page, pageSize, setFilter, setFilters, setPage } =
     useQueryFilters<ActivityLogsFilters>({ defaults: DEFAULT_FILTERS, pageSize: PAGE_SIZE });
   const { search, from, to } = filters;
@@ -79,19 +82,16 @@ export default function AdminActivityLogsPage() {
     <ContentContainer>
       <PageBreadcrumb
         items={[
-          { label: 'Dashboard', href: ROUTES.admin.root },
-          { label: 'System', href: ROUTES.admin.system },
-          { label: 'Activity Logs' },
+          { label: t('sidebar.dashboard'), href: ROUTES.admin.root },
+          { label: t('sidebar.system'), href: ROUTES.admin.system },
+          { label: t('sidebar.activityLogs') },
         ]}
       />
-      <PageHeader
-        title="Activity Logs"
-        description="Platform-wide administrator and system activity."
-      />
+      <PageHeader title={t('sidebar.activityLogs')} description={t('categories.subtitle')} />
 
       <FilterBar>
         <SearchBar
-          placeholder="Search by actor or action..."
+          placeholder={locale === 'am' ? 'በተግባሪ ወይም እርምጃ ፈልግ...' : 'Search by actor or action...'}
           defaultValue={search ?? ''}
           onSearch={(value) => setFilter('search', value || undefined)}
           className="w-full sm:w-64"

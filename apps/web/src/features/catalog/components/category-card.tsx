@@ -1,8 +1,11 @@
+'use client';
+
 import Link from 'next/link';
 import { Layers, ArrowRight } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { ROUTES } from '@/constants/routes';
+import { useLanguage, translateCategoryName } from '@/lib/i18n/language-provider';
 import type { Category } from '../types/catalog.types';
 
 export interface CategoryCardProps {
@@ -12,6 +15,8 @@ export interface CategoryCardProps {
 }
 
 export function CategoryCard({ category, courseCount, className }: CategoryCardProps) {
+  const { t, locale } = useLanguage();
+
   return (
     <Card className={cn('group overflow-hidden transition-shadow hover:shadow-md', className)}>
       <Link href={ROUTES.categories.detail(category.slug)} className="flex flex-col gap-3 p-5">
@@ -20,7 +25,7 @@ export function CategoryCard({ category, courseCount, className }: CategoryCardP
         </span>
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-sm font-semibold text-foreground group-hover:text-brand">
-            {category.name}
+            {translateCategoryName(category.name, locale)}
           </h3>
           <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-brand" />
         </div>
@@ -29,7 +34,8 @@ export function CategoryCard({ category, courseCount, className }: CategoryCardP
         )}
         {typeof courseCount === 'number' && (
           <p className="text-xs text-muted-foreground">
-            {courseCount} {courseCount === 1 ? 'course' : 'courses'}
+            {courseCount}{' '}
+            {courseCount === 1 ? t('catalog.courseCountOne') : t('catalog.courseCountOther')}
           </p>
         )}
       </Link>

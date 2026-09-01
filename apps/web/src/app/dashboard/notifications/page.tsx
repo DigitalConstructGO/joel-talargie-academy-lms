@@ -49,7 +49,10 @@ const DEFAULT_FILTERS: NotificationsFilters = {
 
 const PAGE_SIZE = 50;
 
+import { useLanguage, translateNotificationTitle } from '@/lib/i18n/language-provider';
+
 export default function StudentNotificationsPage() {
+  const { t, locale } = useLanguage();
   const { filters, setFilter, setFilters, resetFilters } = useQueryFilters<NotificationsFilters>({
     defaults: DEFAULT_FILTERS,
   });
@@ -68,15 +71,11 @@ export default function StudentNotificationsPage() {
   const archiveNotification = useArchiveNotification();
 
   const notificationsData = notificationsQuery.data;
-  // Search/read-state are already applied backend-side (see useMyNotifications
-  // above) - only sort order (no backend param for it yet) is applied here.
   const filtered = useMemo(() => {
     return [...(notificationsData ?? [])].sort((a, b) => {
       const aDate = String(a.createdAt ?? '');
       const bDate = String(b.createdAt ?? '');
-      return sort === 'newest'
-        ? bDate.localeCompare(aDate)
-        : aDate.localeCompare(bDate);
+      return sort === 'newest' ? bDate.localeCompare(aDate) : aDate.localeCompare(bDate);
     });
   }, [notificationsData, sort]);
   const hasUnread = (notificationsData ?? []).some((notification) => notification.readAt === null);
@@ -99,8 +98,8 @@ export default function StudentNotificationsPage() {
   return (
     <ContentContainer>
       <PageHeader
-        title="Notifications"
-        description="Updates about your courses and account."
+        title={t('sidebar.notifications')}
+        description={t('categories.subtitle')}
         actions={
           hasUnread && (
             <Button
@@ -111,7 +110,7 @@ export default function StudentNotificationsPage() {
               className="gap-2"
             >
               <CheckCheck className="size-4" />
-              Mark all as read
+              {locale === 'am' ? 'ሁሉንም እንደተነበቡ ቁጠር' : 'Mark all as read'}
             </Button>
           )
         }
@@ -125,13 +124,13 @@ export default function StudentNotificationsPage() {
           }
         >
           <TabsList>
-            <TabsTrigger value="ALL">All</TabsTrigger>
-            <TabsTrigger value="UNREAD">Unread</TabsTrigger>
-            <TabsTrigger value="READ">Read</TabsTrigger>
+            <TabsTrigger value="ALL">{locale === 'am' ? 'ሁሉም' : 'All'}</TabsTrigger>
+            <TabsTrigger value="UNREAD">{locale === 'am' ? 'ያልተነበቡ' : 'Unread'}</TabsTrigger>
+            <TabsTrigger value="READ">{locale === 'am' ? 'የተነበቡ' : 'Read'}</TabsTrigger>
           </TabsList>
         </Tabs>
         <SearchBar
-          placeholder="Search notifications..."
+          placeholder={locale === 'am' ? 'ማስታወቂያዎችን ፈልግ...' : 'Search notifications...'}
           defaultValue={search ?? ''}
           onSearch={(value) => setFilter('search', value || undefined)}
           className="w-full sm:w-64"
@@ -148,8 +147,12 @@ export default function StudentNotificationsPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="newest">Newest first</SelectItem>
-            <SelectItem value="oldest">Oldest first</SelectItem>
+            <SelectItem value="newest">
+              {locale === 'am' ? 'አዳዲሶች መጀመሪያ' : 'Newest first'}
+            </SelectItem>
+            <SelectItem value="oldest">
+              {locale === 'am' ? 'ቆየት ያሉ መጀመሪያ' : 'Oldest first'}
+            </SelectItem>
           </SelectContent>
         </Select>
         <SavedFiltersMenu
@@ -184,9 +187,9 @@ export default function StudentNotificationsPage() {
               <li key={notification.id}>
                 <NotificationCard
                   icon={Bell}
-                  title={notification.title}
+                  title={translateNotificationTitle(notification.title, locale)}
                   description={notification.message}
-                  timestamp={formatRelativeTime(notification.createdAt)}
+                  timestamp={formatRelativeTime(notification.createdAt, locale)}
                   read={notification.readAt !== null}
                   onClick={
                     notification.readAt === null
@@ -206,7 +209,7 @@ export default function StudentNotificationsPage() {
                 disabled={notificationsQuery.isFetching}
               >
                 {notificationsQuery.isFetching && <Loader2 className="mr-2 size-4 animate-spin" />}
-                Load more
+                {locale === 'am' ? 'ተጨማሪ አሳይ' : 'Load more'}
               </Button>
             </div>
           )}

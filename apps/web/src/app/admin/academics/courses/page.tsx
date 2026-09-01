@@ -50,6 +50,12 @@ import { formatCurrency } from '@/lib/format';
 import { extractErrorMessage } from '@/lib/api/api-error';
 import { toast } from '@/lib/toast';
 
+import {
+  useLanguage,
+  translateCourseTitle,
+  translateCategoryName,
+} from '@/lib/i18n/language-provider';
+
 const PAGE_SIZE = 20;
 
 interface CoursesFilters {
@@ -75,6 +81,12 @@ const DEFAULT_FILTERS: CoursesFilters = {
   featured: undefined,
   search: undefined,
   view: 'list',
+};
+
+const STATUS_VARIANT: Record<CourseStatus, 'secondary' | 'success' | 'outline'> = {
+  DRAFT: 'secondary',
+  PUBLISHED: 'success',
+  ARCHIVED: 'outline',
 };
 
 const STATUS_OPTIONS = [
@@ -105,13 +117,33 @@ const SORT_OPTIONS: { label: string; value: CourseSort }[] = [
   { label: 'Featured', value: 'featured' },
 ];
 
-const STATUS_VARIANT: Record<CourseStatus, 'secondary' | 'success' | 'outline'> = {
-  DRAFT: 'secondary',
-  PUBLISHED: 'success',
-  ARCHIVED: 'outline',
-};
+function formatCourseStatus(status: CourseStatus, locale: string): string {
+  if (locale !== 'am') return status;
+
+  const STATUS_MAP_AM: Record<CourseStatus, string> = {
+    DRAFT: 'ረቂቅ',
+    PUBLISHED: 'የታተመ',
+    ARCHIVED: 'የተቀመጠ',
+  };
+
+  return STATUS_MAP_AM[status] || status;
+}
+
+function formatDifficulty(level: CourseDifficulty, locale: string): string {
+  if (locale !== 'am') return level;
+
+  const DIFFICULTY_MAP_AM: Record<CourseDifficulty, string> = {
+    BEGINNER: 'ጀማሪ',
+    INTERMEDIATE: 'መካከለኛ',
+    ADVANCED: 'ከፍተኛ',
+    ALL_LEVELS: 'ሁሉም ደረጃዎች',
+  };
+
+  return DIFFICULTY_MAP_AM[level] || level;
+}
 
 export default function AdminCoursesPage() {
+  const { t, locale } = useLanguage();
   const { filters, page, pageSize, setFilter, setPage } = useQueryFilters<CoursesFilters>({
     defaults: DEFAULT_FILTERS,
     pageSize: PAGE_SIZE,
@@ -123,9 +155,46 @@ export default function AdminCoursesPage() {
   const currentUserId = useAuthStore((state) => state.user?.id);
   const { can } = usePermissions();
 
-  // A course can be managed by administrators, anyone with the explicit
-  // `courses.manage_all` permission, or the user who created it (non-admins
-  // are limited to their own courses on the backend).
+  const statusOptions = useMemo(
+    () => [
+      { label: locale === 'am' ? 'ረቂቅ' : 'Draft', value: 'DRAFT' },
+      { label: locale === 'am' ? 'የታተመ' : 'Published', value: 'PUBLISHED' },
+      { label: locale === 'am' ? 'የተቀመጠ' : 'Archived', value: 'ARCHIVED' },
+    ],
+    [locale],
+  );
+
+  const difficultyOptions = useMemo(
+    () => [
+      { label: locale === 'am' ? 'ጀማሪ' : 'Beginner', value: 'BEGINNER' },
+      { label: locale === 'am' ? 'መካከለኛ' : 'Intermediate', value: 'INTERMEDIATE' },
+      { label: locale === 'am' ? 'ከፍተኛ' : 'Advanced', value: 'ADVANCED' },
+      { label: locale === 'am' ? 'ሁሉም ደረጃዎች' : 'All levels', value: 'ALL_LEVELS' },
+    ],
+    [locale],
+  );
+
+  const accessTypeOptions = useMemo(
+    () => [
+      { label: locale === 'am' ? 'ነፃ' : 'Free', value: 'FREE' },
+      { label: locale === 'am' ? 'በክፍያ' : 'Paid', value: 'PAID' },
+    ],
+    [locale],
+  );
+
+  const sortOptions = useMemo<Array<{ label: string; value: CourseSort }>>(
+    () => [
+      { label: locale === 'am' ? 'በቅድሚያ አዲስ' : 'Newest', value: 'newest' },
+      { label: locale === 'am' ? 'በቅድሚያ ቀዳሚ' : 'Oldest', value: 'oldest' },
+      { label: locale === 'am' ? 'በስም (ሀ-ፐ)' : 'Title (A-Z)', value: 'title_asc' },
+      { label: locale === 'am' ? 'በስም (ፐ-ሀ)' : 'Title (Z-A)', value: 'title_desc' },
+      { label: locale === 'am' ? 'ዋጋ፡ ዝቅተኛ ወደ ከፍተኛ' : 'Price: Low to High', value: 'price_asc' },
+      { label: locale === 'am' ? 'ዋጋ፡ ከፍተኛ ወደ ዝቅተኛ' : 'Price: High to Low', value: 'price_desc' },
+      { label: locale === 'am' ? 'የተመረጡ' : 'Featured', value: 'featured' },
+    ],
+    [locale],
+  );
+
   const canManageCourse = (course: AdminCourseSummary) =>
     can('courses.manage_all') || (currentUserId != null && course.createdBy === currentUserId);
 
@@ -147,23 +216,23 @@ export default function AdminCoursesPage() {
   async function handleArchive(courseId: string) {
     try {
       await archiveCourse.mutateAsync({ courseId, input: undefined });
-      toast.success('Course archived');
+      toast.success(locale === 'am' ? 'ኮርሱ ተቀምጧል' : 'Course archived');
     } catch (error) {
       const message = extractErrorMessage(error, 'Could not archive this course');
-      toast.error('Could not archive this course', message);
+      toast.error(locale === 'am' ? 'ኮርሱን ማስቀመጥ አልተቻለም' : 'Could not archive this course', message);
     }
   }
 
   async function handlePublish(courseId: string) {
     try {
       await publishCourse.mutateAsync({ courseId, input: undefined });
-      toast.success('Course published');
+      toast.success(locale === 'am' ? 'ኮርሱ ታትሟል' : 'Course published');
     } catch (error) {
       const message = extractErrorMessage(
         error,
         'Course is not ready to publish. Please ensure you have added curriculum sections, published lessons, and learning outcomes.',
       );
-      toast.error('Could not publish this course', message);
+      toast.error(locale === 'am' ? 'ኮርሱን ማተም አልተቻለም' : 'Could not publish this course', message);
     }
   }
 
@@ -171,44 +240,55 @@ export default function AdminCoursesPage() {
     () => [
       {
         accessorKey: 'title',
-        header: 'Course',
-        cell: ({ row }) => (
-          <div className="flex items-center gap-3">
-            <Link
-              href={ROUTES.admin.academicsCourseDetail(row.original.id)}
-              className="shrink-0 overflow-hidden rounded-md border border-border transition-opacity hover:opacity-80"
-            >
-              <CourseThumbnail
-                title={row.original.title}
-                categoryName={row.original.categoryName}
-                categorySlug={row.original.categorySlug}
-                thumbnailKey={row.original.thumbnailKey}
-                thumbnailUrl={row.original.thumbnailUrl}
-                showBadge={false}
-                className="h-10 w-16 rounded-none object-cover"
-              />
-            </Link>
-            <div className="min-w-0">
+        header: locale === 'am' ? 'ኮርሶች' : 'Courses',
+        cell: ({ row }) => {
+          const displayTitle = translateCourseTitle(row.original.title, locale);
+          const displayCategory = translateCategoryName(row.original.categoryName, locale);
+          return (
+            <div className="flex items-center gap-3">
               <Link
                 href={ROUTES.admin.academicsCourseDetail(row.original.id)}
-                className="font-medium text-foreground hover:underline line-clamp-1"
+                className="shrink-0 overflow-hidden rounded-md border border-border transition-opacity hover:opacity-80"
               >
-                {row.original.title}
+                <CourseThumbnail
+                  title={displayTitle}
+                  categoryName={displayCategory}
+                  categorySlug={row.original.categorySlug}
+                  thumbnailKey={row.original.thumbnailKey}
+                  thumbnailUrl={row.original.thumbnailUrl}
+                  showBadge={false}
+                  className="h-10 w-16 rounded-none object-cover"
+                />
               </Link>
-              <p className="text-xs text-muted-foreground line-clamp-1">
-                {row.original.categoryName} • {row.original.difficulty}
-              </p>
+              <div className="min-w-0">
+                <Link
+                  href={ROUTES.admin.academicsCourseDetail(row.original.id)}
+                  className="font-medium text-foreground hover:underline line-clamp-1"
+                >
+                  {displayTitle}
+                </Link>
+                <p className="text-xs text-muted-foreground line-clamp-1">
+                  {displayCategory} • {formatDifficulty(row.original.difficulty, locale)}
+                </p>
+              </div>
             </div>
-          </div>
-        ),
+          );
+        },
       },
-      { accessorKey: 'categoryName', header: 'Category' },
-      { accessorKey: 'presenterName', header: 'Instructor' },
+      {
+        accessorKey: 'categoryName',
+        header: locale === 'am' ? 'ምድብ' : 'Category',
+        cell: ({ row }) => translateCategoryName(row.original.categoryName, locale),
+      },
+      {
+        accessorKey: 'presenterName',
+        header: locale === 'am' ? 'አስተማሪ' : 'Instructor',
+      },
       ...(tab === 'all'
         ? [
             {
               accessorKey: 'creatorName' as const,
-              header: 'Creator',
+              header: locale === 'am' ? 'ፈጣሪ' : 'Creator',
               cell: ({ row }: { row: { original: AdminCourseSummary } }) =>
                 row.original.creatorName || '—',
             },
@@ -216,17 +296,21 @@ export default function AdminCoursesPage() {
         : []),
       {
         accessorKey: 'price',
-        header: 'Price',
+        header: locale === 'am' ? 'ዋጋ' : 'Price',
         cell: ({ row }) =>
           row.original.accessType === 'FREE'
-            ? 'Free'
+            ? locale === 'am'
+              ? 'ነፃ'
+              : 'Free'
             : formatCurrency(row.original.price, row.original.currency),
       },
       {
         accessorKey: 'status',
-        header: 'Status',
+        header: locale === 'am' ? 'ሁኔታ' : 'Status',
         cell: ({ row }) => (
-          <Badge variant={STATUS_VARIANT[row.original.status]}>{row.original.status}</Badge>
+          <Badge variant={STATUS_VARIANT[row.original.status]}>
+            {formatCourseStatus(row.original.status, locale)}
+          </Badge>
         ),
       },
       {
@@ -243,7 +327,7 @@ export default function AdminCoursesPage() {
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
                 <Link href={ROUTES.admin.academicsCourseDetail(row.original.id)} className="gap-2">
-                  <Eye className="size-4" /> View
+                  <Eye className="size-4" /> {locale === 'am' ? 'እይ' : 'View'}
                 </Link>
               </DropdownMenuItem>
               <Can permission="courses.update">
@@ -253,7 +337,7 @@ export default function AdminCoursesPage() {
                       href={ROUTES.admin.academicsCourseEdit(row.original.id)}
                       className="gap-2"
                     >
-                      <Pencil className="size-4" /> Edit
+                      <Pencil className="size-4" /> {locale === 'am' ? 'አስተካክል' : 'Edit'}
                     </Link>
                   </DropdownMenuItem>
                 )}
@@ -278,7 +362,7 @@ export default function AdminCoursesPage() {
                       ) : (
                         <Rocket className="size-4" />
                       )}
-                      Publish
+                      {locale === 'am' ? 'አትም' : 'Publish'}
                     </DropdownMenuItem>
                   )}
                 </Can>
@@ -291,12 +375,16 @@ export default function AdminCoursesPage() {
                         onSelect={(event) => event.preventDefault()}
                         className="gap-2 text-destructive focus:text-destructive"
                       >
-                        <Trash2 className="size-4" /> Archive
+                        <Trash2 className="size-4" /> {locale === 'am' ? 'አስቀምጥ' : 'Archive'}
                       </DropdownMenuItem>
                     }
-                    title="Archive this course?"
-                    description="Students already enrolled keep their access. The course is hidden from the catalog."
-                    confirmLabel="Archive"
+                    title={locale === 'am' ? 'ይህንን ኮርስ ማስቀመጥ ይፈልጋሉ?' : 'Archive this course?'}
+                    description={
+                      locale === 'am'
+                        ? 'ቀደም ሲል የተመዘገቡ ተማሪዎች መዳረሻቸውን ያቆያሉ። ኮርሱ ከካታሎጉ ይሸሸጋል።'
+                        : 'Students already enrolled keep their access. The course is hidden from the catalog.'
+                    }
+                    confirmLabel={locale === 'am' ? 'አስቀምጥ' : 'Archive'}
                     variant="destructive"
                     onConfirm={() => handleArchive(row.original.id)}
                   />
@@ -307,30 +395,32 @@ export default function AdminCoursesPage() {
         ),
       },
     ],
-    // Re-derive columns whenever publish/archive pending state changes, so
-    // the row-specific spinner reflects live mutation state.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleArchive/handlePublish are stable per render via mutation identity
-    [tab, canManageCourse, publishCourse.isPending, publishCourse.variables],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tab, canManageCourse, publishCourse.isPending, publishCourse.variables, locale],
   );
 
   return (
     <ContentContainer>
       <PageBreadcrumb
         items={[
-          { label: 'Dashboard', href: ROUTES.admin.root },
-          { label: 'Academic Management', href: ROUTES.admin.academics },
-          { label: 'Courses' },
+          { label: locale === 'am' ? 'ዳሽቦርድ' : 'Dashboard', href: ROUTES.admin.root },
+          { label: locale === 'am' ? 'ትምህርት አስተዳደር' : 'Academics', href: ROUTES.admin.academics },
+          { label: locale === 'am' ? 'ኮርሶች' : 'Courses' },
         ]}
       />
       <PageHeader
-        title="Courses"
-        description="Manage the course catalog."
+        title={locale === 'am' ? 'ኮርሶች' : 'Courses'}
+        description={
+          locale === 'am'
+            ? 'የአካዳሚውን ኮርሶች፣ ዋጋዎችን እና ሁኔታቸውን ያስተዳድሩ።'
+            : 'Manage academy courses, pricing, and statuses.'
+        }
         actions={
           <Can permission="courses.create">
             <Button asChild className="gap-2">
               <Link href={ROUTES.admin.academicsCourseCreate}>
                 <Plus className="size-4" />
-                New Course
+                {locale === 'am' ? 'አዲስ ኮርስ' : 'New Course'}
               </Link>
             </Button>
           </Can>
@@ -343,61 +433,61 @@ export default function AdminCoursesPage() {
         className="mb-4"
       >
         <TabsList>
-          <TabsTrigger value="all">All courses</TabsTrigger>
-          <TabsTrigger value="my">My courses</TabsTrigger>
+          <TabsTrigger value="all">{locale === 'am' ? 'ሁሉም ኮርሶች' : 'All courses'}</TabsTrigger>
+          <TabsTrigger value="my">{locale === 'am' ? 'የእኔ ኮርሶች' : 'My courses'}</TabsTrigger>
         </TabsList>
       </Tabs>
 
       <FilterBar>
         <SearchBar
-          placeholder="Search courses..."
+          placeholder={locale === 'am' ? 'ኮርሶችን ፈልግ...' : 'Search courses...'}
           defaultValue={search ?? ''}
           onSearch={(value) => setFilter('search', value || undefined)}
           className="w-full sm:w-64"
         />
         <SelectFilter
-          label="Status"
+          label={locale === 'am' ? 'ሁኔታ' : 'Status'}
           value={status === 'ALL' ? undefined : status}
           onChange={(value) => setFilter('status', (value ?? 'ALL') as CoursesFilters['status'])}
-          options={STATUS_OPTIONS}
+          options={statusOptions}
         />
         <SelectFilter
-          label="Category"
+          label={locale === 'am' ? 'ምድብ' : 'Category'}
           value={categoryId}
           onChange={(value) => setFilter('categoryId', value)}
           options={(categoriesQuery.data?.items ?? []).map((category) => ({
-            label: category.name,
+            label: translateCategoryName(category.name, locale),
             value: category.id,
           }))}
         />
         <SelectFilter
-          label="Level"
+          label={locale === 'am' ? 'ደረጃ' : 'Level'}
           value={difficulty === 'ALL' ? undefined : difficulty}
           onChange={(value) =>
             setFilter('difficulty', (value ?? 'ALL') as CoursesFilters['difficulty'])
           }
-          options={DIFFICULTY_OPTIONS}
+          options={difficultyOptions}
         />
         <SelectFilter
-          label="Access"
+          label={locale === 'am' ? 'መዳረሻ' : 'Access'}
           value={accessType === 'ALL' ? undefined : accessType}
           onChange={(value) =>
             setFilter('accessType', (value ?? 'ALL') as CoursesFilters['accessType'])
           }
-          options={ACCESS_TYPE_OPTIONS}
+          options={accessTypeOptions}
         />
         <SelectFilter
-          label="Sort"
+          label={locale === 'am' ? 'ደርድር' : 'Sort by'}
           value={sort}
           onChange={(value) => setFilter('sort', (value ?? 'newest') as CourseSort)}
-          options={SORT_OPTIONS}
+          options={sortOptions}
         />
         <label className="flex items-center gap-2 text-sm text-foreground">
           <Checkbox
             checked={featured === 'true'}
             onCheckedChange={(checked) => setFilter('featured', checked ? 'true' : undefined)}
           />
-          Featured only
+          {locale === 'am' ? 'የተመረጡት ብቻ' : 'Featured only'}
         </label>
         <div className="ml-auto">
           <ViewSwitcher
@@ -408,7 +498,10 @@ export default function AdminCoursesPage() {
       </FilterBar>
 
       {coursesQuery.isError ? (
-        <ErrorState onRetry={() => coursesQuery.refetch()} description="Unable to load courses." />
+        <ErrorState
+          onRetry={() => coursesQuery.refetch()}
+          description={locale === 'am' ? 'ኮርሶችን መጫን አልተቻለም።' : 'Unable to load courses.'}
+        />
       ) : (view ?? 'list') === 'grid' ? (
         <>
           {coursesQuery.isLoading ? (
@@ -416,11 +509,23 @@ export default function AdminCoursesPage() {
           ) : (coursesQuery.data?.items ?? []).length === 0 ? (
             <EmptyState
               icon={SearchX}
-              title={tab === 'my' ? 'No courses yet' : 'No courses found'}
+              title={
+                tab === 'my'
+                  ? locale === 'am'
+                    ? 'እስካሁን ምንም ኮርስ የለም'
+                    : 'No courses yet'
+                  : locale === 'am'
+                    ? 'ምንም ኮርስ አልተገኘም'
+                    : 'No courses found'
+              }
               description={
                 tab === 'my'
-                  ? 'You have not created any courses yet. Use New Course to get started.'
-                  : 'No courses match your filters.'
+                  ? locale === 'am'
+                    ? 'እስካሁን ምንም ኮርስ አልፈጠሩም። ለመጀመር አዲስ ኮርስ ይጠቀሙ።'
+                    : 'You have not created any courses yet. Use New Course to get started.'
+                  : locale === 'am'
+                    ? 'ከማጣሪያዎችዎ ጋር የሚዛመድ ኮርስ የለም።'
+                    : 'No courses match your filters.'
               }
             />
           ) : (
@@ -434,15 +539,21 @@ export default function AdminCoursesPage() {
                     <div className="relative">
                       <Link href={ROUTES.admin.academicsCourseDetail(course.id)}>
                         <CourseThumbnail
-                          title={course.title}
-                          categoryName={course.categoryName}
+                          title={translateCourseTitle(course.title, locale)}
+                          categoryName={translateCategoryName(course.categoryName, locale)}
                           categorySlug={course.categorySlug}
                           thumbnailKey={course.thumbnailKey}
                         />
                       </Link>
                       <div className="absolute left-2 top-2 flex flex-wrap gap-1">
-                        <Badge variant={STATUS_VARIANT[course.status]}>{course.status}</Badge>
-                        {course.featured && <Badge variant="secondary">Featured</Badge>}
+                        <Badge variant={STATUS_VARIANT[course.status]}>
+                          {formatCourseStatus(course.status, locale)}
+                        </Badge>
+                        {course.featured && (
+                          <Badge variant="secondary">
+                            {locale === 'am' ? 'የተመረጠ' : 'Featured'}
+                          </Badge>
+                        )}
                       </div>
                       <div className="absolute right-2 top-2">
                         <DropdownMenu>
@@ -462,7 +573,7 @@ export default function AdminCoursesPage() {
                                 href={ROUTES.admin.academicsCourseDetail(course.id)}
                                 className="gap-2"
                               >
-                                <Eye className="size-4" /> View
+                                <Eye className="size-4" /> {locale === 'am' ? 'እይ' : 'View'}
                               </Link>
                             </DropdownMenuItem>
                             <Can permission="courses.update">
@@ -472,7 +583,8 @@ export default function AdminCoursesPage() {
                                     href={ROUTES.admin.academicsCourseEdit(course.id)}
                                     className="gap-2"
                                   >
-                                    <Pencil className="size-4" /> Edit
+                                    <Pencil className="size-4" />{' '}
+                                    {locale === 'am' ? 'አስተካክል' : 'Edit'}
                                   </Link>
                                 </DropdownMenuItem>
                               )}
@@ -497,7 +609,7 @@ export default function AdminCoursesPage() {
                                     ) : (
                                       <Rocket className="size-4" />
                                     )}
-                                    Publish
+                                    {locale === 'am' ? 'አትም' : 'Publish'}
                                   </DropdownMenuItem>
                                 )}
                               </Can>
@@ -510,12 +622,21 @@ export default function AdminCoursesPage() {
                                       onSelect={(event) => event.preventDefault()}
                                       className="gap-2 text-destructive focus:text-destructive"
                                     >
-                                      <Trash2 className="size-4" /> Archive
+                                      <Trash2 className="size-4" />{' '}
+                                      {locale === 'am' ? 'አስቀምጥ' : 'Archive'}
                                     </DropdownMenuItem>
                                   }
-                                  title="Archive this course?"
-                                  description="Students already enrolled keep their access. The course is hidden from the catalog."
-                                  confirmLabel="Archive"
+                                  title={
+                                    locale === 'am'
+                                      ? 'ይህንን ኮርስ ማስቀመጥ ይፈልጋሉ?'
+                                      : 'Archive this course?'
+                                  }
+                                  description={
+                                    locale === 'am'
+                                      ? 'ቀደም ሲል የተመዘገቡ ተማሪዎች መዳረሻቸውን ያቆያሉ። ኮርሱ ከካታሎጉ ይሸሸጋል።'
+                                      : 'Students already enrolled keep their access. The course is hidden from the catalog.'
+                                  }
+                                  confirmLabel={locale === 'am' ? 'አስቀምጥ' : 'Archive'}
                                   variant="destructive"
                                   onConfirm={() => handleArchive(course.id)}
                                 />
@@ -530,34 +651,39 @@ export default function AdminCoursesPage() {
                         href={ROUTES.admin.academicsCourseDetail(course.id)}
                         className="line-clamp-2 text-sm font-semibold text-foreground group-hover:text-brand"
                       >
-                        {course.title}
+                        {translateCourseTitle(course.title, locale)}
                       </Link>
                       <p className="line-clamp-2 text-xs text-muted-foreground">
                         {course.shortDescription}
                       </p>
                       <div className="flex items-center justify-between pt-1 text-xs text-muted-foreground">
-                        <span>by {course.presenterName || '—'}</span>
-                        <span>{course.difficulty}</span>
+                        <span>
+                          {locale === 'am' ? 'በ' : 'by'} {course.presenterName || '—'}
+                        </span>
+                        <span>{formatDifficulty(course.difficulty, locale)}</span>
                       </div>
                     </CardContent>
                   </div>
                   <div className="flex items-center justify-between border-t border-border bg-muted/20 px-4 py-3">
                     <span className="text-sm font-semibold text-foreground">
                       {course.accessType === 'FREE'
-                        ? 'Free'
+                        ? locale === 'am'
+                          ? 'ነፃ'
+                          : 'Free'
                         : formatCurrency(course.discountPrice ?? course.price, course.currency)}
                     </span>
                     <div className="flex items-center gap-1">
                       <Button asChild size="sm" variant="ghost" className="h-8 px-2 text-xs">
                         <Link href={ROUTES.admin.academicsCourseDetail(course.id)}>
-                          <Eye className="mr-1 size-3.5" /> View
+                          <Eye className="mr-1 size-3.5" /> {locale === 'am' ? 'እይ' : 'View'}
                         </Link>
                       </Button>
                       <Can permission="courses.update">
                         {canManageCourse(course) && (
                           <Button asChild size="sm" variant="ghost" className="h-8 px-2 text-xs">
                             <Link href={ROUTES.admin.academicsCourseEdit(course.id)}>
-                              <Pencil className="mr-1 size-3.5" /> Edit
+                              <Pencil className="mr-1 size-3.5" />{' '}
+                              {locale === 'am' ? 'አስተካክል' : 'Edit'}
                             </Link>
                           </Button>
                         )}
@@ -584,11 +710,23 @@ export default function AdminCoursesPage() {
             columns={columns}
             data={coursesQuery.data?.items ?? []}
             isLoading={coursesQuery.isLoading}
-            emptyTitle={tab === 'my' ? 'No courses yet' : 'No courses found'}
+            emptyTitle={
+              tab === 'my'
+                ? locale === 'am'
+                  ? 'እስካሁን ምንም ኮርስ የለም'
+                  : 'No courses yet'
+                : locale === 'am'
+                  ? 'ምንም ኮርስ አልተገኘም'
+                  : 'No courses found'
+            }
             emptyDescription={
               tab === 'my'
-                ? 'You have not created any courses yet. Use New Course to get started.'
-                : 'No courses match your filters.'
+                ? locale === 'am'
+                  ? 'እስካሁን ምንም ኮርስ አልፈጠሩም። ለመጀመር አዲስ ኮርስ ይጠቀሙ።'
+                  : 'You have not created any courses yet. Use New Course to get started.'
+                : locale === 'am'
+                  ? 'ከማጣሪያዎችዎ ጋር የሚዛመድ ኮርስ የለም።'
+                  : 'No courses match your filters.'
             }
             manualPagination
           />

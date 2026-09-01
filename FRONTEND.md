@@ -41,36 +41,37 @@ apps/web/
 
 The application uses Next.js Route Groups to organize layouts cleanly:
 
-| Route Group | Base Path | Layout / Protection | Purpose |
-|---|---|---|---|
-| `(public)` | `/` | Public Layout (Navbar + Footer) | Marketing site, course catalog, category pages, instructor spotlight, about, pricing, FAQ |
-| `auth` | `/auth/*` | Auth Layout (Centered Card) | Login (`/auth/login`), Registration (`/auth/register`), Password Reset (`/auth/forgot-password`) |
-| `dashboard` | `/dashboard/*` | Protected Dashboard Layout (Sidebar + Header) | Student Portal: enrolled courses, lesson player, certificate downloads, payment history |
-| `admin` | `/admin/*` | Protected Admin Layout (Admin Navigation + CMS Bar) | Management Portal: user management, course authoring, category management, financial approvals, CMS |
+| Route Group | Base Path      | Layout / Protection                                 | Purpose                                                                                             |
+| ----------- | -------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `(public)`  | `/`            | Public Layout (Navbar + Footer)                     | Marketing site, course catalog, category pages, instructor spotlight, about, pricing, FAQ           |
+| `auth`      | `/auth/*`      | Auth Layout (Centered Card)                         | Login (`/auth/login`), Registration (`/auth/register`), Password Reset (`/auth/forgot-password`)    |
+| `dashboard` | `/dashboard/*` | Protected Dashboard Layout (Sidebar + Header)       | Student Portal: enrolled courses, lesson player, certificate downloads, payment history             |
+| `admin`     | `/admin/*`     | Protected Admin Layout (Admin Navigation + CMS Bar) | Management Portal: user management, course authoring, category management, financial approvals, CMS |
 
 ### Key Page Routes Table
 
-| Route Path | Page Purpose | Component Type |
-|---|---|---|
-| `/` | Landing page driven by Admin CMS settings | Server Component (SSR) |
-| `/courses` | Searchable public course catalog | Server Component + Client Filter |
-| `/courses/[slug]` | Course detail page with curriculum & instructor info | Server Component (SSR) |
-| `/categories` | Active category grid exploration | Server Component (SSR) |
-| `/categories/[slug]` | Category detail page with published courses | Server Component (SSR) |
-| `/certificates/verify/[token]` | Public certificate verification lookup | Server Component (SSR) |
-| `/auth/login` | Email/password & Google OAuth login form | Client Component |
-| `/dashboard` | Student learning overview & active enrollment cards | Client Component |
-| `/dashboard/courses/[enrollmentId]/learn` | Interactive multi-section lesson & video player | Client Component |
-| `/dashboard/payments` | Student payment submission & receipt status | Client Component |
-| `/admin/academics/courses` | Course catalog authoring & curriculum builder | Client Component |
-| `/admin/financial/payments` | Bank transfer payment review & approval table | Client Component |
-| `/admin/system/academy-settings` | Platform settings & Landing CMS Manager | Client Component |
+| Route Path                                | Page Purpose                                         | Component Type                   |
+| ----------------------------------------- | ---------------------------------------------------- | -------------------------------- |
+| `/`                                       | Landing page driven by Admin CMS settings            | Server Component (SSR)           |
+| `/courses`                                | Searchable public course catalog                     | Server Component + Client Filter |
+| `/courses/[slug]`                         | Course detail page with curriculum & instructor info | Server Component (SSR)           |
+| `/categories`                             | Active category grid exploration                     | Server Component (SSR)           |
+| `/categories/[slug]`                      | Category detail page with published courses          | Server Component (SSR)           |
+| `/certificates/verify/[token]`            | Public certificate verification lookup               | Server Component (SSR)           |
+| `/auth/login`                             | Email/password & Google OAuth login form             | Client Component                 |
+| `/dashboard`                              | Student learning overview & active enrollment cards  | Client Component                 |
+| `/dashboard/courses/[enrollmentId]/learn` | Interactive multi-section lesson & video player      | Client Component                 |
+| `/dashboard/payments`                     | Student payment submission & receipt status          | Client Component                 |
+| `/admin/academics/courses`                | Course catalog authoring & curriculum builder        | Client Component                 |
+| `/admin/financial/payments`               | Bank transfer payment review & approval table        | Client Component                 |
+| `/admin/system/academy-settings`          | Platform settings & Landing CMS Manager              | Client Component                 |
 
 ---
 
 ## 3. Authentication & State Management
 
 ### Zustand Global Auth Store (`apps/web/src/stores/auth.store.ts`)
+
 The authentication state is managed globally using Zustand and persisted in browser storage:
 
 ```typescript
@@ -86,6 +87,7 @@ interface AuthState {
 ```
 
 ### Authentication Lifecycle Flow
+
 ```mermaid
 sequenceDiagram
     participant User as User / Browser
@@ -107,6 +109,7 @@ sequenceDiagram
 ## 4. API Client & Server Synchronization
 
 ### Axios Client Configuration (`apps/web/src/lib/api/auth-client.ts`)
+
 API communications use a centralized Axios instance configured with environment-aware base URL resolution:
 
 ```typescript
@@ -114,14 +117,18 @@ export const getApiBaseUrl = () => {
   if (typeof window !== 'undefined') {
     return '/api/v1'; // Browser requests proxy through Next.js rewrite
   }
-  const raw = process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+  const raw =
+    process.env.INTERNAL_API_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    'http://localhost:4000/api/v1';
   return normalizeBaseUrl(raw) ?? 'http://localhost:4000/api/v1';
 };
 ```
 
 ### Interceptor Handlers
+
 - **401 Unauthorized**: Automatically clears auth state and redirects users to `/auth/login` if browsing protected routes.
-- **403 Forbidden**: Displays an error toast (*"Access denied: You don't have permission to do that."*) for mutation operations (`POST`, `PUT`, `PATCH`, `DELETE`).
+- **403 Forbidden**: Displays an error toast (_"Access denied: You don't have permission to do that."_) for mutation operations (`POST`, `PUT`, `PATCH`, `DELETE`).
 
 ---
 
@@ -180,6 +187,7 @@ export const CATALOG_DATA_SOURCE: CatalogDataSource =
 ## 9. Testing & Environment Variables
 
 ### Environment Variables (`apps/web/.env.example`)
+
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
@@ -188,6 +196,7 @@ INTERNAL_API_URL=http://localhost:4000/api/v1
 ```
 
 ### Commands
+
 - **Launch Frontend Dev Server**: `npm run dev:web`
 - **TypeScript Typecheck**: `npm run typecheck` (or `npx tsc --noEmit` inside `apps/web`)
 - **Unit Tests**: `npm run test:web` (runs Vitest test suites)

@@ -1,9 +1,12 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ROUTES } from '@/constants/routes';
+import { useLanguage } from '@/lib/i18n/language-provider';
 
 export function MentorSpotlightSection({
   instructor,
@@ -20,6 +23,7 @@ export function MentorSpotlightSection({
     avatarColor?: string;
   } | null;
 }) {
+  const { t } = useLanguage();
   if (!instructor) return null;
 
   const initials = instructor.name
@@ -65,7 +69,7 @@ export function MentorSpotlightSection({
         )}
         <div className="flex flex-col gap-4">
           <span className="w-fit rounded-full bg-brand/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand">
-            Meet your mentor
+            {t('mentor.title')}
           </span>
           <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
             {instructor.name}
@@ -82,7 +86,7 @@ export function MentorSpotlightSection({
           </ul>
           <Button asChild className="w-fit" variant="outline">
             <Link href={ROUTES.instructors.detail(slug)}>
-              View full profile
+              {t('mentor.viewProfile')}
               <ArrowRight className="size-4" />
             </Link>
           </Button>

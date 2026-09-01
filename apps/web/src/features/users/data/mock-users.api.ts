@@ -101,11 +101,9 @@ export const mockUsersApi = {
     delay(transition(userId, 'ARCHIVED')),
   restore: async (userId: string): Promise<ManagedUser> => delay(transition(userId, 'ACTIVE')),
 
-  triggerPasswordReset: async (): Promise<{ sent: boolean }> =>
-    delay({ sent: true }),
+  triggerPasswordReset: async (): Promise<{ sent: boolean }> => delay({ sent: true }),
 
-  activity: async (): Promise<UserActivityEntry[]> =>
-    delay([]),
+  activity: async (): Promise<UserActivityEntry[]> => delay([]),
 
   listRoles: async (userId: string): Promise<UserRoleAssignment[]> => {
     const user = store.find((entry) => entry.id === userId);

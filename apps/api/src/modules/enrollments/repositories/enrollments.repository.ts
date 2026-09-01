@@ -28,9 +28,7 @@ export class EnrollmentsRepository {
 
   create(studentId: string, courseId: string, redemptionId?: string) {
     return this.db.transaction(async (tx) => {
-      await tx.execute(
-        sql`SELECT id FROM courses WHERE id = ${courseId}`,
-      );
+      await tx.execute(sql`SELECT id FROM courses WHERE id = ${courseId}`);
       const [user, course] = await Promise.all([
         tx.query.users.findFirst({ where: eq(schema.users.id, studentId) }),
         tx.query.courses.findFirst({ where: eq(schema.courses.id, courseId) }),

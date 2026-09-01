@@ -14,7 +14,19 @@ export interface HomeStats {
   certificatesIssued?: number;
 }
 
+import { useLanguage } from '@/lib/i18n/language-provider';
+
+export interface HomeStats {
+  totalCourses: number;
+  totalCategories: number;
+  instructorCount: number;
+  studentsEnrolled?: number;
+  satisfactionPercent?: number;
+  certificatesIssued?: number;
+}
+
 export function StatsSection({ stats }: { stats: HomeStats }) {
+  const { t } = useLanguage();
   const hasPlatformStats =
     stats.studentsEnrolled !== undefined &&
     stats.satisfactionPercent !== undefined &&
@@ -32,35 +44,35 @@ export function StatsSection({ stats }: { stats: HomeStats }) {
         {hasPlatformStats && (
           <StatCard
             icon={Users}
-            label="Students enrolled"
+            label={t('stats.students')}
             value={<AnimatedCounter value={stats.studentsEnrolled!} format={formatCompactNumber} />}
           />
         )}
         <StatCard
           icon={BookOpen}
-          label="Courses available"
+          label={t('nav.courses')}
           value={<AnimatedCounter value={stats.totalCourses} format={formatCompactNumber} />}
         />
         <StatCard
           icon={Layers}
-          label="Categories"
+          label={t('nav.categories')}
           value={<AnimatedCounter value={stats.totalCategories} format={formatCompactNumber} />}
         />
         <StatCard
           icon={Users}
-          label="Instructors"
+          label={t('nav.instructors')}
           value={<AnimatedCounter value={stats.instructorCount} format={formatCompactNumber} />}
         />
         {hasPlatformStats && (
           <>
             <StatCard
               icon={ThumbsUp}
-              label="Student satisfaction"
+              label={t('stats.satisfaction')}
               value={<AnimatedCounter value={stats.satisfactionPercent!} format={(v) => `${v}%`} />}
             />
             <StatCard
               icon={Award}
-              label="Certificates issued"
+              label={t('sidebar.certificates')}
               value={
                 <AnimatedCounter value={stats.certificatesIssued!} format={formatCompactNumber} />
               }

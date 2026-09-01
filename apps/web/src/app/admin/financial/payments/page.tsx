@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { AlertTriangle, Check, Copy, Download, FileText, Loader2, X } from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
@@ -55,6 +55,7 @@ import { formatCurrency } from '@/lib/format';
 import { formatDateTime, formatDate } from '@/lib/date';
 import { toast } from '@/lib/toast';
 import { ROUTES } from '@/constants/routes';
+import { useLanguage } from '@/lib/i18n/language-provider';
 
 const PAGE_SIZE = 20;
 
@@ -81,17 +82,23 @@ const DEFAULT_FILTERS: PaymentsFilters = {
   search: undefined,
 };
 
-const STATUS_OPTIONS = [
-  { label: 'Pending', value: 'PENDING' },
-  { label: 'Approved', value: 'APPROVED' },
-  { label: 'Declined', value: 'DECLINED' },
-];
-
 const STATUS_VARIANT: Record<PaymentStatus, NonNullable<BadgeProps['variant']>> = {
   PENDING: 'warning',
   APPROVED: 'success',
   DECLINED: 'destructive',
 };
+
+function formatPaymentStatus(status: PaymentStatus, locale: string): string {
+  if (locale !== 'am') return status;
+
+  const STATUS_MAP_AM: Record<PaymentStatus, string> = {
+    PENDING: 'በመጠባበቅ ላይ',
+    APPROVED: 'የጸደቀ',
+    DECLINED: 'ውድቅ የተደረገ',
+  };
+
+  return STATUS_MAP_AM[status] || status;
+}
 
 function PaymentDetailSheet({
   paymentId,
@@ -100,6 +107,7 @@ function PaymentDetailSheet({
   paymentId: string | null;
   onClose: () => void;
 }) {
+  const { locale } = useLanguage();
   const paymentQuery = useAdminPayment(paymentId ?? '');
   const receiptQuery = useAdminPaymentReceipt(paymentId ?? undefined);
   const approvePayment = useApprovePayment();
@@ -126,11 +134,17 @@ function PaymentDetailSheet({
   const approveDisabledHint = approvePayment.isPending
     ? undefined
     : !canApproveMismatch
-      ? "You don't have permission to approve a payment with a mismatched amount. Ask an admin with the enhanced mismatch-approval permission to review it."
+      ? locale === 'am'
+        ? 'የተሳሳተ የገንዘብ መጠን ያለው ክፍያን ለማጽደቅ ፈቃድ የለዎትም።'
+        : "You don't have permission to approve a payment with a mismatched amount."
       : needsMismatchReason
-        ? 'Enter a reason for approving the mismatched amount to enable Approve.'
+        ? locale === 'am'
+          ? 'ክፍያውን ለማጽደቅ የተቀናነሰበትን ምክንያት ያስገቡ።'
+          : 'Enter a reason for approving the mismatched amount to enable Approve.'
         : needsDuplicateAck
-          ? 'Confirm the duplicate-transaction warning to enable Approve.'
+          ? locale === 'am'
+            ? 'ክፍያውን ለማጽደቅ የተደገመውን ክፍያ ያረጋግጡ።'
+            : 'Confirm the duplicate-transaction warning to enable Approve.'
           : undefined;
 
   async function handleApprove() {
@@ -143,9 +157,12 @@ function PaymentDetailSheet({
           acknowledgeDuplicate: duplicateCount > 0 ? true : undefined,
         },
       });
-      toast.success('Payment approved');
+      toast.success(locale === 'am' ? 'ክፍያው ጸድቋል' : 'Payment approved');
     } catch (error) {
-      toast.error('Payment not approved', approveErrorMessage(error));
+      toast.error(
+        locale === 'am' ? 'ክፍያው አልጸደቀም' : 'Payment not approved',
+        approveErrorMessage(error),
+      );
     }
   }
 
@@ -153,10 +170,13 @@ function PaymentDetailSheet({
     if (!paymentId) return;
     try {
       await declinePayment.mutateAsync({ paymentId, input: { reason: declineReason } });
-      toast.success('Payment declined');
+      toast.success(locale === 'am' ? 'ክፍያው ውድቅ ተደርጓል' : 'Payment declined');
       setDeclineReason('');
     } catch (error) {
-      toast.error('Payment not declined', declineErrorMessage(error));
+      toast.error(
+        locale === 'am' ? 'ክፍያው ውድቅ አልተደረገም' : 'Payment not declined',
+        declineErrorMessage(error),
+      );
     }
   }
 
@@ -164,8 +184,12 @@ function PaymentDetailSheet({
     <Sheet open={Boolean(paymentId)} onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="w-full overflow-y-auto sm:max-w-md">
         <SheetHeader>
-          <SheetTitle>Payment details</SheetTitle>
-          <SheetDescription>Review this submission and decide.</SheetDescription>
+          <SheetTitle>{locale === 'am' ? 'የክፍያ ዝርዝሮች' : 'Payment details'}</SheetTitle>
+          <SheetDescription>
+            {locale === 'am'
+              ? 'ይህንን የቀረበ ክፍያ ይገምግሙ እና ይወሰኑ።'
+              : 'Review this submission and decide.'}
+          </SheetDescription>
         </SheetHeader>
 
         {paymentQuery.isLoading || !payment ? (
@@ -178,30 +202,38 @@ function PaymentDetailSheet({
           <div className="mt-6 space-y-5">
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-foreground">{payment.courseTitle}</span>
-              <Badge variant={STATUS_VARIANT[payment.status]}>{payment.status}</Badge>
+              <Badge variant={STATUS_VARIANT[payment.status]}>
+                {formatPaymentStatus(payment.status, locale)}
+              </Badge>
             </div>
             <Separator />
             <dl className="space-y-3 text-sm">
               <div className="flex items-center justify-between">
-                <dt className="text-muted-foreground">Student</dt>
+                <dt className="text-muted-foreground">{locale === 'am' ? 'ተማሪ' : 'Student'}</dt>
                 <dd className="font-medium text-foreground">{payment.studentEmail}</dd>
               </div>
               <div className="flex items-center justify-between">
-                <dt className="text-muted-foreground">Transaction ID</dt>
+                <dt className="text-muted-foreground">
+                  {locale === 'am' ? 'የክፍያ ቁጥር' : 'Transaction ID'}
+                </dt>
                 <dd className="font-medium text-foreground">{payment.transactionId}</dd>
               </div>
               {payment.paymentMethodName && (
                 <div className="flex items-center justify-between">
-                  <dt className="text-muted-foreground">Payment method</dt>
+                  <dt className="text-muted-foreground">
+                    {locale === 'am' ? 'የክፍያ ዘዴ' : 'Payment method'}
+                  </dt>
                   <dd className="font-medium text-foreground">{payment.paymentMethodName}</dd>
                 </div>
               )}
               <div className="flex items-center justify-between">
-                <dt className="text-muted-foreground">Attempt</dt>
+                <dt className="text-muted-foreground">{locale === 'am' ? 'ሙከራ' : 'Attempt'}</dt>
                 <dd className="font-medium text-foreground">#{payment.attemptNumber}</dd>
               </div>
               <div className="flex items-center justify-between">
-                <dt className="text-muted-foreground">Submitted</dt>
+                <dt className="text-muted-foreground">
+                  {locale === 'am' ? 'የቀረበበት ቀን' : 'Submitted'}
+                </dt>
                 <dd className="font-medium text-foreground">
                   {formatDateTime(payment.submittedAt)}
                 </dd>
@@ -229,13 +261,17 @@ function PaymentDetailSheet({
             {payment.amountMismatch && (
               <p className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/5 px-3 py-2 text-sm text-warning">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-                The submitted amount doesn&apos;t match the expected price.
+                {locale === 'am'
+                  ? 'የቀረበው የገንዘብ መጠን ከሚጠበቀው ዋጋ ጋር አይዛመድም።'
+                  : "The submitted amount doesn't match the expected price."}
               </p>
             )}
             {duplicateCount > 0 && (
               <p className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/5 px-3 py-2 text-sm text-warning">
                 <Copy className="mt-0.5 size-4 shrink-0" />
-                This transaction ID matches {duplicateCount} other payment(s).
+                {locale === 'am'
+                  ? `ይህ የክፍያ ቁጥር ከ ${duplicateCount} ሌሎች ክፍያዎች ጋር ይዛመዳል።`
+                  : `This transaction ID matches ${duplicateCount} other payment(s).`}
               </p>
             )}
             {payment.status === 'DECLINED' && payment.declineReason && (
@@ -245,7 +281,9 @@ function PaymentDetailSheet({
             )}
             {payment.studentNote && (
               <div>
-                <p className="text-xs font-semibold text-muted-foreground">Student note</p>
+                <p className="text-xs font-semibold text-muted-foreground">
+                  {locale === 'am' ? 'የተማሪ ማስታወሻ' : 'Student note'}
+                </p>
                 <p className="mt-1 text-sm text-foreground">{payment.studentNote}</p>
               </div>
             )}
@@ -253,21 +291,25 @@ function PaymentDetailSheet({
             <Separator />
 
             <div>
-              <p className="mb-2 text-xs font-semibold text-muted-foreground">Receipt</p>
+              <p className="mb-2 text-xs font-semibold text-muted-foreground">
+                {locale === 'am' ? 'ደረሰኝ' : 'Receipt'}
+              </p>
               {receiptQuery.isLoading ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="size-4 animate-spin" /> Preparing receipt...
+                  <Loader2 className="size-4 animate-spin" />
+                  {locale === 'am' ? 'ደረሰኝ በመዘጋጀት ላይ...' : 'Preparing receipt...'}
                 </div>
               ) : receiptQuery.data ? (
                 <Button asChild variant="outline" className="w-full gap-2">
                   <a href={receiptQuery.data.url} download target="_blank" rel="noreferrer">
                     <Download className="size-4" />
-                    Download receipt
+                    {locale === 'am' ? 'ደረሰኝ አውርድ' : 'Download receipt'}
                   </a>
                 </Button>
               ) : (
                 <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <FileText className="size-4" /> Receipt unavailable.
+                  <FileText className="size-4" />
+                  {locale === 'am' ? 'ደረሰኝ አልተገኘም።' : 'Receipt unavailable.'}
                 </p>
               )}
             </div>
@@ -277,7 +319,9 @@ function PaymentDetailSheet({
                 {payment.amountMismatch && canApproveMismatch && (
                   <div className="space-y-2">
                     <Label htmlFor="mismatch-reason">
-                      Reason for approving despite the mismatch
+                      {locale === 'am'
+                        ? 'ያልተዛመደውን መጠን ለማጽደቅ ምክንያት'
+                        : 'Reason for approving despite the mismatch'}
                     </Label>
                     <Textarea
                       id="mismatch-reason"
@@ -293,7 +337,9 @@ function PaymentDetailSheet({
                       checked={acknowledgedDuplicate}
                       onCheckedChange={(checked) => setAcknowledgedDuplicate(checked === true)}
                     />
-                    I&apos;ve reviewed the duplicate transaction(s) and confirm this is legitimate.
+                    {locale === 'am'
+                      ? 'የተደገሙትን የክፍያ ቁጥሮች ገምግሜ ክፍያው ትክክለኛ መሆኑን አረጋግጣለሁ።'
+                      : "I've reviewed the duplicate transaction(s) and confirm this is legitimate."}
                   </label>
                 )}
                 <Separator />
@@ -315,7 +361,7 @@ function PaymentDetailSheet({
                       ) : (
                         <Check className="size-4" />
                       )}
-                      Approve
+                      {locale === 'am' ? 'አጽድቅ' : 'Approve'}
                     </Button>
                   </Can>
                   <Can permission="payments.decline">
@@ -325,18 +371,24 @@ function PaymentDetailSheet({
                           variant="outline"
                           className="gap-2 text-destructive hover:text-destructive"
                         >
-                          <X className="size-4" /> Decline
+                          <X className="size-4" /> {locale === 'am' ? 'ውድቅ አድርግ' : 'Decline'}
                         </Button>
                       }
-                      title="Decline this payment?"
-                      description="The student will be notified with your reason."
-                      confirmLabel="Decline payment"
+                      title={locale === 'am' ? 'ይህንን ክፍያ ውድቅ ማድረግ ይፈልጋሉ?' : 'Decline this payment?'}
+                      description={
+                        locale === 'am'
+                          ? 'ተማሪው ከምክንያትዎ ጋር ማሳወቂያ ይደርሰዋል።'
+                          : 'The student will be notified with your reason.'
+                      }
+                      confirmLabel={locale === 'am' ? 'ክፍያውን ውድቅ አድርግ' : 'Decline payment'}
                       variant="destructive"
                       confirmDisabled={!declineReason.trim()}
                       onConfirm={handleDecline}
                     >
                       <div className="space-y-2 py-2">
-                        <Label htmlFor="decline-reason">Reason</Label>
+                        <Label htmlFor="decline-reason">
+                          {locale === 'am' ? 'ምክንያት' : 'Reason'}
+                        </Label>
                         <Textarea
                           id="decline-reason"
                           value={declineReason}
@@ -360,6 +412,7 @@ function PaymentDetailSheet({
 }
 
 export default function AdminPaymentsPage() {
+  const { locale } = useLanguage();
   const { filters, pageSize, setFilter, setFilters, setPageSize, resetFilters } =
     useQueryFilters<PaymentsFilters>({
       defaults: DEFAULT_FILTERS,
@@ -376,6 +429,15 @@ export default function AdminPaymentsPage() {
     search,
   } = filters;
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const statusOptions = useMemo(
+    () => [
+      { label: locale === 'am' ? 'በመጠባበቅ ላይ' : 'Pending', value: 'PENDING' },
+      { label: locale === 'am' ? 'የጸደቀ' : 'Approved', value: 'APPROVED' },
+      { label: locale === 'am' ? 'ውድቅ የተደረገ' : 'Declined', value: 'DECLINED' },
+    ],
+    [locale],
+  );
 
   const coursesQuery = useAdminCourses({ pageSize: 100 });
   const courseOptions = (coursesQuery.data?.items ?? []).map((course) => ({
@@ -425,26 +487,36 @@ export default function AdminPaymentsPage() {
     <ContentContainer>
       <PageBreadcrumb
         items={[
-          { label: 'Dashboard', href: ROUTES.admin.root },
-          { label: 'Financial Management', href: ROUTES.admin.financial },
-          { label: 'Payments' },
+          { label: locale === 'am' ? 'ዳሽቦርድ' : 'Dashboard', href: ROUTES.admin.root },
+          {
+            label: locale === 'am' ? 'የፋይናንስ አስተዳደር' : 'Financial Management',
+            href: ROUTES.admin.financial,
+          },
+          { label: locale === 'am' ? 'ክፍያዎች' : 'Payments' },
         ]}
       />
-      <PageHeader title="Payments" description="Review and manage student payments." />
+      <PageHeader
+        title={locale === 'am' ? 'ክፍያዎች' : 'Payments'}
+        description={
+          locale === 'am' ? 'የተማሪዎችን ክፍያዎች ይገምግሙ እና ያስተዳድሩ።' : 'Review and manage student payments.'
+        }
+      />
 
       <FilterBar
         chips={
           hasActiveFilters ? (
             <FilterChips
               chips={[
-                ...(status !== 'ALL' ? [{ key: 'status', label: status }] : []),
+                ...(status !== 'ALL'
+                  ? [{ key: 'status', label: formatPaymentStatus(status, locale) }]
+                  : []),
                 ...(courseId
                   ? [
                       {
                         key: 'courseId',
                         label:
                           courseOptions.find((option) => option.value === courseId)?.label ??
-                          'Course',
+                          (locale === 'am' ? 'ኮርስ' : 'Course'),
                       },
                     ]
                   : []),
@@ -454,7 +526,7 @@ export default function AdminPaymentsPage() {
                         key: 'paymentMethodId',
                         label:
                           paymentMethodOptions.find((option) => option.value === paymentMethodId)
-                            ?.label ?? 'Payment method',
+                            ?.label ?? (locale === 'am' ? 'የክፍያ ዘዴ' : 'Payment method'),
                       },
                     ]
                   : []),
@@ -466,9 +538,21 @@ export default function AdminPaymentsPage() {
                       },
                     ]
                   : []),
-                ...(amountMismatch ? [{ key: 'amountMismatch', label: 'Amount mismatch' }] : []),
+                ...(amountMismatch
+                  ? [
+                      {
+                        key: 'amountMismatch',
+                        label: locale === 'am' ? 'የተሳሳተ የገንዘብ መጠን' : 'Amount mismatch',
+                      },
+                    ]
+                  : []),
                 ...(duplicateOnly
-                  ? [{ key: 'duplicateOnly', label: 'Duplicate transaction' }]
+                  ? [
+                      {
+                        key: 'duplicateOnly',
+                        label: locale === 'am' ? 'የተደገመ የክፍያ ቁጥር' : 'Duplicate transaction',
+                      },
+                    ]
                   : []),
                 ...(search ? [{ key: 'search', label: `"${search}"` }] : []),
               ]}
@@ -488,29 +572,33 @@ export default function AdminPaymentsPage() {
         }
       >
         <SearchBar
-          placeholder="Search by transaction ID, student, or course..."
+          placeholder={
+            locale === 'am'
+              ? 'በተክፍያ ቁጥር፣ ተማሪ ወይም ኮርስ ፈልግ...'
+              : 'Search by transaction ID, student, or course...'
+          }
           defaultValue={search ?? ''}
           onSearch={(value) => setFilter('search', value || undefined)}
           className="w-full sm:w-72"
         />
         <SelectFilter
-          label="Status"
+          label={locale === 'am' ? 'ሁኔታ' : 'Status'}
           value={status === 'ALL' ? undefined : status}
           onChange={(value) => setFilter('status', (value ?? 'ALL') as PaymentsFilters['status'])}
-          options={STATUS_OPTIONS}
+          options={statusOptions}
         />
         <SelectFilter
-          label="Course"
+          label={locale === 'am' ? 'ኮርስ' : 'Course'}
           value={courseId}
           onChange={(value) => setFilter('courseId', value)}
           options={courseOptions}
         />
         <SelectFilter
-          label="Payment method"
+          label={locale === 'am' ? 'የክፍያ ዘዴ' : 'Payment method'}
           value={paymentMethodId}
           onChange={(value) => setFilter('paymentMethodId', value)}
           options={paymentMethodOptions}
-          placeholder="All methods"
+          placeholder={locale === 'am' ? 'ሁሉም ዘዴዎች' : 'All methods'}
         />
         <DateRangeFilter
           value={dateRange}
@@ -520,21 +608,21 @@ export default function AdminPaymentsPage() {
               submittedTo: range?.to ? range.to.toISOString().slice(0, 10) : undefined,
             })
           }
-          placeholder="Submitted date"
+          placeholder={locale === 'am' ? 'የቀረበበት ቀን' : 'Submitted date'}
         />
         <label className="flex items-center gap-2 text-sm text-foreground">
           <Checkbox
             checked={amountMismatch === 'true'}
             onCheckedChange={(checked) => setFilter('amountMismatch', checked ? 'true' : undefined)}
           />
-          Amount mismatch
+          {locale === 'am' ? 'የተሳሳተ የገንዘብ መጠን' : 'Amount mismatch'}
         </label>
         <label className="flex items-center gap-2 text-sm text-foreground">
           <Checkbox
             checked={duplicateOnly === 'true'}
             onCheckedChange={(checked) => setFilter('duplicateOnly', checked ? 'true' : undefined)}
           />
-          Duplicate transaction
+          {locale === 'am' ? 'የተደገመ የክፍያ ቁጥር' : 'Duplicate transaction'}
         </label>
       </FilterBar>
 
@@ -543,20 +631,24 @@ export default function AdminPaymentsPage() {
       ) : paymentsQuery.isError ? (
         <ErrorState
           onRetry={() => paymentsQuery.refetch()}
-          description="Unable to load payments."
+          description={locale === 'am' ? 'ክፍያዎችን መጫን አልተቻለም።' : 'Unable to load payments.'}
         />
       ) : payments.length === 0 ? (
         <EmptyState
-          title="No payments found"
+          title={locale === 'am' ? 'ምንም ክፍያ አልተገኘም' : 'No payments found'}
           description={
             hasActiveFilters
-              ? 'No payments match your filters.'
-              : 'No payments have been submitted yet.'
+              ? locale === 'am'
+                ? 'ከማጣሪያዎችዎ ጋር የሚዛመድ ክፍያ የለም።'
+                : 'No payments match your filters.'
+              : locale === 'am'
+                ? 'እስካሁን ምንም የቀረበ ክፍያ የለም።'
+                : 'No payments have been submitted yet.'
           }
           action={
             hasActiveFilters ? (
               <Button variant="outline" onClick={resetFilters}>
-                Reset filters
+                {locale === 'am' ? 'ማጣሪያዎችን አጽዳ' : 'Reset filters'}
               </Button>
             ) : undefined
           }
@@ -566,11 +658,11 @@ export default function AdminPaymentsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Student</TableHead>
-                <TableHead>Course</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Submitted</TableHead>
+                <TableHead>{locale === 'am' ? 'ተማሪ' : 'Student'}</TableHead>
+                <TableHead>{locale === 'am' ? 'ኮርስ' : 'Course'}</TableHead>
+                <TableHead>{locale === 'am' ? 'መጠን' : 'Amount'}</TableHead>
+                <TableHead>{locale === 'am' ? 'ሁኔታ' : 'Status'}</TableHead>
+                <TableHead>{locale === 'am' ? 'የቀረበበት ቀን' : 'Submitted'}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -595,7 +687,7 @@ export default function AdminPaymentsPage() {
                     {payment.amountMismatch && (
                       <AlertTriangle
                         className="ml-1.5 inline size-3.5 text-warning"
-                        aria-label="Amount mismatch"
+                        aria-label={locale === 'am' ? 'የተሳሳተ መጠን' : 'Amount mismatch'}
                       />
                     )}
                     {payment.promoCode && (
@@ -605,7 +697,9 @@ export default function AdminPaymentsPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={STATUS_VARIANT[payment.status]}>{payment.status}</Badge>
+                    <Badge variant={STATUS_VARIANT[payment.status]}>
+                      {formatPaymentStatus(payment.status, locale)}
+                    </Badge>
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-muted-foreground">
                     {formatDateTime(payment.submittedAt)}
@@ -619,7 +713,11 @@ export default function AdminPaymentsPage() {
 
       {!paymentsQuery.isLoading && payments.length > 0 && (
         <div className="flex flex-col items-center gap-2">
-          <p className="text-sm text-muted-foreground">Showing {payments.length} payments</p>
+          <p className="text-sm text-muted-foreground">
+            {locale === 'am'
+              ? `${payments.length} ክፍያዎች ይታያሉ`
+              : `Showing ${payments.length} payments`}
+          </p>
           {hasMore && (
             <Button
               variant="outline"
@@ -627,7 +725,7 @@ export default function AdminPaymentsPage() {
               disabled={paymentsQuery.isFetching}
             >
               {paymentsQuery.isFetching && <Loader2 className="mr-2 size-4 animate-spin" />}
-              Load more
+              {locale === 'am' ? 'ተጨማሪ አሳይ' : 'Load more'}
             </Button>
           )}
         </div>

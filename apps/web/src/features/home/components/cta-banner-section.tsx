@@ -1,15 +1,18 @@
+'use client';
+
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/constants/routes';
+import { useLanguage } from '@/lib/i18n/language-provider';
 import type { FinalCtaSettings } from '@/features/settings/types/settings.types';
 
 export function CtaBannerSection({ finalCta }: { finalCta?: FinalCtaSettings }) {
-  const heading = finalCta?.heading || 'Ready to Start?';
+  const { t, locale } = useLanguage();
+  const heading = finalCta?.heading && locale === 'en' ? finalCta.heading : t('cta.title');
   const description =
-    finalCta?.description ||
-    'Join for free and get access to our full course catalog today - no credit card required.';
-  const ctaText = finalCta?.ctaText || 'Create your free account';
+    finalCta?.description && locale === 'en' ? finalCta.description : t('cta.subtitle');
+  const ctaText = finalCta?.ctaText && locale === 'en' ? finalCta.ctaText : t('cta.button');
   const ctaUrl = finalCta?.ctaUrl || ROUTES.auth.register;
 
   return (

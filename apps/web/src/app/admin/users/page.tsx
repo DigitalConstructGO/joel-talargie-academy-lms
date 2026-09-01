@@ -31,6 +31,8 @@ import type { ManagedUser, ManagedUserStatus } from '@/features/users/types/user
 import { ROUTES } from '@/constants/routes';
 import { formatDate } from '@/lib/date';
 
+import { useLanguage } from '@/lib/i18n/language-provider';
+
 const PAGE_SIZE = 10;
 
 interface UsersFilters {
@@ -48,18 +50,6 @@ const DEFAULT_FILTERS: UsersFilters = {
   search: undefined,
 };
 
-const STATUS_OPTIONS = [
-  { label: 'Pending verification', value: 'PENDING_VERIFICATION' },
-  { label: 'Active', value: 'ACTIVE' },
-  { label: 'Suspended', value: 'SUSPENDED' },
-  { label: 'Archived', value: 'ARCHIVED' },
-];
-
-const PROVIDER_OPTIONS = [
-  { label: 'Email & password', value: 'LOCAL' },
-  { label: 'Google', value: 'GOOGLE' },
-];
-
 const STATUS_VARIANT: Record<ManagedUserStatus, NonNullable<BadgeProps['variant']>> = {
   PENDING_VERIFICATION: 'warning',
   ACTIVE: 'success',
@@ -67,21 +57,28 @@ const STATUS_VARIANT: Record<ManagedUserStatus, NonNullable<BadgeProps['variant'
   ARCHIVED: 'outline',
 };
 
-const STATUS_LABEL: Record<ManagedUserStatus, string> = {
-  PENDING_VERIFICATION: 'Pending verification',
-  ACTIVE: 'Active',
-  SUSPENDED: 'Suspended',
-  ARCHIVED: 'Archived',
-};
+function formatUserRole(role: string, locale: string): string {
+  if (locale !== 'am') return role;
+
+  const ROLE_MAP_AM: Record<string, string> = {
+    STUDENT: 'ተማሪ',
+    INSTRUCTOR: 'አስተማሪ',
+    ADMINISTRATOR: 'አስተዳዳሪ',
+    CONTENT_MANAGER: 'የይዘት አስተዳዳሪ',
+  };
+
+  return ROLE_MAP_AM[role] || role;
+}
 
 export default function AdminUsersPage() {
+  const { locale } = useLanguage();
   const { filters, page, pageSize, setFilter, setPage, resetFilters } =
     useQueryFilters<UsersFilters>({ defaults: DEFAULT_FILTERS, pageSize: PAGE_SIZE });
   const { status, provider, role, search } = filters;
 
   const rolesQuery = useRoles({ pageSize: 100 });
   const roleOptions = (rolesQuery.data?.items ?? []).map((r) => ({
-    label: r.name,
+    label: locale === 'am' ? formatUserRole(r.code, locale) : r.name,
     value: r.code,
   }));
 
@@ -95,6 +92,56 @@ export default function AdminUsersPage() {
     includeArchived: true,
   });
 
+  const statusOptions = useMemo(
+    () => [
+      {
+        label: locale === 'am' ? 'ማረጋገጫ በመጠባበቅ ላይ' : 'Pending verification',
+        value: 'PENDING_VERIFICATION',
+      },
+      { label: locale === 'am' ? 'ንቁ' : 'Active', value: 'ACTIVE' },
+      { label: locale === 'am' ? 'እገዳ የተደረገበት' : 'Suspended', value: 'SUSPENDED' },
+      { label: locale === 'am' ? 'የተቀመጠ' : 'Archived', value: 'ARCHIVED' },
+    ],
+    [locale],
+  );
+
+  const providerOptions = useMemo(
+    () => [
+      { label: locale === 'am' ? 'ኢሜይል እና የይለፍ ቃል' : 'Email & password', value: 'LOCAL' },
+      { label: 'Google', value: 'GOOGLE' },
+    ],
+    [locale],
+  );
+
+  const getStatusLabel = (s: ManagedUserStatus) => {
+    if (locale !== 'am') {
+      switch (s) {
+        case 'PENDING_VERIFICATION':
+          return 'Pending verification';
+        case 'ACTIVE':
+          return 'Active';
+        case 'SUSPENDED':
+          return 'Suspended';
+        case 'ARCHIVED':
+          return 'Archived';
+        default:
+          return s;
+      }
+    }
+    switch (s) {
+      case 'PENDING_VERIFICATION':
+        return 'ማረጋገጫ በመጠባበቅ ላይ';
+      case 'ACTIVE':
+        return 'ንቁ';
+      case 'SUSPENDED':
+        return 'እገዳ የተደረገበት';
+      case 'ARCHIVED':
+        return 'የተቀመጠ';
+      default:
+        return s;
+    }
+  };
+
   const hasActiveFilters =
     status !== 'ALL' || provider !== 'ALL' || Boolean(role) || Boolean(search);
   const totalPages = Math.max(1, Math.ceil((usersQuery.data?.total ?? 0) / pageSize));
@@ -103,7 +150,7 @@ export default function AdminUsersPage() {
     () => [
       {
         accessorKey: 'fullName',
-        header: 'Name',
+        header: locale === 'am' ? 'ስም' : 'Name',
         cell: ({ row }) => (
           <Link
             href={ROUTES.admin.userDetail(row.original.id)}
@@ -118,15 +165,15 @@ export default function AdminUsersPage() {
           </Link>
         ),
       },
-      { accessorKey: 'email', header: 'Email' },
+      { accessorKey: 'email', header: locale === 'am' ? 'ኢሜይል' : 'Email' },
       {
         accessorKey: 'roles',
-        header: 'Role',
+        header: locale === 'am' ? 'ሚና' : 'Role',
         cell: ({ row }) => (
           <div className="flex flex-wrap gap-1">
-            {row.original.roles.map((role) => (
-              <Badge key={role} variant="secondary">
-                {role}
+            {row.original.roles.map((r) => (
+              <Badge key={r} variant="secondary">
+                {formatUserRole(r, locale)}
               </Badge>
             ))}
           </div>
@@ -134,28 +181,39 @@ export default function AdminUsersPage() {
       },
       {
         accessorKey: 'status',
-        header: 'Status',
+        header: locale === 'am' ? 'ሁኔታ' : 'Status',
         cell: ({ row }) => (
           <Badge variant={STATUS_VARIANT[row.original.status]}>
-            {STATUS_LABEL[row.original.status]}
+            {getStatusLabel(row.original.status)}
           </Badge>
         ),
       },
       {
         accessorKey: 'emailVerified',
-        header: 'Email verified',
-        cell: ({ row }) => (row.original.emailVerified ? 'Verified' : 'Unverified'),
+        header: locale === 'am' ? 'የተረጋገጠ' : 'Verified',
+        cell: ({ row }) =>
+          row.original.emailVerified
+            ? locale === 'am'
+              ? 'የተረጋገጠ'
+              : 'Verified'
+            : locale === 'am'
+              ? 'ያልተረጋገጠ'
+              : 'Unverified',
       },
       {
         accessorKey: 'createdAt',
-        header: 'Created',
+        header: locale === 'am' ? 'የተፈጠረበት' : 'Created',
         cell: ({ row }) => formatDate(row.original.createdAt),
       },
       {
         accessorKey: 'lastLoginAt',
-        header: 'Last login',
+        header: locale === 'am' ? 'መጨረሻ የገባበት' : 'Last Login',
         cell: ({ row }) =>
-          row.original.lastLoginAt ? formatDate(row.original.lastLoginAt) : 'Never',
+          row.original.lastLoginAt
+            ? formatDate(row.original.lastLoginAt)
+            : locale === 'am'
+              ? 'አልገባም'
+              : 'Never',
       },
       {
         id: 'actions',
@@ -172,14 +230,14 @@ export default function AdminUsersPage() {
               <Can permission="users.read">
                 <DropdownMenuItem asChild>
                   <Link href={ROUTES.admin.userDetail(row.original.id)} className="gap-2">
-                    <Eye className="size-4" /> View
+                    <Eye className="size-4" /> {locale === 'am' ? 'እይ' : 'View'}
                   </Link>
                 </DropdownMenuItem>
               </Can>
               <Can permission="users.update">
                 <DropdownMenuItem asChild>
                   <Link href={ROUTES.admin.userEdit(row.original.id)} className="gap-2">
-                    <Pencil className="size-4" /> Edit profile
+                    <Pencil className="size-4" /> {locale === 'am' ? 'አስተካክል' : 'Edit'}
                   </Link>
                 </DropdownMenuItem>
               </Can>
@@ -188,17 +246,24 @@ export default function AdminUsersPage() {
         ),
       },
     ],
-    [],
+    [locale],
   );
 
   return (
     <ContentContainer>
       <PageBreadcrumb
-        items={[{ label: 'Dashboard', href: ROUTES.admin.root }, { label: 'Users' }]}
+        items={[
+          { label: locale === 'am' ? 'ዳሽቦርድ' : 'Dashboard', href: ROUTES.admin.root },
+          { label: locale === 'am' ? 'ተጠቃሚዎች እና ሚናዎች' : 'Users & Roles' },
+        ]}
       />
       <PageHeader
-        title="User Management"
-        description="Manage students, instructors, and administrators."
+        title={locale === 'am' ? 'ተጠቃሚዎች እና ሚናዎች' : 'Users & Roles'}
+        description={
+          locale === 'am'
+            ? 'የአካዳሚውን ተጠቃሚዎች፣ ሚናዎችን እና የመለያ ሁኔታዎችን ያስተዳድሩ።'
+            : 'Manage academy users, roles, and account statuses.'
+        }
       />
 
       <FilterBar
@@ -206,7 +271,7 @@ export default function AdminUsersPage() {
           hasActiveFilters ? (
             <FilterChips
               chips={[
-                ...(status !== 'ALL' ? [{ key: 'status', label: STATUS_LABEL[status] }] : []),
+                ...(status !== 'ALL' ? [{ key: 'status', label: getStatusLabel(status) }] : []),
                 ...(provider !== 'ALL' ? [{ key: 'provider', label: provider }] : []),
                 ...(role
                   ? [
@@ -230,25 +295,25 @@ export default function AdminUsersPage() {
         }
       >
         <SearchBar
-          placeholder="Search by name or email..."
+          placeholder={locale === 'am' ? 'በስም ወይም በኢሜይል ፈልግ...' : 'Search by name or email...'}
           defaultValue={search ?? ''}
           onSearch={(value) => setFilter('search', value || undefined)}
           className="w-full sm:w-64"
         />
         <SelectFilter
-          label="Status"
+          label={locale === 'am' ? 'ሁኔታ' : 'Status'}
           value={status === 'ALL' ? undefined : status}
           onChange={(value) => setFilter('status', (value ?? 'ALL') as UsersFilters['status'])}
-          options={STATUS_OPTIONS}
+          options={statusOptions}
         />
         <SelectFilter
-          label="Provider"
+          label={locale === 'am' ? 'ፕሮቫይደር' : 'Provider'}
           value={provider === 'ALL' ? undefined : provider}
           onChange={(value) => setFilter('provider', (value ?? 'ALL') as UsersFilters['provider'])}
-          options={PROVIDER_OPTIONS}
+          options={providerOptions}
         />
         <SelectFilter
-          label="Role"
+          label={locale === 'am' ? 'ሚና' : 'Role'}
           value={role}
           onChange={(value) => setFilter('role', value)}
           options={roleOptions}
@@ -256,18 +321,25 @@ export default function AdminUsersPage() {
       </FilterBar>
 
       {usersQuery.isError ? (
-        <ErrorState onRetry={() => usersQuery.refetch()} description="Unable to load users." />
+        <ErrorState
+          onRetry={() => usersQuery.refetch()}
+          description={locale === 'am' ? 'ተጠቃሚዎችን መጫን አልተቻለም።' : 'Unable to load users.'}
+        />
       ) : (
         <>
           <DataTable
             columns={columns}
             data={usersQuery.data?.items ?? []}
             isLoading={usersQuery.isLoading}
-            emptyTitle="No users found"
+            emptyTitle={locale === 'am' ? 'ምንም ተጠቃሚ አልተገኘም' : 'No users found'}
             emptyDescription={
               hasActiveFilters
-                ? 'No users match your filters. Try adjusting or clearing them.'
-                : 'No users have registered yet.'
+                ? locale === 'am'
+                  ? 'ከማጣሪያዎችዎ ጋር የሚዛመድ ተጠቃሚ የለም።'
+                  : 'No users match your filters. Try adjusting or clearing them.'
+                : locale === 'am'
+                  ? 'እስካሁን ምንም ተጠቃሚ አልተመዘገበም።'
+                  : 'No users have registered yet.'
             }
             manualPagination
           />

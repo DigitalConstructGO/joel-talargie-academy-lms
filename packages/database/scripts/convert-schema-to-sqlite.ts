@@ -27,7 +27,10 @@ import {
 } from 'drizzle-orm/sqlite-core';`,
 );
 
-code = code.replace(/import type \{ AnyPgColumn \} from 'drizzle-orm\/pg-core';/g, "import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core';");
+code = code.replace(
+  /import type \{ AnyPgColumn \} from 'drizzle-orm\/pg-core';/g,
+  "import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core';",
+);
 code = code.replace(/AnyPgColumn/g, 'AnySQLiteColumn');
 
 const enumHelper = `
@@ -36,14 +39,20 @@ export const pgEnum = <T extends string>(_name: string, values: [T, ...T[]]) => 
 };
 `;
 
-code = code.replace(/export const userStatus = pgEnum\(/, `${enumHelper}\nexport const userStatus = pgEnum(`);
+code = code.replace(
+  /export const userStatus = pgEnum\(/,
+  `${enumHelper}\nexport const userStatus = pgEnum(`,
+);
 
 // Replace pgTable with sqliteTable
 code = code.replace(/pgTable\(/g, 'sqliteTable(');
 
 // Replace UUID
-code = code.replace(/uuid\(([^)]+)\)\.primaryKey\(\)\.defaultRandom\(\)/g, "text($1).primaryKey().$defaultFn(() => crypto.randomUUID())");
-code = code.replace(/uuid\(([^)]+)\)/g, "text($1)");
+code = code.replace(
+  /uuid\(([^)]+)\)\.primaryKey\(\)\.defaultRandom\(\)/g,
+  'text($1).primaryKey().$defaultFn(() => crypto.randomUUID())',
+);
+code = code.replace(/uuid\(([^)]+)\)/g, 'text($1)');
 
 // Replace boolean
 code = code.replace(/boolean\(([^)]+)\)/g, "integer($1, { mode: 'boolean' })");
@@ -56,19 +65,25 @@ code = code.replace(/timestamp\(([^)]+)\)/g, "integer($1, { mode: 'timestamp' })
 code = code.replace(/jsonb\(([^)]+)\)/g, "text($1, { mode: 'json' })");
 
 // Replace numeric with options or without
-code = code.replace(/numeric\(([^,)]+),\s*\{[^}]*\}\)/g, "text($1)");
-code = code.replace(/numeric\(([^)]+)\)/g, "text($1)");
+code = code.replace(/numeric\(([^,)]+),\s*\{[^}]*\}\)/g, 'text($1)');
+code = code.replace(/numeric\(([^)]+)\)/g, 'text($1)');
 
 // Replace tsvector and generatedAlwaysAs
-code = code.replace(/const tsvector = customType[\s\S]*?\}\);/g, "const tsvector = (colName: string) => text(colName);");
-code = code.replace(/searchVector:\s*tsvector\('search_vector'\)[\s\S]*?\n\s*\),/g, "searchVector: tsvector('search_vector'),");
+code = code.replace(
+  /const tsvector = customType[\s\S]*?\}\);/g,
+  'const tsvector = (colName: string) => text(colName);',
+);
+code = code.replace(
+  /searchVector:\s*tsvector\('search_vector'\)[\s\S]*?\n\s*\),/g,
+  "searchVector: tsvector('search_vector'),",
+);
 
 // Remove .using('gin', ...) from index
-code = code.replace(/\.using\('gin',\s*table\.([a-zA-Z0-9_]+)\)/g, ".on(table.$1)");
+code = code.replace(/\.using\('gin',\s*table\.([a-zA-Z0-9_]+)\)/g, '.on(table.$1)');
 
 // Replace index column desc/asc
-code = code.replace(/table\.([a-zA-Z0-9_]+)\.desc\(\)/g, "desc(table.$1)");
-code = code.replace(/table\.([a-zA-Z0-9_]+)\.asc\(\)/g, "asc(table.$1)");
+code = code.replace(/table\.([a-zA-Z0-9_]+)\.desc\(\)/g, 'desc(table.$1)');
+code = code.replace(/table\.([a-zA-Z0-9_]+)\.asc\(\)/g, 'asc(table.$1)');
 
 // Replace SQL true with 1 in templates
 code = code.replace(/= true AND/g, '= 1 AND');

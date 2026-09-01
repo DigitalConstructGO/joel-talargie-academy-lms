@@ -23,8 +23,8 @@ export function StatsBandSection({ items }: { items: StatsBandItem[] }) {
   return (
     <section className="bg-brand">
       <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-8 px-4 py-14 text-center sm:grid-cols-3 sm:px-6">
-        {items.map((item) => (
-          <div key={item.label} className="flex flex-col gap-1">
+        {items.map((item, index) => (
+          <div key={`${item.label}-${index}`} className="flex flex-col gap-1">
             <span className="text-4xl font-bold tracking-tight text-surface-dark sm:text-5xl">
               <AnimatedCounter value={item.value} format={FORMATTERS[item.kind]} />
             </span>

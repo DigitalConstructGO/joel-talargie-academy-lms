@@ -39,7 +39,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
 };
 
 export function WhyChooseUsSection({ items }: { items?: WhyChooseUsItem[] }) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
 
   const defaultFeatures: WhyChooseUsItem[] = [
     {
@@ -76,7 +76,7 @@ export function WhyChooseUsSection({ items }: { items?: WhyChooseUsItem[] }) {
     },
   ];
 
-  const displayItems = items && items.length > 0 ? items : defaultFeatures;
+  const displayItems = items && items.length > 0 && locale === 'en' ? items : defaultFeatures;
 
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6">
@@ -84,9 +84,7 @@ export function WhyChooseUsSection({ items }: { items?: WhyChooseUsItem[] }) {
         <h2 className="text-2xl font-semibold tracking-tight text-foreground">
           {t('whyUs.title')}
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {t('whyUs.subtitle')}
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">{t('whyUs.subtitle')}</p>
       </div>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {displayItems.map((feature) => {

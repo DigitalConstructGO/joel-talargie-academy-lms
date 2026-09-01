@@ -10,13 +10,17 @@ import { DATABASE_CLIENT, DATABASE_POOL } from './database.constants';
 import { DatabaseService } from './database.service';
 import type { AcademyDatabase } from './database.types';
 
-function createPool(config: ConfigService<Environment, true>): Database.Database | null {
+function createPool(
+  config: ConfigService<Environment, true>,
+): Database.Database | null {
   const rawPath = config.get('DATABASE_URL', { infer: true });
   const dbPath = validateDatabaseUrl(rawPath);
   return new Database(dbPath);
 }
 
-function createDatabase(client: Database.Database | null): AcademyDatabase | null {
+function createDatabase(
+  client: Database.Database | null,
+): AcademyDatabase | null {
   return client ? createDatabaseClient(client) : null;
 }
 

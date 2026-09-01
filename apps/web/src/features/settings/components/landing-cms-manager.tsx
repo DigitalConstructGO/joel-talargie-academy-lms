@@ -105,6 +105,75 @@ type CmsTab =
   | 'faq'
   | 'finalCta';
 
+import { useLanguage } from '@/lib/i18n/language-provider';
+
+const CMS_TRANSLATION_MAP_AM: Record<string, string> = {
+  // Value Pills
+  'Self-Paced Learning': 'በራስዎ ፍጥነት መማር',
+  'Study on your own schedule with lifetime access to every course you enroll in.':
+    'በተመዘገቡበት በማንኛውም ኮርስ የህይወት ዘመን መዳረሻ በማግኘት በራስዎ የጊዜ ሰሌዳ ይማሩ።',
+  'Real Instructors': 'እውነተኛ እና ልምድ ያላቸው መምህራን',
+  'Courses taught by working professionals, not narrators reading slides.':
+    'ኮርሶች በተግባር በsector ውስጥ በሚሰሩ ባለሙያዎች የሚሰጡ እንጂ ስላይድ በሚያነቡ ተራ ተናጋሪዎች አይደሉም።',
+  'Verified Credentials': 'የተረጋገጡ ሰርተፊኬቶች',
+  'Finish a certificate-eligible course and show what you learned to employers.':
+    'ብቁ የሆነ ኮርስ ያጠናቅቁ እና የተማሩትን ለአሰሪዎች የሚያሳዩበት የተረጋገጠ ሰርተፊኬት ያግኙ።',
+
+  // Why Choose Us
+  'Learn at your own pace': 'በራስዎ ፍጥነት ይማሩ',
+  'Courses are self-paced with full lifetime access, so you can learn on your schedule.':
+    'ኮርሶች ሙሉ የህይወት ዘመን መዳረሻ ያላቸው እና በራስዎ የጊዜ ሰሌዳ የሚማሩ ናቸው።',
+  'Earn certificates': 'ሰርተፊኬቶችን ያግኙ',
+  'Complete eligible courses to earn a certificate of completion you can share.':
+    'ብቁ ኮርሶችን በማጠናቀቅ ሊያጋሩት የሚችሉት የማጠናቀቂያ ሰርተፊኬት ያግኙ።',
+  'Vetted instructors': 'የተረጋገጡ መምህራን',
+  'Every course is reviewed before publishing to keep quality high.':
+    'ጥራቱን ለመጠበቅ እያንዳንዱ ኮርስ ከመታተሙ በፊት በጥንቃቄ ይገመገማል።',
+  'Learn anywhere': 'በማንኛውም ቦታ ይማሩ',
+  'A fully responsive experience across desktop, tablet, and mobile.':
+    'በኮምፒውተር፣ በታብሌት እና በስልክ ላይ ሙሉ በሙሉ ተስማሚ የሆነ የመማር ልምድ።',
+
+  // How It Works
+  'Create an account': 'አካውንት ይፍጠሩ',
+  'Sign up free in under a minute.': 'በአንድ ደቂቃ ውስጥ በነጻ ይመዝገቡ።',
+  'Find a course': 'ኮርስ ይፈልጉ',
+  'Browse the catalog or search for a topic.': 'ካታሎጉን ይመልከቱ ወይም የሚፈልጉትን ርዕስ ይፈልጉ።',
+  'Start learning': 'መማር ይጀምሩ',
+  'Work through lessons at your own pace.': 'ትምህርቶችን በራስዎ ፍጥነት ይከታተሉ።',
+  'Get certified': 'ሰርተፊኬት ያግኙ',
+  'Finish the course and earn your certificate.': 'ኮርሱን ያጠናቅቁ እና ሰርተፊኬትዎን ያግኙ።',
+
+  // FAQs
+  'Are the courses self-paced?': 'ኮርሶቹ በራስ ፍጥነት የሚወሰዱ ናቸው?',
+  'Yes, all courses offer lifetime access so you can study at your own pace whenever and wherever you want.':
+    'አዎ፣ ሁሉም ኮርሶች የህይወት ዘመን መዳረሻ ስላላቸው በማንኛውም ጊዜ እና ቦታ በራስዎ ፍጥነት መማር ይችላሉ።',
+  'Do I get a certificate upon completion?': 'ኮርሱን ስጨርስ ሰርተፊኬት አገኛለሁ?',
+  'Yes, once you complete all required lessons and assessments in a course, you receive a verified digital certificate with QR authentication.':
+    'አዎ፣ የኮርሱን ትምህርቶች እና ምዘናዎች እንደጨረሱ በQR ኮድ የተረጋገጠ ዲጂታል ሰርተፊኬት ይደርስዎታል።',
+  'What payment methods are supported?': 'ምን አይነት የክፍያ መንገዶች ይደገፋሉ?',
+  'We support multiple payment methods including mobile money, bank transfers, and standard credit/debit cards.':
+    'የሞባይል ባንክ፣ የባንክ ሐዋላ እና ካርዶችን ጨምሮ የተለያዩ የክፍያ መንገዶችን እንደግፋለን።',
+  'Can I access the platform on mobile devices?': 'በሞባይል ስልክ መጠቀም እችላለሁ?',
+  'Absolutely. The academy is completely responsive and works smoothly on smartphones, tablets, laptops, and desktop computers.':
+    'በእርግጥ። አካዳሚው በስልክ፣ ታብሌት እና ኮምፒውተር ላይ በጥራት ይሰራል።',
+
+  // Testimonials
+  'The curriculum was straightforward and practical. I was able to apply what I learned in my engineering job within weeks.':
+    'ካሪኩለሙ ግልጽ እና ተግባራዊ ነበር። የተማርኩትን በሳምንታት ውስጥ በስራዬ ላይ መተግበር ችያለሁ።',
+  'Exceptional instruction and crystal-clear explanations. The certificate verification was seamless.':
+    'ድንቅ ማብራሪያ እና ግልጽ ትምህርት። የሰርተፊኬት ማረጋገጫው በጣም ቀልጣፋ ነበር።',
+  'By far the best learning experience I have had online. Hands-on exercises and great support.':
+    'በኦንላይን ከተማርኳቸው ምርጡ የመማር ልምድ ነው። ተግባራዊ ልምምዶች እና ጥሩ ድጋፍ አለው።',
+};
+
+export function translateCmsText(text?: string | null, locale?: string): string {
+  if (!text) return '';
+  if (locale === 'am' && CMS_TRANSLATION_MAP_AM[text.trim()]) {
+    return CMS_TRANSLATION_MAP_AM[text.trim()]!;
+  }
+  return text;
+}
+
 export function LandingCmsManager({
   initialData,
   disabled = false,
@@ -112,6 +181,7 @@ export function LandingCmsManager({
   initialData: StructuredAcademySettings;
   disabled?: boolean;
 }) {
+  const { locale } = useLanguage();
   const updateBatch = useUpdateSettingsBatch();
 
   const [sections, setSections] = useState<LandingSectionsSettings>(initialData.sections);
@@ -321,18 +391,38 @@ export function LandingCmsManager({
       {/* Top Section Navigation Bar */}
       <div className="flex flex-wrap items-center gap-2 border-b border-border pb-4">
         {[
-          { id: 'sections', label: 'Section Control', icon: Layout },
-          { id: 'hero', label: 'Hero', icon: Sparkles },
-          { id: 'valuePills', label: 'Value Pills', icon: Layers },
-          { id: 'whyChooseUs', label: 'Why Choose Us', icon: ShieldCheck },
-          { id: 'howItWorks', label: 'How It Works', icon: ListOrdered },
-          { id: 'featured', label: 'Featured Courses', icon: GraduationCap },
-          { id: 'categories', label: 'Categories', icon: Layers },
-          { id: 'mentor', label: 'Mentor Spotlight', icon: Users },
-          { id: 'stats', label: 'Platform Statistics', icon: Target },
-          { id: 'testimonials', label: 'Testimonials', icon: MessageSquare },
-          { id: 'faq', label: 'FAQ', icon: HelpCircle },
-          { id: 'finalCta', label: 'Final CTA', icon: Zap },
+          {
+            id: 'sections',
+            label: locale === 'am' ? 'የክፍሎች ቁጥጥር' : 'Section Control',
+            icon: Layout,
+          },
+          { id: 'hero', label: locale === 'am' ? 'Hero ክፍል' : 'Hero', icon: Sparkles },
+          { id: 'valuePills', label: locale === 'am' ? 'የእሴት ጥቆማዎች' : 'Value Pills', icon: Layers },
+          {
+            id: 'whyChooseUs',
+            label: locale === 'am' ? 'ለምን መረጡን' : 'Why Choose Us',
+            icon: ShieldCheck,
+          },
+          {
+            id: 'howItWorks',
+            label: locale === 'am' ? 'እንዴት እንደሚሰራ' : 'How It Works',
+            icon: ListOrdered,
+          },
+          {
+            id: 'featured',
+            label: locale === 'am' ? 'የተመረጡ ኮርሶች' : 'Featured Courses',
+            icon: GraduationCap,
+          },
+          { id: 'categories', label: locale === 'am' ? 'ምድቦች' : 'Categories', icon: Layers },
+          { id: 'mentor', label: locale === 'am' ? 'አስተማሪዎች' : 'Mentor Spotlight', icon: Users },
+          { id: 'stats', label: locale === 'am' ? 'ስታቲስቲክስ' : 'Platform Statistics', icon: Target },
+          {
+            id: 'testimonials',
+            label: locale === 'am' ? 'ምስክርነቶች' : 'Testimonials',
+            icon: MessageSquare,
+          },
+          { id: 'faq', label: locale === 'am' ? 'ተደጋጋሚ ጥያቄዎች' : 'FAQ', icon: HelpCircle },
+          { id: 'finalCta', label: locale === 'am' ? 'የመጨረሻ ጥሪ' : 'Final CTA', icon: Zap },
         ].map((tab) => {
           const Icon = tab.icon;
           const isSelected = activeTab === tab.id;
@@ -356,10 +446,13 @@ export function LandingCmsManager({
       {activeTab === 'sections' && (
         <Card>
           <CardHeader>
-            <CardTitle>Landing Page Section Visibility</CardTitle>
+            <CardTitle>
+              {locale === 'am' ? 'የመነሻ ገጽ ክፍሎች እይታ' : 'Landing Page Section Visibility'}
+            </CardTitle>
             <CardDescription>
-              Enable or disable public sections on the academy homepage. Disabled sections are
-              omitted by the backend API.
+              {locale === 'am'
+                ? 'በአካዳሚው መነሻ ገጽ ላይ ይፋዊ ክፍሎችን ያንቁ ወይም ያቦዝኑ። የታገዱ ክፍሎች ከበስተጀርባ ኤፒአይ አይወጡም።'
+                : 'Enable or disable public sections on the academy homepage. Disabled sections are omitted by the backend API.'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -367,56 +460,72 @@ export function LandingCmsManager({
               {[
                 {
                   key: 'hero',
-                  label: 'Hero Header & Search',
-                  desc: 'Main headline, CTAs & search',
+                  label: locale === 'am' ? 'Hero ርዕስ እና ፍለጋ' : 'Hero Header & Search',
+                  desc: locale === 'am' ? 'ዋና ርዕስ፣ ጥሪዎች እና ፍለጋ' : 'Main headline, CTAs & search',
                 },
                 {
                   key: 'valuePills',
-                  label: 'Value Propositions',
-                  desc: 'Top value highlight pills',
+                  label: locale === 'am' ? 'የእሴት ጥቆማዎች' : 'Value Propositions',
+                  desc: locale === 'am' ? 'ከፍተኛ የእሴት ማሳያ ካርዶች' : 'Top value highlight pills',
                 },
                 {
                   key: 'whyChooseUs',
-                  label: 'Why Choose Us',
-                  desc: 'Core institutional strengths',
+                  label: locale === 'am' ? 'ለምን መረጡን' : 'Why Choose Us',
+                  desc: locale === 'am' ? 'ዋና ተቋማዊ ጥንካሬዎች' : 'Core institutional strengths',
                 },
                 {
                   key: 'howItWorks',
-                  label: 'The Learning Framework',
-                  desc: '4-step student roadmap',
+                  label: locale === 'am' ? 'የትምህርት መዋቅር' : 'The Learning Framework',
+                  desc: locale === 'am' ? 'የ4-ደረጃ ተማሪዎች መንገድ' : '4-step student roadmap',
                 },
                 {
                   key: 'featuredCourses',
-                  label: 'Featured Courses',
-                  desc: 'Real DB courses marked featured',
+                  label: locale === 'am' ? 'የተመረጡ ኮርሶች' : 'Featured Courses',
+                  desc: locale === 'am' ? 'የተመረጡ እውነተኛ ኮርሶች' : 'Real DB courses marked featured',
                 },
                 {
                   key: 'categories',
-                  label: 'Browse Categories',
-                  desc: 'Active categories & course counts',
+                  label: locale === 'am' ? 'ምድቦች' : 'Browse Categories',
+                  desc:
+                    locale === 'am' ? 'ንቁ ምድቦች እና የኮርስ ብዛት' : 'Active categories & course counts',
                 },
-                { key: 'mentor', label: 'Mentor Spotlight', desc: 'Featured instructor profile' },
+                {
+                  key: 'mentor',
+                  label: locale === 'am' ? 'አስተማሪዎች' : 'Mentor Spotlight',
+                  desc: locale === 'am' ? 'የተመረጡ አስተማሪዎች መገለጫ' : 'Featured instructor profile',
+                },
                 {
                   key: 'stats',
-                  label: 'Platform Statistics',
-                  desc: 'Live students, courses & ratings',
+                  label: locale === 'am' ? 'የሲስተም ስታቲስቲክስ' : 'Platform Statistics',
+                  desc:
+                    locale === 'am'
+                      ? 'የተማሪዎች፣ ኮርሶች እና ደረጃዎች ብዛት'
+                      : 'Live students, courses & ratings',
                 },
-                { key: 'pricing', label: 'Pricing Preview', desc: 'Free & paid course tiers' },
+                {
+                  key: 'pricing',
+                  label: locale === 'am' ? 'የዋጋ ቅድመ እይታ' : 'Pricing Preview',
+                  desc: locale === 'am' ? 'ነጻ እና የክፍያ ኮርስ ደረጃዎች' : 'Free & paid course tiers',
+                },
                 {
                   key: 'testimonials',
-                  label: 'Learner Testimonials',
-                  desc: 'Student reviews carousel',
+                  label: locale === 'am' ? 'የተማሪዎች ምስክርነት' : 'Learner Testimonials',
+                  desc: locale === 'am' ? 'የተማሪዎች አስተያየት' : 'Student reviews carousel',
                 },
                 {
                   key: 'certificateVerify',
-                  label: 'Verify Certificate',
-                  desc: 'Public QR verification lookup',
+                  label: locale === 'am' ? 'ሰርተፊኬት ማረጋገጫ' : 'Verify Certificate',
+                  desc: locale === 'am' ? 'ይፋዊ የQR ማረጋገጫ ፍለጋ' : 'Public QR verification lookup',
                 },
-                { key: 'faq', label: 'Frequently Asked Questions', desc: 'Accordion FAQ preview' },
+                {
+                  key: 'faq',
+                  label: locale === 'am' ? 'ተደጋጋሚ ጥያቄዎች' : 'Frequently Asked Questions',
+                  desc: locale === 'am' ? 'ተደጋጋሚ ጥያቄዎች እና መልሶች' : 'Accordion FAQ preview',
+                },
                 {
                   key: 'finalCta',
-                  label: 'Final Call to Action',
-                  desc: 'Bottom enrollment banner',
+                  label: locale === 'am' ? 'የመጨረሻ ጥሪ' : 'Final Call to Action',
+                  desc: locale === 'am' ? 'የታችኛው ምዝገባ ባነር' : 'Bottom enrollment banner',
                 },
               ].map((item) => (
                 <div
@@ -445,14 +554,18 @@ export function LandingCmsManager({
       {activeTab === 'hero' && (
         <Card>
           <CardHeader>
-            <CardTitle>Hero Section Configuration</CardTitle>
+            <CardTitle>
+              {locale === 'am' ? 'የHero ክፍል ማዋቀሪያ' : 'Hero Section Configuration'}
+            </CardTitle>
             <CardDescription>
-              Main public landing header, search, and call to action buttons.
+              {locale === 'am'
+                ? 'ዋና የህዝብ መነሻ ርዕስ፣ ፍለጋ እና የጥሪ አዝራሮች።'
+                : 'Main public landing header, search, and call to action buttons.'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="heroHeading">Main Headline</Label>
+              <Label htmlFor="heroHeading">{locale === 'am' ? 'ዋና ርዕስ' : 'Main Headline'}</Label>
               <Input
                 id="heroHeading"
                 value={hero.heading}
@@ -464,7 +577,9 @@ export function LandingCmsManager({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="heroDescription">Hero Subtitle / Description</Label>
+              <Label htmlFor="heroDescription">
+                {locale === 'am' ? 'የHero ንዑስ ርዕስ / መግለጫ' : 'Hero Subtitle / Description'}
+              </Label>
               <Textarea
                 id="heroDescription"
                 rows={3}
@@ -477,7 +592,9 @@ export function LandingCmsManager({
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="primaryCtaText">Primary CTA Button Label</Label>
+                <Label htmlFor="primaryCtaText">
+                  {locale === 'am' ? 'የመጀመሪያ ጥሪ አዝራር ስም' : 'Primary CTA Button Label'}
+                </Label>
                 <Input
                   id="primaryCtaText"
                   value={hero.primaryCtaText}
@@ -487,7 +604,9 @@ export function LandingCmsManager({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="primaryCtaUrl">Primary CTA URL</Label>
+                <Label htmlFor="primaryCtaUrl">
+                  {locale === 'am' ? 'የመጀመሪያ ጥሪ URL' : 'Primary CTA URL'}
+                </Label>
                 <Input
                   id="primaryCtaUrl"
                   value={hero.primaryCtaUrl}
@@ -497,7 +616,9 @@ export function LandingCmsManager({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="secondaryCtaText">Secondary CTA Button Label</Label>
+                <Label htmlFor="secondaryCtaText">
+                  {locale === 'am' ? 'ሁለተኛ ጥሪ አዝራር ስም' : 'Secondary CTA Button Label'}
+                </Label>
                 <Input
                   id="secondaryCtaText"
                   value={hero.secondaryCtaText}
@@ -509,7 +630,9 @@ export function LandingCmsManager({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="secondaryCtaUrl">Secondary CTA URL</Label>
+                <Label htmlFor="secondaryCtaUrl">
+                  {locale === 'am' ? 'ሁለተኛ ጥሪ URL' : 'Secondary CTA URL'}
+                </Label>
                 <Input
                   id="secondaryCtaUrl"
                   value={hero.secondaryCtaUrl}
@@ -524,10 +647,14 @@ export function LandingCmsManager({
 
             <ImageUploadField
               id="heroImageUrl"
-              label="Hero Image / Background Asset"
+              label={locale === 'am' ? 'የHero ምስል / ዳራ' : 'Hero Image / Background Asset'}
               value={hero.heroImageUrl}
               onChange={(url) => setHero((prev) => ({ ...prev, heroImageUrl: url }))}
-              description="Upload a high-resolution banner image (16:9, PNG/JPG/WebP up to 10MB) to display on the public landing page hero section."
+              description={
+                locale === 'am'
+                  ? 'በመነሻ ገጽ ላይ የሚታይ ከፍተኛ ጥራት ያለው ባነር ምስል (16:9) ያስገቡ።'
+                  : 'Upload a high-resolution banner image (16:9, PNG/JPG/WebP up to 10MB) to display on the public landing page hero section.'
+              }
               placeholder="/images/hero/network-abstract.jpg"
               disabled={disabled || updateBatch.isPending}
               aspectRatio="banner"
@@ -541,8 +668,12 @@ export function LandingCmsManager({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-4">
             <div>
-              <CardTitle>Value Proposition Pills</CardTitle>
-              <CardDescription>Manage the highlight cards below the hero section.</CardDescription>
+              <CardTitle>{locale === 'am' ? 'የእሴት ጥቆማዎች' : 'Value Proposition Pills'}</CardTitle>
+              <CardDescription>
+                {locale === 'am'
+                  ? 'ከHero ክፍል በታች ያሉትን የደመቁ ካርዶች ያስተዳድሩ።'
+                  : 'Manage the highlight cards below the hero section.'}
+              </CardDescription>
             </div>
             <Button
               type="button"
@@ -562,12 +693,14 @@ export function LandingCmsManager({
               className="gap-1.5"
             >
               <Plus className="size-4" />
-              Add Value Pill
+              {locale === 'am' ? '+ እሴት ጨምር' : 'Add Value Pill'}
             </Button>
           </CardHeader>
           <CardContent className="space-y-3">
             {valuePills.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No value pills registered.</p>
+              <p className="text-sm text-muted-foreground">
+                {locale === 'am' ? 'ምንም የእሴት ጥቆማዎች አልተመዘገቡም።' : 'No value pills registered.'}
+              </p>
             ) : (
               <div className="space-y-3">
                 {valuePills
@@ -584,18 +717,28 @@ export function LandingCmsManager({
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <h4 className="font-semibold text-foreground">{pill.title}</h4>
+                            <h4 className="font-semibold text-foreground">
+                              {translateCmsText(pill.title, locale)}
+                            </h4>
                             <Badge
                               variant={pill.isActive ? 'default' : 'secondary'}
                               className="text-[10px]"
                             >
-                              {pill.isActive ? 'Active' : 'Inactive'}
+                              {pill.isActive
+                                ? locale === 'am'
+                                  ? 'ንቁ'
+                                  : 'Active'
+                                : locale === 'am'
+                                  ? 'ቦዝኗል'
+                                  : 'Inactive'}
                             </Badge>
                             <Badge variant="outline" className="text-[10px]">
-                              Order: {pill.displayOrder}
+                              {locale === 'am' ? 'ተራ ቁጥር:' : 'Order:'} {pill.displayOrder}
                             </Badge>
                           </div>
-                          <p className="mt-0.5 text-xs text-muted-foreground">{pill.description}</p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {translateCmsText(pill.description, locale)}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
@@ -635,9 +778,11 @@ export function LandingCmsManager({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-4">
             <div>
-              <CardTitle>Why Choose Us Cards</CardTitle>
+              <CardTitle>{locale === 'am' ? 'ለምን መረጡን ካርዶች' : 'Why Choose Us Cards'}</CardTitle>
               <CardDescription>
-                Institutional advantages and reasons to learn at the academy.
+                {locale === 'am'
+                  ? 'ተቋማዊ ጥቅሞች እና በአካዳሚው ለመማር የሚረዱ ምክንያቶች።'
+                  : 'Institutional advantages and reasons to learn at the academy.'}
               </CardDescription>
             </div>
             <Button
@@ -658,12 +803,14 @@ export function LandingCmsManager({
               className="gap-1.5"
             >
               <Plus className="size-4" />
-              Add Card
+              {locale === 'am' ? '+ ካርድ ጨምር' : 'Add Card'}
             </Button>
           </CardHeader>
           <CardContent className="space-y-3">
             {whyChooseUs.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No cards registered.</p>
+              <p className="text-sm text-muted-foreground">
+                {locale === 'am' ? 'ምንም ካርዶች አልተመዘገቡም።' : 'No cards registered.'}
+              </p>
             ) : (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {whyChooseUs
@@ -680,17 +827,27 @@ export function LandingCmsManager({
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <h4 className="text-sm font-semibold text-foreground">{item.title}</h4>
+                            <h4 className="text-sm font-semibold text-foreground">
+                              {translateCmsText(item.title, locale)}
+                            </h4>
                             <Badge
                               variant={item.isActive ? 'default' : 'secondary'}
                               className="text-[10px]"
                             >
-                              {item.isActive ? 'Active' : 'Inactive'}
+                              {item.isActive
+                                ? locale === 'am'
+                                  ? 'ንቁ'
+                                  : 'Active'
+                                : locale === 'am'
+                                  ? 'ቦዝኗል'
+                                  : 'Inactive'}
                             </Badge>
                           </div>
-                          <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {translateCmsText(item.description, locale)}
+                          </p>
                           <p className="mt-2 text-[10px] text-muted-foreground">
-                            Order: {item.displayOrder}
+                            {locale === 'am' ? 'ተራ ቁጥር:' : 'Order:'} {item.displayOrder}
                           </p>
                         </div>
                       </div>
@@ -729,8 +886,16 @@ export function LandingCmsManager({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-4">
             <div>
-              <CardTitle>The Learning Framework (How It Works)</CardTitle>
-              <CardDescription>Step-by-step roadmap displayed on the landing page.</CardDescription>
+              <CardTitle>
+                {locale === 'am'
+                  ? 'የትምህርት መዋቅር (እንዴት እንደሚሰራ)'
+                  : 'The Learning Framework (How It Works)'}
+              </CardTitle>
+              <CardDescription>
+                {locale === 'am'
+                  ? 'በመነሻ ገጽ ላይ የሚታይ ደረጃ በደረጃ የትምህርት መንገድ።'
+                  : 'Step-by-step roadmap displayed on the landing page.'}
+              </CardDescription>
             </div>
             <Button
               type="button"
@@ -750,7 +915,7 @@ export function LandingCmsManager({
               className="gap-1.5"
             >
               <Plus className="size-4" />
-              Add Step
+              {locale === 'am' ? '+ ደረጃ ጨምር' : 'Add Step'}
             </Button>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -790,16 +955,28 @@ export function LandingCmsManager({
                           </Button>
                         </div>
                       </div>
-                      <h4 className="mt-2 font-semibold text-foreground">{step.title}</h4>
-                      <p className="mt-1 text-xs text-muted-foreground">{step.description}</p>
+                      <h4 className="mt-2 font-semibold text-foreground">
+                        {translateCmsText(step.title, locale)}
+                      </h4>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {translateCmsText(step.description, locale)}
+                      </p>
                     </div>
                     <div className="mt-3 flex items-center justify-between border-t border-border pt-2 text-[10px] text-muted-foreground">
-                      <span>Order: {step.displayOrder}</span>
+                      <span>
+                        {locale === 'am' ? 'ተራ ቁጥር:' : 'Order:'} {step.displayOrder}
+                      </span>
                       <Badge
                         variant={step.isActive ? 'default' : 'secondary'}
                         className="text-[10px]"
                       >
-                        {step.isActive ? 'Active' : 'Inactive'}
+                        {step.isActive
+                          ? locale === 'am'
+                            ? 'ንቁ'
+                            : 'Active'
+                          : locale === 'am'
+                            ? 'ቦዝኗል'
+                            : 'Inactive'}
                       </Badge>
                     </div>
                   </div>
@@ -813,19 +990,23 @@ export function LandingCmsManager({
       {activeTab === 'featured' && (
         <Card>
           <CardHeader>
-            <CardTitle>Featured Courses Section</CardTitle>
+            <CardTitle>{locale === 'am' ? 'የተመረጡ ኮርሶች ክፍል' : 'Featured Courses Section'}</CardTitle>
             <CardDescription>
-              Controls presentation limits. Courses displayed are sourced directly from the database
-              where <code className="text-brand">isFeatured = true</code> and{' '}
-              <code className="text-brand">visibility = &apos;PUBLIC&apos;</code>.
+              {locale === 'am'
+                ? 'የሚታዩትን የኮርሶች ብዛት ይቆጣጠራል።'
+                : 'Controls presentation limits. Courses displayed are sourced directly from the database.'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between rounded-xl border border-border p-4">
               <div className="space-y-0.5">
-                <Label className="text-sm font-semibold">Enable Featured Courses Section</Label>
+                <Label className="text-sm font-semibold">
+                  {locale === 'am' ? 'የተመረጡ ኮርሶች ክፍልን አንቅ' : 'Enable Featured Courses Section'}
+                </Label>
                 <p className="text-xs text-muted-foreground">
-                  Display the featured courses grid on the landing page.
+                  {locale === 'am'
+                    ? 'በመነሻ ገጽ ላይ የተመረጡ ኮርሶችን አሳይ።'
+                    : 'Display the featured courses grid on the landing page.'}
                 </p>
               </div>
               <Switch
@@ -836,7 +1017,9 @@ export function LandingCmsManager({
               />
             </div>
             <div className="space-y-2 max-w-xs">
-              <Label htmlFor="courseLimit">Maximum Courses Displayed</Label>
+              <Label htmlFor="courseLimit">
+                {locale === 'am' ? 'ከፍተኛው የሚታዩ ኮርሶች ብዛት' : 'Maximum Courses Displayed'}
+              </Label>
               <Input
                 id="courseLimit"
                 type="number"
@@ -855,18 +1038,23 @@ export function LandingCmsManager({
       {activeTab === 'categories' && (
         <Card>
           <CardHeader>
-            <CardTitle>Categories Section</CardTitle>
+            <CardTitle>{locale === 'am' ? 'የምድቦች ክፍል' : 'Categories Section'}</CardTitle>
             <CardDescription>
-              Controls category limits. Real categories with active course counts are automatically
-              calculated from the database.
+              {locale === 'am'
+                ? 'የምድብ ገደቦችን ይቆጣጠራል። ንቁ ኮርሶች ያሏቸው ምድቦች ከዳታቤዝ ይሰላሉ።'
+                : 'Controls category limits. Real categories with active course counts are automatically calculated from the database.'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between rounded-xl border border-border p-4">
               <div className="space-y-0.5">
-                <Label className="text-sm font-semibold">Enable Categories Section</Label>
+                <Label className="text-sm font-semibold">
+                  {locale === 'am' ? 'የምድቦች ክፍልን አንቅ' : 'Enable Categories Section'}
+                </Label>
                 <p className="text-xs text-muted-foreground">
-                  Display the category exploration cards.
+                  {locale === 'am'
+                    ? 'የምድብ ካርዶችን በመነሻ ገጽ ላይ አሳይ።'
+                    : 'Display the category exploration cards.'}
                 </p>
               </div>
               <Switch
@@ -877,7 +1065,9 @@ export function LandingCmsManager({
               />
             </div>
             <div className="space-y-2 max-w-xs">
-              <Label htmlFor="catLimit">Maximum Categories Displayed</Label>
+              <Label htmlFor="catLimit">
+                {locale === 'am' ? 'ከፍተኛው የሚታዩ ምድቦች ብዛት' : 'Maximum Categories Displayed'}
+              </Label>
               <Input
                 id="catLimit"
                 type="number"
@@ -897,18 +1087,25 @@ export function LandingCmsManager({
       {activeTab === 'mentor' && (
         <Card>
           <CardHeader>
-            <CardTitle>Mentor / Instructor Spotlight</CardTitle>
+            <CardTitle>
+              {locale === 'am' ? 'አስተማሪዎች / መሪ መምህር' : 'Mentor / Instructor Spotlight'}
+            </CardTitle>
             <CardDescription>
-              Showcases the lead mentor/instructor photo, name, title, bio, and achievements on the
-              landing page.
+              {locale === 'am'
+                ? 'የመሪ መምህሩን ፎቶ፣ ስም፣ ርዕስ፣ መግለጫ እና ስኬቶች በመነሻ ገጽ ላይ ያሳያል።'
+                : 'Showcases the lead mentor/instructor photo, name, title, bio, and achievements on the landing page.'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center justify-between rounded-xl border border-border p-4">
               <div className="space-y-0.5">
-                <Label className="text-sm font-semibold">Enable Mentor Spotlight</Label>
+                <Label className="text-sm font-semibold">
+                  {locale === 'am' ? 'የአስተማሪዎች ክፍልን አንቅ' : 'Enable Mentor Spotlight'}
+                </Label>
                 <p className="text-xs text-muted-foreground">
-                  Display the instructor profile banner on the homepage.
+                  {locale === 'am'
+                    ? 'የአስተማሪውን መገለጫ በመነሻ ገጽ ላይ አሳይ።'
+                    : 'Display the instructor profile banner on the homepage.'}
                 </p>
               </div>
               <Switch
@@ -921,7 +1118,9 @@ export function LandingCmsManager({
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="mentorName">Mentor Full Name</Label>
+                  <Label htmlFor="mentorName">
+                    {locale === 'am' ? 'የአስተማሪው ሙሉ ስም' : 'Mentor Full Name'}
+                  </Label>
                   <Input
                     id="mentorName"
                     value={mentor.name ?? ''}
@@ -930,12 +1129,16 @@ export function LandingCmsManager({
                     disabled={disabled || updateBatch.isPending}
                   />
                   <p className="text-[11px] text-muted-foreground">
-                    Leave blank to automatically use the default instructor name from the database.
+                    {locale === 'am'
+                      ? 'ባዶ ከተውት በዳታቤዝ ውስጥ ያለውን ነባሪ የአስተማሪ ስም ይጠቀማል።'
+                      : 'Leave blank to automatically use the default instructor name from the database.'}
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="mentorHeadline">Title / Subtitle</Label>
+                  <Label htmlFor="mentorHeadline">
+                    {locale === 'am' ? 'ርዕስ / ንዑስ ርዕስ' : 'Title / Subtitle'}
+                  </Label>
                   <Input
                     id="mentorHeadline"
                     value={mentor.headline ?? ''}
@@ -946,7 +1149,9 @@ export function LandingCmsManager({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="mentorBio">Bio / Profile Description</Label>
+                  <Label htmlFor="mentorBio">
+                    {locale === 'am' ? 'ስለ አስተማሪው / መግለጫ' : 'Bio / Profile Description'}
+                  </Label>
                   <Textarea
                     id="mentorBio"
                     rows={4}
@@ -961,8 +1166,12 @@ export function LandingCmsManager({
               <div className="space-y-4">
                 <ImageUploadField
                   id="mentorPhoto"
-                  label="Mentor Photo / Avatar Image"
-                  description="Upload a photo or provide an image URL. Square ratio recommended."
+                  label={locale === 'am' ? 'የአስተማሪው ፎቶ / አቫታር' : 'Mentor Photo / Avatar Image'}
+                  description={
+                    locale === 'am'
+                      ? 'ፎቶ ይስቀሉ ወይም የኢሜጅ URL ያስገቡ።'
+                      : 'Upload a photo or provide an image URL. Square ratio recommended.'
+                  }
                   value={mentor.photoUrl ?? ''}
                   onChange={(url) => setMentor((prev) => ({ ...prev, photoUrl: url }))}
                   aspectRatio="square"
@@ -971,7 +1180,11 @@ export function LandingCmsManager({
                 />
 
                 <div className="space-y-2">
-                  <Label htmlFor="mentorAchievements">Key Achievements (One per line)</Label>
+                  <Label htmlFor="mentorAchievements">
+                    {locale === 'am'
+                      ? 'ዋና ዋና ስኬቶች (በእያንዳንዱ መስመር አንድ)'
+                      : 'Key Achievements (One per line)'}
+                  </Label>
                   <Textarea
                     id="mentorAchievements"
                     rows={4}
@@ -986,7 +1199,9 @@ export function LandingCmsManager({
                     disabled={disabled || updateBatch.isPending}
                   />
                   <p className="text-[11px] text-muted-foreground">
-                    Each line will be displayed as a checkmark bullet point on the mentor card.
+                    {locale === 'am'
+                      ? 'እያንዳንዱ መስመር በአስተማሪው ካርድ ላይ ነጥብ ሆኖ ይታያል።'
+                      : 'Each line will be displayed as a checkmark bullet point on the mentor card.'}
                   </p>
                 </div>
               </div>
@@ -999,17 +1214,26 @@ export function LandingCmsManager({
       {activeTab === 'stats' && (
         <Card>
           <CardHeader>
-            <CardTitle>Platform Statistics Configuration</CardTitle>
+            <CardTitle>
+              {locale === 'am' ? 'የሲስተም ስታቲስቲክስ ማዋቀሪያ' : 'Platform Statistics Configuration'}
+            </CardTitle>
             <CardDescription>
-              Numerical metrics (students, courses, enrollments, ratings) are calculated live from
-              the database. Customize the display labels and ordering below.
+              {locale === 'am'
+                ? 'የተማሪዎች፣ ኮርሶች እና ደረጃዎች ብዛት በቀጥታ ከዳታቤዝ ይሰላሉ። የስም እና የተራ ቁጥር ማስተካከያ ያድርጉ።'
+                : 'Numerical metrics (students, courses, enrollments, ratings) are calculated live from the database.'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between rounded-xl border border-border p-4">
               <div className="space-y-0.5">
-                <Label className="text-sm font-semibold">Enable Statistics Band</Label>
-                <p className="text-xs text-muted-foreground">Show metrics bar on homepage.</p>
+                <Label className="text-sm font-semibold">
+                  {locale === 'am' ? 'የስታቲስቲክስ ክፍልን አንቅ' : 'Enable Statistics Band'}
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {locale === 'am'
+                    ? 'በመነሻ ገጽ ላይ የስታቲስቲክስ ባነር አሳይ።'
+                    : 'Show metrics bar on homepage.'}
+                </p>
               </div>
               <Switch
                 checked={statistics.enabled}
@@ -1021,7 +1245,7 @@ export function LandingCmsManager({
 
             <div className="space-y-3">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Metric Labels & Ordering
+                {locale === 'am' ? 'የመለኪያ ስሞች እና ተራ ቁጥር' : 'Metric Labels & Ordering'}
               </Label>
               <div className="space-y-3">
                 {statistics.items.map((stat, idx) => (
@@ -1035,7 +1259,9 @@ export function LandingCmsManager({
                           {stat.key}
                         </Badge>
                         <span className="text-xs text-muted-foreground">
-                          (Calculated from real DB records)
+                          {locale === 'am'
+                            ? '(ከእውነተኛ ዳታቤዝ መዝገቦች የተሰላ)'
+                            : '(Calculated from real DB records)'}
                         </span>
                       </div>
                       <Input
@@ -1054,7 +1280,7 @@ export function LandingCmsManager({
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">
                         <Label htmlFor={`order-${stat.key}`} className="text-xs">
-                          Order:
+                          {locale === 'am' ? 'ተራ ቁጥር:' : 'Order:'}
                         </Label>
                         <Input
                           id={`order-${stat.key}`}
@@ -1099,10 +1325,11 @@ export function LandingCmsManager({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-4">
             <div>
-              <CardTitle>Learner Testimonials</CardTitle>
+              <CardTitle>{locale === 'am' ? 'የተማሪዎች ምስክርነት' : 'Learner Testimonials'}</CardTitle>
               <CardDescription>
-                Manage authentic student feedback. Only active testimonials appear on the public
-                landing page.
+                {locale === 'am'
+                  ? 'የተማሪዎችን አስተያየት ያስተዳድሩ። ንቁ ምስክርነቶች ብቻ በመነሻ ገጽ ላይ ይታያሉ።'
+                  : 'Manage authentic student feedback. Only active testimonials appear on the public landing page.'}
               </CardDescription>
             </div>
             <Button
@@ -1125,12 +1352,14 @@ export function LandingCmsManager({
               className="gap-1.5"
             >
               <Plus className="size-4" />
-              Add Testimonial
+              {locale === 'am' ? '+ ምስክርነት ጨምር' : 'Add Testimonial'}
             </Button>
           </CardHeader>
           <CardContent className="space-y-3">
             {testimonials.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No testimonials registered.</p>
+              <p className="text-sm text-muted-foreground">
+                {locale === 'am' ? 'ምንም ምስክርነቶች አልተመዘገቡም።' : 'No testimonials registered.'}
+              </p>
             ) : (
               <div className="space-y-3">
                 {testimonials
@@ -1152,35 +1381,41 @@ export function LandingCmsManager({
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <h4 className="font-semibold text-foreground">{item.studentName}</h4>
-                          <span className="flex items-center text-amber-400">
-                            {Array.from({ length: item.rating }).map((_, i) => (
-                              <Star key={i} className="size-3 fill-current" />
-                            ))}
-                          </span>
-                          <Badge
-                            variant={item.isActive ? 'default' : 'secondary'}
-                            className="text-[10px]"
-                          >
-                            {item.isActive ? 'Active' : 'Inactive'}
-                          </Badge>
-                          {item.isFeatured && (
+                            <span className="flex items-center text-amber-400">
+                              {Array.from({ length: item.rating }).map((_, i) => (
+                                <Star key={i} className="size-3 fill-current" />
+                              ))}
+                            </span>
                             <Badge
-                              variant="outline"
-                              className="text-[10px] text-brand border-brand/30"
+                              variant={item.isActive ? 'default' : 'secondary'}
+                              className="text-[10px]"
                             >
-                              Featured
+                              {item.isActive
+                                ? locale === 'am'
+                                  ? 'ንቁ'
+                                  : 'Active'
+                                : locale === 'am'
+                                  ? 'ቦዝኗል'
+                                  : 'Inactive'}
                             </Badge>
-                          )}
+                            {item.isFeatured && (
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] text-brand border-brand/30"
+                              >
+                                {locale === 'am' ? 'የተመረጠ' : 'Featured'}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs font-medium text-brand">{item.courseTitle}</p>
+                          <p className="text-xs text-muted-foreground italic">
+                            &ldquo;{translateCmsText(item.testimonial, locale)}&rdquo;
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {locale === 'am' ? 'ተራ ቁጥር:' : 'Order:'} {item.displayOrder}
+                          </p>
                         </div>
-                        <p className="text-xs font-medium text-brand">{item.courseTitle}</p>
-                        <p className="text-xs text-muted-foreground italic">
-                          &ldquo;{item.testimonial}&rdquo;
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          Order: {item.displayOrder}
-                        </p>
                       </div>
-                    </div>
                       <div className="flex items-center gap-1">
                         <Button
                           type="button"
@@ -1216,9 +1451,13 @@ export function LandingCmsManager({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-4">
             <div>
-              <CardTitle>Frequently Asked Questions</CardTitle>
+              <CardTitle>
+                {locale === 'am' ? 'ተደጋጋሚ ጥያቄዎች' : 'Frequently Asked Questions'}
+              </CardTitle>
               <CardDescription>
-                Manage the accordion FAQs displayed on the public landing page.
+                {locale === 'am'
+                  ? 'በመነሻ ገጽ ላይ የሚታዩ ተደጋጋሚ ጥያቄዎችን እና መልሶችን ያስተዳድሩ።'
+                  : 'Manage the accordion FAQs displayed on the public landing page.'}
               </CardDescription>
             </div>
             <Button
@@ -1238,12 +1477,14 @@ export function LandingCmsManager({
               className="gap-1.5"
             >
               <Plus className="size-4" />
-              Add FAQ
+              {locale === 'am' ? '+ ጥያቄ ጨምር' : 'Add FAQ'}
             </Button>
           </CardHeader>
           <CardContent className="space-y-3">
             {faqs.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No FAQs registered.</p>
+              <p className="text-sm text-muted-foreground">
+                {locale === 'am' ? 'ምንም ጥያቄዎች አልተመዘገቡም።' : 'No FAQs registered.'}
+              </p>
             ) : (
               <div className="space-y-3">
                 {faqs
@@ -1256,7 +1497,9 @@ export function LandingCmsManager({
                     >
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <h4 className="font-semibold text-foreground">{item.question}</h4>
+                          <h4 className="font-semibold text-foreground">
+                            {translateCmsText(item.question, locale)}
+                          </h4>
                           <Badge variant="outline" className="text-[10px]">
                             {item.category}
                           </Badge>
@@ -1264,12 +1507,20 @@ export function LandingCmsManager({
                             variant={item.isActive ? 'default' : 'secondary'}
                             className="text-[10px]"
                           >
-                            {item.isActive ? 'Active' : 'Inactive'}
+                            {item.isActive
+                              ? locale === 'am'
+                                ? 'ንቁ'
+                                : 'Active'
+                              : locale === 'am'
+                                ? 'ቦዝኗል'
+                                : 'Inactive'}
                           </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground">{item.answer}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {translateCmsText(item.answer, locale)}
+                        </p>
                         <p className="text-[10px] text-muted-foreground">
-                          Order: {item.displayOrder}
+                          {locale === 'am' ? 'ተራ ቁጥር:' : 'Order:'} {item.displayOrder}
                         </p>
                       </div>
                       <div className="flex items-center gap-1">
@@ -1306,12 +1557,18 @@ export function LandingCmsManager({
       {activeTab === 'finalCta' && (
         <Card>
           <CardHeader>
-            <CardTitle>Final Call to Action Banner</CardTitle>
-            <CardDescription>Bottom enrollment banner on the landing page.</CardDescription>
+            <CardTitle>
+              {locale === 'am' ? 'የመጨረሻ ጥሪ ባነር' : 'Final Call to Action Banner'}
+            </CardTitle>
+            <CardDescription>
+              {locale === 'am'
+                ? 'በመነሻ ገጽ ታችኛው ክፍል ላይ የሚታይ የምዝገባ ባነር።'
+                : 'Bottom enrollment banner on the landing page.'}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="ctaHeading">Heading</Label>
+              <Label htmlFor="ctaHeading">{locale === 'am' ? 'ርዕስ' : 'Heading'}</Label>
               <Input
                 id="ctaHeading"
                 value={finalCta.heading}
@@ -1356,8 +1613,9 @@ export function LandingCmsManager({
       {/* Main Save Bar */}
       <div className="flex items-center justify-between border-t border-border pt-4">
         <p className="text-xs text-muted-foreground">
-          Saving updates will instantly refresh the dynamic content on{' '}
-          <span className="font-mono">/</span>.
+          {locale === 'am'
+            ? 'ለውጦችን ማስቀመጥ በመነሻ ገጽ ላይ ወዲያውኑ ይንጸባረቃል።'
+            : 'Saving updates will instantly refresh the dynamic content on /.'}
         </p>
         <Button
           type="button"
@@ -1368,12 +1626,12 @@ export function LandingCmsManager({
           {updateBatch.isPending ? (
             <>
               <Loader2 className="size-4 animate-spin" />
-              Saving CMS...
+              {locale === 'am' ? 'በማስቀመጥ ላይ...' : 'Saving CMS...'}
             </>
           ) : (
             <>
               <Save className="size-4" />
-              Save Landing CMS
+              {locale === 'am' ? 'የመነሻ ገጽ CMS አስቀምጥ' : 'Save Landing CMS'}
             </>
           )}
         </Button>
@@ -1383,15 +1641,25 @@ export function LandingCmsManager({
       <Dialog open={pillDialogOpen} onOpenChange={setPillDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingPill?.id ? 'Edit Value Pill' : 'Add Value Pill'}</DialogTitle>
+            <DialogTitle>
+              {editingPill?.id
+                ? locale === 'am'
+                  ? 'የእሴት ጥቆማን አዘጋጅ'
+                  : 'Edit Value Pill'
+                : locale === 'am'
+                  ? 'አዲስ እሴት ጥቆማ ጨምር'
+                  : 'Add Value Pill'}
+            </DialogTitle>
             <DialogDescription>
-              Configure headline, description, icon and display order.
+              {locale === 'am'
+                ? 'ርዕስ፣ መግለጫ፣ አይኮን እና የተራ ቁጥር ያዋቅሩ።'
+                : 'Configure headline, description, icon and display order.'}
             </DialogDescription>
           </DialogHeader>
           {editingPill && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="pillTitle">Title</Label>
+                <Label htmlFor="pillTitle">{locale === 'am' ? 'ርዕስ' : 'Title'}</Label>
                 <Input
                   id="pillTitle"
                   value={editingPill.title}
@@ -1401,7 +1669,7 @@ export function LandingCmsManager({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="pillDesc">Description</Label>
+                <Label htmlFor="pillDesc">{locale === 'am' ? 'መግለጫ' : 'Description'}</Label>
                 <Textarea
                   id="pillDesc"
                   rows={2}
@@ -1412,7 +1680,7 @@ export function LandingCmsManager({
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="pillIcon">Icon</Label>
+                  <Label htmlFor="pillIcon">{locale === 'am' ? 'አይኮን' : 'Icon'}</Label>
                   <Select
                     value={editingPill.icon}
                     onValueChange={(val) => setEditingPill({ ...editingPill, icon: val })}
@@ -1433,7 +1701,7 @@ export function LandingCmsManager({
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="pillOrder">Display Order</Label>
+                  <Label htmlFor="pillOrder">{locale === 'am' ? 'ተራ ቁጥር' : 'Display Order'}</Label>
                   <Input
                     id="pillOrder"
                     type="number"
@@ -1446,7 +1714,7 @@ export function LandingCmsManager({
               </div>
               <div className="flex items-center justify-between rounded-lg border border-border p-3">
                 <Label htmlFor="pillActive" className="text-sm">
-                  Active
+                  {locale === 'am' ? 'ንቁ' : 'Active'}
                 </Label>
                 <Switch
                   id="pillActive"
@@ -1460,13 +1728,13 @@ export function LandingCmsManager({
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setPillDialogOpen(false)}>
-              Cancel
+              {locale === 'am' ? 'ሰርዝ' : 'Cancel'}
             </Button>
             <Button
               onClick={() => editingPill && handleSavePill(editingPill)}
               disabled={!editingPill?.title.trim()}
             >
-              Save Pill
+              {locale === 'am' ? 'እሴት አስቀምጥ' : 'Save Pill'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1477,13 +1745,19 @@ export function LandingCmsManager({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingWhy?.id ? 'Edit Why Choose Us Card' : 'Add Why Choose Us Card'}
+              {editingWhy?.id
+                ? locale === 'am'
+                  ? 'የለምን መረጡን ካርድ አዘጋጅ'
+                  : 'Edit Why Choose Us Card'
+                : locale === 'am'
+                  ? 'አዲስ ካርድ ጨምር'
+                  : 'Add Why Choose Us Card'}
             </DialogTitle>
           </DialogHeader>
           {editingWhy && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="whyTitle">Title</Label>
+                <Label htmlFor="whyTitle">{locale === 'am' ? 'ርዕስ' : 'Title'}</Label>
                 <Input
                   id="whyTitle"
                   value={editingWhy.title}
@@ -1493,7 +1767,7 @@ export function LandingCmsManager({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="whyDesc">Description</Label>
+                <Label htmlFor="whyDesc">{locale === 'am' ? 'መግለጫ' : 'Description'}</Label>
                 <Textarea
                   id="whyDesc"
                   rows={2}
@@ -1504,7 +1778,7 @@ export function LandingCmsManager({
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="whyIcon">Icon</Label>
+                  <Label htmlFor="whyIcon">{locale === 'am' ? 'አይኮን' : 'Icon'}</Label>
                   <Select
                     value={editingWhy.icon}
                     onValueChange={(val) => setEditingWhy({ ...editingWhy, icon: val })}
@@ -1525,7 +1799,7 @@ export function LandingCmsManager({
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="whyOrder">Display Order</Label>
+                  <Label htmlFor="whyOrder">{locale === 'am' ? 'ተራ ቁጥር' : 'Display Order'}</Label>
                   <Input
                     id="whyOrder"
                     type="number"
@@ -1538,7 +1812,7 @@ export function LandingCmsManager({
               </div>
               <div className="flex items-center justify-between rounded-lg border border-border p-3">
                 <Label htmlFor="whyActive" className="text-sm">
-                  Active
+                  {locale === 'am' ? 'ንቁ' : 'Active'}
                 </Label>
                 <Switch
                   id="whyActive"
@@ -1550,13 +1824,13 @@ export function LandingCmsManager({
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setWhyDialogOpen(false)}>
-              Cancel
+              {locale === 'am' ? 'ሰርዝ' : 'Cancel'}
             </Button>
             <Button
               onClick={() => editingWhy && handleSaveWhy(editingWhy)}
               disabled={!editingWhy?.title.trim()}
             >
-              Save Card
+              {locale === 'am' ? 'ካርድ አስቀምጥ' : 'Save Card'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1566,13 +1840,21 @@ export function LandingCmsManager({
       <Dialog open={howDialogOpen} onOpenChange={setHowDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingHow?.id ? 'Edit Step' : 'Add Step'}</DialogTitle>
+            <DialogTitle>
+              {editingHow?.id
+                ? locale === 'am'
+                  ? 'ደረጃ አዘጋጅ'
+                  : 'Edit Step'
+                : locale === 'am'
+                  ? 'አዲስ ደረጃ ጨምር'
+                  : 'Add Step'}
+            </DialogTitle>
           </DialogHeader>
           {editingHow && (
             <div className="space-y-4">
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="howStepNum">Step Number</Label>
+                  <Label htmlFor="howStepNum">{locale === 'am' ? 'ደረጃ ቁጥር' : 'Step Number'}</Label>
                   <Input
                     id="howStepNum"
                     value={editingHow.stepNumber}
@@ -1582,7 +1864,7 @@ export function LandingCmsManager({
                   />
                 </div>
                 <div className="col-span-2 space-y-2">
-                  <Label htmlFor="howTitle">Step Title</Label>
+                  <Label htmlFor="howTitle">{locale === 'am' ? 'የደረጃ ርዕስ' : 'Step Title'}</Label>
                   <Input
                     id="howTitle"
                     value={editingHow.title}
@@ -1593,7 +1875,7 @@ export function LandingCmsManager({
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="howDesc">Description</Label>
+                <Label htmlFor="howDesc">{locale === 'am' ? 'መግለጫ' : 'Description'}</Label>
                 <Textarea
                   id="howDesc"
                   rows={2}
@@ -1604,7 +1886,7 @@ export function LandingCmsManager({
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="howOrder">Display Order</Label>
+                  <Label htmlFor="howOrder">{locale === 'am' ? 'ተራ ቁጥር' : 'Display Order'}</Label>
                   <Input
                     id="howOrder"
                     type="number"
@@ -1616,7 +1898,7 @@ export function LandingCmsManager({
                 </div>
                 <div className="flex items-center justify-between rounded-lg border border-border p-3 mt-6">
                   <Label htmlFor="howActive" className="text-sm">
-                    Active
+                    {locale === 'am' ? 'ንቁ' : 'Active'}
                   </Label>
                   <Switch
                     id="howActive"
@@ -1631,13 +1913,13 @@ export function LandingCmsManager({
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setHowDialogOpen(false)}>
-              Cancel
+              {locale === 'am' ? 'ሰርዝ' : 'Cancel'}
             </Button>
             <Button
               onClick={() => editingHow && handleSaveHow(editingHow)}
               disabled={!editingHow?.title.trim()}
             >
-              Save Step
+              {locale === 'am' ? 'ደረጃ አስቀምጥ' : 'Save Step'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1648,14 +1930,20 @@ export function LandingCmsManager({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingTestimonial?.id ? 'Edit Testimonial' : 'Add Testimonial'}
+              {editingTestimonial?.id
+                ? locale === 'am'
+                  ? 'ምስክርነት አዘጋጅ'
+                  : 'Edit Testimonial'
+                : locale === 'am'
+                  ? 'አዲስ ምስክርነት ጨምር'
+                  : 'Add Testimonial'}
             </DialogTitle>
           </DialogHeader>
           {editingTestimonial && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="testName">Student Name</Label>
+                  <Label htmlFor="testName">{locale === 'am' ? 'የተማሪ ስም' : 'Student Name'}</Label>
                   <Input
                     id="testName"
                     value={editingTestimonial.studentName}
@@ -1667,7 +1955,9 @@ export function LandingCmsManager({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="testCourse">Course Completed</Label>
+                  <Label htmlFor="testCourse">
+                    {locale === 'am' ? 'የተጠናቀቀው ኮርስ' : 'Course Completed'}
+                  </Label>
                   <Input
                     id="testCourse"
                     value={editingTestimonial.courseTitle}
@@ -1680,17 +1970,21 @@ export function LandingCmsManager({
               </div>
               <ImageUploadField
                 id="testAvatar"
-                label="Student Avatar / Profile Photo"
-                description="Upload a photo or enter image URL for the student avatar."
-                value={editingTestimonial.avatarUrl ?? ''}
-                onChange={(url) =>
-                  setEditingTestimonial({ ...editingTestimonial, avatarUrl: url })
+                label={locale === 'am' ? 'የተማሪ ፎቶ / አቫታር' : 'Student Avatar / Profile Photo'}
+                description={
+                  locale === 'am'
+                    ? 'ፎቶ ይስቀሉ ወይም የኢሜጅ URL ያስገቡ።'
+                    : 'Upload a photo or enter image URL for the student avatar.'
                 }
+                value={editingTestimonial.avatarUrl ?? ''}
+                onChange={(url) => setEditingTestimonial({ ...editingTestimonial, avatarUrl: url })}
                 aspectRatio="square"
                 placeholder="/images/students/avatar.png"
               />
               <div className="space-y-2">
-                <Label htmlFor="testContent">Testimonial Text</Label>
+                <Label htmlFor="testContent">
+                  {locale === 'am' ? 'የምስክርነት ጽሑፍ' : 'Testimonial Text'}
+                </Label>
                 <Textarea
                   id="testContent"
                   rows={3}
@@ -1704,7 +1998,9 @@ export function LandingCmsManager({
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="testRating">Rating (1 to 5 Stars)</Label>
+                  <Label htmlFor="testRating">
+                    {locale === 'am' ? 'ደረጃ (ከ1 እስከ 5 ኮከብ)' : 'Rating (1 to 5 Stars)'}
+                  </Label>
                   <Select
                     value={String(editingTestimonial.rating)}
                     onValueChange={(val) =>
@@ -1715,14 +2011,14 @@ export function LandingCmsManager({
                       <SelectValue placeholder="Rating" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="5">5 Stars ★★★★★</SelectItem>
-                      <SelectItem value="4">4 Stars ★★★★☆</SelectItem>
-                      <SelectItem value="3">3 Stars ★★★☆☆</SelectItem>
+                      <SelectItem value="5">5 ኮከብ ★★★★★</SelectItem>
+                      <SelectItem value="4">4 ኮከብ ★★★★☆</SelectItem>
+                      <SelectItem value="3">3 ኮከብ ★★★☆☆</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="testOrder">Display Order</Label>
+                  <Label htmlFor="testOrder">{locale === 'am' ? 'ተራ ቁጥር' : 'Display Order'}</Label>
                   <Input
                     id="testOrder"
                     type="number"
@@ -1739,7 +2035,7 @@ export function LandingCmsManager({
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center justify-between rounded-lg border border-border p-3">
                   <Label htmlFor="testFeatured" className="text-sm">
-                    Featured
+                    {locale === 'am' ? 'የተመረጠ' : 'Featured'}
                   </Label>
                   <Switch
                     id="testFeatured"
@@ -1751,7 +2047,7 @@ export function LandingCmsManager({
                 </div>
                 <div className="flex items-center justify-between rounded-lg border border-border p-3">
                   <Label htmlFor="testActive" className="text-sm">
-                    Active
+                    {locale === 'am' ? 'ንቁ' : 'Active'}
                   </Label>
                   <Switch
                     id="testActive"
@@ -1766,7 +2062,7 @@ export function LandingCmsManager({
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setTestimonialDialogOpen(false)}>
-              Cancel
+              {locale === 'am' ? 'ሰርዝ' : 'Cancel'}
             </Button>
             <Button
               onClick={() => editingTestimonial && handleSaveTestimonial(editingTestimonial)}
@@ -1774,7 +2070,7 @@ export function LandingCmsManager({
                 !editingTestimonial?.studentName.trim() || !editingTestimonial?.testimonial.trim()
               }
             >
-              Save Testimonial
+              {locale === 'am' ? 'ምስክርነት አስቀምጥ' : 'Save Testimonial'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1784,12 +2080,20 @@ export function LandingCmsManager({
       <Dialog open={faqDialogOpen} onOpenChange={setFaqDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingFaq?.id ? 'Edit FAQ' : 'Add FAQ'}</DialogTitle>
+            <DialogTitle>
+              {editingFaq?.id
+                ? locale === 'am'
+                  ? 'ጥያቄ አዘጋጅ'
+                  : 'Edit FAQ'
+                : locale === 'am'
+                  ? 'አዲስ ጥያቄ ጨምር'
+                  : 'Add FAQ'}
+            </DialogTitle>
           </DialogHeader>
           {editingFaq && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="faqQuestion">Question</Label>
+                <Label htmlFor="faqQuestion">{locale === 'am' ? 'ጥያቄ' : 'Question'}</Label>
                 <Input
                   id="faqQuestion"
                   value={editingFaq.question}
@@ -1799,7 +2103,7 @@ export function LandingCmsManager({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="faqAnswer">Answer</Label>
+                <Label htmlFor="faqAnswer">{locale === 'am' ? 'መልስ' : 'Answer'}</Label>
                 <Textarea
                   id="faqAnswer"
                   rows={3}
@@ -1811,7 +2115,7 @@ export function LandingCmsManager({
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="faqCategory">Category</Label>
+                  <Label htmlFor="faqCategory">{locale === 'am' ? 'ምድብ' : 'Category'}</Label>
                   <Input
                     id="faqCategory"
                     value={editingFaq.category}
@@ -1820,7 +2124,7 @@ export function LandingCmsManager({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="faqOrder">Display Order</Label>
+                  <Label htmlFor="faqOrder">{locale === 'am' ? 'ተራ ቁጥር' : 'Display Order'}</Label>
                   <Input
                     id="faqOrder"
                     type="number"
@@ -1833,7 +2137,7 @@ export function LandingCmsManager({
               </div>
               <div className="flex items-center justify-between rounded-lg border border-border p-3">
                 <Label htmlFor="faqActive" className="text-sm">
-                  Active
+                  {locale === 'am' ? 'ንቁ' : 'Active'}
                 </Label>
                 <Switch
                   id="faqActive"
@@ -1845,13 +2149,13 @@ export function LandingCmsManager({
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setFaqDialogOpen(false)}>
-              Cancel
+              {locale === 'am' ? 'ሰርዝ' : 'Cancel'}
             </Button>
             <Button
               onClick={() => editingFaq && handleSaveFaq(editingFaq)}
               disabled={!editingFaq?.question.trim() || !editingFaq?.answer.trim()}
             >
-              Save FAQ
+              {locale === 'am' ? 'ጥያቄ አስቀምጥ' : 'Save FAQ'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1861,8 +2165,12 @@ export function LandingCmsManager({
       <ConfirmDialog
         open={Boolean(deletePillId)}
         onOpenChange={(open) => !open && setDeletePillId(null)}
-        title="Delete Value Proposition"
-        description="Are you sure you want to remove this value proposition pill from the landing page?"
+        title={locale === 'am' ? 'የእሴት ጥቆማን አስወግድ' : 'Delete Value Proposition'}
+        description={
+          locale === 'am'
+            ? 'ይህንን የእሴት ጥቆማ ከመነሻ ገጽ ላይ ለማስወገድ እርግጠኛ ነዎት?'
+            : 'Are you sure you want to remove this value proposition pill from the landing page?'
+        }
         onConfirm={() => {
           if (deletePillId) handleDeletePill(deletePillId);
         }}
@@ -1871,8 +2179,12 @@ export function LandingCmsManager({
       <ConfirmDialog
         open={Boolean(deleteWhyId)}
         onOpenChange={(open) => !open && setDeleteWhyId(null)}
-        title="Delete Why Choose Us Card"
-        description="Are you sure you want to remove this card?"
+        title={locale === 'am' ? 'ካርድ አስወግድ' : 'Delete Why Choose Us Card'}
+        description={
+          locale === 'am'
+            ? 'ይህንን ካርድ ለማስወገድ እርግጠኛ ነዎት?'
+            : 'Are you sure you want to remove this card?'
+        }
         onConfirm={() => {
           if (deleteWhyId) handleDeleteWhy(deleteWhyId);
         }}
@@ -1881,8 +2193,12 @@ export function LandingCmsManager({
       <ConfirmDialog
         open={Boolean(deleteHowId)}
         onOpenChange={(open) => !open && setDeleteHowId(null)}
-        title="Delete Learning Step"
-        description="Are you sure you want to remove this framework step?"
+        title={locale === 'am' ? 'የትምህርት ደረጃ አስወግድ' : 'Delete Learning Step'}
+        description={
+          locale === 'am'
+            ? 'ይህንን የመዋቅር ደረጃ ለማስወገድ እርግጠኛ ነዎት?'
+            : 'Are you sure you want to remove this framework step?'
+        }
         onConfirm={() => {
           if (deleteHowId) handleDeleteHow(deleteHowId);
         }}
@@ -1891,8 +2207,12 @@ export function LandingCmsManager({
       <ConfirmDialog
         open={Boolean(deleteTestimonialId)}
         onOpenChange={(open) => !open && setDeleteTestimonialId(null)}
-        title="Delete Testimonial"
-        description="Are you sure you want to permanently remove this testimonial?"
+        title={locale === 'am' ? 'ምስክርነት አስወግድ' : 'Delete Testimonial'}
+        description={
+          locale === 'am'
+            ? 'ይህንን ምስክርነት ለማስወገድ እርግጠኛ ነዎት?'
+            : 'Are you sure you want to permanently remove this testimonial?'
+        }
         onConfirm={() => {
           if (deleteTestimonialId) handleDeleteTestimonial(deleteTestimonialId);
         }}
@@ -1901,8 +2221,12 @@ export function LandingCmsManager({
       <ConfirmDialog
         open={Boolean(deleteFaqId)}
         onOpenChange={(open) => !open && setDeleteFaqId(null)}
-        title="Delete FAQ"
-        description="Are you sure you want to remove this FAQ item?"
+        title={locale === 'am' ? 'ጥያቄ አስወግድ' : 'Delete FAQ'}
+        description={
+          locale === 'am'
+            ? 'ይህንን ጥያቄ ለማስወገድ እርግጠኛ ነዎት?'
+            : 'Are you sure you want to remove this FAQ item?'
+        }
         onConfirm={() => {
           if (deleteFaqId) handleDeleteFaq(deleteFaqId);
         }}

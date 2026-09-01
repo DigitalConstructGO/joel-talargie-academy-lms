@@ -17,11 +17,14 @@ interface CertificateLookupFormProps {
   defaultTab?: 'manual' | 'qr';
 }
 
+import { useLanguage } from '@/lib/i18n/language-provider';
+
 export function CertificateLookupForm({
   initialIdentifier = '',
   initialResult = null,
   defaultTab = 'manual',
 }: CertificateLookupFormProps) {
+  const { t, locale } = useLanguage();
   const [activeTab, setActiveTab] = useState<'manual' | 'qr'>(defaultTab);
   const [code, setCode] = useState(initialIdentifier);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -58,7 +61,6 @@ export function CertificateLookupForm({
     setCode('');
   };
 
-  // If a result is active, display the verified certificate result
   if (result) {
     return (
       <div className="w-full">
@@ -77,15 +79,14 @@ export function CertificateLookupForm({
         <TabsList className="grid w-full grid-cols-2 p-1">
           <TabsTrigger value="manual" className="gap-2 text-xs sm:text-sm">
             <KeyRound className="size-4" />
-            Enter Certificate Code
+            {t('verifyCert.button')}
           </TabsTrigger>
           <TabsTrigger value="qr" className="gap-2 text-xs sm:text-sm">
             <Camera className="size-4" />
-            Scan QR Code
+            {locale === 'am' ? 'QR ኮድ ይቃኙ' : 'Scan QR Code'}
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab 1: Manual Certificate Code Entry */}
         <TabsContent value="manual" className="mt-6 space-y-4">
           <form onSubmit={handleManualSubmit} className="space-y-4">
             <div className="space-y-2 text-left">
@@ -93,14 +94,14 @@ export function CertificateLookupForm({
                 htmlFor="certificate-code"
                 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
               >
-                Certificate Code / Verification ID
+                {t('verifyCert.title')}
               </Label>
               <div className="relative">
                 <Input
                   id="certificate-code"
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
-                  placeholder="e.g. JTA-2026-000123 or paste verification token"
+                  placeholder="e.g. JTA-2026-000123"
                   autoComplete="off"
                   disabled={isVerifying}
                   className="h-11 font-mono text-sm tracking-wide pr-10"
@@ -109,11 +110,6 @@ export function CertificateLookupForm({
                   <ShieldCheck className="size-4" />
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Enter the unique certificate number (e.g.{' '}
-                <span className="font-mono text-foreground font-medium">JTA-2026-...</span>) or
-                public token printed on the certificate.
-              </p>
             </div>
 
             <Button
@@ -124,12 +120,12 @@ export function CertificateLookupForm({
               {isVerifying ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />
-                  Verifying Certificate...
+                  {t('common.loading')}
                 </>
               ) : (
                 <>
                   <Search className="size-4" />
-                  Verify Certificate
+                  {t('verifyCert.button')}
                 </>
               )}
             </Button>
@@ -139,8 +135,9 @@ export function CertificateLookupForm({
         {/* Tab 2: Camera QR Code Scanning */}
         <TabsContent value="qr" className="mt-6 space-y-4">
           <div className="text-center text-xs text-muted-foreground">
-            Point your device camera at the QR code printed on the bottom-right corner of the
-            certificate.
+            {locale === 'am'
+              ? 'የመሳሪያዎን ካሜራ በሰርተፊኬቱ ላይ ወዳለው የQR ኮድ ያላምዱ።'
+              : 'Point your device camera at the QR code printed on the bottom-right corner of the certificate.'}
           </div>
           <CertificateQrScanner
             onScan={handleQrScan}

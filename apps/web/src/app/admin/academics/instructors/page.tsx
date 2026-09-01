@@ -34,7 +34,10 @@ const DEFAULT_FILTERS: InstructorsFilters = { search: undefined };
  * course search (the DB search vector indexes `presenter_name`), so the
  * frontend never filters the full dataset itself.
  */
+import { useLanguage, translateCourseTitle } from '@/lib/i18n/language-provider';
+
 export default function AdminInstructorsPage() {
+  const { t, locale } = useLanguage();
   const { filters, setFilter } = useQueryFilters<InstructorsFilters>({
     defaults: DEFAULT_FILTERS,
   });
@@ -51,19 +54,23 @@ export default function AdminInstructorsPage() {
     <ContentContainer>
       <PageBreadcrumb
         items={[
-          { label: 'Dashboard', href: ROUTES.admin.root },
-          { label: 'Academic Management', href: ROUTES.admin.academics },
-          { label: 'Instructors' },
+          { label: locale === 'am' ? 'ዳሽቦርድ' : 'Dashboard', href: ROUTES.admin.root },
+          { label: locale === 'am' ? 'ትምህርት አስተዳደር' : 'Academics', href: ROUTES.admin.academics },
+          { label: locale === 'am' ? 'አስተማሪዎች' : 'Instructors' },
         ]}
       />
       <PageHeader
-        title="Instructors"
-        description="Everyone presenting a published course, derived from the course catalog."
+        title={locale === 'am' ? 'አስተማሪዎች' : 'Instructors'}
+        description={
+          locale === 'am'
+            ? 'የአካዳሚውን አስተማሪዎች እና የሚያስተምሯቸውን ኮርሶች ያስተዳድሩ።'
+            : 'Manage academy instructors and their assigned courses.'
+        }
       />
 
       <FilterBar>
         <SearchBar
-          placeholder="Search instructors..."
+          placeholder={locale === 'am' ? 'አስተማሪዎችን ፈልግ...' : 'Search instructors...'}
           defaultValue={search ?? ''}
           onSearch={(value) => setFilter('search', value || undefined)}
           className="w-full sm:w-64"
@@ -75,21 +82,25 @@ export default function AdminInstructorsPage() {
       ) : coursesQuery.isError ? (
         <ErrorState
           onRetry={() => coursesQuery.refetch()}
-          description="Unable to load instructors."
+          description={locale === 'am' ? 'አስተማሪዎችን መጫን አልተቻለም።' : 'Unable to load instructors.'}
         />
       ) : instructors.length === 0 ? (
         <EmptyState
           icon={UserRound}
-          title="No instructors found"
+          title={locale === 'am' ? 'ምንም አስተማሪ አልተገኘም' : 'No instructors found'}
           description={
             search
-              ? 'No instructors match your search.'
-              : 'No published courses have a presenter yet.'
+              ? locale === 'am'
+                ? 'ከፍለጋዎ ጋር የሚዛመድ አስተማሪ የለም።'
+                : 'No instructors match your search.'
+              : locale === 'am'
+                ? 'እስካሁን ምንም የታተመ ኮርስ አስተማሪ የለውም።'
+                : 'No published courses have a presenter yet.'
           }
           action={
             search ? (
               <Button variant="outline" onClick={() => setFilter('search', undefined)}>
-                Clear search
+                {locale === 'am' ? 'ፍለጋውን አጽዳ' : 'Clear search'}
               </Button>
             ) : undefined
           }
@@ -107,18 +118,23 @@ export default function AdminInstructorsPage() {
                     {instructor.name}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {instructor.courseCount} {instructor.courseCount === 1 ? 'course' : 'courses'}
+                    {instructor.courseCount}{' '}
+                    {locale === 'am' ? 'ኮርሶች' : instructor.courseCount === 1 ? 'course' : 'courses'}
                   </p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {instructor.courses.slice(0, 3).map((course) => (
                   <Badge key={course.id} variant="secondary" className="max-w-full truncate">
-                    {course.title}
+                    {translateCourseTitle(course.title, locale)}
                   </Badge>
                 ))}
                 {instructor.courses.length > 3 && (
-                  <Badge variant="outline">+{instructor.courses.length - 3} more</Badge>
+                  <Badge variant="outline">
+                    {locale === 'am'
+                      ? `+${instructor.courses.length - 3} ተጨማሪ`
+                      : `+${instructor.courses.length - 3} more`}
+                  </Badge>
                 )}
               </div>
             </Card>

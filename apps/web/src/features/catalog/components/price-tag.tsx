@@ -1,5 +1,8 @@
+'use client';
+
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/i18n/language-provider';
 import type { CourseAccessType } from '../types/catalog.types';
 
 export interface PriceTagProps {
@@ -11,8 +14,14 @@ export interface PriceTagProps {
 }
 
 export function PriceTag({ accessType, price, discountPrice, currency, className }: PriceTagProps) {
+  const { t } = useLanguage();
+
   if (accessType === 'FREE') {
-    return <span className={cn('text-sm font-semibold text-success', className)}>Free</span>;
+    return (
+      <span className={cn('text-sm font-semibold text-success', className)}>
+        {t('common.free')}
+      </span>
+    );
   }
 
   const hasDiscount = discountPrice !== null && Number(discountPrice) < Number(price);

@@ -5,7 +5,10 @@ import { JsonLd } from '@/components/common/json-ld';
 import { buildBreadcrumbJsonLd } from '@/lib/json-ld';
 import { CourseCard } from '@/features/catalog/components/course-card';
 import { catalogApi } from '@/features/catalog/api/catalog.api';
-import { deriveInstructors, DEFAULT_LEAD_INSTRUCTOR } from '@/features/instructors/utils/derive-instructors';
+import {
+  deriveInstructors,
+  DEFAULT_LEAD_INSTRUCTOR,
+} from '@/features/instructors/utils/derive-instructors';
 import { ROUTES } from '@/constants/routes';
 import { Badge } from '@/components/ui/badge';
 

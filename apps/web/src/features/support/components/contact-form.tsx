@@ -18,7 +18,10 @@ const contactSchema = z.object({
 
 type ContactInput = z.infer<typeof contactSchema>;
 
+import { useLanguage } from '@/lib/i18n/language-provider';
+
 export function ContactForm() {
+  const { t } = useLanguage();
   const {
     register,
     handleSubmit,
@@ -27,8 +30,6 @@ export function ContactForm() {
   } = useForm<ContactInput>({ resolver: zodResolver(contactSchema) });
 
   const onSubmit = handleSubmit(async () => {
-    // No contact/support-ticket endpoint exists on the backend yet - be
-    // upfront instead of pretending the message was delivered somewhere.
     await new Promise((resolve) => setTimeout(resolve, 400));
     toast.info(
       "This form isn't connected yet",
@@ -66,7 +67,7 @@ export function ContactForm() {
       </div>
       <Button type="submit" disabled={isSubmitting} className="self-start">
         <Send className="size-4" />
-        Send message
+        {t('nav.contact')}
       </Button>
     </form>
   );

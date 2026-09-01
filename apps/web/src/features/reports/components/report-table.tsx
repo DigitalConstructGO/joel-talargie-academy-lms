@@ -23,20 +23,22 @@ export interface ReportTableProps {
   onRowClick?: (row: Record<string, unknown>) => void;
 }
 
-function SummaryValue({ value }: { value: unknown }) {
+function SummaryValue({ value, locale }: { value: unknown; locale?: string }) {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     const entries = Object.entries(value as Record<string, unknown>);
     return (
       <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm font-medium text-foreground">
         {entries.map(([key, entry]) => (
           <span key={key}>
-            {humanizeKey(key)}: {formatReportValue(entry)}
+            {humanizeKey(key, locale)}: {formatReportValue(entry, locale)}
           </span>
         ))}
       </div>
     );
   }
-  return <p className="text-lg font-semibold text-foreground">{formatReportValue(value)}</p>;
+  return (
+    <p className="text-lg font-semibold text-foreground">{formatReportValue(value, locale)}</p>
+  );
 }
 
 /**
@@ -46,6 +48,8 @@ function SummaryValue({ value }: { value: unknown }) {
  * Reports and Activity Logs (`ADMINISTRATOR_ACTIVITY` uses this same
  * endpoint shape under the hood).
  */
+import { useLanguage } from '@/lib/i18n/language-provider';
+
 export function ReportTable({
   result,
   isLoading,
@@ -58,6 +62,7 @@ export function ReportTable({
   onPageSizeChange,
   onRowClick,
 }: ReportTableProps) {
+  const { locale } = useLanguage();
   const rows = useMemo(() => result?.rows ?? [], [result?.rows]);
   const keys = useMemo(
     () => (rows.length > 0 ? Object.keys(rows[0] ?? {}).filter((key) => key !== 'id') : []),
@@ -69,10 +74,10 @@ export function ReportTable({
       keys.map((key) => ({
         id: key,
         accessorFn: (row) => row[key],
-        header: humanizeKey(key),
-        cell: ({ getValue }) => formatReportValue(getValue()),
+        header: humanizeKey(key, locale),
+        cell: ({ getValue }) => formatReportValue(getValue(), locale),
       })),
-    [keys],
+    [keys, locale],
   );
 
   const totalPages = Math.max(
@@ -91,8 +96,8 @@ export function ReportTable({
           <CardContent className="flex flex-wrap gap-6 pt-6">
             {Object.entries(result.summary).map(([key, value]) => (
               <div key={key}>
-                <p className="text-xs text-muted-foreground">{humanizeKey(key)}</p>
-                <SummaryValue value={value} />
+                <p className="text-xs text-muted-foreground">{humanizeKey(key, locale)}</p>
+                <SummaryValue value={value} locale={locale} />
               </div>
             ))}
           </CardContent>

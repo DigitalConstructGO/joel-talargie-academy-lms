@@ -80,7 +80,9 @@ async function run(): Promise<void> {
         if (!administrator || !student) throw new Error('System roles could not be seeded');
         await tx
           .insert(schema.rolePermissions)
-          .values(permissions.map(({ id }: any) => ({ roleId: administrator.id, permissionId: id })))
+          .values(
+            permissions.map(({ id }: any) => ({ roleId: administrator.id, permissionId: id })),
+          )
           .onConflictDoNothing();
         await tx
           .insert(schema.platformSettings)

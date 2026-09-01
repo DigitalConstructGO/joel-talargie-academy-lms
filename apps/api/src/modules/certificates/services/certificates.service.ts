@@ -328,14 +328,17 @@ export class CertificatesService {
     if (!exists && certificate) {
       try {
         const base = (
-          this.config.get<string>('CERTIFICATE_PUBLIC_BASE_URL') ?? 'http://localhost:3000/certificates/verify'
+          this.config.get<string>('CERTIFICATE_PUBLIC_BASE_URL') ??
+          'http://localhost:3000/certificates/verify'
         ).replace(/\/$/, '');
         const pdf = await generateCertificatePdf({
           academyName: 'Joel Talargie Academy',
           title: 'Certificate of Completion',
           studentName: certificate.studentName ?? 'Student',
           courseTitle: certificate.courseTitle ?? 'Course',
-          completionDate: certificate.completionDate ? new Date(certificate.completionDate) : new Date(),
+          completionDate: certificate.completionDate
+            ? new Date(certificate.completionDate)
+            : new Date(),
           certificateNumber: certificate.certificateNumber ?? 'JTA-CERT',
           verificationUrl: `${base}/${certificate.verificationToken || certificate.id}`,
           footerText: 'Issued by Joel Talargie Academy',

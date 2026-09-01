@@ -73,6 +73,7 @@ graph TD
 ## 3. Authentication & Security
 
 ### Authentication Mechanisms
+
 1. **Local Authentication**: Email normalized lowercase & password checked via `bcrypt.compare()`. Passwords are encrypted with 12 salt rounds before database persistence.
 2. **JWT Token Management**:
    - Access Token: Short-lived (`15m` TTL) signed JWT token stored in HTTP-only cookie or Authorization Bearer header.
@@ -86,6 +87,7 @@ graph TD
 Access control is enforced globally using NestJS Guards and custom reflection decorators:
 
 ### Guard Evaluation Pipeline
+
 ```mermaid
 flowchart LR
     Request[HTTP Request] --> JwtGuard{JwtAuthGuard}
@@ -98,6 +100,7 @@ flowchart LR
 ```
 
 ### Key Decorators
+
 - `@Public()`: Bypasses authentication guards for public routes (e.g. landing page data, public course list).
 - `@Roles('ADMINISTRATOR', 'INSTRUCTOR', 'STUDENT')`: Restricts endpoint execution to specified user role codes.
 - `@RequirePermissions('courses.update', 'payments.approve')`: Enforces specific permission code requirements checked via `AuthorizationContextService`.
@@ -108,21 +111,21 @@ flowchart LR
 
 All API routes are prefixed with `/api/v1`:
 
-| Method | Endpoint Path | Roles / Protection | Purpose |
-|---|---|---|---|
-| `POST` | `/auth/login` | Public | Authenticate user and issue JWT cookies |
-| `POST` | `/auth/register` | Public | Register new student account |
-| `GET` | `/me/authorization` | Authenticated | Retrieve current user roles & permission codes |
-| `GET` | `/public/landing` | Public | Retrieve active Landing Page CMS dataset |
-| `GET` | `/catalog/courses` | Public | Search & filter active public courses |
-| `GET` | `/catalog/courses/:slug` | Public | Retrieve public course detail & lesson preview tree |
-| `GET` | `/student/analytics/overview` | Authenticated | Retrieve student learning KPIs and enrollment stats |
-| `POST` | `/me/payments` | Authenticated | Submit manual bank transfer payment receipt |
-| `GET` | `/admin/academics/courses` | `ADMIN`, `INSTRUCTOR` | List & filter course catalog for management |
-| `POST` | `/admin/academics/courses` | `@RequirePermissions('courses.create')` | Create new course entry |
-| `GET` | `/admin/financial/payments` | `@RequirePermissions('payments.read')` | List pending/approved/declined payment submissions |
+| Method  | Endpoint Path                           | Roles / Protection                        | Purpose                                               |
+| ------- | --------------------------------------- | ----------------------------------------- | ----------------------------------------------------- |
+| `POST`  | `/auth/login`                           | Public                                    | Authenticate user and issue JWT cookies               |
+| `POST`  | `/auth/register`                        | Public                                    | Register new student account                          |
+| `GET`   | `/me/authorization`                     | Authenticated                             | Retrieve current user roles & permission codes        |
+| `GET`   | `/public/landing`                       | Public                                    | Retrieve active Landing Page CMS dataset              |
+| `GET`   | `/catalog/courses`                      | Public                                    | Search & filter active public courses                 |
+| `GET`   | `/catalog/courses/:slug`                | Public                                    | Retrieve public course detail & lesson preview tree   |
+| `GET`   | `/student/analytics/overview`           | Authenticated                             | Retrieve student learning KPIs and enrollment stats   |
+| `POST`  | `/me/payments`                          | Authenticated                             | Submit manual bank transfer payment receipt           |
+| `GET`   | `/admin/academics/courses`              | `ADMIN`, `INSTRUCTOR`                     | List & filter course catalog for management           |
+| `POST`  | `/admin/academics/courses`              | `@RequirePermissions('courses.create')`   | Create new course entry                               |
+| `GET`   | `/admin/financial/payments`             | `@RequirePermissions('payments.read')`    | List pending/approved/declined payment submissions    |
 | `PATCH` | `/admin/financial/payments/:id/approve` | `@RequirePermissions('payments.approve')` | Approve manual payment and activate course enrollment |
-| `PATCH` | `/admin/system/academy-settings` | `@RequirePermissions('settings.update')` | Batch update platform settings and CMS data |
+| `PATCH` | `/admin/system/academy-settings`        | `@RequirePermissions('settings.update')`  | Batch update platform settings and CMS data           |
 
 ---
 
@@ -168,10 +171,12 @@ npm run worker:reports
 ## 9. Swagger API Documentation & Testing
 
 ### Interactive Swagger UI
+
 When the API server is running, interactive Swagger documentation is available at:
 `http://localhost:4000/api/docs`
 
 ### Executing Tests
+
 ```bash
 # Run NestJS API unit test suites
 npm run test:api

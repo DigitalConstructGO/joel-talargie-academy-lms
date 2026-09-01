@@ -968,7 +968,9 @@ export class CatalogRepository {
     const mappedItems = items.map((item) => {
       const key = item.thumbnailKey ?? null;
       const thumbnailUrl = key
-        ? key.startsWith('http://') || key.startsWith('https://') || key.startsWith('/')
+        ? key.startsWith('http://') ||
+          key.startsWith('https://') ||
+          key.startsWith('/')
           ? key
           : `/api/v1/storage/course-thumbnails/${key.replace(/^course-thumbnails\//, '')}`
         : null;

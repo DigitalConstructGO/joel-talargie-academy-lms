@@ -17,13 +17,14 @@ export function HeroSection({ hero }: { hero?: HeroSettings }) {
   const [query, setQuery] = useState('');
   const [isPending, startTransition] = useTransition();
 
-  const defaultHeading = locale === 'am' ? `${t('hero.title1')} ${t('hero.title2')}` : 'Engineer Your Next Career Move.';
-  const heading = hero?.heading || defaultHeading;
-  const description =
-    hero?.description || t('hero.subtitle');
-  const primaryCtaText = hero?.primaryCtaText || t('hero.ctaBrowse');
+  const defaultHeading = `${t('hero.title1')} ${t('hero.title2')}`;
+  const heading = hero?.heading && locale === 'en' ? hero.heading : defaultHeading;
+  const description = hero?.description && locale === 'en' ? hero.description : t('hero.subtitle');
+  const primaryCtaText =
+    hero?.primaryCtaText && locale === 'en' ? hero.primaryCtaText : t('hero.ctaBrowse');
   const primaryCtaUrl = hero?.primaryCtaUrl || ROUTES.courses.list;
-  const secondaryCtaText = hero?.secondaryCtaText || t('hero.ctaStart');
+  const secondaryCtaText =
+    hero?.secondaryCtaText && locale === 'en' ? hero.secondaryCtaText : t('hero.ctaStart');
   const secondaryCtaUrl = hero?.secondaryCtaUrl || ROUTES.auth.register;
   const heroImage = hero?.heroImageUrl || '/images/hero/network-abstract.jpg';
 

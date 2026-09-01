@@ -39,7 +39,10 @@ function DashboardHomeSkeleton() {
   );
 }
 
+import { useLanguage } from '@/lib/i18n/language-provider';
+
 export default function DashboardPage() {
+  const { t } = useLanguage();
   const user = useAuthStore((state) => state.user);
   const firstName = user?.firstName ?? 'there';
   const isStudent = user?.roles?.includes('STUDENT') ?? false;
@@ -84,22 +87,32 @@ export default function DashboardPage() {
   const stats = [
     {
       icon: BookOpen,
-      label: 'Enrolled Courses',
+      label: t('dashboard.enrolledCourses'),
       value: enrollments.length,
       tone: 'primary' as const,
     },
-    { icon: Loader, label: 'In Progress', value: inProgress.length, tone: 'info' as const },
-    { icon: CircleCheck, label: 'Completed', value: completed.length, tone: 'success' as const },
+    {
+      icon: Loader,
+      label: t('dashboard.activeCourses'),
+      value: inProgress.length,
+      tone: 'info' as const,
+    },
+    {
+      icon: CircleCheck,
+      label: t('dashboard.completedCourses'),
+      value: completed.length,
+      tone: 'success' as const,
+    },
     {
       icon: Award,
-      label: 'Certificates',
+      label: t('dashboard.certificatesEarned'),
       value: certificatesQuery.data?.length ?? 0,
       tone: 'warning' as const,
     },
-    { icon: Heart, label: 'Wishlist', value: wishlistCount, tone: 'primary' as const },
+    { icon: Heart, label: t('sidebar.wishlist'), value: wishlistCount, tone: 'primary' as const },
     {
       icon: Bell,
-      label: 'Unread Notifications',
+      label: t('sidebar.notifications'),
       value: unreadQuery.data?.unreadCount ?? 0,
       tone: 'info' as const,
     },
@@ -111,13 +124,13 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <WelcomeBanner
             className="lg:col-span-2"
-            greeting={`Welcome back, ${firstName} 👋`}
+            greeting={`${t('dashboard.welcome')}, ${firstName} 👋`}
             description={
               mostRecent
                 ? `You've completed ${Math.round(mostRecent.progressPercentage)}% of "${mostRecent.courseTitle}". Keep up the momentum!`
                 : "You haven't enrolled in any courses yet - browse the catalog to get started."
             }
-            ctaLabel={mostRecent ? 'Resume Learning' : 'Browse Courses'}
+            ctaLabel={mostRecent ? t('dashboard.continueLearning') : t('sidebar.browseCourses')}
             ctaHref={mostRecent ? ROUTES.dashboard.courses : ROUTES.dashboard.browseCourses}
           />
           {mostRecent && (
@@ -141,9 +154,9 @@ export default function DashboardPage() {
       <Reveal delaySeconds={0.1}>
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-2xl font-bold text-foreground">My Courses</h3>
+            <h3 className="text-2xl font-bold text-foreground">{t('sidebar.myCourses')}</h3>
             <Button variant="link" asChild className="h-auto p-0 text-primary">
-              <Link href={ROUTES.dashboard.courses}>View All</Link>
+              <Link href={ROUTES.dashboard.courses}>{t('categories.browseAll')}</Link>
             </Button>
           </div>
           {recentCourses.length === 0 ? (

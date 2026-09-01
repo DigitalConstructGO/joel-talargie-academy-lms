@@ -76,6 +76,12 @@ import { ROUTES } from '@/constants/routes';
 import { formatCurrency } from '@/lib/format';
 import { formatDate } from '@/lib/date';
 
+import {
+  useLanguage,
+  translateCourseTitle,
+  translateCategoryName,
+} from '@/lib/i18n/language-provider';
+
 const PERIOD_OPTIONS: { label: string; value: DashboardRangePreset }[] = [
   { label: 'Today', value: 'TODAY' },
   { label: 'Yesterday', value: 'YESTERDAY' },
@@ -87,6 +93,18 @@ const PERIOD_OPTIONS: { label: string; value: DashboardRangePreset }[] = [
   { label: 'This year', value: 'THIS_YEAR' },
   { label: 'Custom range', value: 'CUSTOM' },
 ];
+
+const PERIOD_OPTIONS_AM: Record<DashboardRangePreset, string> = {
+  TODAY: 'ዛሬ',
+  YESTERDAY: 'ትላንት',
+  LAST_7_DAYS: 'ባለፉት 7 ቀናት',
+  LAST_30_DAYS: 'ባለፉት 30 ቀናት',
+  LAST_90_DAYS: 'ባለፉት 90 ቀናት',
+  THIS_MONTH: 'በዚህ ወር',
+  LAST_MONTH: 'ባለፈው ወር',
+  THIS_YEAR: 'በዚህ ዓመት',
+  CUSTOM: 'የተወሰነ የጊዜ ክልል',
+};
 
 const VIBRANT_PALETTE = [
   '#10b981', // Emerald Green
@@ -171,13 +189,18 @@ const CODES_CONFIG = {
 } satisfies ChartConfig;
 
 function ChartErrorCard({ title, onRetry }: { title: string; onRetry: () => void }) {
+  const { locale } = useLanguage();
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <ErrorState className="py-8" description="Unable to load this chart." onRetry={onRetry} />
+        <ErrorState
+          className="py-8"
+          description={locale === 'am' ? 'ይህንን ቻርት መጫን አልተቻለም።' : 'Unable to load this chart.'}
+          onRetry={onRetry}
+        />
       </CardContent>
     </Card>
   );
@@ -206,6 +229,7 @@ interface AnalyticsFilters {
 }
 
 export default function AdminAnalyticsPage() {
+  const { t, locale } = useLanguage();
   const { filters, setFilters } = useQueryFilters<AnalyticsFilters>({
     defaults: {
       period: 'LAST_30_DAYS',
@@ -274,10 +298,13 @@ export default function AdminAnalyticsPage() {
       counts.set(catName, (counts.get(catName) ?? 0) + 1);
     }
     return Array.from(counts.entries())
-      .map(([category, count]) => ({ category, count }))
+      .map(([category, count]) => ({
+        category: translateCategoryName(category, locale),
+        count,
+      }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
-  }, [filterOptions?.courses]);
+  }, [filterOptions?.courses, locale]);
 
   const roleDistribution = (rolesQuery.data?.items ?? [])
     .filter((role) => role.userCount > 0)
@@ -288,19 +315,23 @@ export default function AdminAnalyticsPage() {
     <ContentContainer>
       <PageBreadcrumb
         items={[
-          { label: 'Dashboard', href: ROUTES.admin.root },
-          { label: 'Reports & Analytics', href: ROUTES.admin.reports },
-          { label: 'Analytics' },
+          { label: t('sidebar.dashboard'), href: ROUTES.admin.root },
+          { label: t('sidebar.reports'), href: ROUTES.admin.reports },
+          { label: locale === 'am' ? 'አናሊቲክስ' : 'Analytics' },
         ]}
       />
 
       <div className="flex flex-col gap-4">
         <PageHeader
-          title="Analytics"
+          title={locale === 'am' ? 'አናሊቲክስ' : 'Analytics'}
           description={
             data?.scope === 'INSTRUCTOR'
-              ? 'Showing course performance and student progress scoped strictly to your courses.'
-              : 'Platform-wide operational analytics, revenue, and learning progress.'
+              ? locale === 'am'
+                ? 'በእርስዎ ኮርሶች ብቻ የተገደበ አፈፃፀም እና የተማሪዎች ሂደት።'
+                : 'Showing course performance and student progress scoped strictly to your courses.'
+              : locale === 'am'
+                ? 'በመድረኩ አቀፍ የክፍያ፣ የገቢ እና የመማር ሂደት አናሊቲክስ።'
+                : 'Platform-wide operational analytics, revenue, and learning progress.'
           }
           actions={
             <div className="flex flex-wrap items-center gap-2">
@@ -311,13 +342,15 @@ export default function AdminAnalyticsPage() {
                   onValueChange={(val) => setFilters({ courseId: val === 'ALL' ? undefined : val })}
                 >
                   <SelectTrigger className="w-48" aria-label="Course Filter">
-                    <SelectValue placeholder="All Courses" />
+                    <SelectValue placeholder={locale === 'am' ? 'ሁሉም ኮርሶች' : 'All Courses'} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ALL">All Authorized Courses</SelectItem>
+                    <SelectItem value="ALL">
+                      {locale === 'am' ? 'ሁሉም የተፈቀዱ ኮርሶች' : 'All Authorized Courses'}
+                    </SelectItem>
                     {filterOptions.courses.map((course) => (
                       <SelectItem key={course.id} value={course.id}>
-                        {course.title}
+                        {translateCourseTitle(course.title, locale)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -333,13 +366,15 @@ export default function AdminAnalyticsPage() {
                   }
                 >
                   <SelectTrigger className="w-44" aria-label="Category Filter">
-                    <SelectValue placeholder="All Categories" />
+                    <SelectValue placeholder={locale === 'am' ? 'ሁሉም ምድቦች' : 'All Categories'} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ALL">All Categories</SelectItem>
+                    <SelectItem value="ALL">
+                      {locale === 'am' ? 'ሁሉም ምድቦች' : 'All Categories'}
+                    </SelectItem>
                     {filterOptions.categories.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
-                        {cat.name}
+                        {translateCategoryName(cat.name, locale)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -362,7 +397,7 @@ export default function AdminAnalyticsPage() {
                 <SelectContent>
                   {PERIOD_OPTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                      {locale === 'am' ? PERIOD_OPTIONS_AM[option.value] : option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -377,7 +412,7 @@ export default function AdminAnalyticsPage() {
                       to: range?.to ? range.to.toISOString().slice(0, 10) : undefined,
                     })
                   }
-                  placeholder="Select a date range"
+                  placeholder={locale === 'am' ? 'የቀን ክልል ይምረጡ' : 'Select a date range'}
                 />
               )}
             </div>
@@ -391,8 +426,12 @@ export default function AdminAnalyticsPage() {
               <>
                 <UserCheck className="h-4 w-4 text-primary" />
                 <span>
-                  <strong className="font-semibold text-foreground">Instructor Scope:</strong> Data
-                  is strictly calculated from the courses you own and manage.
+                  <strong className="font-semibold text-foreground">
+                    {locale === 'am' ? 'የአስተማሪ ክልል፡' : 'Instructor Scope:'}
+                  </strong>{' '}
+                  {locale === 'am'
+                    ? 'መረጃዎች እርስዎ ከሚያስተዳድሯቸው ኮርሶች ብቻ የተሰሉ ናቸው።'
+                    : 'Data is strictly calculated from the courses you own and manage.'}
                 </span>
                 <Badge variant="outline" className="ml-auto font-mono text-[10px]">
                   INSTRUCTOR
@@ -402,11 +441,15 @@ export default function AdminAnalyticsPage() {
               <>
                 <ShieldCheck className="h-4 w-4 text-primary" />
                 <span>
-                  <strong className="font-semibold text-foreground">Platform Scope:</strong> Showing
-                  organization-wide aggregate statistics across all platform resources.
+                  <strong className="font-semibold text-foreground">
+                    {locale === 'am' ? 'የመድረክ ክልል፡' : 'Platform Scope:'}
+                  </strong>{' '}
+                  {locale === 'am'
+                    ? 'በሁሉም የሲስተሙ ሀብቶች ላይ አጠቃላይ የተሰበሰቡ ስታቲስቲክሶችን በማሳየት ላይ።'
+                    : 'Showing organization-wide aggregate statistics across all platform resources.'}
                 </span>
                 <Badge variant="secondary" className="ml-auto font-mono text-[10px]">
-                  PLATFORM ADMIN
+                  {locale === 'am' ? 'የሲስተም አስተዳዳሪ' : 'PLATFORM ADMIN'}
                 </Badge>
               </>
             )}
@@ -417,15 +460,23 @@ export default function AdminAnalyticsPage() {
       {!customRangeReady ? (
         <EmptyState
           icon={CalendarRange}
-          title="Select a date range"
-          description="Choose a start and end date above to view analytics for a custom range."
+          title={locale === 'am' ? 'የቀን ክልል ይምረጡ' : 'Select a date range'}
+          description={
+            locale === 'am'
+              ? 'የተወሰነ ጊዜ አናሊቲክስ ለማየት ከላይ ጀምሮ እና ማብቂያ ቀን ይምረጡ።'
+              : 'Choose a start and end date above to view analytics for a custom range.'
+          }
         />
       ) : overviewQuery.isLoading ? (
         <DashboardSkeleton />
       ) : overviewQuery.isError || !data ? (
         <ErrorState
           onRetry={() => overviewQuery.refetch()}
-          description="Unable to load analytics data. Please ensure you have sufficient permissions."
+          description={
+            locale === 'am'
+              ? 'የአናሊቲክስ መረጃ መጫን አልተቻለም። እባክዎን በቂ ፈቃዶች እንዳሉዎት ያረጋግጡ።'
+              : 'Unable to load analytics data. Please ensure you have sufficient permissions.'
+          }
         />
       ) : (
         <div className="space-y-8 mt-6">
@@ -434,7 +485,15 @@ export default function AdminAnalyticsPage() {
             {data.kpis?.courses && (
               <StatCard
                 icon={BookOpen}
-                label={data.scope === 'INSTRUCTOR' ? 'My Courses' : 'Published Courses'}
+                label={
+                  data.scope === 'INSTRUCTOR'
+                    ? locale === 'am'
+                      ? 'የእኔ ኮርሶች'
+                      : 'My Courses'
+                    : locale === 'am'
+                      ? 'የታተሙ ኮርሶች'
+                      : 'Published Courses'
+                }
                 value={data.kpis.courses.published}
                 suffix={`/ ${data.kpis.courses.total}`}
                 tone="info"
@@ -444,7 +503,15 @@ export default function AdminAnalyticsPage() {
             {data.kpis?.enrollments && (
               <StatCard
                 icon={GraduationCap}
-                label={data.scope === 'INSTRUCTOR' ? 'Course Enrollments' : 'Active Enrollments'}
+                label={
+                  data.scope === 'INSTRUCTOR'
+                    ? locale === 'am'
+                      ? 'የኮርስ ምዝገባዎች'
+                      : 'Course Enrollments'
+                    : locale === 'am'
+                      ? 'ንቁ ምዝገባዎች'
+                      : 'Active Enrollments'
+                }
                 value={data.kpis.enrollments.active}
                 suffix={`/ ${data.kpis.enrollments.total}`}
                 tone="teal"
@@ -454,7 +521,15 @@ export default function AdminAnalyticsPage() {
             {data.kpis?.students && (
               <StatCard
                 icon={Users}
-                label={data.scope === 'INSTRUCTOR' ? 'My Students' : 'Active Students'}
+                label={
+                  data.scope === 'INSTRUCTOR'
+                    ? locale === 'am'
+                      ? 'የእኔ ተማሪዎች'
+                      : 'My Students'
+                    : locale === 'am'
+                      ? 'ንቁ ተማሪዎች'
+                      : 'Active Students'
+                }
                 value={data.kpis.students.active ?? data.kpis.students.total}
                 suffix={data.scope === 'GLOBAL' ? `/ ${data.kpis.students.total}` : undefined}
                 tone="primary"
@@ -464,7 +539,7 @@ export default function AdminAnalyticsPage() {
             {data.kpis?.completionRate != null && (
               <StatCard
                 icon={Percent}
-                label="Completion Rate"
+                label={locale === 'am' ? 'የማጠናቀቂያ መጠን' : 'Completion Rate'}
                 value={`${data.kpis.completionRate}%`}
                 tone="teal"
               />
@@ -473,7 +548,7 @@ export default function AdminAnalyticsPage() {
             {data.kpis?.certificates && canReadCertificates && (
               <StatCard
                 icon={Award}
-                label="Certificates Issued"
+                label={locale === 'am' ? 'የተሰጡ ሰርተፊኬቶች' : 'Certificates Issued'}
                 value={data.kpis.certificates.generated}
                 tone="success"
               />
@@ -482,7 +557,7 @@ export default function AdminAnalyticsPage() {
             {data.kpis?.payments && canReadRevenue && (
               <StatCard
                 icon={CreditCard}
-                label="Pending Payments"
+                label={locale === 'am' ? 'በመጠባበቅ ላይ ያሉ ክፍያዎች' : 'Pending Payments'}
                 value={data.kpis.payments.waitingForReview}
                 tone="warning"
               />
@@ -494,7 +569,7 @@ export default function AdminAnalyticsPage() {
                 <StatCard
                   key={rev.currency}
                   icon={Banknote}
-                  label={`Revenue (${rev.currency})`}
+                  label={locale === 'am' ? `ገቢ (${rev.currency})` : `Revenue (${rev.currency})`}
                   value={formatCurrency(Number(rev.amount), rev.currency)}
                   tone="success"
                 />
@@ -507,7 +582,7 @@ export default function AdminAnalyticsPage() {
               {data.kpis.comparisons.newStudents && canReadUsers && (
                 <StatCard
                   icon={UserPlus}
-                  label="New Students"
+                  label={locale === 'am' ? 'አዲስ ተማሪዎች' : 'New Students'}
                   value={data.kpis.comparisons.newStudents.current}
                   tone="primary"
                   trend={data.kpis.comparisons.newStudents}
@@ -516,7 +591,7 @@ export default function AdminAnalyticsPage() {
               {data.kpis.comparisons.newEnrollments && (
                 <StatCard
                   icon={GraduationCap}
-                  label="New Enrollments"
+                  label={locale === 'am' ? 'አዲስ ምዝገባዎች' : 'New Enrollments'}
                   value={data.kpis.comparisons.newEnrollments.current}
                   tone="teal"
                   trend={data.kpis.comparisons.newEnrollments}
@@ -527,7 +602,9 @@ export default function AdminAnalyticsPage() {
                   <StatCard
                     key={revenue.currency}
                     icon={Banknote}
-                    label={`Revenue (${revenue.currency})`}
+                    label={
+                      locale === 'am' ? `ገቢ (${revenue.currency})` : `Revenue (${revenue.currency})`
+                    }
                     value={formatCurrency(revenue.current, revenue.currency)}
                     tone="success"
                     trend={revenue}
@@ -538,13 +615,19 @@ export default function AdminAnalyticsPage() {
 
           {/* Section 2: Trends */}
           <section className="space-y-4">
-            <h2 className="text-sm font-semibold text-foreground">Growth &amp; Activity Trends</h2>
+            <h2 className="text-sm font-semibold text-foreground">
+              {locale === 'am' ? 'የእድገት እና እንቅስቃሴ አዝማሚያዎች' : 'Growth & Activity Trends'}
+            </h2>
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               {/* Enrollments Trend */}
               {data.trends?.enrollments && data.trends.enrollments.length > 0 && (
                 <ChartCard
-                  title="Enrollment Trend"
-                  description="New enrollments over the selected period"
+                  title={locale === 'am' ? 'የምዝገባ አዝማሚያ' : 'Enrollment Trend'}
+                  description={
+                    locale === 'am'
+                      ? 'በተመረጠው ጊዜ ውስጥ የተመዘገቡ አዲስ ምዝገባዎች'
+                      : 'New enrollments over the selected period'
+                  }
                   config={ENROLLMENTS_CONFIG}
                 >
                   <AreaChart
@@ -589,8 +672,12 @@ export default function AdminAnalyticsPage() {
               {/* Course Completions Trend */}
               {data.trends?.completions && data.trends.completions.length > 0 && (
                 <ChartCard
-                  title="Course Completions"
-                  description="Completions over the selected period"
+                  title={locale === 'am' ? 'የኮርሶች ማጠናቀቅ' : 'Course Completions'}
+                  description={
+                    locale === 'am'
+                      ? 'በተመረጠው ጊዜ ውስጥ የተጠናቀቁ ኮርሶች'
+                      : 'Completions over the selected period'
+                  }
                   config={COMPLETIONS_CONFIG}
                 >
                   <BarChart
@@ -631,17 +718,25 @@ export default function AdminAnalyticsPage() {
                   <ChartSkeleton />
                 ) : revenueTrendQuery.isError ? (
                   <ChartErrorCard
-                    title="Revenue Trend"
+                    title={locale === 'am' ? 'የገቢ አዝማሚያ' : 'Revenue Trend'}
                     onRetry={() => revenueTrendQuery.refetch()}
                   />
                 ) : revenueTrendQuery.data && revenueTrendQuery.data.points.length > 0 ? (
                   <ChartCard
                     title={
                       data.scope === 'INSTRUCTOR'
-                        ? 'Course Revenue Trend'
-                        : 'Platform Revenue Trend'
+                        ? locale === 'am'
+                          ? 'የኮርሶች ገቢ አዝማሚያ'
+                          : 'Course Revenue Trend'
+                        : locale === 'am'
+                          ? 'የመድረክ ገቢ አዝማሚያ'
+                          : 'Platform Revenue Trend'
                     }
-                    description="Approved payment revenue over the selected period"
+                    description={
+                      locale === 'am'
+                        ? 'በተመረጠው ጊዜ ውስጥ የጸደቀ ክፍያ ገቢ'
+                        : 'Approved payment revenue over the selected period'
+                    }
                     config={REVENUE_TREND_CONFIG}
                   >
                     <AreaChart
@@ -688,8 +783,12 @@ export default function AdminAnalyticsPage() {
                   </ChartCard>
                 ) : (
                   <ChartEmptyCard
-                    title="Revenue Trend"
-                    description="No revenue data recorded for this period."
+                    title={locale === 'am' ? 'የገቢ አዝማሚያ' : 'Revenue Trend'}
+                    description={
+                      locale === 'am'
+                        ? 'ለዚህ ጊዜ የተመዘገበ የገቢ መረጃ የለም።'
+                        : 'No revenue data recorded for this period.'
+                    }
                   />
                 ))}
 
@@ -699,13 +798,17 @@ export default function AdminAnalyticsPage() {
                   <ChartSkeleton />
                 ) : certificatesTrendQuery.isError ? (
                   <ChartErrorCard
-                    title="Certificate Issuance"
+                    title={locale === 'am' ? 'የሰርተፊኬቶች አሰጣጥ' : 'Certificate Issuance'}
                     onRetry={() => certificatesTrendQuery.refetch()}
                   />
                 ) : certificatesTrendQuery.data && certificatesTrendQuery.data.points.length > 0 ? (
                   <ChartCard
-                    title="Certificate Issuance"
-                    description="Certificates issued over the selected period"
+                    title={locale === 'am' ? 'የሰርተፊኬቶች አሰጣጥ' : 'Certificate Issuance'}
+                    description={
+                      locale === 'am'
+                        ? 'በተመረጠው ጊዜ ውስጥ የተሰጡ ሰርተፊኬቶች'
+                        : 'Certificates issued over the selected period'
+                    }
                     config={CERTIFICATES_CONFIG}
                   >
                     <BarChart
@@ -740,8 +843,12 @@ export default function AdminAnalyticsPage() {
                   </ChartCard>
                 ) : (
                   <ChartEmptyCard
-                    title="Certificate Issuance"
-                    description="No certificates issued in this period."
+                    title={locale === 'am' ? 'የሰርተፊኬቶች አሰጣጥ' : 'Certificate Issuance'}
+                    description={
+                      locale === 'am'
+                        ? 'በዚህ ጊዜ ውስጥ የተሰጠ ሰርተፊኬት የለም።'
+                        : 'No certificates issued in this period.'
+                    }
                   />
                 ))}
 
@@ -751,8 +858,12 @@ export default function AdminAnalyticsPage() {
                 data.trends?.registrations &&
                 data.trends.registrations.length > 0 && (
                   <ChartCard
-                    title="New Registrations"
-                    description="User growth over the selected period"
+                    title={locale === 'am' ? 'አዲስ ምዝገባዎች' : 'New Registrations'}
+                    description={
+                      locale === 'am'
+                        ? 'በተመረጠው ጊዜ ውስጥ የተጠቃሚዎች እድገት'
+                        : 'User growth over the selected period'
+                    }
                     config={REGISTRATIONS_CONFIG}
                   >
                     <AreaChart
@@ -797,8 +908,12 @@ export default function AdminAnalyticsPage() {
               {/* Payment Count Trend - if revenue permitted */}
               {canReadRevenue && data.trends?.payments && data.trends.payments.length > 0 && (
                 <ChartCard
-                  title="Payment Activity"
-                  description="Payments submitted over the selected period"
+                  title={locale === 'am' ? 'የክፍያ እንቅስቃሴ' : 'Payment Activity'}
+                  description={
+                    locale === 'am'
+                      ? 'በተመረጠው ጊዜ ውስጥ የቀረቡ ክፍያዎች'
+                      : 'Payments submitted over the selected period'
+                  }
                   config={PAYMENTS_CONFIG}
                 >
                   <BarChart
@@ -837,12 +952,16 @@ export default function AdminAnalyticsPage() {
 
           {/* Section 3: Distribution */}
           <section className="space-y-4">
-            <h2 className="text-sm font-semibold text-foreground">Distribution</h2>
+            <h2 className="text-sm font-semibold text-foreground">
+              {locale === 'am' ? 'ስርጭት' : 'Distribution'}
+            </h2>
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
               {data.kpis?.enrollments && (
                 <ChartCard
-                  title="Enrollment Status"
-                  description="Where enrollments stand right now"
+                  title={locale === 'am' ? 'የምዝገባ ሁኔታ' : 'Enrollment Status'}
+                  description={
+                    locale === 'am' ? 'አሁን ላይ የምዝገባዎች አቋም' : 'Where enrollments stand right now'
+                  }
                   config={ENROLLMENT_STATUS_CONFIG}
                 >
                   <PieChart>
@@ -852,25 +971,25 @@ export default function AdminAnalyticsPage() {
                       data={[
                         {
                           key: 'active',
-                          name: 'Active',
+                          name: locale === 'am' ? 'ንቁ' : 'Active',
                           value: data.kpis.enrollments.active,
                           fill: '#10b981',
                         },
                         {
                           key: 'completed',
-                          name: 'Completed',
+                          name: locale === 'am' ? 'የተጠናቀቀ' : 'Completed',
                           value: data.kpis.enrollments.completed,
                           fill: '#f59e0b',
                         },
                         {
                           key: 'pendingPayment',
-                          name: 'Pending payment',
+                          name: locale === 'am' ? 'ክፍያ በመጠባበቅ ላይ' : 'Pending payment',
                           value: data.kpis.enrollments.pendingPayment,
                           fill: '#3b82f6',
                         },
                         {
                           key: 'other',
-                          name: 'Other (cancelled / revoked)',
+                          name: locale === 'am' ? 'ሌላ' : 'Other (cancelled / revoked)',
                           value: Math.max(
                             0,
                             data.kpis.enrollments.total -
@@ -903,8 +1022,10 @@ export default function AdminAnalyticsPage() {
 
               {data.kpis?.courses && (
                 <ChartCard
-                  title="Course Status"
-                  description="Published vs. draft vs. archived"
+                  title={locale === 'am' ? 'የኮርስ ሁኔታ' : 'Course Status'}
+                  description={
+                    locale === 'am' ? 'የታተሙ፣ ረቂቅ እና የተቀመጡ' : 'Published vs. draft vs. archived'
+                  }
                   config={COURSE_STATUS_CONFIG}
                 >
                   <PieChart>
@@ -914,19 +1035,19 @@ export default function AdminAnalyticsPage() {
                       data={[
                         {
                           key: 'published',
-                          name: 'Published',
+                          name: locale === 'am' ? 'የታተመ' : 'Published',
                           value: data.kpis.courses.published,
                           fill: '#10b981',
                         },
                         {
                           key: 'draft',
-                          name: 'Draft',
+                          name: locale === 'am' ? 'ረቂቅ' : 'Draft',
                           value: data.kpis.courses.draft,
                           fill: '#8b5cf6',
                         },
                         {
                           key: 'archived',
-                          name: 'Archived',
+                          name: locale === 'am' ? 'የተቀመጠ' : 'Archived',
                           value: Math.max(
                             0,
                             data.kpis.courses.total -
@@ -957,8 +1078,12 @@ export default function AdminAnalyticsPage() {
 
               {canReadRevenue && data.kpis?.revenue && data.kpis.revenue.length > 0 && (
                 <ChartCard
-                  title="Revenue by Currency"
-                  description="Approved payment revenue for the selected period"
+                  title={locale === 'am' ? 'ገቢ በገንዘብ አይነት' : 'Revenue by Currency'}
+                  description={
+                    locale === 'am'
+                      ? 'በተመረጠው ጊዜ ውስጥ የጸደቁ ክፍያዎች'
+                      : 'Approved payment revenue for the selected period'
+                  }
                   config={REVENUE_CONFIG}
                 >
                   <PieChart>
@@ -991,26 +1116,32 @@ export default function AdminAnalyticsPage() {
 
           {/* Section 4: Course Performance Rankings */}
           <section className="space-y-4">
-            <h2 className="text-sm font-semibold text-foreground">Course Performance Insights</h2>
+            <h2 className="text-sm font-semibold text-foreground">
+              {locale === 'am' ? 'የኮርሶች አፈፃፀም ግንዛቤዎች' : 'Course Performance Insights'}
+            </h2>
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               {canReadRevenue &&
                 (coursesByRevenueQuery.isLoading ? (
                   <ChartSkeleton />
                 ) : coursesByRevenueQuery.isError ? (
                   <ChartErrorCard
-                    title="Top Courses by Revenue"
+                    title={locale === 'am' ? 'ከፍተኛ ገቢ ያስገኙ ኮርሶች' : 'Top Courses by Revenue'}
                     onRetry={() => coursesByRevenueQuery.refetch()}
                   />
                 ) : coursesByRevenueQuery.data && coursesByRevenueQuery.data.length > 0 ? (
                   <ChartCard
-                    title="Top Courses by Revenue"
-                    description="Highest-earning courses in the selected period"
+                    title={locale === 'am' ? 'ከፍተኛ ገቢ ያስገኙ ኮርሶች' : 'Top Courses by Revenue'}
+                    description={
+                      locale === 'am'
+                        ? 'በተመረጠው ጊዜ ከፍተኛ ገቢ ያገኙ ኮርሶች'
+                        : 'Highest-earning courses in the selected period'
+                    }
                     config={COURSE_REVENUE_CONFIG}
                   >
                     <BarChart
                       layout="vertical"
                       data={coursesByRevenueQuery.data.map((course) => ({
-                        title: course.title,
+                        title: translateCourseTitle(course.title, locale),
                         revenue: Number(course.revenue ?? 0),
                       }))}
                       margin={{ top: 10, right: 20, left: 10, bottom: 0 }}
@@ -1044,8 +1175,12 @@ export default function AdminAnalyticsPage() {
                   </ChartCard>
                 ) : (
                   <ChartEmptyCard
-                    title="Top Courses by Revenue"
-                    description="No revenue recorded for courses in this period."
+                    title={locale === 'am' ? 'ከፍተኛ ገቢ ያስገኙ ኮርሶች' : 'Top Courses by Revenue'}
+                    description={
+                      locale === 'am'
+                        ? 'በዚህ ጊዜ ውስጥ ለኮርሶች የተመዘገበ ገቢ የለም።'
+                        : 'No revenue recorded for courses in this period.'
+                    }
                   />
                 ))}
 
@@ -1053,19 +1188,26 @@ export default function AdminAnalyticsPage() {
                 <ChartSkeleton />
               ) : lowCompletionQuery.isError ? (
                 <ChartErrorCard
-                  title="Lowest Completion Rates"
+                  title={locale === 'am' ? 'ዝቅተኛ የማጠናቀቂያ መጠን ያላቸው' : 'Lowest Completion Rates'}
                   onRetry={() => lowCompletionQuery.refetch()}
                 />
               ) : lowCompletionQuery.data && lowCompletionQuery.data.length > 0 ? (
                 <ChartCard
-                  title="Lowest Completion Rates"
-                  description="Courses that may need student engagement attention"
+                  title={locale === 'am' ? 'ዝቅተኛ የማጠናቀቂያ መጠን ያላቸው' : 'Lowest Completion Rates'}
+                  description={
+                    locale === 'am'
+                      ? 'የተማሪዎች ትኩረት የሚያስፈልጋቸው ኮርሶች'
+                      : 'Courses that may need student engagement attention'
+                  }
                   config={LOW_COMPLETION_CONFIG}
                 >
                   <BarChart
                     layout="vertical"
                     data={lowCompletionQuery.data.map((course) => ({
-                      title: course.title ?? course.course_title ?? 'Course',
+                      title: translateCourseTitle(
+                        course.title ?? course.course_title ?? 'Course',
+                        locale,
+                      ),
                       rate: Number(course.completion_rate ?? 0),
                     }))}
                     margin={{ top: 10, right: 20, left: 10, bottom: 0 }}
@@ -1101,8 +1243,12 @@ export default function AdminAnalyticsPage() {
                 </ChartCard>
               ) : (
                 <ChartEmptyCard
-                  title="Lowest Completion Rates"
-                  description="No course completion issues detected for this period."
+                  title={locale === 'am' ? 'ዝቅተኛ የማጠናቀቂያ መጠን ያላቸው' : 'Lowest Completion Rates'}
+                  description={
+                    locale === 'am'
+                      ? 'ለዚህ ጊዜ የተገኘ የኮርስ ማጠናቀቅ ችግር የለም።'
+                      : 'No course completion issues detected for this period.'
+                  }
                 />
               )}
             </div>
@@ -1110,12 +1256,18 @@ export default function AdminAnalyticsPage() {
 
           {/* Section 5: Catalog & Team Breakdown */}
           <section className="space-y-4">
-            <h2 className="text-sm font-semibold text-foreground">Content &amp; Team Breakdown</h2>
+            <h2 className="text-sm font-semibold text-foreground">
+              {locale === 'am' ? 'የይዘት እና ቡድን ትንተና' : 'Content & Team Breakdown'}
+            </h2>
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               {categoryDistribution.length > 0 ? (
                 <ChartCard
-                  title="Courses by Category"
-                  description="Where your course content is concentrated"
+                  title={locale === 'am' ? 'ኮርሶች በምድብ' : 'Courses by Category'}
+                  description={
+                    locale === 'am'
+                      ? 'የኮርስ ይዘትዎ ትኩረት ያረፈበት'
+                      : 'Where your course content is concentrated'
+                  }
                   config={CATEGORY_CONFIG}
                 >
                   <BarChart
@@ -1147,8 +1299,12 @@ export default function AdminAnalyticsPage() {
                 </ChartCard>
               ) : (
                 <ChartEmptyCard
-                  title="Courses by Category"
-                  description="No courses available in this scope."
+                  title={locale === 'am' ? 'ኮርሶች በምድብ' : 'Courses by Category'}
+                  description={
+                    locale === 'am'
+                      ? 'በዚህ ክልል ውስጥ የሚገኙ ኮርሶች የሉም።'
+                      : 'No courses available in this scope.'
+                  }
                 />
               )}
 
@@ -1157,11 +1313,16 @@ export default function AdminAnalyticsPage() {
                 (rolesQuery.isLoading ? (
                   <ChartSkeleton />
                 ) : rolesQuery.isError ? (
-                  <ChartErrorCard title="Role Distribution" onRetry={() => rolesQuery.refetch()} />
+                  <ChartErrorCard
+                    title={locale === 'am' ? 'የሚናዎች ስርጭት' : 'Role Distribution'}
+                    onRetry={() => rolesQuery.refetch()}
+                  />
                 ) : roleDistribution.length > 0 ? (
                   <ChartCard
-                    title="Role Distribution"
-                    description="Users grouped by assigned role"
+                    title={locale === 'am' ? 'የሚናዎች ስርጭት' : 'Role Distribution'}
+                    description={
+                      locale === 'am' ? 'ተጠቃሚዎች በተመደቡበት ሚና' : 'Users grouped by assigned role'
+                    }
                     config={ROLE_CONFIG}
                   >
                     <PieChart>
@@ -1191,8 +1352,12 @@ export default function AdminAnalyticsPage() {
                   </ChartCard>
                 ) : (
                   <ChartEmptyCard
-                    title="Role Distribution"
-                    description="No users assigned to roles yet."
+                    title={locale === 'am' ? 'የሚናዎች ስርጭት' : 'Role Distribution'}
+                    description={
+                      locale === 'am'
+                        ? 'እስካሁን ለሚናዎች የተመደቡ ተጠቃሚዎች የሉም።'
+                        : 'No users assigned to roles yet.'
+                    }
                   />
                 ))}
             </div>
@@ -1201,18 +1366,24 @@ export default function AdminAnalyticsPage() {
           {/* Section 6: Promotions (Admins only) */}
           {isGlobal && (
             <section className="space-y-4">
-              <h2 className="text-sm font-semibold text-foreground">Promotions &amp; Marketing</h2>
+              <h2 className="text-sm font-semibold text-foreground">
+                {locale === 'am' ? 'ማስታወቂያዎች እና ማርኬቲንግ' : 'Promotions & Marketing'}
+              </h2>
               {promotionAnalyticsQuery.isLoading ? (
                 <ChartSkeleton />
               ) : promotionAnalyticsQuery.isError ? (
                 <ChartErrorCard
-                  title="Top Promo Codes by Redemptions"
+                  title={
+                    locale === 'am' ? 'በብዛት ስራ ላይ የዋሉ ፕሮሞ ኮዶች' : 'Top Promo Codes by Redemptions'
+                  }
                   onRetry={() => promotionAnalyticsQuery.refetch()}
                 />
               ) : promotionAnalyticsQuery.data &&
                 promotionAnalyticsQuery.data.topCodes.length > 0 ? (
                 <ChartCard
-                  title="Top Promo Codes by Redemptions"
+                  title={
+                    locale === 'am' ? 'በብዛት ስራ ላይ የዋሉ ፕሮሞ ኮዶች' : 'Top Promo Codes by Redemptions'
+                  }
                   description={`${promotionAnalyticsQuery.data.totalRedemptions} total redemptions · ${promotionAnalyticsQuery.data.conversionRate}% conversion rate`}
                   config={CODES_CONFIG}
                 >
@@ -1251,8 +1422,14 @@ export default function AdminAnalyticsPage() {
                 </ChartCard>
               ) : (
                 <ChartEmptyCard
-                  title="Top Promo Codes by Redemptions"
-                  description="No coupon redemptions recorded."
+                  title={
+                    locale === 'am' ? 'በብዛት ስራ ላይ የዋሉ ፕሮሞ ኮዶች' : 'Top Promo Codes by Redemptions'
+                  }
+                  description={
+                    locale === 'am'
+                      ? 'የተመዘገቡ የፕሮሞ ኮድ አጠቃቀሞች የሉም።'
+                      : 'No coupon redemptions recorded.'
+                  }
                 />
               )}
             </section>
@@ -1263,38 +1440,56 @@ export default function AdminAnalyticsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>
-                  {data.scope === 'INSTRUCTOR' ? 'My Courses Performance' : 'Course Performance'}
+                  {data.scope === 'INSTRUCTOR'
+                    ? locale === 'am'
+                      ? 'የእኔ ኮርሶች አፈፃፀም'
+                      : 'My Courses Performance'
+                    : locale === 'am'
+                      ? 'የኮርሶች አፈፃፀም ዝርዝር'
+                      : 'Course Performance'}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {data.topCourses.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    No course performance data available.
+                    {locale === 'am'
+                      ? 'ምንም የኮርስ አፈፃፀም መረጃ አይገኝም።'
+                      : 'No course performance data available.'}
                   </p>
                 ) : (
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Course</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Enrollments</TableHead>
-                          <TableHead>Completions</TableHead>
-                          <TableHead>Completion Rate</TableHead>
-                          {canReadRevenue && <TableHead>Revenue</TableHead>}
+                          <TableHead>{locale === 'am' ? 'ኮርስ' : 'Course'}</TableHead>
+                          <TableHead>{locale === 'am' ? 'ሁኔታ' : 'Status'}</TableHead>
+                          <TableHead>{locale === 'am' ? 'ምዝገባዎች' : 'Enrollments'}</TableHead>
+                          <TableHead>{locale === 'am' ? 'የተጠናቀቁ' : 'Completions'}</TableHead>
+                          <TableHead>
+                            {locale === 'am' ? 'የማጠናቀቂያ መጠን' : 'Completion Rate'}
+                          </TableHead>
+                          {canReadRevenue && (
+                            <TableHead>{locale === 'am' ? 'ገቢ' : 'Revenue'}</TableHead>
+                          )}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {data.topCourses.map((course) => (
                           <TableRow key={course.courseId || course.id || course.title}>
                             <TableCell className="font-medium text-foreground">
-                              {course.title}
+                              {translateCourseTitle(course.title, locale)}
                             </TableCell>
                             <TableCell>
                               <Badge
                                 variant={course.status === 'PUBLISHED' ? 'success' : 'secondary'}
                               >
-                                {course.status}
+                                {course.status === 'PUBLISHED'
+                                  ? locale === 'am'
+                                    ? 'የታተመ'
+                                    : 'PUBLISHED'
+                                  : locale === 'am'
+                                    ? 'ረቂቅ'
+                                    : course.status}
                               </Badge>
                             </TableCell>
                             <TableCell>

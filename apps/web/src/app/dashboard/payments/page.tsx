@@ -46,6 +46,7 @@ import type { PaymentStatus } from '@/features/payments/types/payment.types';
 import { PaymentAmountBreakdown } from '@/features/payments/components/payment-amount-breakdown';
 import { formatCurrency } from '@/lib/format';
 import { formatDate, formatDateTime } from '@/lib/date';
+import { useLanguage, translateCourseTitle } from '@/lib/i18n/language-provider';
 
 const PAGE_SIZE = 10;
 
@@ -232,10 +233,17 @@ function PaymentDetailSheet({
 }
 
 export default function StudentPaymentsPage() {
+  const { t, locale } = useLanguage();
   const { filters, pageSize, setFilter, setFilters, setPageSize, resetFilters } =
     useQueryFilters<PaymentsFilters>({ defaults: DEFAULT_FILTERS, pageSize: PAGE_SIZE });
   const { status, search, submittedFrom, submittedTo } = filters;
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
+
+  const statusOptions = [
+    { label: t('common.pending'), value: 'PENDING' },
+    { label: t('common.verified'), value: 'APPROVED' },
+    { label: t('common.unverified'), value: 'DECLINED' },
+  ];
 
   const paymentsQuery = useMyPayments({
     page: 1,
@@ -262,7 +270,7 @@ export default function StudentPaymentsPage() {
 
   return (
     <ContentContainer>
-      <PageHeader title="Payments" description="Your payment history and receipts." />
+      <PageHeader title={t('sidebar.financial')} description={t('categories.subtitle')} />
 
       {hasPending && (
         <p className="flex items-center gap-2 rounded-xl border border-warning/40 bg-warning/5 px-4 py-3 text-sm text-warning">
@@ -300,10 +308,10 @@ export default function StudentPaymentsPage() {
           className="w-full sm:w-64"
         />
         <SelectFilter
-          label="Status"
+          label={t('common.status')}
           value={status === 'ALL' ? undefined : status}
           onChange={(value) => setFilter('status', (value ?? 'ALL') as PaymentsFilters['status'])}
-          options={STATUS_OPTIONS}
+          options={statusOptions}
         />
         <DateRangeFilter
           value={dateRange}
@@ -337,10 +345,10 @@ export default function StudentPaymentsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Course Details</TableHead>
-                <TableHead>Date &amp; Time</TableHead>
+                <TableHead>{t('nav.courses')}</TableHead>
+                <TableHead>{t('common.created')}</TableHead>
                 <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{t('common.status')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -352,9 +360,12 @@ export default function StudentPaymentsPage() {
                 >
                   <TableCell>
                     <div className="min-w-0">
-                      <p className="truncate font-medium text-foreground">{payment.courseTitle}</p>
+                      <p className="truncate font-medium text-foreground">
+                        {translateCourseTitle(payment.courseTitle, locale)}
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        Attempt #{payment.attemptNumber} &middot; {payment.transactionId}
+                        {locale === 'am' ? 'ሞከራ' : 'Attempt'} #{payment.attemptNumber} &middot;{' '}
+                        {payment.transactionId}
                       </p>
                     </div>
                   </TableCell>
@@ -371,7 +382,13 @@ export default function StudentPaymentsPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={STATUS_BADGE_VARIANT[payment.status]}>{payment.status}</Badge>
+                    <Badge variant={STATUS_BADGE_VARIANT[payment.status]}>
+                      {payment.status === 'APPROVED'
+                        ? t('common.verified')
+                        : payment.status === 'DECLINED'
+                          ? t('common.unverified')
+                          : t('common.pending')}
+                    </Badge>
                   </TableCell>
                 </TableRow>
               ))}

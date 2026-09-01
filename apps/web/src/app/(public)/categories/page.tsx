@@ -21,6 +21,8 @@ async function loadCategories() {
   }
 }
 
+import { CategoriesPageHeader } from '@/features/catalog/components/categories-page-header';
+
 export default async function CategoriesPage() {
   const categories = await loadCategories();
 
@@ -36,7 +38,7 @@ export default async function CategoriesPage() {
           )}
         />
       )}
-      <PageHeader title="Categories" description="Find courses organized by subject area." />
+      <CategoriesPageHeader />
       {categories.items.length === 0 ? (
         <EmptyState icon={Layers} title="No categories yet" />
       ) : (

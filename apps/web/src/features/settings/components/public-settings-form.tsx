@@ -18,6 +18,8 @@ import { toast } from '@/lib/toast';
 import { useUpdateSettingsBatch } from '../hooks/use-settings';
 import type { PublicSettings } from '../types/settings.types';
 
+import { useLanguage } from '@/lib/i18n/language-provider';
+
 export function PublicSettingsForm({
   initialData,
   disabled = false,
@@ -25,6 +27,7 @@ export function PublicSettingsForm({
   initialData: PublicSettings;
   disabled?: boolean;
 }) {
+  const { locale } = useLanguage();
   const updateBatch = useUpdateSettingsBatch();
   const [form, setForm] = useState<PublicSettings>(initialData);
 
@@ -51,17 +54,25 @@ export function PublicSettingsForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Platform Registration & Access</CardTitle>
+          <CardTitle>
+            {locale === 'am' ? 'ምዝገባ እና መዳረሻ' : 'Platform Registration & Access'}
+          </CardTitle>
           <CardDescription>
-            Configure user sign-up availability and currency settings.
+            {locale === 'am'
+              ? 'የተማሪዎች ምዝገባ ፍቃድ እና የገንዘብ መቼቶችን ያዋቅሩ።'
+              : 'Configure user sign-up availability and currency settings.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between rounded-xl border border-border p-4">
             <div className="space-y-0.5">
-              <Label className="text-sm font-semibold">Enable Public Student Registration</Label>
+              <Label className="text-sm font-semibold">
+                {locale === 'am' ? 'ይፋዊ የተማሪዎች ምዝገባን አንቅ' : 'Enable Public Student Registration'}
+              </Label>
               <p className="text-xs text-muted-foreground">
-                Allow new students to create accounts from the registration page.
+                {locale === 'am'
+                  ? 'አዳዲስ ተማሪዎች በምዝገባ ገጽ በኩል አካውንት እንዲፈጥሩ ፍቀድ።'
+                  : 'Allow new students to create accounts from the registration page.'}
               </p>
             </div>
             <Switch
@@ -75,7 +86,9 @@ export function PublicSettingsForm({
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="defaultCurrency">Default Currency</Label>
+              <Label htmlFor="defaultCurrency">
+                {locale === 'am' ? 'ነባሪ የገንዘብ አይነት' : 'Default Currency'}
+              </Label>
               <Select
                 value={form.defaultCurrency}
                 onValueChange={(val) => setForm((prev) => ({ ...prev, defaultCurrency: val }))}
@@ -93,7 +106,9 @@ export function PublicSettingsForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="timezone">Academy Timezone</Label>
+              <Label htmlFor="timezone">
+                {locale === 'am' ? 'የአካዳሚው የሰዓት ክልል' : 'Academy Timezone'}
+              </Label>
               <Input
                 id="timezone"
                 value={form.timezone}
@@ -111,12 +126,12 @@ export function PublicSettingsForm({
           {updateBatch.isPending ? (
             <>
               <Loader2 className="mr-2 size-4 animate-spin" />
-              Saving...
+              {locale === 'am' ? 'በማስቀመጥ ላይ...' : 'Saving...'}
             </>
           ) : (
             <>
               <Save className="mr-2 size-4" />
-              Save Public Settings
+              {locale === 'am' ? 'ይፋዊ መቼቶች አስቀምጥ' : 'Save Public Settings'}
             </>
           )}
         </Button>

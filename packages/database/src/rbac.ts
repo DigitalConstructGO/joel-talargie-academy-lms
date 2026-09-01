@@ -28,7 +28,9 @@ export const getAuthorizationContext = async (
     .leftJoin(schema.permissions, eq(schema.rolePermissions.permissionId, schema.permissions.id))
     .where(eq(schema.userRoles.userId, userId));
   const roles = [...new Set(rows.map((row: any) => row.role))].filter(Boolean) as string[];
-  const permissions = [...new Set(rows.flatMap((row: any) => (row.permission ? [row.permission] : [])))].filter(Boolean) as string[];
+  const permissions = [
+    ...new Set(rows.flatMap((row: any) => (row.permission ? [row.permission] : []))),
+  ].filter(Boolean) as string[];
   return {
     userId,
     status: user.status as any,

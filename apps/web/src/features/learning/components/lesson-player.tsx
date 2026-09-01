@@ -172,7 +172,9 @@ function YouTubeLessonPlayer({
   const [playbackError, setPlaybackError] = useState(() => checkYouTubeSessionBlocked());
   const [useNativePlayer, setUseNativePlayer] = useState(false);
   const [useNoCookie, setUseNoCookie] = useState(false);
-  const [errorCode, setErrorCode] = useState<'NONE' | 'EMBED_DISABLED' | 'PRIVATE_VIDEO' | 'NETWORK_OR_OTHER'>('NONE');
+  const [errorCode, setErrorCode] = useState<
+    'NONE' | 'EMBED_DISABLED' | 'PRIVATE_VIDEO' | 'NETWORK_OR_OTHER'
+  >('NONE');
   const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
@@ -430,9 +432,7 @@ function YouTubeLessonPlayer({
                 <h3 className="text-base font-semibold text-white tracking-tight">
                   {overlayInfo.title}
                 </h3>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  {overlayInfo.subtitle}
-                </p>
+                <p className="text-xs text-slate-300 leading-relaxed">{overlayInfo.subtitle}</p>
               </div>
 
               <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">

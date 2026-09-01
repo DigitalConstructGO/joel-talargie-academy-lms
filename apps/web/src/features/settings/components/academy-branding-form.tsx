@@ -11,6 +11,8 @@ import { ImageUploadField } from './image-upload-field';
 import { useUpdateSettingsBatch } from '../hooks/use-settings';
 import type { AcademyBrandingSettings } from '../types/settings.types';
 
+import { useLanguage } from '@/lib/i18n/language-provider';
+
 export function AcademyBrandingForm({
   initialData,
   disabled = false,
@@ -18,6 +20,7 @@ export function AcademyBrandingForm({
   initialData: AcademyBrandingSettings;
   disabled?: boolean;
 }) {
+  const { locale } = useLanguage();
   const updateBatch = useUpdateSettingsBatch();
   const [form, setForm] = useState<AcademyBrandingSettings>(initialData);
 
@@ -45,20 +48,25 @@ export function AcademyBrandingForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Logo & Icon Assets</CardTitle>
+          <CardTitle>{locale === 'am' ? 'ሎጎ እና አይኮኖች' : 'Logo & Icon Assets'}</CardTitle>
           <CardDescription>
-            Official imagery displayed in the navigation bar, favicon, and email headers. Upload or
-            paste a URL.
+            {locale === 'am'
+              ? 'በናቪጌሽን ባር፣ ፋቪኮን እና በኢሜይል ርዕሶች ላይ የሚታዩ ይፋዊ ምስሎች።'
+              : 'Official imagery displayed in the navigation bar, favicon, and email headers. Upload or paste a URL.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <ImageUploadField
               id="logoUrl"
-              label="Academy Logo"
+              label={locale === 'am' ? 'የአካዳሚው ሎጎ' : 'Academy Logo'}
               value={form.logoUrl}
               onChange={(url) => handleChange('logoUrl', url)}
-              description="High-resolution PNG, SVG, or WebP logo."
+              description={
+                locale === 'am'
+                  ? 'ከፍተኛ ጥራት ያለው PNG, SVG, ወይም WebP ሎጎ።'
+                  : 'High-resolution PNG, SVG, or WebP logo.'
+              }
               placeholder="/brand/logo.svg"
               disabled={disabled || updateBatch.isPending}
               aspectRatio="square"
@@ -66,10 +74,14 @@ export function AcademyBrandingForm({
 
             <ImageUploadField
               id="faviconUrl"
-              label="Favicon Asset"
+              label={locale === 'am' ? 'ፋቪኮን (Favicon)' : 'Favicon Asset'}
               value={form.faviconUrl}
               onChange={(url) => handleChange('faviconUrl', url)}
-              description="Square icon (ICO, PNG) for browser tabs."
+              description={
+                locale === 'am'
+                  ? 'ለብራውዘር ታቦች የሚሆን ስኩዌር አይኮን።'
+                  : 'Square icon (ICO, PNG) for browser tabs.'
+              }
               placeholder="/favicon.ico"
               disabled={disabled || updateBatch.isPending}
               aspectRatio="square"
@@ -78,10 +90,14 @@ export function AcademyBrandingForm({
 
           <ImageUploadField
             id="heroBackgroundUrl"
-            label="Hero Section Background Imagery"
+            label={locale === 'am' ? 'የHero ክፍል ዳራ ምስል' : 'Hero Section Background Imagery'}
             value={form.heroBackgroundUrl}
             onChange={(url) => handleChange('heroBackgroundUrl', url)}
-            description="Default background visual banner for the landing page."
+            description={
+              locale === 'am'
+                ? 'ለአካዳሚው መነሻ ገጽ ነባሪ ዳራ ምስል።'
+                : 'Default background visual banner for the landing page.'
+            }
             placeholder="/images/hero/network-abstract.jpg"
             disabled={disabled || updateBatch.isPending}
             aspectRatio="banner"
@@ -93,16 +109,20 @@ export function AcademyBrandingForm({
         <CardHeader>
           <div className="flex items-center gap-2">
             <Palette className="size-5 text-brand" />
-            <CardTitle>Brand Color Palette</CardTitle>
+            <CardTitle>{locale === 'am' ? 'የብራንድ ቀለሞች' : 'Brand Color Palette'}</CardTitle>
           </div>
           <CardDescription>
-            Signature brand colors used for luxury certificate accents, badges, and primary buttons.
+            {locale === 'am'
+              ? 'ለሰርተፊኬቶች፣ ባጆች እና ዋና አዝራሮች የሚያገለግሉ የብራንድ ቀለሞች።'
+              : 'Signature brand colors used for luxury certificate accents, badges, and primary buttons.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="primaryColor">Primary Color (Forest Green)</Label>
+              <Label htmlFor="primaryColor">
+                {locale === 'am' ? 'ዋና ቀለም (አረንጓዴ)' : 'Primary Color (Forest Green)'}
+              </Label>
               <div className="flex items-center gap-2">
                 <input
                   type="color"
@@ -122,7 +142,9 @@ export function AcademyBrandingForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="secondaryColor">Secondary Color (Gold Accent)</Label>
+              <Label htmlFor="secondaryColor">
+                {locale === 'am' ? 'ሁለተኛ ቀለም (ወርቃማ)' : 'Secondary Color (Gold Accent)'}
+              </Label>
               <div className="flex items-center gap-2">
                 <input
                   type="color"
@@ -142,7 +164,9 @@ export function AcademyBrandingForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="accentColor">Highlight / Emerald Accent</Label>
+              <Label htmlFor="accentColor">
+                {locale === 'am' ? 'አስመጪ / የደመቀ ቀለም' : 'Highlight / Emerald Accent'}
+              </Label>
               <div className="flex items-center gap-2">
                 <input
                   type="color"
@@ -169,12 +193,12 @@ export function AcademyBrandingForm({
           {updateBatch.isPending ? (
             <>
               <Loader2 className="mr-2 size-4 animate-spin" />
-              Saving...
+              {locale === 'am' ? 'በማስቀመጥ ላይ...' : 'Saving...'}
             </>
           ) : (
             <>
               <Save className="mr-2 size-4" />
-              Save Branding
+              {locale === 'am' ? 'ብራንዲንግ አስቀምጥ' : 'Save Branding'}
             </>
           )}
         </Button>

@@ -288,7 +288,9 @@ export class PlatformSettingsService {
     const featuredCoursesList = rawCourses.map((c) => {
       const key = c.thumbnailKey ?? null;
       const thumbnailUrl = key
-        ? key.startsWith('http://') || key.startsWith('https://') || key.startsWith('/')
+        ? key.startsWith('http://') ||
+          key.startsWith('https://') ||
+          key.startsWith('/')
           ? key
           : `/api/v1/storage/course-thumbnails/${key.replace(/^course-thumbnails\//, '')}`
         : null;

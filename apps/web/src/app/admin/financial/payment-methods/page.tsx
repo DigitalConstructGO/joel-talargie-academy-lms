@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Landmark, Pencil, Plus, Smartphone, Wallet, Wrench } from 'lucide-react';
@@ -35,6 +35,7 @@ import {
 import type { PaymentMethodType } from '@/features/payment-methods/types/payment-method.types';
 import { toast } from '@/lib/toast';
 import { ROUTES } from '@/constants/routes';
+import { useLanguage } from '@/lib/i18n/language-provider';
 
 const PAGE_SIZE = 20;
 
@@ -47,13 +48,6 @@ interface MethodFilters {
 
 const DEFAULT_FILTERS: MethodFilters = { type: 'ALL', isActive: undefined, search: undefined };
 
-const TYPE_OPTIONS = [
-  { label: 'Mobile money', value: 'MOBILE_MONEY' },
-  { label: 'Bank transfer', value: 'BANK_TRANSFER' },
-  { label: 'Card', value: 'CARD' },
-  { label: 'Other', value: 'OTHER' },
-];
-
 const TYPE_ICONS: Record<PaymentMethodType, typeof Smartphone> = {
   MOBILE_MONEY: Smartphone,
   BANK_TRANSFER: Landmark,
@@ -61,13 +55,45 @@ const TYPE_ICONS: Record<PaymentMethodType, typeof Smartphone> = {
   OTHER: Wrench,
 };
 
+function formatMethodType(type: PaymentMethodType, locale: string): string {
+  if (locale !== 'am') return type.replaceAll('_', ' ');
+
+  const TYPE_MAP_AM: Record<PaymentMethodType, string> = {
+    MOBILE_MONEY: 'የሞባይል ገንዘብ',
+    BANK_TRANSFER: 'የባንክ ማስተላለፍ',
+    CARD: 'ካርድ',
+    OTHER: 'ሌላ',
+  };
+
+  return TYPE_MAP_AM[type] || type;
+}
+
 export default function AdminPaymentMethodsPage() {
+  const { locale } = useLanguage();
   const router = useRouter();
   const { filters, page, pageSize, setFilter, setPage, resetFilters } =
     useQueryFilters<MethodFilters>({ defaults: DEFAULT_FILTERS, pageSize: PAGE_SIZE });
   const { type, isActive, search } = filters;
   const [statusBusy, setStatusBusy] = useState<string | null>(null);
   const setStatus = useSetPaymentMethodStatus();
+
+  const typeOptions = useMemo(
+    () => [
+      { label: locale === 'am' ? 'የሞባይል ገንዘብ' : 'Mobile money', value: 'MOBILE_MONEY' },
+      { label: locale === 'am' ? 'የባንክ ማስተላለፍ' : 'Bank transfer', value: 'BANK_TRANSFER' },
+      { label: locale === 'am' ? 'ካርድ' : 'Card', value: 'CARD' },
+      { label: locale === 'am' ? 'ሌላ' : 'Other', value: 'OTHER' },
+    ],
+    [locale],
+  );
+
+  const statusOptions = useMemo(
+    () => [
+      { label: locale === 'am' ? 'ንቁ' : 'Active', value: 'true' },
+      { label: locale === 'am' ? 'ቦዝን' : 'Inactive', value: 'false' },
+    ],
+    [locale],
+  );
 
   const methodsQuery = usePaymentMethods({
     page,
@@ -84,9 +110,19 @@ export default function AdminPaymentMethodsPage() {
     setStatusBusy(id);
     try {
       await setStatus.mutateAsync({ paymentMethodId: id, isActive: !current });
-      toast.success(current ? 'Payment method deactivated' : 'Payment method activated');
+      toast.success(
+        current
+          ? locale === 'am'
+            ? 'የክፍያ ዘዴው ቦዝን ሆኗል'
+            : 'Payment method deactivated'
+          : locale === 'am'
+            ? 'የክፍያ ዘዴው ገብሯል'
+            : 'Payment method activated',
+      );
     } catch {
-      toast.error('Could not update this payment method');
+      toast.error(
+        locale === 'am' ? 'የክፍያ ዘዴውን ማዘመን አልተቻለም' : 'Could not update this payment method',
+      );
     } finally {
       setStatusBusy(null);
     }
@@ -96,19 +132,26 @@ export default function AdminPaymentMethodsPage() {
     <ContentContainer>
       <PageBreadcrumb
         items={[
-          { label: 'Dashboard', href: ROUTES.admin.root },
-          { label: 'Financial Management', href: ROUTES.admin.financial },
-          { label: 'Payment Methods' },
+          { label: locale === 'am' ? 'ዳሽቦርድ' : 'Dashboard', href: ROUTES.admin.root },
+          {
+            label: locale === 'am' ? 'የፋይናንስ አስተዳደር' : 'Financial Management',
+            href: ROUTES.admin.financial,
+          },
+          { label: locale === 'am' ? 'የክፍያ ዘዴዎች' : 'Payment Methods' },
         ]}
       />
       <PageHeader
-        title="Payment Methods"
-        description="Configure how students can pay at checkout."
+        title={locale === 'am' ? 'የክፍያ ዘዴዎች' : 'Payment Methods'}
+        description={
+          locale === 'am'
+            ? 'ተማሪዎች በክፍያ ገጽ ላይ የሚከፍሉበትን መንገድ ያዋቅሩ።'
+            : 'Configure how students can pay at checkout.'
+        }
         actions={
           <Can permission="payment_methods.create">
             <Button asChild className="gap-2">
               <Link href={ROUTES.admin.financialPaymentMethodCreate}>
-                <Plus className="size-4" /> Add method
+                <Plus className="size-4" /> {locale === 'am' ? 'ዘዴ ጨምር' : 'Add method'}
               </Link>
             </Button>
           </Can>
@@ -120,12 +163,19 @@ export default function AdminPaymentMethodsPage() {
           hasActiveFilters ? (
             <FilterChips
               chips={[
-                ...(type !== 'ALL' ? [{ key: 'type', label: type }] : []),
+                ...(type !== 'ALL' ? [{ key: 'type', label: formatMethodType(type, locale) }] : []),
                 ...(isActive
                   ? [
                       {
                         key: 'isActive',
-                        label: isActive === 'true' ? 'Active' : 'Inactive',
+                        label:
+                          isActive === 'true'
+                            ? locale === 'am'
+                              ? 'ንቁ'
+                              : 'Active'
+                            : locale === 'am'
+                              ? 'ቦዝን'
+                              : 'Inactive',
                       },
                     ]
                   : []),
@@ -142,7 +192,7 @@ export default function AdminPaymentMethodsPage() {
         }
       >
         <SearchBar
-          placeholder="Search by name or code..."
+          placeholder={locale === 'am' ? 'በስም ወይም በኮድ ፈልግ...' : 'Search by name or code...'}
           defaultValue={search ?? ''}
           onSearch={(value) => {
             setFilter('search', value || undefined);
@@ -151,26 +201,23 @@ export default function AdminPaymentMethodsPage() {
           className="w-full sm:w-72"
         />
         <SelectFilter
-          label="Type"
+          label={locale === 'am' ? 'ዓይነት' : 'Type'}
           value={type === 'ALL' ? undefined : type}
           onChange={(value) => {
             setFilter('type', (value ?? 'ALL') as MethodFilters['type']);
             setPage(1);
           }}
-          options={TYPE_OPTIONS}
+          options={typeOptions}
         />
         <SelectFilter
-          label="Status"
+          label={locale === 'am' ? 'ሁኔታ' : 'Status'}
           value={isActive}
           onChange={(value) => {
             setFilter('isActive', value as MethodFilters['isActive']);
             setPage(1);
           }}
-          options={[
-            { label: 'Active', value: 'true' },
-            { label: 'Inactive', value: 'false' },
-          ]}
-          placeholder="All statuses"
+          options={statusOptions}
+          placeholder={locale === 'am' ? 'ሁሉም ሁኔታዎች' : 'All statuses'}
         />
       </FilterBar>
 
@@ -179,26 +226,32 @@ export default function AdminPaymentMethodsPage() {
       ) : methodsQuery.isError ? (
         <ErrorState
           onRetry={() => methodsQuery.refetch()}
-          description="Unable to load payment methods."
+          description={
+            locale === 'am' ? 'የክፍያ ዘዴዎችን መጫን አልተቻለም።' : 'Unable to load payment methods.'
+          }
         />
       ) : (methodsQuery.data?.items.length ?? 0) === 0 ? (
         <EmptyState
-          title="No payment methods found"
+          title={locale === 'am' ? 'ምንም የክፍያ ዘዴ አልተገኘም' : 'No payment methods found'}
           description={
             hasActiveFilters
-              ? 'No payment methods match your filters.'
-              : 'Add a payment method so students can pay at checkout.'
+              ? locale === 'am'
+                ? 'ከማጣሪያዎችዎ ጋር የሚዛመድ የክፍያ ዘዴ የለም።'
+                : 'No payment methods match your filters.'
+              : locale === 'am'
+                ? 'ተማሪዎች የሚከፍሉበትን አዲስ የክፍያ ዘዴ ይጨምሩ።'
+                : 'Add a payment method so students can pay at checkout.'
           }
           action={
             hasActiveFilters ? (
               <Button variant="outline" onClick={resetFilters}>
-                Reset filters
+                {locale === 'am' ? 'ማጣሪያዎችን አጽዳ' : 'Reset filters'}
               </Button>
             ) : (
               <Can permission="payment_methods.create">
                 <Button asChild className="gap-2">
                   <Link href={ROUTES.admin.financialPaymentMethodCreate}>
-                    <Plus className="size-4" /> Add method
+                    <Plus className="size-4" /> {locale === 'am' ? 'ዘዴ ጨምር' : 'Add method'}
                   </Link>
                 </Button>
               </Can>
@@ -210,11 +263,13 @@ export default function AdminPaymentMethodsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Method</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Sort</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{locale === 'am' ? 'ዘዴ' : 'Method'}</TableHead>
+                <TableHead>{locale === 'am' ? 'ዓይነት' : 'Type'}</TableHead>
+                <TableHead>{locale === 'am' ? 'ደረጃ' : 'Sort'}</TableHead>
+                <TableHead>{locale === 'am' ? 'ሁኔታ' : 'Status'}</TableHead>
+                <TableHead className="text-right">
+                  {locale === 'am' ? 'እርምጃዎች' : 'Actions'}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -240,12 +295,18 @@ export default function AdminPaymentMethodsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{method.type.replaceAll('_', ' ')}</Badge>
+                      <Badge variant="outline">{formatMethodType(method.type, locale)}</Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">{method.sortOrder}</TableCell>
                     <TableCell>
                       <Badge variant={method.isActive ? 'success' : 'secondary'}>
-                        {method.isActive ? 'Active' : 'Inactive'}
+                        {method.isActive
+                          ? locale === 'am'
+                            ? 'ንቁ'
+                            : 'Active'
+                          : locale === 'am'
+                            ? 'ቦዝን'
+                            : 'Inactive'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">

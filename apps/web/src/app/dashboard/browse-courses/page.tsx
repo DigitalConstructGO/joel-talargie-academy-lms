@@ -1,4 +1,5 @@
-import type { Metadata } from 'next';
+'use client';
+
 import { Suspense } from 'react';
 import { PageHeader } from '@/components/common/page-header';
 import { ContentContainer } from '@/components/layout/content-container';
@@ -7,10 +8,7 @@ import { CoursesGrid } from '@/features/catalog/components/courses-grid';
 import { CoursesGridSkeleton } from '@/features/catalog/components/course-card-skeleton';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ROUTES } from '@/constants/routes';
-
-export const metadata: Metadata = {
-  title: 'Browse Courses',
-};
+import { useLanguage } from '@/lib/i18n/language-provider';
 
 function CoursesFallback() {
   return (
@@ -22,11 +20,12 @@ function CoursesFallback() {
 }
 
 export default function BrowseCoursesPage() {
+  const { t } = useLanguage();
   return (
     <ContentContainer>
       <PageHeader
-        title="Browse courses"
-        description="Explore the full catalog and find your next course."
+        title={t('page.browseCourses.title')}
+        description={t('page.browseCourses.subtitle')}
       />
       <Suspense fallback={<CoursesFallback />}>
         <CourseFilters />

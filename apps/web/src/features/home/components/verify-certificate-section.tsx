@@ -1,9 +1,14 @@
+'use client';
+
 import Link from 'next/link';
 import { Award, Camera, CheckCircle2, QrCode, Search, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/constants/routes';
+import { useLanguage } from '@/lib/i18n/language-provider';
 
 export function VerifyCertificateSection() {
+  const { t } = useLanguage();
+
   return (
     <section className="relative overflow-hidden border-y border-border/60 bg-muted/30 py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
@@ -12,18 +17,15 @@ export function VerifyCertificateSection() {
           <div className="space-y-6 text-left lg:col-span-7">
             <div className="inline-flex items-center gap-2 rounded-full border border-brand/20 bg-brand/5 px-3.5 py-1 text-xs font-semibold text-brand">
               <ShieldCheck className="size-4" />
-              <span>Public Credential Verification</span>
+              <span>{t('verifyCert.title')}</span>
             </div>
 
             <div className="space-y-3">
               <h2 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
-                Already have a certificate? <br className="hidden sm:inline" />
-                <span className="text-brand">Verify its authenticity</span>
+                {t('verifyCert.title')}
               </h2>
               <p className="max-w-2xl text-base text-muted-foreground">
-                Employers, recruiters, and academic partners can instantly authenticate any Joel
-                Talargie Academy credential without logging in. Validate via live camera QR scanning
-                or by typing the certificate ID.
+                {t('verifyCert.subtitle')}
               </p>
             </div>
 
@@ -59,7 +61,7 @@ export function VerifyCertificateSection() {
               <Button asChild size="lg" className="gap-2 shadow-sm font-medium">
                 <Link href={ROUTES.certificates.verifyLookup}>
                   <ShieldCheck className="size-4" />
-                  Verify Certificate
+                  {t('verifyCert.button')}
                 </Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="gap-2">

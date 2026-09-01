@@ -29,6 +29,8 @@ import { CertificateCardGridSkeleton } from '@/features/certificates/components/
 import type { CertificateStatus } from '@/features/certificates/types/certificate.types';
 import { ROUTES } from '@/constants/routes';
 
+import { useLanguage } from '@/lib/i18n/language-provider';
+
 const PAGE_SIZE = 9;
 
 interface CertificatesFilters {
@@ -48,6 +50,7 @@ const STATUS_OPTIONS = [
 ];
 
 export default function CertificatesPage() {
+  const { t } = useLanguage();
   const { filters, pageSize, setFilter, setPageSize, resetFilters } =
     useQueryFilters<CertificatesFilters>({
       defaults: DEFAULT_FILTERS,
@@ -74,9 +77,7 @@ export default function CertificatesPage() {
     return [...items].sort((a, b) => {
       const aDate = String(a.createdAt ?? (a as unknown as Record<string, unknown>).issuedAt ?? '');
       const bDate = String(b.createdAt ?? (b as unknown as Record<string, unknown>).issuedAt ?? '');
-      return sort === 'newest'
-        ? bDate.localeCompare(aDate)
-        : aDate.localeCompare(bDate);
+      return sort === 'newest' ? bDate.localeCompare(aDate) : aDate.localeCompare(bDate);
     });
   }, [certificatesQuery.data, search, sort]);
 
@@ -85,10 +86,7 @@ export default function CertificatesPage() {
 
   return (
     <ContentContainer>
-      <PageHeader
-        title="Certificates"
-        description="Certificates you've earned from completed courses."
-      />
+      <PageHeader title={t('sidebar.certificates')} description={t('verifyCert.subtitle')} />
 
       <FilterBar
         chips={
