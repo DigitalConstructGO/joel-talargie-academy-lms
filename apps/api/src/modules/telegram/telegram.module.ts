@@ -5,15 +5,18 @@ import {
   type OnModuleDestroy,
 } from '@nestjs/common';
 import { DatabaseModule } from '../../common/database/database.module';
+import { SecurityModule } from '../../common/security/security.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { TelegramController } from './telegram.controller';
 import { TelegramConfigService } from './services/telegram-config.service';
 import { TelegramClientService } from './services/telegram-client.service';
 import { TelegramIdentityResolverService } from './services/telegram-identity-resolver.service';
 import { TelegramUpdateService } from './services/telegram-update.service';
 import { TelegramLinkService } from './services/telegram-link.service';
+import { TelegramRegistrationService } from './services/telegram-registration.service';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, SecurityModule, NotificationsModule],
   controllers: [TelegramController],
   providers: [
     TelegramConfigService,
@@ -21,6 +24,7 @@ import { TelegramLinkService } from './services/telegram-link.service';
     TelegramIdentityResolverService,
     TelegramUpdateService,
     TelegramLinkService,
+    TelegramRegistrationService,
   ],
   exports: [
     TelegramConfigService,
@@ -28,6 +32,7 @@ import { TelegramLinkService } from './services/telegram-link.service';
     TelegramIdentityResolverService,
     TelegramUpdateService,
     TelegramLinkService,
+    TelegramRegistrationService,
   ],
 })
 export class TelegramModule implements OnModuleInit, OnModuleDestroy {

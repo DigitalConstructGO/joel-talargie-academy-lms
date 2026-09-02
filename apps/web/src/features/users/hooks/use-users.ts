@@ -64,6 +64,25 @@ export function useArchiveUser() {
   return useUserMutation<string>((userId, reason) => usersApi.archive(userId, reason));
 }
 
+export function useDeleteUserPermanently() {
+  return useUserMutation<string | undefined>((userId, reason) =>
+    usersApi.deletePermanently(userId, reason),
+  );
+}
+
+export function useDeleteOwnAccount() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (reason?: string) => usersApi.deleteOwnAccount(reason),
+    onSuccess: () => {
+      queryClient.clear();
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+    },
+  });
+}
+
 export function useRestoreUser() {
   return useUserMutation<void>((userId) => usersApi.restore(userId));
 }

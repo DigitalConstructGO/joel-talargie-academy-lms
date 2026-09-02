@@ -618,3 +618,171 @@ export const changeUserPassword = async (
     .where(eq(schema.users.id, userId));
   await revokeUserSessions(database, userId);
 };
+
+export const getTelegramOnboardingState = async (
+  database: AcademyDatabase,
+  telegramUserId: string,
+) => {
+  const state = await database.query.telegramOnboardingStates.findFirst({
+    where: eq(schema.telegramOnboardingStates.telegramUserId, telegramUserId),
+  });
+  if (!state) return null;
+  if (new Date() > new Date(state.expiresAt)) {
+    await database
+      .delete(schema.telegramOnboardingStates)
+      .where(eq(schema.telegramOnboardingStates.telegramUserId, telegramUserId));
+    return null;
+  }
+  return state;
+};
+
+export const upsertTelegramOnboardingState = async (
+  database: AcademyDatabase,
+  input: {
+    telegramUserId: string;
+    step:
+      | 'AWAITING_EMAIL'
+      | 'AWAITING_OTP'
+      | 'EMAIL_VERIFIED'
+      | 'AWAITING_PASSWORD'
+      | 'AWAITING_PASSWORD_CONFIRMATION'
+      | 'PAUSED'
+      | 'COMPLETED'
+      | 'CANCELLED';
+    email?: string | null;
+    otpHash?: string | null;
+    otpExpiresAt?: Date | null;
+    otpAttempts?: number;
+    resendCount?: number;
+    lastResendAt?: Date | null;
+    emailVerifiedAt?: Date | null;
+    pausedAt?: Date | null;
+    expiresAt: Date;
+  },
+) => {
+  const existing = await database.query.telegramOnboardingStates.findFirst({
+    where: eq(schema.telegramOnboardingStates.telegramUserId, input.telegramUserId),
+  });
+
+  const values = {
+    telegramUserId: input.telegramUserId,
+    step: input.step,
+    email: input.email ?? null,
+    otpHash: input.otpHash ?? null,
+    otpExpiresAt: input.otpExpiresAt ?? null,
+    otpAttempts: input.otpAttempts ?? 0,
+    resendCount: input.resendCount ?? 0,
+    lastResendAt: input.lastResendAt ?? null,
+    emailVerifiedAt: input.emailVerifiedAt ?? null,
+    pausedAt: input.pausedAt ?? null,
+    expiresAt: input.expiresAt,
+    updatedAt: new Date(),
+  };
+
+  if (existing) {
+    await database
+      .update(schema.telegramOnboardingStates)
+      .set(values)
+      .where(eq(schema.telegramOnboardingStates.telegramUserId, input.telegramUserId));
+  } else {
+    await database.insert(schema.telegramOnboardingStates).values({
+      ...values,
+      createdAt: new Date(),
+    });
+  }
+  return getTelegramOnboardingState(database, input.telegramUserId);
+};
+
+export const deleteTelegramOnboardingState = async (
+  database: AcademyDatabase,
+  telegramUserId: string,
+) => {
+  await database
+    .delete(schema.telegramOnboardingStates)
+    .where(eq(schema.telegramOnboardingStates.telegramUserId, telegramUserId));
+};
+
+export const createTelegramStudentUser = async (
+  database: AcademyDatabase,
+  input: {
+    email: string;
+    passwordHash: string;
+    firstName: string;
+    lastName: string;
+    telegramUserId: string;
+    telegramUsername?: string;
+  },
+) => {
+  // Recheck email uniqueness for concurrency race safety (TG5.18)
+  const emailNormalized = input.email.trim().toLowerCase();
+  const existingEmail = await database.query.users.findFirst({
+    where: eq(schema.users.emailNormalized, emailNormalized),
+  });
+  if (existingEmail) {
+    throw new Error('EMAIL_ALREADY_EXISTS');
+  }
+
+  // Recheck Telegram ID uniqueness (TG5.25)
+  const existingTelegram = await database.query.oauthAccounts.findFirst({
+    where: and(
+      eq(schema.oauthAccounts.provider, 'TELEGRAM'),
+      eq(schema.oauthAccounts.providerAccountId, input.telegramUserId),
+    ),
+  });
+  if (existingTelegram) {
+    throw new Error('TELEGRAM_ID_ALREADY_LINKED');
+  }
+
+  // Create LMS user row with verified status
+  const [user] = await database
+    .insert(schema.users)
+    .values({
+      email: input.email,
+      emailNormalized,
+      passwordHash: input.passwordHash,
+      provider: 'TELEGRAM',
+      emailVerified: true,
+      status: 'ACTIVE',
+    })
+    .returning();
+
+  if (!user) throw new Error('User could not be created');
+
+  // Create profile
+  await database.insert(schema.userProfiles).values({
+    userId: user.id,
+    firstName: input.firstName || 'Student',
+    lastName: input.lastName || '',
+  });
+
+  // Assign Student role
+  let role = await database.query.roles.findFirst({
+    where: eq(schema.roles.code, 'STUDENT'),
+  });
+  if (!role) {
+    [role] = await database
+      .insert(schema.roles)
+      .values({ code: 'STUDENT', name: 'Student' })
+      .returning();
+  }
+  if (!role) throw new Error('Student role could not be assigned');
+  await database.insert(schema.userRoles).values({
+    userId: user.id,
+    roleId: role.id,
+  });
+
+  // Create Telegram identity mapping in oauth_accounts
+  await database.insert(schema.oauthAccounts).values({
+    userId: user.id,
+    provider: 'TELEGRAM',
+    providerAccountId: input.telegramUserId,
+    providerEmail: input.telegramUsername ?? null,
+    linkedAt: new Date(),
+    lastLoginAt: new Date(),
+  });
+
+  // Clean up onboarding state
+  await deleteTelegramOnboardingState(database, input.telegramUserId);
+
+  return hydrateAuthUser(database, user);
+};

@@ -187,4 +187,28 @@ export class TelegramClientService {
       return false;
     }
   }
+
+  async deleteMessage(
+    chatId: number | string,
+    messageId: number,
+  ): Promise<boolean> {
+    if (!this.config.botToken) return false;
+
+    try {
+      const response = await fetch(`${this.apiUrl}/deleteMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          message_id: messageId,
+        }),
+        signal: AbortSignal.timeout(5_000),
+        ...this.fetchOptions,
+      });
+
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
 }

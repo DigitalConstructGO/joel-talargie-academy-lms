@@ -43,6 +43,16 @@ export const usersApi = {
       await authClient.delete(`/admin/users/${encodeURIComponent(userId)}`, { data: { reason } }),
     ),
 
+  deletePermanently: async (userId: string, reason?: string) =>
+    unwrap<boolean>(
+      await authClient.delete(`/admin/users/${encodeURIComponent(userId)}/permanent`, {
+        data: { reason },
+      }),
+    ),
+
+  deleteOwnAccount: async (reason?: string) =>
+    unwrap<{ message: string }>(await authClient.delete('/me/account', { data: { reason } })),
+
   restore: async (userId: string) =>
     unwrap<ManagedUser>(
       await authClient.post(`/admin/users/${encodeURIComponent(userId)}/restore`),

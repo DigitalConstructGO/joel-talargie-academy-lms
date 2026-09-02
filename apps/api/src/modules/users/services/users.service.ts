@@ -197,6 +197,33 @@ export class UsersService {
         'If password login is available, reset instructions have been created.',
     };
   }
+  async permanentlyDelete(
+    actorId: string,
+    targetId: string,
+    reason?: string,
+    isSelf = false,
+  ) {
+    try {
+      return await this.repository.permanentlyDelete({
+        actorId,
+        userId: targetId,
+        reason,
+        isSelf,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === 'USER_NOT_FOUND')
+        throw new NotFoundException({
+          code: 'USER_NOT_FOUND',
+          message: 'User not found',
+        });
+      if (error instanceof Error && error.message === 'LAST_ADMINISTRATOR')
+        throw new BadRequestException({
+          code: 'LAST_ADMINISTRATOR',
+          message: 'Cannot delete the last administrator',
+        });
+      throw error;
+    }
+  }
   private accountStatusTemplate(action: string): string | null {
     const mapping: Record<string, string> = {
       'admin.user.activated': 'ACCOUNT_ACTIVATED',

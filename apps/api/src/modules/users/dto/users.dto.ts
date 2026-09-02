@@ -47,6 +47,14 @@ export class RevokeSessionsDto {
 export class UserActionReasonDto {
   @ApiProperty() @IsString() @MinLength(3) @MaxLength(500) reason!: string;
 }
+export class PermanentDeleteUserDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  reason?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() confirmationToken?: string;
+}
 export enum UserStatusFilter {
   PENDING_VERIFICATION = 'PENDING_VERIFICATION',
   ACTIVE = 'ACTIVE',

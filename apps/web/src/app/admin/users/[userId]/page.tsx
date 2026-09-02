@@ -41,6 +41,7 @@ import {
   useActivateUser,
   useArchiveUser,
   useAssignUserRole,
+  useDeleteUserPermanently,
   useRemoveUserRole,
   useRestoreUser,
   useSuspendUser,
@@ -94,13 +95,27 @@ export default function AdminUserDetailPage() {
   const activate = useActivateUser();
   const suspend = useSuspendUser();
   const archive = useArchiveUser();
+  const deletePermanently = useDeleteUserPermanently();
   const restore = useRestoreUser();
   const triggerReset = useTriggerPasswordReset();
   const assignRole = useAssignUserRole();
   const removeRole = useRemoveUserRole();
   const [suspendReason, setSuspendReason] = useState('');
   const [archiveReason, setArchiveReason] = useState('');
+  const [deleteReason, setDeleteReason] = useState('');
   const [selectedRoleId, setSelectedRoleId] = useState('');
+
+  async function handleDeletePermanently() {
+    try {
+      await deletePermanently.mutateAsync({ userId, input: deleteReason });
+      toast.success('User permanently deleted');
+      if (typeof window !== 'undefined') {
+        window.location.href = ROUTES.admin.users;
+      }
+    } catch (error) {
+      toast.error('Could not permanently delete user', extractErrorMessage(error));
+    }
+  }
 
   if (userQuery.isError) {
     return (
@@ -285,6 +300,22 @@ export default function AdminUserDetailPage() {
                   </ConfirmDialog>
                 </Can>
               )}
+              <Can permission="users.delete_permanent">
+                <ConfirmDialog
+                  trigger={
+                    <Button variant="destructive" className="gap-2">
+                      <Trash2 className="size-4" /> Delete Permanently
+                    </Button>
+                  }
+                  title="Permanently delete this user?"
+                  description="This action CANNOT be undone. The user's profile, enrollments, certificates, and progress will be erased. Total income and payment records will be preserved."
+                  confirmLabel="Delete Permanently"
+                  variant="destructive"
+                  onConfirm={handleDeletePermanently}
+                >
+                  <ReasonField value={deleteReason} onChange={setDeleteReason} />
+                </ConfirmDialog>
+              </Can>
             </div>
           )
         }

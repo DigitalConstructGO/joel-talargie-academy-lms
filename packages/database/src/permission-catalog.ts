@@ -13,6 +13,7 @@ export const PERMISSION_CODES = [
   'users.activate',
   'users.suspend',
   'users.archive',
+  'users.delete_permanent',
   'users.restore',
   'users.trigger_password_reset',
   'users.view_activity',

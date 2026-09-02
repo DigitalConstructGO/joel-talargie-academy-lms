@@ -9,6 +9,13 @@ export const TEMPLATE_PLACEHOLDERS: Record<string, readonly string[]> = {
     'academyName',
     'supportEmail',
   ],
+  TELEGRAM_REGISTRATION_OTP: [
+    'recipientName',
+    'otpCode',
+    'expiresInMinutes',
+    'academyName',
+    'supportEmail',
+  ],
   WELCOME: ['recipientName', 'dashboardUrl', 'academyName', 'supportEmail'],
   PASSWORD_RESET: [
     'recipientName',

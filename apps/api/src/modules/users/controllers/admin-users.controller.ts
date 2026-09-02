@@ -17,6 +17,7 @@ import { RequirePermissions } from '../../authorization/decorators/require-permi
 import {
   ActivityQueryDto,
   ListUsersQueryDto,
+  PermanentDeleteUserDto,
   UserActionReasonDto,
   UpdateProfileDto,
 } from '../dto/users.dto';
@@ -83,6 +84,15 @@ export class AdminUsersController {
       dto.reason,
       'admin.user.archived',
     );
+  }
+  @Delete(':userId/permanent')
+  @RequirePermissions('users.delete_permanent')
+  permanentlyDelete(
+    @CurrentUser() actor: AuthUser,
+    @Param('userId', new ParseUUIDPipe()) id: string,
+    @Body() dto: PermanentDeleteUserDto,
+  ) {
+    return this.users.permanentlyDelete(actor.id, id, dto.reason, false);
   }
   @Post(':userId/restore') @RequirePermissions('users.restore') restore(
     @CurrentUser() actor: AuthUser,

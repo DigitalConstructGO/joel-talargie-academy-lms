@@ -452,4 +452,140 @@ export const listUserActivity = async (
     .limit(input.limit)
     .offset(input.offset);
 
+export const permanentlyDeleteUser = async (
+  db: AcademyDatabase,
+  input: {
+    actorId: string;
+    userId: string;
+    reason?: string;
+    action?: string;
+    isSelf?: boolean;
+  },
+) =>
+  db.transaction(async (tx: any) => {
+    const user = await tx.query.users.findFirst({
+      where: eq(schema.users.id, input.userId),
+    });
+    if (!user) throw new Error('USER_NOT_FOUND');
+
+    if (!input.isSelf) {
+      const adminRole = await tx.query.roles.findFirst({
+        where: eq(schema.roles.code, 'ADMINISTRATOR'),
+      });
+      if (adminRole) {
+        const targetAdmin = await tx.query.userRoles.findFirst({
+          where: and(
+            eq(schema.userRoles.userId, input.userId),
+            eq(schema.userRoles.roleId, adminRole.id),
+          ),
+        });
+        if (targetAdmin) {
+          const [{ administrators = 0 } = {}] = await tx
+            .select({ administrators: count() })
+            .from(schema.userRoles)
+            .innerJoin(
+              schema.users,
+              and(
+                eq(schema.users.id, schema.userRoles.userId),
+                eq(schema.users.status, 'ACTIVE'),
+                isNull(schema.users.archivedAt),
+              ),
+            )
+            .where(eq(schema.userRoles.roleId, adminRole.id));
+          if (Number(administrators) <= 1) throw new Error('LAST_ADMINISTRATOR');
+        }
+      }
+    }
+
+    const userEnrollments = await tx
+      .select({ id: schema.enrollments.id })
+      .from(schema.enrollments)
+      .where(eq(schema.enrollments.studentId, input.userId));
+
+    const enrollmentIds = userEnrollments.map((e: any) => e.id);
+
+    if (enrollmentIds.length > 0) {
+      for (const eId of enrollmentIds) {
+        await tx
+          .update(schema.payments)
+          .set({ enrollmentId: null })
+          .where(eq(schema.payments.enrollmentId, eId));
+
+        try {
+          await tx.delete(schema.lessonProgress).where(eq(schema.lessonProgress.enrollmentId, eId));
+        } catch {}
+
+        try {
+          await tx.delete(schema.certificates).where(eq(schema.certificates.enrollmentId, eId));
+        } catch {}
+      }
+    }
+
+    try {
+      await tx
+        .update(schema.certificates)
+        .set({ generatedBy: null })
+        .where(eq(schema.certificates.generatedBy, input.userId));
+    } catch {}
+
+    await tx
+      .update(schema.payments)
+      .set({ reviewerId: null })
+      .where(eq(schema.payments.reviewerId, input.userId));
+
+    await tx.delete(schema.enrollments).where(eq(schema.enrollments.studentId, input.userId));
+
+    try {
+      await tx.delete(schema.userProfiles).where(eq(schema.userProfiles.userId, input.userId));
+    } catch {}
+
+    try {
+      await tx.delete(schema.userRoles).where(eq(schema.userRoles.userId, input.userId));
+    } catch {}
+
+    try {
+      await tx
+        .delete(schema.refreshSessions)
+        .where(eq(schema.refreshSessions.userId, input.userId));
+    } catch {}
+
+    try {
+      await tx.delete(schema.oauthAccounts).where(eq(schema.oauthAccounts.userId, input.userId));
+    } catch {}
+
+    try {
+      await tx
+        .delete(schema.accountLinkTokens)
+        .where(eq(schema.accountLinkTokens.userId, input.userId));
+    } catch {}
+
+    try {
+      await tx
+        .delete(schema.userNotificationPreferences)
+        .where(eq(schema.userNotificationPreferences.userId, input.userId));
+    } catch {}
+
+    try {
+      await tx
+        .update(schema.activityLogs)
+        .set({ actorId: null })
+        .where(eq(schema.activityLogs.actorId, input.userId));
+    } catch {}
+
+    await tx.insert(schema.activityLogs).values({
+      actorId: input.actorId === input.userId ? null : input.actorId,
+      action:
+        input.action ??
+        (input.isSelf ? 'user.self_permanently_deleted' : 'admin.user.permanently_deleted'),
+      entityType: 'user',
+      entityId: input.userId,
+      before: { email: user.email, status: user.status },
+      after: { deleted: true, reason: input.reason },
+    });
+
+    await tx.delete(schema.users).where(eq(schema.users.id, input.userId));
+
+    return true;
+  });
+
 export const updateUserStatus = transitionUserStatus;

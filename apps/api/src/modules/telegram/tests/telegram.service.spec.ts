@@ -59,11 +59,22 @@ describe('TG3 — Telegram Bot Backend Foundation Unit & Integration Tests', () 
     clientService = new TelegramClientService(configService);
     identityResolver = new TelegramIdentityResolverService(mockDatabase as any);
     linkService = new TelegramLinkService(mockDatabase as any, configService);
+    const mockRegistrationService = {
+      startRegistration: vi.fn(),
+      submitEmail: vi.fn(),
+      submitOtp: vi.fn(),
+      resendOtp: vi.fn(),
+      changeEmail: vi.fn(),
+      cancelRegistration: vi.fn(),
+    };
+
     updateService = new TelegramUpdateService(
       mockDatabase as any,
       clientService,
       configService,
       identityResolver,
+      mockRegistrationService as any,
+      linkService,
     );
     controller = new TelegramController(
       configService,

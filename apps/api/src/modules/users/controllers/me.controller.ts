@@ -13,6 +13,7 @@ import type { Response } from 'express';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { AuthUser } from '../../auth/interfaces/auth-user.interface';
 import {
+  PermanentDeleteUserDto,
   RevokeSessionsDto,
   UpdatePreferencesDto,
   UpdateProfileDto,
@@ -37,6 +38,17 @@ export class MeController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.users.ownProfile(user.id);
+  }
+  @ApiTags('My Profile')
+  @Delete('account')
+  async deleteAccount(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: PermanentDeleteUserDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    await this.users.permanentlyDelete(user.id, user.id, dto.reason, true);
+    response.clearCookie('refresh_token', { path: '/' });
+    return { message: 'Account permanently deleted' };
   }
   @ApiTags('My Sessions') @Get('sessions') sessions(
     @CurrentUser() user: AuthUser,

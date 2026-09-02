@@ -50,6 +50,7 @@ import {
   useUploadAvatar,
 } from '@/features/account/hooks/use-avatar';
 import { useMyCertificates } from '@/features/certificates/hooks/use-certificates';
+import { useDeleteOwnAccount } from '@/features/users/hooks/use-users';
 import { CertificateCard } from '@/features/certificates/components/certificate-card';
 import { TelegramConnectedCard } from '@/components/account/telegram-connected-card';
 import { authClient } from '@/lib/api/auth-client';
@@ -98,8 +99,21 @@ export default function ProfilePage() {
   const { t, locale } = useLanguage();
   const profileQuery = useProfile();
   const updateProfile = useUpdateProfile();
+  const deleteOwnAccount = useDeleteOwnAccount();
+  const [deleteReason, setDeleteReason] = useState('');
   const profile = profileQuery.data;
   const isStudent = profile?.roles?.includes('STUDENT') ?? false;
+
+  async function handleDeleteOwnAccount() {
+    try {
+      await deleteOwnAccount.mutateAsync(deleteReason);
+      toast.success(
+        locale === 'am' ? 'መለያዎ በዘላቂነት ተሰርዟል' : 'Your account has been permanently deleted',
+      );
+    } catch {
+      toast.error(locale === 'am' ? 'መለያውን መሰረዝ አልተቻለም' : 'Could not delete your account');
+    }
+  }
 
   const enrollmentsQuery = useMyEnrollments({ pageSize: 100 }, isStudent);
   const coursesQuery = useCourses({ pageSize: 100 });
@@ -782,6 +796,62 @@ export default function ProfilePage() {
                     />
                   ))
               )}
+            </CardContent>
+          </Card>
+        </Reveal>
+
+        <Reveal delaySeconds={0.2}>
+          <Card className="border-destructive/30 bg-destructive/5">
+            <CardHeader>
+              <CardTitle className="text-base text-destructive flex items-center gap-2">
+                <Trash2 className="size-4" />
+                {locale === 'am' ? 'መለያ ሰርዝ (Danger Zone)' : 'Delete Account (Danger Zone)'}
+              </CardTitle>
+              <CardDescription>
+                {locale === 'am'
+                  ? 'መለያዎን እስከመጨረሻው ሲሰርዙ፣ መገለጫዎ፣ የኮርስ ምዝገባዎችዎ እና እድገትዎ በጥቅል ይጠፋሉ።'
+                  : 'Permanently remove your account, profile, course progress, and enrollments.'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ConfirmDialog
+                trigger={
+                  <Button variant="destructive" className="gap-2">
+                    <Trash2 className="size-4" />
+                    {locale === 'am' ? 'መለያዬን በዘላቂነት ሰርዝ' : 'Permanently Delete My Account'}
+                  </Button>
+                }
+                title={
+                  locale === 'am'
+                    ? 'መለያዎን እስከመጨረሻው መሰረዝ ይፈልጋሉ?'
+                    : 'Delete your account permanently?'
+                }
+                description={
+                  locale === 'am'
+                    ? 'ይህ እርምጃ በፍጹም ሊመለስ አይችልም። መገለጫዎ፣ የምስክር ወረቀቶችዎ እና ትምህርታዊ እድገትዎ ይጠፋሉ።'
+                    : 'This action CANNOT be undone. Your profile, certificates, and learning progress will be permanently erased.'
+                }
+                confirmLabel={locale === 'am' ? 'በዘላቂነት ሰርዝ' : 'Delete Permanently'}
+                variant="destructive"
+                onConfirm={handleDeleteOwnAccount}
+              >
+                <div className="space-y-2 py-2">
+                  <Label htmlFor="delete-reason">
+                    {locale === 'am' ? 'ምክንያት (አማራጭ)' : 'Reason (optional)'}
+                  </Label>
+                  <Textarea
+                    id="delete-reason"
+                    value={deleteReason}
+                    onChange={(e) => setDeleteReason(e.target.value)}
+                    placeholder={
+                      locale === 'am'
+                        ? 'ለምን መለያዎን መሰረዝ እንደፈለጉ ይግለጹ...'
+                        : 'Tell us why you are leaving...'
+                    }
+                    rows={3}
+                  />
+                </div>
+              </ConfirmDialog>
             </CardContent>
           </Card>
         </Reveal>

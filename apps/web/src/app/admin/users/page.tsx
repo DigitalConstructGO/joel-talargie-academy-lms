@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Eye, MoreHorizontal, Pencil } from 'lucide-react';
+import { Archive, Eye, MoreHorizontal, Pencil, RotateCcw, Trash2 } from 'lucide-react';
 import { ContentContainer } from '@/components/layout/content-container';
 import { PageHeader } from '@/components/common/page-header';
 import { PageBreadcrumb } from '@/components/common/page-breadcrumb';
@@ -11,27 +11,184 @@ import { DataTable } from '@/components/common/data-table';
 import { DynamicPagination } from '@/components/common/dynamic-pagination';
 import { SearchBar } from '@/components/common/search-bar';
 import { ErrorState } from '@/components/common/error-state';
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { FilterBar } from '@/components/dashboard/filters/filter-bar';
 import { FilterChips } from '@/components/dashboard/filters/filter-chips';
 import { SelectFilter } from '@/components/dashboard/filters/select-filter';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Can } from '@/components/auth/can';
 import { useQueryFilters } from '@/hooks/use-query-filters';
-import { useUsers } from '@/features/users/hooks/use-users';
+import {
+  useArchiveUser,
+  useDeleteUserPermanently,
+  useRestoreUser,
+  useUsers,
+} from '@/features/users/hooks/use-users';
 import { useRoles } from '@/features/roles/hooks/use-roles';
 import type { ManagedUser, ManagedUserStatus } from '@/features/users/types/user.types';
 import { ROUTES } from '@/constants/routes';
 import { formatDate } from '@/lib/date';
+import { extractErrorMessage } from '@/lib/api/api-error';
+import { toast } from '@/lib/toast';
 
 import { useLanguage } from '@/lib/i18n/language-provider';
+
+function UserRowActions({ user }: { user: ManagedUser }) {
+  const { locale } = useLanguage();
+  const archive = useArchiveUser();
+  const deletePermanently = useDeleteUserPermanently();
+  const restore = useRestoreUser();
+
+  const [dialogState, setDialogState] = useState<'none' | 'archive' | 'delete'>('none');
+  const [reason, setReason] = useState('');
+
+  async function handleArchive() {
+    try {
+      await archive.mutateAsync({ userId: user.id, input: reason });
+      toast.success(locale === 'am' ? 'ተጠቃሚው ተቀምጧል' : 'User archived');
+      setDialogState('none');
+      setReason('');
+    } catch {
+      toast.error(locale === 'am' ? 'ማስቀመጥ አልተቻለም' : 'Could not archive user');
+    }
+  }
+
+  async function handleRestore() {
+    try {
+      await restore.mutateAsync({ userId: user.id, input: undefined });
+      toast.success(locale === 'am' ? 'ተጠቃሚው ተመልሷል' : 'User restored');
+    } catch {
+      toast.error(locale === 'am' ? 'መመለስ አልተቻለም' : 'Could not restore user');
+    }
+  }
+
+  async function handleDeletePermanently() {
+    try {
+      await deletePermanently.mutateAsync({ userId: user.id, input: reason });
+      toast.success(locale === 'am' ? 'ተጠቃሚው በዘላቂነት ተሰርዟል' : 'User permanently deleted');
+      setDialogState('none');
+      setReason('');
+    } catch (error) {
+      toast.error(
+        locale === 'am' ? 'ተጠቃሚውን በዘላቂነት መሰረዝ አልተቻለም' : 'Could not permanently delete user',
+        extractErrorMessage(error),
+      );
+    }
+  }
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="size-8" aria-label="Row actions">
+            <MoreHorizontal className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <Can permission="users.read">
+            <DropdownMenuItem asChild>
+              <Link href={ROUTES.admin.userDetail(user.id)} className="gap-2">
+                <Eye className="size-4" /> {locale === 'am' ? 'እይ' : 'View'}
+              </Link>
+            </DropdownMenuItem>
+          </Can>
+          <Can permission="users.update">
+            <DropdownMenuItem asChild>
+              <Link href={ROUTES.admin.userEdit(user.id)} className="gap-2">
+                <Pencil className="size-4" /> {locale === 'am' ? 'አስተካክል' : 'Edit'}
+              </Link>
+            </DropdownMenuItem>
+          </Can>
+          <DropdownMenuSeparator />
+          {user.status === 'ARCHIVED' ? (
+            <Can permission="users.restore">
+              <DropdownMenuItem onClick={handleRestore} className="gap-2">
+                <RotateCcw className="size-4" /> {locale === 'am' ? 'መልስ' : 'Restore'}
+              </DropdownMenuItem>
+            </Can>
+          ) : (
+            <Can permission="users.archive">
+              <DropdownMenuItem onClick={() => setDialogState('archive')} className="gap-2">
+                <Archive className="size-4" /> {locale === 'am' ? 'አስቀምጥ' : 'Archive'}
+              </DropdownMenuItem>
+            </Can>
+          )}
+          <Can permission="users.delete_permanent">
+            <DropdownMenuItem
+              onClick={() => setDialogState('delete')}
+              className="gap-2 text-destructive focus:text-destructive"
+            >
+              <Trash2 className="size-4" /> {locale === 'am' ? 'በዘላቂነት ሰርዝ' : 'Delete Permanently'}
+            </DropdownMenuItem>
+          </Can>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <ConfirmDialog
+        open={dialogState === 'archive'}
+        onOpenChange={(open) => !open && setDialogState('none')}
+        title={locale === 'am' ? 'ተጠቃሚውን ማስቀመጥ ይፈልጋሉ?' : 'Archive this user?'}
+        description={
+          locale === 'am'
+            ? 'ይህ መለያውን ያቦዝነዋል። በኋላ ላይ መመለስ ይቻላል።'
+            : 'This deactivates the account. It can be restored later.'
+        }
+        confirmLabel={locale === 'am' ? 'አስቀምጥ' : 'Archive'}
+        variant="destructive"
+        onConfirm={handleArchive}
+      >
+        <div className="space-y-2 py-2">
+          <Label htmlFor="archive-reason">{locale === 'am' ? 'ምክንያት' : 'Reason'}</Label>
+          <Textarea
+            id="archive-reason"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder={locale === 'am' ? 'ምክንያቱን ያስረዱ...' : 'Explain why...'}
+            rows={3}
+          />
+        </div>
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        open={dialogState === 'delete'}
+        onOpenChange={(open) => !open && setDialogState('none')}
+        title={locale === 'am' ? 'ተጠቃሚውን በዘላቂነት መሰረዝ ይፈልጋሉ?' : 'Permanently delete this user?'}
+        description={
+          locale === 'am'
+            ? 'ይህ እርምጃ በፍጹም ሊመለስ አይችልም። የተጠቃሚው መገለጫ፣ ምዝገባዎች፣ እና እድገት በጥቅል ይጠፋሉ። የገቢ መረጃዎች ይጠበቃሉ።'
+            : 'This action CANNOT be undone. The user profile, enrollments, and progress will be erased. Financial records will be preserved.'
+        }
+        confirmLabel={locale === 'am' ? 'በዘላቂነት ሰርዝ' : 'Delete Permanently'}
+        variant="destructive"
+        onConfirm={handleDeletePermanently}
+      >
+        <div className="space-y-2 py-2">
+          <Label htmlFor="delete-reason">
+            {locale === 'am' ? 'ምክንያት (አማራጭ)' : 'Reason (optional)'}
+          </Label>
+          <Textarea
+            id="delete-reason"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder={locale === 'am' ? 'ምክንያቱን ያስረዱ...' : 'Explain why...'}
+            rows={3}
+          />
+        </div>
+      </ConfirmDialog>
+    </>
+  );
+}
 
 const PAGE_SIZE = 10;
 
@@ -219,31 +376,7 @@ export default function AdminUsersPage() {
         id: 'actions',
         header: '',
         enableSorting: false,
-        cell: ({ row }) => (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="size-8" aria-label="Row actions">
-                <MoreHorizontal className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <Can permission="users.read">
-                <DropdownMenuItem asChild>
-                  <Link href={ROUTES.admin.userDetail(row.original.id)} className="gap-2">
-                    <Eye className="size-4" /> {locale === 'am' ? 'እይ' : 'View'}
-                  </Link>
-                </DropdownMenuItem>
-              </Can>
-              <Can permission="users.update">
-                <DropdownMenuItem asChild>
-                  <Link href={ROUTES.admin.userEdit(row.original.id)} className="gap-2">
-                    <Pencil className="size-4" /> {locale === 'am' ? 'አስተካክል' : 'Edit'}
-                  </Link>
-                </DropdownMenuItem>
-              </Can>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ),
+        cell: ({ row }) => <UserRowActions user={row.original} />,
       },
     ],
     [locale],

@@ -324,6 +324,25 @@ export const accountLinkTokens = sqliteTable(
     index('account_link_tokens_expires_idx').on(table.expiresAt),
   ],
 );
+export const telegramOnboardingStates = sqliteTable(
+  'telegram_onboarding_states',
+  {
+    telegramUserId: text('telegram_user_id').primaryKey().notNull(),
+    step: text('step').notNull(),
+    email: text('email'),
+    otpHash: text('otp_hash'),
+    otpExpiresAt: integer('otp_expires_at', { mode: 'timestamp' }),
+    otpAttempts: integer('otp_attempts').notNull().default(0),
+    resendCount: integer('resend_count').notNull().default(0),
+    lastResendAt: integer('last_resend_at', { mode: 'timestamp' }),
+    emailVerifiedAt: integer('email_verified_at', { mode: 'timestamp' }),
+    pausedAt: integer('paused_at', { mode: 'timestamp' }),
+    expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+    ...timestamps,
+  },
+  (table) => [index('telegram_onboarding_expires_idx').on(table.expiresAt)],
+);
+
 export const loginAttempts = sqliteTable(
   'login_attempts',
   {
@@ -715,13 +734,13 @@ export const payments = sqliteTable(
     id: text('id')
       .primaryKey()
       .$defaultFn(() => crypto.randomUUID()),
-    enrollmentId: text('enrollment_id')
-      .notNull()
-      .references(() => enrollments.id, { onDelete: 'restrict' }),
+    enrollmentId: text('enrollment_id').references(() => enrollments.id, {
+      onDelete: 'set null',
+    }),
     paymentMethodId: text('payment_method_id').references(() => paymentMethods.id, {
       onDelete: 'restrict',
     }),
-    reviewerId: text('reviewer_id').references(() => users.id, { onDelete: 'restrict' }),
+    reviewerId: text('reviewer_id').references(() => users.id, { onDelete: 'set null' }),
     attemptNumber: integer('attempt_number').notNull(),
     transactionId: text('transaction_id'),
     transactionIdNormalized: text('transaction_id_normalized'),
@@ -1584,6 +1603,7 @@ export const schema = {
   emailVerificationTokens,
   passwordResetTokens,
   accountLinkTokens,
+  telegramOnboardingStates,
   loginAttempts,
   roles,
   permissions,

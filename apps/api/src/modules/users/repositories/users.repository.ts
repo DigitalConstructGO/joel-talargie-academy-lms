@@ -6,6 +6,7 @@ import {
   listActiveSessions,
   listManagedUsers,
   listUserActivity,
+  permanentlyDeleteUser,
   revokeOwnedSession,
   revokeSessionsExcept,
   transitionUserStatus,
@@ -48,6 +49,9 @@ export class UsersRepository {
   }
   transition(input: Parameters<typeof transitionUserStatus>[1]) {
     return transitionUserStatus(this.database.client, input);
+  }
+  permanentlyDelete(input: Parameters<typeof permanentlyDeleteUser>[1]) {
+    return permanentlyDeleteUser(this.database.client, input);
   }
   activity(input: Parameters<typeof listUserActivity>[1]) {
     return listUserActivity(this.database.client, input);

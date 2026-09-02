@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import * as crypto from 'node:crypto';
 import {
   consumeAccountLinkToken,
+  getTelegramOnboardingState,
   linkTelegramAccount,
   schema,
 } from '@joel-academy/database';
@@ -10,6 +11,8 @@ import { TelegramClientService } from './telegram-client.service';
 import { TelegramConfigService } from './telegram-config.service';
 import { TelegramIdentityResolverService } from './telegram-identity-resolver.service';
 import { TELEGRAM_LINK_PURPOSE } from './telegram-link.service';
+import { TelegramLinkService } from './telegram-link.service';
+import { TelegramRegistrationService } from './telegram-registration.service';
 import type { TelegramUpdate } from '../dto/telegram-update.dto';
 
 @Injectable()
@@ -24,6 +27,10 @@ export class TelegramUpdateService {
     private readonly telegramConfig: TelegramConfigService,
     @Inject(TelegramIdentityResolverService)
     private readonly identityResolver: TelegramIdentityResolverService,
+    @Inject(TelegramRegistrationService)
+    private readonly registrationService: TelegramRegistrationService,
+    @Inject(TelegramLinkService)
+    private readonly linkService: TelegramLinkService,
   ) {}
 
   async handleUpdate(update: TelegramUpdate): Promise<void> {
@@ -39,9 +46,7 @@ export class TelegramUpdateService {
           `Bot status updated for Telegram user ${update.my_chat_member.from.id}`,
         );
       } else if (update.callback_query) {
-        this.logger.log(
-          `Received callback query ID ${update.callback_query.id}`,
-        );
+        await this.handleCallbackQuery(update.callback_query);
       } else {
         this.logger.debug(
           `Ignored unhandled update type ID ${update.update_id}`,
@@ -52,6 +57,49 @@ export class TelegramUpdateService {
         `Error processing update ID ${update?.update_id}:`,
         error,
       );
+    }
+  }
+
+  private async handleCallbackQuery(
+    cb: NonNullable<TelegramUpdate['callback_query']>,
+  ): Promise<void> {
+    const fromId = cb.from?.id;
+    const chatId = cb.message?.chat?.id || fromId;
+    const data = cb.data;
+
+    if (!fromId || !chatId || !data) return;
+
+    this.logger.log(
+      `Received callback query '${data}' from Telegram user ${fromId}`,
+    );
+
+    if (data === 'register_new') {
+      await this.registrationService.startRegistration(chatId, fromId);
+    } else if (data === 'connect_existing') {
+      await this.telegramClient.sendMessage({
+        chat_id: chatId,
+        text:
+          `ℹ️ **Connect Existing Account**\n\n` +
+          `To connect an existing Joel Academy account, go to Profile / Settings on the website and click "Connect Telegram".\n\n` +
+          `Telegram-first account connection will be supported in TG6.`,
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: 'Create New Account', callback_data: 'register_new' }],
+          ],
+        },
+      });
+    } else if (data === 'continue_registration') {
+      await this.registrationService.resumeRegistration(chatId, fromId);
+    } else if (data === 'pause_registration') {
+      await this.registrationService.pauseRegistration(chatId, fromId);
+    } else if (data === 'start_over') {
+      await this.registrationService.startRegistration(chatId, fromId);
+    } else if (data === 'resend_otp') {
+      await this.registrationService.resendOtp(chatId, fromId);
+    } else if (data === 'change_email') {
+      await this.registrationService.changeEmail(chatId, fromId);
+    } else if (data === 'cancel_registration') {
+      await this.registrationService.cancelRegistration(chatId, fromId);
     }
   }
 
@@ -75,11 +123,97 @@ export class TelegramUpdateService {
         firstName: fromUser.first_name,
         fullText: text,
       });
-    } else {
-      this.logger.log(
-        `Message from Telegram user ${fromUser.id}: ${text.slice(0, 30)}`,
-      );
+      return;
     }
+
+    if (text.startsWith('/cancel')) {
+      await this.registrationService.cancelRegistration(chatId, fromUser.id);
+      return;
+    }
+
+    if (text.startsWith('/unlink') || text.startsWith('/disconnect')) {
+      const resolution = await this.identityResolver.resolveIdentity(
+        fromUser.id,
+      );
+      if (resolution.status === 'LINKED' && resolution.user) {
+        await this.linkService.unlinkTelegramAccount(resolution.user.id);
+        await this.telegramClient.sendMessage({
+          chat_id: chatId,
+          text:
+            `🔓 **Telegram Account Unlinked**\n\n` +
+            `Your Telegram account has been disconnected from your Joel Talargie Academy profile.`,
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: 'Create New Account', callback_data: 'register_new' }],
+              [
+                {
+                  text: 'Connect Existing Account',
+                  callback_data: 'connect_existing',
+                },
+              ],
+            ],
+          },
+        });
+      } else {
+        await this.registrationService.cancelRegistration(chatId, fromUser.id);
+      }
+      return;
+    }
+
+    if (text.startsWith('/')) {
+      // Ignore unknown slash commands
+      return;
+    }
+
+    // Check active registration state (TG5.35)
+    const onboardingState = await getTelegramOnboardingState(
+      this.database.client,
+      String(fromUser.id),
+    );
+
+    if (onboardingState) {
+      if (onboardingState.step === 'AWAITING_EMAIL') {
+        await this.registrationService.submitEmail(
+          chatId,
+          fromUser.id,
+          text,
+          fromUser.username,
+        );
+        return;
+      }
+      if (onboardingState.step === 'AWAITING_OTP') {
+        await this.registrationService.submitOtp(chatId, fromUser.id, text);
+        return;
+      }
+      if (
+        onboardingState.step === 'EMAIL_VERIFIED' ||
+        onboardingState.step === 'AWAITING_PASSWORD'
+      ) {
+        await this.registrationService.submitPassword(
+          chatId,
+          fromUser.id,
+          text,
+          message.message_id,
+        );
+        return;
+      }
+      if (onboardingState.step === 'AWAITING_PASSWORD_CONFIRMATION') {
+        await this.registrationService.submitPasswordConfirmation(
+          chatId,
+          fromUser.id,
+          text,
+          message.message_id,
+          fromUser.first_name,
+          fromUser.last_name,
+          fromUser.username,
+        );
+        return;
+      }
+    }
+
+    this.logger.log(
+      `Message from Telegram user ${fromUser.id}: ${text.slice(0, 30)}`,
+    );
   }
 
   private async handleStartCommand(params: {
@@ -131,15 +265,24 @@ export class TelegramUpdateService {
       return;
     }
 
-    // UNLINKED status without payload
-    const unlinkedText =
-      `Welcome to Joel Talargie Academy!\n\n` +
-      `Your Telegram account is not connected to an academy account yet.\n` +
-      `To connect your account, go to Profile / Settings on the academy website and click "Connect Telegram".`;
-
+    // UNLINKED status without payload (TG5.2)
     await this.telegramClient.sendMessage({
       chat_id: params.chatId,
-      text: unlinkedText,
+      text:
+        `Welcome to Joel Talargie Academy 👋\n\n` +
+        `Your Telegram account is not connected yet.\n\n` +
+        `Choose an option:`,
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: 'Create New Account', callback_data: 'register_new' }],
+          [
+            {
+              text: 'Connect Existing Account',
+              callback_data: 'connect_existing',
+            },
+          ],
+        ],
+      },
     });
   }
 

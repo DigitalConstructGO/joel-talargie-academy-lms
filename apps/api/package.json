@@ -111,6 +111,10 @@
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "<rootDir>/modules/telegram/tests/"
+    ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
   }
