@@ -30,6 +30,8 @@ import { AdministrationModule } from './modules/administration/administration.mo
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { PromotionsModule } from './modules/promotions/promotions.module';
 import { NewsletterModule } from './modules/newsletter/newsletter.module';
+import { AiChatModule } from './modules/ai-chat/ai-chat.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -66,6 +68,7 @@ import { NewsletterModule } from './modules/newsletter/newsletter.module';
     DashboardModule,
     PromotionsModule,
     NewsletterModule,
+    AiChatModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

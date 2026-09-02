@@ -10,6 +10,7 @@ import { AuthBootstrap } from '@/components/auth/auth-bootstrap';
 import { NotificationSocketProvider } from '@/providers/notification-socket-provider';
 
 import { LanguageProvider } from '@/lib/i18n/language-provider';
+import { AiChatbotWidget } from '@/components/chat/ai-chatbot-widget';
 
 function createQueryClient() {
   return new QueryClient({
@@ -40,6 +41,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
             <TooltipProvider delayDuration={200}>
               <AuthBootstrap />
               <NotificationSocketProvider>{children}</NotificationSocketProvider>
+              <AiChatbotWidget />
               <Toaster position="top-right" richColors closeButton expand />
             </TooltipProvider>
           </MotionConfig>
