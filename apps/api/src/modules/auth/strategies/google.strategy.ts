@@ -7,8 +7,8 @@ import type { GoogleProfile } from '../interfaces/auth-user.interface';
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(config: ConfigService) {
     super({
-      clientID: config.get('GOOGLE_CLIENT_ID') || 'disabled',
-      clientSecret: config.get('GOOGLE_CLIENT_SECRET') || 'disabled',
+      clientID: (config.get('GOOGLE_CLIENT_ID') || 'disabled').trim(),
+      clientSecret: (config.get('GOOGLE_CLIENT_SECRET') || 'disabled').trim(),
       callbackURL: config.getOrThrow('GOOGLE_CALLBACK_URL'),
       scope: ['openid', 'email', 'profile'],
     });

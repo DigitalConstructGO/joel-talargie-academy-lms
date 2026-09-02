@@ -18,9 +18,12 @@ import type { StorageService } from '../../storage/storage.interface';
 @Injectable()
 export class LearningService {
   constructor(
-    private readonly repository: LearningRepository,
+    @Inject(LearningRepository) private readonly repository: LearningRepository,
+    @Inject(NotificationsService)
     private readonly notifications: NotificationsService,
+    @Inject(CertificatesService)
     private readonly certificates: CertificatesService,
+    @Inject(CertificateWorkerService)
     private readonly certificateWorker: CertificateWorkerService,
     @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
   ) {}

@@ -30,7 +30,7 @@ export const userStatus = pgEnum('user_status', [
   'PENDING_VERIFICATION',
   'ARCHIVED',
 ]);
-export const authProvider = pgEnum('auth_provider', ['LOCAL', 'GOOGLE']);
+export const authProvider = pgEnum('auth_provider', ['LOCAL', 'GOOGLE', 'TELEGRAM']);
 export const courseStatus = pgEnum('course_status', ['DRAFT', 'PUBLISHED', 'ARCHIVED']);
 export const courseVisibility = pgEnum('course_visibility', ['PUBLIC', 'PRIVATE', 'UNLISTED']);
 export const courseAccessType = pgEnum('course_access_type', ['FREE', 'PAID']);
@@ -181,6 +181,7 @@ export const users = sqliteTable(
     ...timestamps,
   },
   (table) => [
+    uniqueIndex('users_id_uidx').on(table.id),
     uniqueIndex('users_email_normalized_uidx').on(table.emailNormalized),
     uniqueIndex('users_google_id_uidx').on(table.googleId),
     index('users_status_idx').on(table.status),
@@ -304,6 +305,24 @@ export const passwordResetTokens = sqliteTable(
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().defaultNow(),
   },
   (table) => [index('password_reset_tokens_user_idx').on(table.userId)],
+);
+export const accountLinkTokens = sqliteTable(
+  'account_link_tokens',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text('user_id').notNull(),
+    purpose: text('purpose').notNull(),
+    tokenHash: text('token_hash').notNull().unique(),
+    expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+    usedAt: integer('used_at', { mode: 'timestamp' }),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('account_link_tokens_user_idx').on(table.userId),
+    index('account_link_tokens_expires_idx').on(table.expiresAt),
+  ],
 );
 export const loginAttempts = sqliteTable(
   'login_attempts',
@@ -1564,6 +1583,7 @@ export const schema = {
   userNotificationPreferences,
   emailVerificationTokens,
   passwordResetTokens,
+  accountLinkTokens,
   loginAttempts,
   roles,
   permissions,

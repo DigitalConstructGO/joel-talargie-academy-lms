@@ -31,6 +31,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { PromotionsModule } from './modules/promotions/promotions.module';
 import { NewsletterModule } from './modules/newsletter/newsletter.module';
 import { AiChatModule } from './modules/ai-chat/ai-chat.module';
+import { TelegramModule } from './modules/telegram/telegram.module';
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { AiChatModule } from './modules/ai-chat/ai-chat.module';
     PromotionsModule,
     NewsletterModule,
     AiChatModule,
+    TelegramModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

@@ -5,7 +5,7 @@ export interface AuthUser {
   lastName: string;
   roles: string[];
   avatarUrl: string | null;
-  provider: 'LOCAL' | 'GOOGLE';
+  provider: 'LOCAL' | 'GOOGLE' | 'TELEGRAM';
   emailVerified: boolean;
   sessionId?: string;
 }

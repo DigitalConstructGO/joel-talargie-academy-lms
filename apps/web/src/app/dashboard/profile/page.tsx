@@ -51,6 +51,7 @@ import {
 } from '@/features/account/hooks/use-avatar';
 import { useMyCertificates } from '@/features/certificates/hooks/use-certificates';
 import { CertificateCard } from '@/features/certificates/components/certificate-card';
+import { TelegramConnectedCard } from '@/components/account/telegram-connected-card';
 import { authClient } from '@/lib/api/auth-client';
 import { toast } from '@/lib/toast';
 import { ROUTES } from '@/constants/routes';
@@ -483,9 +484,12 @@ export default function ProfilePage() {
           </Reveal>
         </div>
 
-        {/* Right Column: Account Security & Password */}
-        <div className="lg:col-span-5">
+        {/* Right Column: Account Security & Connected Accounts */}
+        <div className="space-y-6 lg:col-span-5">
           <Reveal delaySeconds={0.08}>
+            <TelegramConnectedCard />
+          </Reveal>
+          <Reveal delaySeconds={0.09}>
             <Card className="h-full">
               <CardHeader>
                 <div className="flex items-center gap-2">

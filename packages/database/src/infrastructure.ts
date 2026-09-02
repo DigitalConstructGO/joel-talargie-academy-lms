@@ -143,7 +143,7 @@ export type AuthUserRecord = {
   lastName: string;
   roles: string[];
   avatarUrl: string | null;
-  provider: 'LOCAL' | 'GOOGLE';
+  provider: 'LOCAL' | 'GOOGLE' | 'TELEGRAM';
   emailVerified: boolean;
 };
 const hydrateAuthUser = async (
@@ -189,6 +189,122 @@ export const findAuthUserByGoogleId = async (database: AcademyDatabase, googleId
   });
   return user ? hydrateAuthUser(database, user) : null;
 };
+export const findAuthUserByTelegramId = async (database: AcademyDatabase, telegramId: string) => {
+  const account = await database.query.oauthAccounts.findFirst({
+    where: and(
+      eq(schema.oauthAccounts.provider, 'TELEGRAM'),
+      eq(schema.oauthAccounts.providerAccountId, telegramId),
+    ),
+  });
+  if (!account) return null;
+  return findAuthUserById(database, account.userId);
+};
+export const linkTelegramAccount = async (
+  database: AcademyDatabase,
+  input: {
+    userId: string;
+    telegramId: string;
+    telegramUsername?: string;
+  },
+) => {
+  const existing = await database.query.oauthAccounts.findFirst({
+    where: and(
+      eq(schema.oauthAccounts.provider, 'TELEGRAM'),
+      eq(schema.oauthAccounts.providerAccountId, input.telegramId),
+    ),
+  });
+  if (existing) {
+    if (existing.userId !== input.userId) {
+      throw new Error('TELEGRAM_ID_ALREADY_LINKED_TO_OTHER_USER');
+    }
+    await database
+      .update(schema.oauthAccounts)
+      .set({
+        providerEmail: input.telegramUsername ?? existing.providerEmail,
+        lastLoginAt: new Date(),
+      })
+      .where(eq(schema.oauthAccounts.id, existing.id));
+    return existing;
+  }
+  const userTelegramAccount = await database.query.oauthAccounts.findFirst({
+    where: and(
+      eq(schema.oauthAccounts.userId, input.userId),
+      eq(schema.oauthAccounts.provider, 'TELEGRAM'),
+    ),
+  });
+  if (userTelegramAccount) {
+    throw new Error('USER_ALREADY_HAS_LINKED_TELEGRAM_ACCOUNT');
+  }
+  const [linked] = await database
+    .insert(schema.oauthAccounts)
+    .values({
+      userId: input.userId,
+      provider: 'TELEGRAM',
+      providerAccountId: input.telegramId,
+      providerEmail: input.telegramUsername,
+      linkedAt: new Date(),
+      lastLoginAt: new Date(),
+    })
+    .returning();
+  return linked;
+};
+
+export const unlinkTelegramAccount = async (database: AcademyDatabase, userId: string) => {
+  const result = await database
+    .delete(schema.oauthAccounts)
+    .where(
+      and(eq(schema.oauthAccounts.userId, userId), eq(schema.oauthAccounts.provider, 'TELEGRAM')),
+    )
+    .returning();
+  return result.length > 0;
+};
+export const createAccountLinkToken = async (
+  database: AcademyDatabase,
+  input: {
+    id?: string;
+    userId: string;
+    purpose: string;
+    tokenHash: string;
+    expiresAt: Date;
+  },
+) => {
+  const [record] = await database
+    .insert(schema.accountLinkTokens)
+    .values({
+      id: input.id ?? crypto.randomUUID(),
+      userId: input.userId,
+      purpose: input.purpose,
+      tokenHash: input.tokenHash,
+      expiresAt: input.expiresAt,
+    })
+    .returning();
+  return record;
+};
+export const consumeAccountLinkToken = async (
+  database: AcademyDatabase,
+  input: {
+    tokenHash: string;
+    purpose: string;
+  },
+) =>
+  database.transaction(async (tx: any) => {
+    const tokenRecord = await tx.query.accountLinkTokens.findFirst({
+      where: and(
+        eq(schema.accountLinkTokens.tokenHash, input.tokenHash),
+        eq(schema.accountLinkTokens.purpose, input.purpose),
+      ),
+    });
+    if (!tokenRecord) return { valid: false, reason: 'TOKEN_NOT_FOUND' };
+    if (tokenRecord.usedAt) return { valid: false, reason: 'TOKEN_ALREADY_USED' };
+    if (new Date() > new Date(tokenRecord.expiresAt)) {
+      return { valid: false, reason: 'TOKEN_EXPIRED' };
+    }
+    await tx
+      .update(schema.accountLinkTokens)
+      .set({ usedAt: new Date() })
+      .where(eq(schema.accountLinkTokens.id, tokenRecord.id));
+    return { valid: true, userId: tokenRecord.userId, tokenRecord };
+  });
 export type GoogleUserUpsertEvent = 'GOOGLE_MATCH' | 'EMAIL_LINKED' | 'CREATED';
 export const upsertGoogleUser = async (
   database: AcademyDatabase,
