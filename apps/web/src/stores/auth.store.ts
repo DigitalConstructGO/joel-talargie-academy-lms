@@ -50,6 +50,7 @@ type AuthState = {
   clearError(): void;
   loginWithGoogle(): void;
   handleGoogleCallback(accessToken: string, refreshToken?: string | null): Promise<void>;
+  handleTelegramContinuationToken(token: string): Promise<void>;
   logoutGoogle(): Promise<void>;
   setHasHydrated(value: boolean): void;
   setSessionChecked(value: boolean): void;
@@ -109,6 +110,28 @@ export const useAuthStore = create<AuthState>()(
             error: message(error),
             ...unauthorized,
           });
+          throw error;
+        }
+      },
+      handleTelegramContinuationToken: async (token: string) => {
+        set({ loading: true, error: null });
+        try {
+          const result = unwrap<{ user: AuthUser; accessToken: string }>(
+            await authClient.post('/auth/telegram/continue', { token }),
+          );
+          set({
+            ...result,
+            authenticated: true,
+            loading: false,
+            authzStatus: 'idle',
+          });
+          try {
+            await get().fetchAuthorization();
+          } catch {
+            // Non-fatal if authorization fetch fails initially
+          }
+        } catch (error) {
+          set({ error: message(error), loading: false });
           throw error;
         }
       },
@@ -261,6 +284,7 @@ if (!markedClient[INTERCEPTORS_REGISTERED]) {
     '/auth/verify-email',
     '/auth/change-password',
     '/auth/google',
+    '/auth/telegram/continue',
   ];
   const isAuthFlowRequest = (url?: string) =>
     Boolean(url) && AUTH_FLOW_PATHS.some((path) => url!.includes(path));

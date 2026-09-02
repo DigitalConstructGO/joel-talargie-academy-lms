@@ -113,6 +113,7 @@ export interface EmailTemplateContent {
 export type EmailTemplateCode =
   | 'EMAIL_VERIFICATION'
   | 'TELEGRAM_REGISTRATION_OTP'
+  | 'TELEGRAM_EXISTING_ACCOUNT_LINK'
   | 'WELCOME'
   | 'PASSWORD_RESET'
   | 'PASSWORD_CHANGED'
@@ -172,6 +173,25 @@ export const EMAIL_TEMPLATE_CONTENT: Record<EmailTemplateCode, EmailTemplateCont
     ),
     text: shellText(
       'Hi {{recipientName}},\n\nWelcome to {{academyName}}! Enter the 6-digit verification code below in Telegram to confirm your email address:\n\n{{otpCode}}\n\nThis code expires in {{expiresInMinutes}} minutes.\nIf you did not request this code, you can ignore this email.\nNeed help? {{supportEmail}}',
+    ),
+  },
+  TELEGRAM_EXISTING_ACCOUNT_LINK: {
+    subject: 'Verify email to connect Telegram to {{academyName}}',
+    html: shellHtml(
+      heading('Verify Your Account Connection') +
+        paragraph(
+          'Hi {{recipientName}}, someone requested to connect your Telegram account to your {{academyName}} account. Enter the 6-digit verification code below in Telegram to prove account ownership and connect Telegram:',
+        ) +
+        `<div style="margin:24px 0;text-align:center;">
+          <span style="display:inline-block;padding:14px 28px;background-color:${COLOR.bg};border:2px dashed ${COLOR.green};border-radius:12px;font-family:monospace;font-size:32px;font-weight:700;letter-spacing:6px;color:${COLOR.navy};">{{otpCode}}</span>
+        </div>` +
+        muted(
+          'This code expires in {{expiresInMinutes}} minutes. If you did not request this connection, you can safely ignore this email. ' +
+            supportLine(),
+        ),
+    ),
+    text: shellText(
+      'Hi {{recipientName}},\n\nEnter the 6-digit verification code below in Telegram to verify ownership and connect your Telegram account to {{academyName}}:\n\n{{otpCode}}\n\nThis code expires in {{expiresInMinutes}} minutes.\nIf you did not request this, you can ignore this email.\nNeed help? {{supportEmail}}',
     ),
   },
   WELCOME: {

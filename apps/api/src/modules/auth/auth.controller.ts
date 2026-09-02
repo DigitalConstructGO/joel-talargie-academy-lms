@@ -134,6 +134,25 @@ export class AuthController {
     return this.auth.verifyEmail(dto.token);
   }
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @HttpCode(200)
+  @Post('telegram/continue')
+  @ApiOperation({
+    summary: 'Exchange Telegram one-time continuation token for web session',
+  })
+  async continueTelegramSession(
+    @Body() dto: TokenDto,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const result = await this.auth.continueTelegramWebSession(dto.token, {
+      ipAddress: request.ip,
+      userAgent: request.get('user-agent'),
+    });
+    this.setCookie(response, result.refreshToken);
+    return { user: result.user, accessToken: result.accessToken };
+  }
+  @Public()
   @Throttle({ default: { limit: 3, ttl: 60_000 } })
   @HttpCode(200)
   @Post('forgot-password')

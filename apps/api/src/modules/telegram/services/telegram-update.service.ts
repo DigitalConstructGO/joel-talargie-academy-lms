@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import * as crypto from 'node:crypto';
 import {
   consumeAccountLinkToken,
+  findAuthUserByEmail,
   getTelegramOnboardingState,
   linkTelegramAccount,
   schema,
@@ -76,18 +77,34 @@ export class TelegramUpdateService {
     if (data === 'register_new') {
       await this.registrationService.startRegistration(chatId, fromId);
     } else if (data === 'connect_existing') {
-      await this.telegramClient.sendMessage({
-        chat_id: chatId,
-        text:
-          `ℹ️ **Connect Existing Account**\n\n` +
-          `To connect an existing Joel Academy account, go to Profile / Settings on the website and click "Connect Telegram".\n\n` +
-          `Telegram-first account connection will be supported in TG6.`,
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: 'Create New Account', callback_data: 'register_new' }],
-          ],
-        },
-      });
+      await this.registrationService.startExistingAccountConnection(
+        chatId,
+        fromId,
+      );
+    } else if (data === 'continue_web') {
+      const resolution = await this.identityResolver.resolveIdentity(fromId);
+      if (resolution.status === 'LINKED' && resolution.user) {
+        const rawToken = await this.linkService.generateContinuationToken(
+          resolution.user.id,
+        );
+        const continueUrl = `${this.telegramConfig.webAppUrl}/auth/telegram/continue?token=${rawToken}`;
+        await this.telegramClient.sendMessage({
+          chat_id: chatId,
+          text:
+            `🌐 **Secure Website Continuation**\n\n` +
+            `Tap the button below to log in securely to the website with your account.`,
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: 'Open Website Dashboard', url: continueUrl }],
+            ],
+          },
+        });
+      } else {
+        await this.telegramClient.sendMessage({
+          chat_id: chatId,
+          text: `Please connect your Telegram account first to continue on the website.`,
+        });
+      }
     } else if (data === 'continue_registration') {
       await this.registrationService.resumeRegistration(chatId, fromId);
     } else if (data === 'pause_registration') {
@@ -165,7 +182,7 @@ export class TelegramUpdateService {
       return;
     }
 
-    // Check active registration state (TG5.35)
+    // Check active registration state (TG5.35 & TG6)
     const onboardingState = await getTelegramOnboardingState(
       this.database.client,
       String(fromUser.id),
@@ -173,15 +190,42 @@ export class TelegramUpdateService {
 
     if (onboardingState) {
       if (onboardingState.step === 'AWAITING_EMAIL') {
-        await this.registrationService.submitEmail(
-          chatId,
-          fromUser.id,
-          text,
-          fromUser.username,
+        const existing = await findAuthUserByEmail(
+          this.database.client,
+          text.trim().toLowerCase(),
         );
+        if (existing) {
+          await this.registrationService.submitExistingAccountEmail(
+            chatId,
+            fromUser.id,
+            text,
+          );
+        } else {
+          await this.registrationService.submitEmail(
+            chatId,
+            fromUser.id,
+            text,
+            fromUser.username,
+          );
+        }
         return;
       }
       if (onboardingState.step === 'AWAITING_OTP') {
+        if (onboardingState.email) {
+          const existing = await findAuthUserByEmail(
+            this.database.client,
+            onboardingState.email,
+          );
+          if (existing) {
+            await this.registrationService.submitExistingAccountOtp(
+              chatId,
+              fromUser.id,
+              text,
+              fromUser.username,
+            );
+            return;
+          }
+        }
         await this.registrationService.submitOtp(chatId, fromUser.id, text);
         return;
       }

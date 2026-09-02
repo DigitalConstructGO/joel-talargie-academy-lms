@@ -1,25 +1,32 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   Logger,
   UnauthorizedException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import * as crypto from 'node:crypto';
 import {
+  and,
   changeUserPassword,
   consumeEmailVerification,
   consumePasswordReset,
   createPasswordReset,
   createRefreshSession,
   createStudentUser,
+  eq,
   findAuthUserByEmail,
   findAuthUserById,
   findRefreshSession,
+  isNull,
   recordLoginAttempt,
   revokeRefreshSession,
   rotateRefreshSession,
+  schema,
   updateLastLogin,
   upsertGoogleUser,
 } from '@joel-academy/database';
@@ -424,6 +431,115 @@ export class AuthService {
     const user = await findAuthUserById(this.database.client, userId);
     if (user) await this.notifyWelcome(user);
     return { message: 'Email verified successfully' };
+  }
+
+  async continueTelegramWebSession(
+    rawToken: string,
+    meta?: { ipAddress?: string; userAgent?: string },
+  ) {
+    const token = rawToken.trim();
+    if (!token) {
+      throw new UnprocessableEntityException({
+        code: 'TOKEN_INVALID',
+        message: 'Continuation token is required',
+      });
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    const linkToken =
+      await this.database.client.query.accountLinkTokens.findFirst({
+        where: and(
+          eq(schema.accountLinkTokens.tokenHash, tokenHash),
+          eq(schema.accountLinkTokens.purpose, 'TELEGRAM_WEB_CONTINUE'),
+          isNull(schema.accountLinkTokens.usedAt),
+        ),
+      });
+
+    if (!linkToken) {
+      throw new UnprocessableEntityException({
+        code: 'TOKEN_INVALID_OR_USED',
+        message:
+          'This Telegram continuation link is invalid or has already been used.',
+      });
+    }
+
+    if (new Date() > new Date(linkToken.expiresAt)) {
+      throw new UnprocessableEntityException({
+        code: 'TOKEN_EXPIRED',
+        message: 'This Telegram continuation link has expired.',
+      });
+    }
+
+    // Mark single-use token as used immediately
+    await this.database.client
+      .update(schema.accountLinkTokens)
+      .set({ usedAt: new Date() })
+      .where(eq(schema.accountLinkTokens.id, linkToken.id));
+
+    // Reload user
+    const user = await findAuthUserById(this.database.client, linkToken.userId);
+
+    if (!user || user.status === 'SUSPENDED') {
+      throw new ForbiddenException({
+        code: 'USER_RESTRICTED',
+        message: 'Account is restricted or suspended.',
+      });
+    }
+
+    // Recheck linked Telegram identity
+    const telegramAccount =
+      await this.database.client.query.oauthAccounts.findFirst({
+        where: and(
+          eq(schema.oauthAccounts.userId, user.id),
+          eq(schema.oauthAccounts.provider, 'TELEGRAM'),
+        ),
+      });
+
+    if (!telegramAccount) {
+      throw new ForbiddenException({
+        code: 'TELEGRAM_UNLINKED',
+        message: 'Telegram account is no longer linked to this user.',
+      });
+    }
+
+    // Issue normal LMS session and cookies
+    return this.issueSession(user, meta);
+  }
+
+  private async issueSession(
+    user: NonNullable<Awaited<ReturnType<typeof findAuthUserById>>>,
+    meta?: { ipAddress?: string; userAgent?: string },
+  ) {
+    const safe = this.safe(user);
+    const placeholder = hashToken(secureToken());
+    const sessionId = await createRefreshSession(this.database.client, {
+      userId: user.id,
+      tokenHash: placeholder,
+      expiresAt: new Date(Date.now() + refreshSeconds * 1000),
+      ...meta,
+    });
+    const refreshToken = this.signRefresh(safe, sessionId);
+    await rotateRefreshSession(
+      this.database.client,
+      sessionId,
+      hashToken(refreshToken),
+      new Date(Date.now() + refreshSeconds * 1000),
+    );
+    await Promise.all([
+      Promise.resolve(updateLastLogin(this.database.client, user.id)).catch(
+        (error) =>
+          this.logger.error('Failed to update last login timestamp', error),
+      ),
+      Promise.resolve(this.audit.logLogin(user.id, meta)).catch((error) =>
+        this.logger.error('Failed to record login audit log', error),
+      ),
+    ]);
+    return {
+      user: safe,
+      accessToken: this.signAccess(safe, sessionId),
+      refreshToken,
+    };
   }
   async forgotPassword(emailValue: string) {
     const user = await findAuthUserByEmail(

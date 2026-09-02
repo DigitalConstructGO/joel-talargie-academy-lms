@@ -619,6 +619,56 @@ export const changeUserPassword = async (
   await revokeUserSessions(database, userId);
 };
 
+export const linkTelegramAccountToUser = async (
+  database: AcademyDatabase,
+  input: {
+    userId: string;
+    telegramUserId: string;
+    telegramUsername?: string;
+  },
+) => {
+  return database.transaction(async (tx) => {
+    // Check if telegramUserId is already linked to another user
+    const existingProvider = await tx.query.oauthAccounts.findFirst({
+      where: and(
+        eq(schema.oauthAccounts.provider, 'TELEGRAM'),
+        eq(schema.oauthAccounts.providerAccountId, input.telegramUserId),
+      ),
+    });
+    if (existingProvider && existingProvider.userId !== input.userId) {
+      throw new Error('TELEGRAM_ID_ALREADY_LINKED_TO_OTHER');
+    }
+
+    // Check if user already has a linked Telegram account
+    const existingUserTg = await tx.query.oauthAccounts.findFirst({
+      where: and(
+        eq(schema.oauthAccounts.provider, 'TELEGRAM'),
+        eq(schema.oauthAccounts.userId, input.userId),
+      ),
+    });
+    if (existingUserTg) {
+      throw new Error('USER_ALREADY_HAS_TELEGRAM');
+    }
+
+    const [account] = await tx
+      .insert(schema.oauthAccounts)
+      .values({
+        userId: input.userId,
+        provider: 'TELEGRAM',
+        providerAccountId: input.telegramUserId,
+        providerEmail: input.telegramUsername ?? null,
+        linkedAt: new Date(),
+      })
+      .returning();
+
+    await tx
+      .delete(schema.telegramOnboardingStates)
+      .where(eq(schema.telegramOnboardingStates.telegramUserId, input.telegramUserId));
+
+    return account;
+  });
+};
+
 export const getTelegramOnboardingState = async (
   database: AcademyDatabase,
   telegramUserId: string,

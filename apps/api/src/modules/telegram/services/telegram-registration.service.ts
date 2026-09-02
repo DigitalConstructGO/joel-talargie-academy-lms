@@ -5,6 +5,7 @@ import {
   deleteTelegramOnboardingState,
   findAuthUserByEmail,
   getTelegramOnboardingState,
+  linkTelegramAccountToUser,
   upsertTelegramOnboardingState,
 } from '@joel-academy/database';
 import { DatabaseService } from '../../../common/database/database.service';
@@ -826,6 +827,338 @@ export class TelegramRegistrationService {
         ],
       },
     });
+  }
+
+  async startExistingAccountConnection(
+    chatId: number,
+    telegramUserId: number,
+  ): Promise<void> {
+    const expiresAt = new Date(Date.now() + ONBOARDING_EXPIRATION_MS);
+
+    await upsertTelegramOnboardingState(this.database.client, {
+      telegramUserId: String(telegramUserId),
+      step: 'AWAITING_EMAIL',
+      expiresAt,
+    });
+
+    await this.telegramClient.sendMessage({
+      chat_id: chatId,
+      text:
+        `🔗 **Connect Your Existing Joel Academy Account**\n\n` +
+        `Please enter the email address you use for your Joel Talargie Academy account.\n` +
+        `We will send a 6-digit verification code to prove ownership and connect your account.`,
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: 'Cancel', callback_data: 'cancel_registration' }],
+        ],
+      },
+    });
+  }
+
+  async submitExistingAccountEmail(
+    chatId: number,
+    telegramUserId: number,
+    rawEmail: string,
+  ): Promise<void> {
+    const email = rawEmail.trim().toLowerCase();
+
+    // Email format validation
+    const emailRegex = /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/;
+    if (!emailRegex.test(email)) {
+      await this.telegramClient.sendMessage({
+        chat_id: chatId,
+        text:
+          `⚠️ That email address does not look valid.\n\n` +
+          `Please enter the email you use for your Joel Academy account.`,
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: 'Cancel', callback_data: 'cancel_registration' }],
+          ],
+        },
+      });
+      return;
+    }
+
+    // Lookup existing user
+    const existing = await findAuthUserByEmail(this.database.client, email);
+    if (!existing || existing.status === 'ARCHIVED') {
+      // Safe response without exposing detailed account metadata
+      await this.telegramClient.sendMessage({
+        chat_id: chatId,
+        text:
+          `⚠️ We could not verify an existing Joel Academy account with that email.\n\n` +
+          `Please check your email spelling or create a new account instead.`,
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: 'Try Another Email', callback_data: 'connect_existing' }],
+            [{ text: 'Create New Account', callback_data: 'register_new' }],
+            [{ text: 'Cancel', callback_data: 'cancel_registration' }],
+          ],
+        },
+      });
+      return;
+    }
+
+    if (existing.status === 'SUSPENDED') {
+      await this.telegramClient.sendMessage({
+        chat_id: chatId,
+        text: `⛔ Account is restricted or suspended. Telegram linking is unavailable.`,
+      });
+      return;
+    }
+
+    // Check if this Telegram ID is already linked to another user
+    const existingProvider =
+      await this.database.client.query.oauthAccounts.findFirst({
+        where: (table, { and, eq }) =>
+          and(
+            eq(table.provider, 'TELEGRAM'),
+            eq(table.providerAccountId, String(telegramUserId)),
+          ),
+      });
+
+    if (existingProvider && existingProvider.userId !== existing.id) {
+      await this.telegramClient.sendMessage({
+        chat_id: chatId,
+        text:
+          `⚠️ This Telegram account is already connected to a different academy profile.\n\n` +
+          `Please disconnect the previous account first or use a different Telegram account.`,
+      });
+      return;
+    }
+
+    // Check if target LMS user already has a connected Telegram account
+    const existingUserTg =
+      await this.database.client.query.oauthAccounts.findFirst({
+        where: (table, { and, eq }) =>
+          and(eq(table.provider, 'TELEGRAM'), eq(table.userId, existing.id)),
+      });
+
+    if (existingUserTg) {
+      await this.telegramClient.sendMessage({
+        chat_id: chatId,
+        text:
+          `⚠️ This academy account already has a Telegram account connected.\n\n` +
+          `Use Profile / Settings on the website to manage your connected accounts.`,
+      });
+      return;
+    }
+
+    // Generate 6-digit OTP for TELEGRAM_EXISTING_ACCOUNT_LINK
+    const otpCode = crypto.randomInt(100000, 999999).toString();
+    const otpHash = hashToken(otpCode);
+    const otpExpiresAt = new Date(Date.now() + OTP_EXPIRATION_MS);
+    const expiresAt = new Date(Date.now() + ONBOARDING_EXPIRATION_MS);
+
+    await upsertTelegramOnboardingState(this.database.client, {
+      telegramUserId: String(telegramUserId),
+      step: 'AWAITING_OTP',
+      email,
+      otpHash,
+      otpExpiresAt,
+      otpAttempts: 0,
+      resendCount: 0,
+      lastResendAt: new Date(),
+      expiresAt,
+    });
+
+    try {
+      await this.notifications.notify({
+        userId: existing.id,
+        recipientEmail: email,
+        recipientName: existing.firstName ?? 'Student',
+        templateCode: 'TELEGRAM_EXISTING_ACCOUNT_LINK',
+        variables: {
+          recipientName: existing.firstName ?? 'Student',
+          otpCode: otpCode,
+          expiresInMinutes: '15',
+          academyName: 'Joel Talargie Academy',
+          supportEmail: 'support@joelacademy.com',
+        },
+        deduplicationKey: `telegram-link-otp:${telegramUserId}:${Date.now()}`,
+        category: 'security',
+        title: 'Verify your account connection for Joel Talargie Academy',
+        message: `Your 6-digit verification code is: ${otpCode}. It expires in 15 minutes.`,
+        actionUrl: '/dashboard/profile',
+        priority: 'HIGH',
+      });
+    } catch (mailError) {
+      this.logger.error('Failed to send existing account link OTP:', mailError);
+    }
+
+    await this.telegramClient.sendMessage({
+      chat_id: chatId,
+      text:
+        `✉️ We sent a 6-digit verification code to:\n` +
+        `**${maskEmail(email)}**\n\n` +
+        `Please enter the code to verify account ownership and complete connection.`,
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: 'Resend Code', callback_data: 'resend_otp' },
+            { text: 'Change Email', callback_data: 'connect_existing' },
+          ],
+          [{ text: 'Cancel', callback_data: 'cancel_registration' }],
+        ],
+      },
+    });
+  }
+
+  async submitExistingAccountOtp(
+    chatId: number,
+    telegramUserId: number,
+    rawOtp: string,
+    telegramUsername?: string,
+  ): Promise<void> {
+    const state = await getTelegramOnboardingState(
+      this.database.client,
+      String(telegramUserId),
+    );
+
+    if (!state || !state.email || !state.otpHash) {
+      await this.telegramClient.sendMessage({
+        chat_id: chatId,
+        text: `⚠️ Connection session expired. Tap "Connect Existing Account" to start again.`,
+      });
+      return;
+    }
+
+    // Check OTP expiration
+    if (state.otpExpiresAt && new Date() > new Date(state.otpExpiresAt)) {
+      await this.telegramClient.sendMessage({
+        chat_id: chatId,
+        text:
+          `⏱️ The verification code has expired.\n\n` +
+          `Tap "Resend Code" to receive a new verification code.`,
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: 'Resend Code', callback_data: 'resend_otp' }],
+            [{ text: 'Change Email', callback_data: 'connect_existing' }],
+            [{ text: 'Cancel', callback_data: 'cancel_registration' }],
+          ],
+        },
+      });
+      return;
+    }
+
+    // Check attempt limits (5 attempts max)
+    if (state.otpAttempts >= MAX_OTP_ATTEMPTS) {
+      await deleteTelegramOnboardingState(
+        this.database.client,
+        String(telegramUserId),
+      );
+      await this.telegramClient.sendMessage({
+        chat_id: chatId,
+        text: `⛔ Maximum verification attempts exceeded. Please try connecting again.`,
+      });
+      return;
+    }
+
+    // Verify OTP hash
+    const inputHash = hashToken(rawOtp.trim());
+    if (inputHash !== state.otpHash) {
+      const newAttempts = state.otpAttempts + 1;
+      const remaining = MAX_OTP_ATTEMPTS - newAttempts;
+
+      await upsertTelegramOnboardingState(this.database.client, {
+        telegramUserId: String(telegramUserId),
+        step: 'AWAITING_OTP',
+        email: state.email,
+        otpHash: state.otpHash,
+        otpExpiresAt: state.otpExpiresAt,
+        otpAttempts: newAttempts,
+        resendCount: state.resendCount,
+        lastResendAt: state.lastResendAt,
+        expiresAt: state.expiresAt,
+      });
+
+      await this.telegramClient.sendMessage({
+        chat_id: chatId,
+        text: `❌ Incorrect verification code (${remaining} attempt${remaining === 1 ? '' : 's'} remaining). Please try again.`,
+      });
+      return;
+    }
+
+    // OTP Verified! Reload target user & execute transactional link
+    const targetUser = await findAuthUserByEmail(
+      this.database.client,
+      state.email,
+    );
+    if (
+      !targetUser ||
+      targetUser.status === 'SUSPENDED' ||
+      targetUser.status === 'ARCHIVED'
+    ) {
+      await deleteTelegramOnboardingState(
+        this.database.client,
+        String(telegramUserId),
+      );
+      await this.telegramClient.sendMessage({
+        chat_id: chatId,
+        text: `⚠️ Target academy account is inactive or restricted. Linking cancelled.`,
+      });
+      return;
+    }
+
+    try {
+      await linkTelegramAccountToUser(this.database.client, {
+        userId: targetUser.id,
+        telegramUserId: String(telegramUserId),
+        telegramUsername,
+      });
+
+      this.logger.log(
+        `Successfully linked existing user ${targetUser.id} (${state.email}) to Telegram ID ${telegramUserId}`,
+      );
+
+      const dashboardReturnUrl = `${this.telegramConfig.webAppUrl}/dashboard`;
+      const hasValidHttpsUrl = dashboardReturnUrl.startsWith('https://');
+
+      await this.telegramClient.sendMessage({
+        chat_id: chatId,
+        text:
+          `🎉 **Account Connected Successfully!**\n\n` +
+          `Your Telegram account is now connected to your existing Joel Talargie Academy profile.\n\n` +
+          `📧 **Email:** ${maskEmail(state.email)}\n\n` +
+          `You are now using the exact same LMS account on both the website and Telegram.`,
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: 'Continue on Website',
+                callback_data: 'continue_web',
+              },
+            ],
+            ...(hasValidHttpsUrl
+              ? [[{ text: 'Open Academy', url: dashboardReturnUrl }]]
+              : []),
+          ],
+        },
+      });
+    } catch (err: any) {
+      await deleteTelegramOnboardingState(
+        this.database.client,
+        String(telegramUserId),
+      );
+      if (err?.message === 'TELEGRAM_ID_ALREADY_LINKED_TO_OTHER') {
+        await this.telegramClient.sendMessage({
+          chat_id: chatId,
+          text: `⚠️ This Telegram account is already linked to another academy user.`,
+        });
+        return;
+      }
+      if (err?.message === 'USER_ALREADY_HAS_TELEGRAM') {
+        await this.telegramClient.sendMessage({
+          chat_id: chatId,
+          text: `⚠️ This academy account already has a connected Telegram identity.`,
+        });
+        return;
+      }
+      this.telegramClient.sendMessage({
+        chat_id: chatId,
+        text: `An error occurred while connecting your account. Please try again.`,
+      });
+    }
   }
 
   async cancelRegistration(

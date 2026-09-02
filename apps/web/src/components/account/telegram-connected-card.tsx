@@ -216,21 +216,39 @@ export function TelegramConnectedCard() {
                 <CheckCircle2 className="size-3.5" />
                 <span>{isAmharic ? 'ንቁ ግንኙነት' : 'Active Connection'}</span>
               </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5 px-2.5"
-                disabled={unlinkMutation.isPending}
-                onClick={handleUnlink}
-              >
-                {unlinkMutation.isPending ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <Unlink className="size-3.5" />
-                )}
-                <span>{isAmharic ? 'ግንኙነት አቋርጥ' : 'Disconnect'}</span>
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs gap-1.5 px-2.5 text-[#24A1DE] border-[#24A1DE]/30 hover:bg-[#24A1DE]/10"
+                  onClick={() =>
+                    window.open(
+                      'https://t.me/Joel_Talargie_Academy_Bot',
+                      '_blank',
+                      'noopener,noreferrer',
+                    )
+                  }
+                >
+                  <Send className="size-3.5" />
+                  <span>{isAmharic ? 'ቴሌግራም ክፈት' : 'Open Telegram'}</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5 px-2.5"
+                  disabled={unlinkMutation.isPending}
+                  onClick={handleUnlink}
+                >
+                  {unlinkMutation.isPending ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Unlink className="size-3.5" />
+                  )}
+                  <span>{isAmharic ? 'ግንኙነት አቋርጥ' : 'Disconnect'}</span>
+                </Button>
+              </div>
             </div>
           </div>
         ) : (

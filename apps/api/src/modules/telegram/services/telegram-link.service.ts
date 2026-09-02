@@ -122,4 +122,30 @@ export class TelegramLinkService {
     this.logger.log(`Unlinked Telegram account for user ID ${userId}`);
     return { success: true };
   }
+
+  async generateContinuationToken(userId: string): Promise<string> {
+    const user = await this.database.client.query.users.findFirst({
+      where: and(eq(schema.users.id, userId), isNull(schema.users.archivedAt)),
+    });
+
+    if (!user || user.status === 'SUSPENDED' || user.status === 'ARCHIVED') {
+      throw new ForbiddenException('Account is inactive or suspended.');
+    }
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(rawToken)
+      .digest('hex');
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    await createAccountLinkToken(this.database.client, {
+      userId,
+      purpose: 'TELEGRAM_WEB_CONTINUE',
+      tokenHash,
+      expiresAt,
+    });
+
+    return rawToken;
+  }
 }
