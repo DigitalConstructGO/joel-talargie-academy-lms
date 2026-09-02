@@ -88,17 +88,30 @@ export class TelegramUpdateService {
           resolution.user.id,
         );
         const continueUrl = `${this.telegramConfig.webAppUrl}/auth/telegram/continue?token=${rawToken}`;
-        await this.telegramClient.sendMessage({
-          chat_id: chatId,
-          text:
-            `🌐 **Secure Website Continuation**\n\n` +
-            `Tap the button below to log in securely to the website with your account.`,
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: 'Open Website Dashboard', url: continueUrl }],
-            ],
-          },
-        });
+        const isHttps = continueUrl.startsWith('https://');
+
+        if (isHttps) {
+          await this.telegramClient.sendMessage({
+            chat_id: chatId,
+            text:
+              `🌐 **Secure Website Continuation**\n\n` +
+              `Tap the button below to log in securely to the website with your account.`,
+            parse_mode: 'Markdown',
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: 'Open Website Dashboard', url: continueUrl }],
+              ],
+            },
+          });
+        } else {
+          await this.telegramClient.sendMessage({
+            chat_id: chatId,
+            text:
+              `🌐 **Secure Website Continuation**\n\n` +
+              `Click the link below to log in securely to the website:\n\n` +
+              `${continueUrl}`,
+          });
+        }
       } else {
         await this.telegramClient.sendMessage({
           chat_id: chatId,
