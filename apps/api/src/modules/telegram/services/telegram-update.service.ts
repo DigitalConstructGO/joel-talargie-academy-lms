@@ -232,6 +232,33 @@ export class TelegramUpdateService {
         fromId,
         isNaN(page) ? 1 : page,
       );
+    } else if (data.startsWith('course_curriculum:')) {
+      const enrollmentId = data.split(':')[1];
+      await this.studentService.handleCourseCurriculum(
+        chatId,
+        fromId,
+        enrollmentId,
+      );
+    } else if (data.startsWith('view_lesson:')) {
+      const parts = data.split(':');
+      const enrollmentId = parts[1];
+      const lessonId = parts[2];
+      await this.studentService.handleLessonDetail(
+        chatId,
+        fromId,
+        enrollmentId,
+        lessonId,
+      );
+    } else if (data.startsWith('complete_lesson:')) {
+      const parts = data.split(':');
+      const enrollmentId = parts[1];
+      const lessonId = parts[2];
+      await this.studentService.handleCompleteLesson(
+        chatId,
+        fromId,
+        enrollmentId,
+        lessonId,
+      );
     } else if (data === 'student_progress') {
       await this.studentService.handleProgress(chatId, fromId);
     } else if (data.startsWith('progress_detail:')) {

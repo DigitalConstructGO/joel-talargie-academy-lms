@@ -205,6 +205,7 @@ export class TelegramKeyboardService {
    */
   buildMyCoursesKeyboard(
     enrollments: Array<{
+      enrollmentId?: string;
       courseId: string;
       courseSlug?: string;
       courseTitle?: string;
@@ -215,21 +216,26 @@ export class TelegramKeyboardService {
   ): InlineKeyboardMarkup {
     const keyboard: InlineKeyboardButton[][] = [];
 
-    // Action button for each course item
     for (const item of enrollments) {
+      const title = (item.courseTitle || 'Course').slice(0, 25);
+      const targetId = item.enrollmentId || item.courseId;
+      const row: InlineKeyboardButton[] = [
+        {
+          text: `📖 ${title}`,
+          callback_data: `course_curriculum:${targetId}`,
+        },
+      ];
       const slug = item.courseSlug || item.courseId;
       const courseUrl = webAppUrl
         ? `${webAppUrl}/dashboard/my-courses/${slug}`
         : null;
-
       if (courseUrl && courseUrl.startsWith('https://')) {
-        keyboard.push([
-          {
-            text: `Continue: ${(item.courseTitle || 'Course').slice(0, 25)}`,
-            url: courseUrl,
-          },
-        ]);
+        row.push({
+          text: '🌐 Web',
+          url: courseUrl,
+        });
       }
+      keyboard.push(row);
     }
 
     // Pagination row
@@ -250,7 +256,7 @@ export class TelegramKeyboardService {
       keyboard.push(navRow);
     }
 
-    keyboard.push([{ text: 'Main Menu', callback_data: 'student_menu' }]);
+    keyboard.push([{ text: '🏠 Main Menu', callback_data: 'student_menu' }]);
     return { inline_keyboard: keyboard };
   }
 

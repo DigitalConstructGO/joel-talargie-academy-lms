@@ -34,6 +34,8 @@ describe('TG9 — Student Telegram Services Unit & Integration Tests', () => {
 
     mockLearningService = {
       overview: vi.fn(),
+      open: vi.fn(),
+      complete: vi.fn(),
     };
 
     mockPaymentsService = {
@@ -842,5 +844,168 @@ describe('TG9 — Student Telegram Services Unit & Integration Tests', () => {
     expect(mockPaymentsService.mine).toHaveBeenCalledTimes(1);
     expect(mockCertificatesService.listMine).toHaveBeenCalledTimes(1);
     expect(mockNotificationsService.listMine).toHaveBeenCalledTimes(1);
+  });
+
+  it('TEST 29 — handleCourseCurriculum renders sections and lesson action buttons', async () => {
+    mockIdentityResolver.resolveIdentity.mockResolvedValue({
+      status: 'LINKED',
+      telegramId: '847362910',
+      user: {
+        id: 'user-25',
+        email: 'user25@example.com',
+        roles: ['STUDENT'],
+        status: 'ACTIVE',
+      },
+    });
+
+    mockLearningService.overview.mockResolvedValue({
+      course: { id: 'course-1', title: 'Fullstack Web Development' },
+      progressPercentage: 50,
+      curriculum: [
+        {
+          id: 'sec-1',
+          title: 'Introduction',
+          lessons: [
+            {
+              id: 'les-1',
+              title: 'Welcome to the Course',
+              progressStatus: 'COMPLETED',
+              isCompleted: true,
+            },
+            {
+              id: 'les-2',
+              title: 'Setting up Node.js',
+              progressStatus: 'IN_PROGRESS',
+              isCompleted: false,
+            },
+          ],
+        },
+      ],
+    });
+
+    await studentService.handleCourseCurriculum(
+      847362910,
+      847362910,
+      'enrollment-1',
+    );
+
+    expect(mockLearningService.overview).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'user-25' }),
+      'enrollment-1',
+    );
+    expect(mockTelegramClient.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: expect.stringContaining('Fullstack Web Development'),
+        reply_markup: expect.objectContaining({
+          inline_keyboard: expect.arrayContaining([
+            expect.arrayContaining([
+              expect.objectContaining({
+                callback_data: 'view_lesson:enrollment-1:les-1',
+              }),
+            ]),
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it('TEST 30 — handleLessonDetail renders YouTube video stream link and Mark Complete button', async () => {
+    mockIdentityResolver.resolveIdentity.mockResolvedValue({
+      status: 'LINKED',
+      telegramId: '847362910',
+      user: {
+        id: 'user-25',
+        email: 'user25@example.com',
+        roles: ['STUDENT'],
+        status: 'ACTIVE',
+      },
+    });
+
+    mockLearningService.open.mockResolvedValue({
+      id: 'les-2',
+      title: 'Setting up Node.js',
+      durationSeconds: 600,
+      progressStatus: 'IN_PROGRESS',
+      externalUrl: 'https://youtube.com/watch?v=demo123',
+    });
+
+    await studentService.handleLessonDetail(
+      847362910,
+      847362910,
+      'enrollment-1',
+      'les-2',
+    );
+
+    expect(mockLearningService.open).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'user-25' }),
+      'enrollment-1',
+      'les-2',
+    );
+    expect(mockTelegramClient.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: expect.stringContaining('https://youtube.com/watch?v=demo123'),
+        reply_markup: expect.objectContaining({
+          inline_keyboard: expect.arrayContaining([
+            expect.arrayContaining([
+              expect.objectContaining({
+                callback_data: 'complete_lesson:enrollment-1:les-2',
+              }),
+            ]),
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it('TEST 31 — handleCompleteLesson auto-issues certificate on 100% completion', async () => {
+    mockIdentityResolver.resolveIdentity.mockResolvedValue({
+      status: 'LINKED',
+      telegramId: '847362910',
+      user: {
+        id: 'user-25',
+        email: 'user25@example.com',
+        roles: ['STUDENT'],
+        status: 'ACTIVE',
+      },
+    });
+
+    mockLearningService.complete.mockResolvedValue({
+      progressPercentage: 100,
+      courseCompleted: true,
+      completedCount: 2,
+      totalCount: 2,
+    });
+
+    mockLearningService.overview.mockResolvedValue({
+      course: { id: 'course-1', title: 'Fullstack Web Development' },
+      progressPercentage: 100,
+    });
+
+    await studentService.handleCompleteLesson(
+      847362910,
+      847362910,
+      'enrollment-1',
+      'les-2',
+    );
+
+    expect(mockLearningService.complete).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'user-25' }),
+      'enrollment-1',
+      'les-2',
+    );
+    expect(mockTelegramClient.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: expect.stringContaining('CONGRATULATIONS!'),
+        reply_markup: expect.objectContaining({
+          inline_keyboard: expect.arrayContaining([
+            expect.arrayContaining([
+              expect.objectContaining({
+                callback_data: 'student_certificates',
+              }),
+            ]),
+          ]),
+        }),
+      }),
+    );
   });
 });

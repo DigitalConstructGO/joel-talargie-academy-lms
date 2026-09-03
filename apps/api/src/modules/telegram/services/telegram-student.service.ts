@@ -556,6 +556,253 @@ export class TelegramStudentService {
   }
 
   /**
+   * View Curriculum & Sections for an enrolled course
+   */
+  async handleCourseCurriculum(
+    chatId: number,
+    telegramUserId: number,
+    enrollmentId: string,
+  ): Promise<void> {
+    const user = await this.resolveStudentUser(chatId, telegramUserId);
+    if (!user) return;
+
+    try {
+      const overview = await this.learningService.overview(user, enrollmentId);
+      const sections = overview.curriculum || [];
+      const allLessons = sections.flatMap((sec) => sec.lessons || []);
+      const completedLessons = allLessons.filter(
+        (l) => l.progressStatus === 'COMPLETED' || l.isCompleted,
+      );
+
+      let text =
+        `📚 <b>${this.formatting.escapeHtml(overview.course?.title || 'Course Content')}</b>\n\n` +
+        `Progress: <b>${overview.progressPercentage}%</b> (${completedLessons.length}/${allLessons.length} lessons completed)\n\n` +
+        `<b>Course Sections & Lessons:</b>\n`;
+
+      const keyboard: Array<
+        Array<{ text: string; callback_data?: string; url?: string }>
+      > = [];
+
+      sections.forEach((sec, sIdx) => {
+        text += `\n<b>Section ${sIdx + 1}: ${this.formatting.escapeHtml(sec.title)}</b>\n`;
+        (sec.lessons || []).forEach((les, lIdx) => {
+          const isDone = les.progressStatus === 'COMPLETED' || les.isCompleted;
+          const statusIcon = isDone ? '✅' : '📖';
+          text += `  ${statusIcon} ${lIdx + 1}. ${this.formatting.escapeHtml(les.title)}\n`;
+
+          keyboard.push([
+            {
+              text: `${statusIcon} ${les.title.slice(0, 30)}`,
+              callback_data: `view_lesson:${enrollmentId}:${les.id}`,
+            },
+          ]);
+        });
+      });
+
+      if (overview.progressPercentage >= 100) {
+        keyboard.push([
+          {
+            text: '📜 View Certificate',
+            callback_data: 'student_certificates',
+          },
+        ]);
+      }
+
+      keyboard.push([
+        { text: '⬅️ Back to My Courses', callback_data: 'student_my_courses' },
+      ]);
+
+      await this.telegramClient.sendMessage({
+        chat_id: chatId,
+        text: text.trim(),
+        parse_mode: 'HTML',
+        reply_markup: { inline_keyboard: keyboard },
+      });
+    } catch (error) {
+      this.logger.error(
+        `Error in handleCourseCurriculum for user ${user.id}:`,
+        error,
+      );
+      await this.telegramClient.sendMessage({
+        chat_id: chatId,
+        text: `We couldn't load course content right now. Please try again later.`,
+        reply_markup: this.keyboard.buildHelpKeyboard(
+          this.telegramConfig.webAppUrl,
+        ),
+      });
+    }
+  }
+
+  /**
+   * View single lesson details & non-downloadable YouTube video stream link
+   */
+  async handleLessonDetail(
+    chatId: number,
+    telegramUserId: number,
+    enrollmentId: string,
+    lessonId: string,
+  ): Promise<void> {
+    const user = await this.resolveStudentUser(chatId, telegramUserId);
+    if (!user) return;
+
+    try {
+      const lessonDetail = await this.learningService.open(
+        user,
+        enrollmentId,
+        lessonId,
+      );
+      const isDone =
+        (lessonDetail as any).progressStatus === 'COMPLETED' ||
+        (lessonDetail as any).isCompleted;
+      const durationMins = Math.ceil(
+        (lessonDetail.durationSeconds || 300) / 60,
+      );
+
+      let text =
+        `📖 <b>Lesson: ${this.formatting.escapeHtml(lessonDetail.title)}</b>\n` +
+        `Duration: <b>${durationMins} mins</b>\n` +
+        `Status: <b>${isDone ? 'Completed ✅' : 'In Progress ⏳'}</b>\n\n`;
+
+      if (lessonDetail.externalUrl) {
+        text +=
+          `📺 <b>Video Stream:</b> ${lessonDetail.externalUrl}\n\n` +
+          `<i>Note: Click the YouTube video link above to view directly. Video streams are non-downloadable.</i>\n\n`;
+      }
+
+      const inline_keyboard: Array<
+        Array<{ text: string; callback_data?: string; url?: string }>
+      > = [];
+
+      if (!isDone) {
+        inline_keyboard.push([
+          {
+            text: '✅ Mark as Complete',
+            callback_data: `complete_lesson:${enrollmentId}:${lessonId}`,
+          },
+        ]);
+      } else {
+        inline_keyboard.push([
+          {
+            text: '✅ Lesson Completed',
+            callback_data: `course_curriculum:${enrollmentId}`,
+          },
+        ]);
+      }
+
+      inline_keyboard.push([
+        {
+          text: '⬅️ Back to Curriculum',
+          callback_data: `course_curriculum:${enrollmentId}`,
+        },
+      ]);
+
+      await this.telegramClient.sendMessage({
+        chat_id: chatId,
+        text: text.trim(),
+        parse_mode: 'HTML',
+        reply_markup: { inline_keyboard },
+      });
+    } catch (error) {
+      this.logger.error(
+        `Error in handleLessonDetail for user ${user.id}:`,
+        error,
+      );
+      await this.telegramClient.sendMessage({
+        chat_id: chatId,
+        text: `We couldn't load lesson details right now.`,
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: '⬅️ Back to Curriculum',
+                callback_data: `course_curriculum:${enrollmentId}`,
+              },
+            ],
+          ],
+        },
+      });
+    }
+  }
+
+  /**
+   * Mark lesson complete & update progress. Auto-issue certificate on 100%!
+   */
+  async handleCompleteLesson(
+    chatId: number,
+    telegramUserId: number,
+    enrollmentId: string,
+    lessonId: string,
+  ): Promise<void> {
+    const user = await this.resolveStudentUser(chatId, telegramUserId);
+    if (!user) return;
+
+    try {
+      const res = await this.learningService.complete(
+        user,
+        enrollmentId,
+        lessonId,
+      );
+
+      const overview = await this.learningService.overview(user, enrollmentId);
+      const is100Percent =
+        overview.progressPercentage >= 100 || res.courseCompleted;
+
+      if (is100Percent) {
+        await this.telegramClient.sendMessage({
+          chat_id: chatId,
+          text:
+            `🎉 <b>CONGRATULATIONS!</b>\n\n` +
+            `You have completed <b>100%</b> of <b>${this.formatting.escapeHtml(overview.course?.title || 'the course')}</b>!\n\n` +
+            `Your official Certificate of Completion has been generated! 📜`,
+          parse_mode: 'HTML',
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: '📜 View Certificate',
+                  callback_data: 'student_certificates',
+                },
+              ],
+              [{ text: '📚 My Courses', callback_data: 'student_my_courses' }],
+            ],
+          },
+        });
+        return;
+      }
+
+      await this.telegramClient.sendMessage({
+        chat_id: chatId,
+        text:
+          `✅ <b>Lesson Marked Complete!</b>\n\n` +
+          `Course Progress: <b>${overview.progressPercentage}%</b>`,
+        parse_mode: 'HTML',
+      });
+
+      // Refresh curriculum view
+      await this.handleCourseCurriculum(chatId, telegramUserId, enrollmentId);
+    } catch (error) {
+      this.logger.error(
+        `Error in handleCompleteLesson for user ${user.id}:`,
+        error,
+      );
+      await this.telegramClient.sendMessage({
+        chat_id: chatId,
+        text: `Could not mark lesson complete. Please try again.`,
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: '⬅️ Back to Lesson',
+                callback_data: `view_lesson:${enrollmentId}:${lessonId}`,
+              },
+            ],
+          ],
+        },
+      });
+    }
+  }
+
+  /**
    * `/payments` — Student payments history
    */
   async handlePayments(
