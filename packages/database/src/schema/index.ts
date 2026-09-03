@@ -343,6 +343,24 @@ export const telegramOnboardingStates = sqliteTable(
   (table) => [index('telegram_onboarding_expires_idx').on(table.expiresAt)],
 );
 
+export const telegramCheckoutSessions = sqliteTable(
+  'telegram_checkout_sessions',
+  {
+    telegramUserId: text('telegram_user_id').primaryKey().notNull(),
+    step: text('step').notNull(),
+    courseId: text('course_id'),
+    promoCode: text('promo_code'),
+    paymentMethodId: text('payment_method_id'),
+    transactionId: text('transaction_id'),
+    receiptStorageKey: text('receipt_storage_key'),
+    searchQuery: text('search_query'),
+    filterType: text('filter_type'),
+    expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+    ...timestamps,
+  },
+  (table) => [index('telegram_checkout_expires_idx').on(table.expiresAt)],
+);
+
 export const loginAttempts = sqliteTable(
   'login_attempts',
   {
@@ -1604,6 +1622,7 @@ export const schema = {
   passwordResetTokens,
   accountLinkTokens,
   telegramOnboardingStates,
+  telegramCheckoutSessions,
   loginAttempts,
   roles,
   permissions,

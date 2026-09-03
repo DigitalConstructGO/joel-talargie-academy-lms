@@ -153,7 +153,8 @@ function PaymentDetailSheet({
       await approvePayment.mutateAsync({
         paymentId,
         input: {
-          mismatchApprovalReason: payment.amountMismatch ? mismatchReason.trim() : undefined,
+          mismatchApprovalReason:
+            payment.amountMismatch && mismatchReason.trim() ? mismatchReason.trim() : undefined,
           acknowledgeDuplicate: duplicateCount > 0 ? true : undefined,
         },
       });

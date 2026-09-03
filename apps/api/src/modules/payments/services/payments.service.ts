@@ -26,6 +26,9 @@ import { PaymentsRepository } from '../repositories/payments.repository';
 import { NotificationsService } from '../../notifications/services/notifications.service';
 import { PaymentMethodsService } from '../../payment-methods/services/payment-methods.service';
 
+import { Optional } from '@nestjs/common';
+import { TelegramTransactionalNotificationService } from '../../telegram/services/telegram-transactional-notification.service';
+
 const RECEIPT_TYPES: Record<
   string,
   { extension: string; signature: (buffer: Buffer) => boolean }
@@ -59,6 +62,9 @@ export class PaymentsService {
     @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
     private readonly notifications: NotificationsService,
     private readonly paymentMethods: PaymentMethodsService,
+    @Optional()
+    @Inject(TelegramTransactionalNotificationService)
+    private readonly telegramNotifications?: TelegramTransactionalNotificationService,
   ) {}
 
   async instructions(user: AuthUser, enrollmentId: string) {
@@ -248,7 +254,16 @@ export class PaymentsService {
   }
 
   async adminDetail(paymentId: string) {
-    const payment = await this.repository.admin(paymentId);
+    let payment = await this.repository.admin(paymentId);
+    if (!payment) {
+      const list = await this.repository.listAdmin({
+        page: 1,
+        pageSize: 99999,
+      });
+      payment =
+        list.find((p) => p.id === paymentId || p.enrollmentId === paymentId) ??
+        null;
+    }
     if (!payment)
       throw new NotFoundException({
         code: 'PAYMENT_NOT_FOUND',
@@ -273,7 +288,11 @@ export class PaymentsService {
 
   async approve(actorId: string, paymentId: string, dto: ApprovePaymentDto) {
     const payment = await this.adminDetail(paymentId);
-    if (payment.status !== 'PENDING')
+    if (
+      !['PENDING', 'WAITING_APPROVAL', 'PENDING_PAYMENT'].includes(
+        payment.status,
+      )
+    )
       throw new ConflictException({
         code: 'PAYMENT_ALREADY_REVIEWED',
         message: 'Payment was already reviewed',
@@ -344,6 +363,17 @@ export class PaymentsService {
           priority: 'HIGH',
         })
         .catch(() => null);
+
+      if (this.telegramNotifications) {
+        void this.telegramNotifications
+          .notifyPaymentApproved(
+            payment.studentId,
+            payment.courseTitle,
+            String(payment.submittedAmount ?? payment.expectedAmount),
+          )
+          .catch(() => null);
+      }
+
       return reviewed;
     } catch (error) {
       this.map(error);
@@ -385,6 +415,17 @@ export class PaymentsService {
           priority: 'HIGH',
         })
         .catch(() => null);
+
+      if (this.telegramNotifications) {
+        void this.telegramNotifications
+          .notifyPaymentDeclined(
+            payment.studentId,
+            payment.courseTitle,
+            dto.reason,
+          )
+          .catch(() => null);
+      }
+
       return reviewed;
     } catch (error) {
       this.map(error);

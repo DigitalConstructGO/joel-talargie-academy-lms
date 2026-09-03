@@ -52,6 +52,20 @@ const PAYMENT_SEEDS: PaymentSeed[] = [
     daysAgoSubmitted: 2,
     paymentMethod: { id: 'method-chapa', name: 'Chapa', code: 'CHAPA', type: 'CARD' },
   },
+  {
+    courseIndex: 2,
+    enrollmentId: 'enrollment-004',
+    status: 'DECLINED',
+    daysAgoSubmitted: 5,
+    daysAgoReviewed: 4,
+    declineReason: 'Receipt image was blurred or reference number was incorrect.',
+    paymentMethod: {
+      id: 'method-telebirr',
+      name: 'Telebirr',
+      code: 'TELEBIRR',
+      type: 'MOBILE_MONEY',
+    },
+  },
 ];
 
 function buildPayment(seed: PaymentSeed, index: number): Payment | null {

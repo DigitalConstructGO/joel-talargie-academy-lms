@@ -27,6 +27,6 @@ import { RedemptionService } from './services/redemption.service';
     AffiliatesService,
     PromotionAnalyticsService,
   ],
-  exports: [PromotionEngineService, PromotionsRepository],
+  exports: [PromotionEngineService, PromotionsRepository, RedemptionService],
 })
 export class PromotionsModule {}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, ShieldCheck, Sparkles, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 
 type ContinuationStage = 'verifying' | 'securing' | 'redirecting' | 'error';
 
-export default function TelegramContinuePage() {
+function TelegramContinueContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const handleContinuation = useAuthStore((state) => state.handleTelegramContinuationToken);
@@ -139,5 +139,19 @@ export default function TelegramContinuePage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function TelegramContinuePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[60vh] items-center justify-center p-8">
+          <Loader2 className="size-8 animate-spin text-brand" />
+        </div>
+      }
+    >
+      <TelegramContinueContent />
+    </Suspense>
   );
 }

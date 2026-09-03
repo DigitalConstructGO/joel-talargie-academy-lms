@@ -4,6 +4,8 @@ import {
   consumeAccountLinkToken,
   findAuthUserByEmail,
   getTelegramOnboardingState,
+  getTelegramCheckoutSession,
+  upsertTelegramCheckoutSession,
   linkTelegramAccount,
   schema,
 } from '@joel-academy/database';
@@ -11,9 +13,13 @@ import { DatabaseService } from '../../../common/database/database.service';
 import { TelegramClientService } from './telegram-client.service';
 import { TelegramConfigService } from './telegram-config.service';
 import { TelegramIdentityResolverService } from './telegram-identity-resolver.service';
-import { TELEGRAM_LINK_PURPOSE } from './telegram-link.service';
-import { TelegramLinkService } from './telegram-link.service';
+import {
+  TelegramLinkService,
+  TELEGRAM_LINK_PURPOSE,
+} from './telegram-link.service';
 import { TelegramRegistrationService } from './telegram-registration.service';
+import { TelegramStudentService } from './telegram-student.service';
+import { TelegramCheckoutService } from './telegram-checkout.service';
 import type { TelegramUpdate } from '../dto/telegram-update.dto';
 
 @Injectable()
@@ -32,6 +38,10 @@ export class TelegramUpdateService {
     private readonly registrationService: TelegramRegistrationService,
     @Inject(TelegramLinkService)
     private readonly linkService: TelegramLinkService,
+    @Inject(TelegramStudentService)
+    private readonly studentService: TelegramStudentService,
+    @Inject(TelegramCheckoutService)
+    private readonly checkoutService: TelegramCheckoutService,
   ) {}
 
   async handleUpdate(update: TelegramUpdate): Promise<void> {
@@ -130,6 +140,129 @@ export class TelegramUpdateService {
       await this.registrationService.changeEmail(chatId, fromId);
     } else if (data === 'cancel_registration') {
       await this.registrationService.cancelRegistration(chatId, fromId);
+    } else if (data === 'student_menu') {
+      await this.studentService.handleStart(chatId, fromId);
+    } else if (data === 'student_help') {
+      await this.studentService.handleHelp(chatId);
+    } else if (data === 'student_account') {
+      await this.studentService.handleAccount(chatId, fromId);
+    } else if (data === 'student_courses') {
+      await this.studentService.handleCourses(chatId, 1);
+    } else if (data.startsWith('courses_page:')) {
+      const page = parseInt(data.split(':')[1] || '1', 10);
+      await this.studentService.handleCourses(chatId, isNaN(page) ? 1 : page);
+    } else if (data.startsWith('course_detail:')) {
+      const courseId = data.split(':')[1];
+      await this.studentService.handleCourseDetail(chatId, fromId, courseId);
+    } else if (
+      data.startsWith('start_enrollment:') ||
+      data.startsWith('resume_checkout:')
+    ) {
+      const courseId = data.split(':')[1];
+      await this.checkoutService.handleStartEnrollment(
+        chatId,
+        fromId,
+        courseId,
+      );
+    } else if (data === 'prompt_promo_code') {
+      await this.checkoutService.handlePromptPromo(chatId, fromId);
+    } else if (
+      data === 'skip_promo_code' ||
+      data === 'continue_to_payment_methods'
+    ) {
+      await this.checkoutService.handleSelectPaymentMethod(chatId, fromId);
+    } else if (data.startsWith('choose_payment_method:')) {
+      const methodId = data.split(':')[1];
+      await this.checkoutService.handleChoosePaymentMethod(
+        chatId,
+        fromId,
+        methodId,
+      );
+    } else if (data === 'submit_final_payment') {
+      await this.checkoutService.handleSubmitPayment(chatId, fromId);
+    } else if (data.startsWith('confirm_free_enrollment:')) {
+      await this.checkoutService.handleSubmitPayment(chatId, fromId);
+    } else if (data === 'cancel_checkout') {
+      await this.checkoutService.handleCancelCheckout(chatId, fromId);
+    } else if (data === 'prompt_course_search') {
+      await upsertTelegramCheckoutSession(this.database.client, {
+        telegramUserId: String(fromId),
+        step: 'AWAITING_SEARCH_QUERY',
+      });
+      await this.telegramClient.sendMessage({
+        chat_id: chatId,
+        text: `🔎 <b>Course Search</b>\n\nPlease type and send your course keyword or title in chat:`,
+        parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '⬅️ Back to Courses', callback_data: 'student_courses' }],
+          ],
+        },
+      });
+    } else if (data === 'prompt_course_filters') {
+      await this.telegramClient.sendMessage({
+        chat_id: chatId,
+        text: `🎯 <b>Filter Courses</b>\n\nSelect a course type filter below:`,
+        parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: 'All Courses', callback_data: 'filter_courses:ALL' }],
+            [{ text: '🆓 FREE Courses', callback_data: 'filter_courses:FREE' }],
+            [{ text: '💳 PAID Courses', callback_data: 'filter_courses:PAID' }],
+            [{ text: '⬅️ Back to Courses', callback_data: 'student_courses' }],
+          ],
+        },
+      });
+    } else if (data.startsWith('filter_courses:')) {
+      const fType = data.split(':')[1];
+      await this.studentService.handleCourses(
+        chatId,
+        1,
+        null,
+        fType === 'ALL' ? null : fType,
+      );
+    } else if (data === 'clear_course_search') {
+      await this.studentService.handleCourses(chatId, 1, null, null);
+    } else if (data === 'student_my_courses') {
+      await this.studentService.handleMyCourses(chatId, fromId, 1);
+    } else if (data.startsWith('mycourses_page:')) {
+      const page = parseInt(data.split(':')[1] || '1', 10);
+      await this.studentService.handleMyCourses(
+        chatId,
+        fromId,
+        isNaN(page) ? 1 : page,
+      );
+    } else if (data === 'student_progress') {
+      await this.studentService.handleProgress(chatId, fromId);
+    } else if (data.startsWith('progress_detail:')) {
+      await this.studentService.handleProgress(chatId, fromId);
+    } else if (data === 'student_payments') {
+      await this.studentService.handlePayments(chatId, fromId, 1);
+    } else if (data.startsWith('payments_page:')) {
+      const page = parseInt(data.split(':')[1] || '1', 10);
+      await this.studentService.handlePayments(
+        chatId,
+        fromId,
+        isNaN(page) ? 1 : page,
+      );
+    } else if (data.startsWith('payment_detail:')) {
+      const paymentId = data.split(':')[1];
+      await this.studentService.handlePayments(chatId, fromId, 1, paymentId);
+    } else if (data === 'student_certificates') {
+      await this.studentService.handleCertificates(chatId, fromId);
+    } else if (data === 'student_notifications') {
+      await this.studentService.handleNotifications(chatId, fromId, 1);
+    } else if (data.startsWith('notifications_page:')) {
+      const page = parseInt(data.split(':')[1] || '1', 10);
+      await this.studentService.handleNotifications(
+        chatId,
+        fromId,
+        isNaN(page) ? 1 : page,
+      );
+    } else if (data === 'student_settings') {
+      await this.studentService.handleSettings(chatId, fromId);
+    } else if (data === 'student_unlink') {
+      await this.studentService.handleUnlink(chatId, fromId);
     }
   }
 
@@ -156,43 +289,116 @@ export class TelegramUpdateService {
       return;
     }
 
+    if (text.startsWith('/help')) {
+      await this.studentService.handleHelp(chatId);
+      return;
+    }
+
+    if (text.startsWith('/account')) {
+      await this.studentService.handleAccount(chatId, fromUser.id);
+      return;
+    }
+
+    if (text.startsWith('/courses')) {
+      await this.studentService.handleCourses(chatId, 1);
+      return;
+    }
+
+    if (text.startsWith('/mycourses')) {
+      await this.studentService.handleMyCourses(chatId, fromUser.id, 1);
+      return;
+    }
+
+    if (text.startsWith('/progress')) {
+      await this.studentService.handleProgress(chatId, fromUser.id);
+      return;
+    }
+
+    if (text.startsWith('/payments')) {
+      await this.studentService.handlePayments(chatId, fromUser.id, 1);
+      return;
+    }
+
+    if (text.startsWith('/certificates')) {
+      await this.studentService.handleCertificates(chatId, fromUser.id);
+      return;
+    }
+
+    if (text.startsWith('/notifications')) {
+      await this.studentService.handleNotifications(chatId, fromUser.id, 1);
+      return;
+    }
+
+    if (text.startsWith('/settings')) {
+      await this.studentService.handleSettings(chatId, fromUser.id);
+      return;
+    }
+
     if (text.startsWith('/cancel')) {
       await this.registrationService.cancelRegistration(chatId, fromUser.id);
       return;
     }
 
     if (text.startsWith('/unlink') || text.startsWith('/disconnect')) {
-      const resolution = await this.identityResolver.resolveIdentity(
-        fromUser.id,
-      );
-      if (resolution.status === 'LINKED' && resolution.user) {
-        await this.linkService.unlinkTelegramAccount(resolution.user.id);
-        await this.telegramClient.sendMessage({
-          chat_id: chatId,
-          text:
-            `🔓 **Telegram Account Unlinked**\n\n` +
-            `Your Telegram account has been disconnected from your Joel Talargie Academy profile.`,
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: 'Create New Account', callback_data: 'register_new' }],
-              [
-                {
-                  text: 'Connect Existing Account',
-                  callback_data: 'connect_existing',
-                },
-              ],
-            ],
-          },
-        });
-      } else {
-        await this.registrationService.cancelRegistration(chatId, fromUser.id);
-      }
+      await this.studentService.handleUnlink(chatId, fromUser.id);
       return;
     }
 
     if (text.startsWith('/')) {
       // Ignore unknown slash commands
       return;
+    }
+
+    // Check active checkout session state
+    const checkoutSession = await getTelegramCheckoutSession(
+      this.database.client,
+      String(fromUser.id),
+    );
+
+    if (checkoutSession) {
+      if (checkoutSession.step === 'AWAITING_PROMO_CODE' && text) {
+        await this.checkoutService.handlePromoInput(chatId, fromUser.id, text);
+        return;
+      }
+      if (checkoutSession.step === 'AWAITING_PAYMENT_REFERENCE' && text) {
+        await this.checkoutService.handleReferenceInput(
+          chatId,
+          fromUser.id,
+          text,
+        );
+        return;
+      }
+      if (checkoutSession.step === 'AWAITING_SEARCH_QUERY' && text) {
+        await this.studentService.handleCourses(chatId, 1, text);
+        return;
+      }
+      if (checkoutSession.step === 'AWAITING_PAYMENT_RECEIPT') {
+        const photo = message.photo;
+        const document = message.document;
+
+        if (photo && photo.length > 0) {
+          const largestPhoto = photo[photo.length - 1];
+          if (largestPhoto?.file_id) {
+            await this.checkoutService.handleReceiptUpload(
+              chatId,
+              fromUser.id,
+              largestPhoto.file_id,
+              'image/jpeg',
+              'telegram-receipt.jpg',
+            );
+            return;
+          }
+        } else if (document && document.file_id) {
+          await this.checkoutService.handleReceiptUpload(
+            chatId,
+            fromUser.id,
+            document.file_id,
+            document.mime_type || 'application/pdf',
+            document.file_name || 'telegram-receipt.pdf',
+          );
+          return;
+        }
+      }
     }
 
     // Check active registration state (TG5.35 & TG6)

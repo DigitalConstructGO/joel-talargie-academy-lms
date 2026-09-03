@@ -67,7 +67,7 @@ const SIDEBAR_LABEL_MAP: Record<string, TranslationKey> = {
   Permissions: 'sidebar.security',
   Courses: 'nav.courses',
   Categories: 'nav.categories',
-  Payments: 'sidebar.financial',
+  Payments: 'sidebar.payments',
   Promotions: 'sidebar.financial',
   Reports: 'sidebar.reports',
   Settings: 'sidebar.system',

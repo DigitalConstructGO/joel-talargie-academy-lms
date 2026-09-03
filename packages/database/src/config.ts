@@ -22,7 +22,7 @@ export function validateDatabaseUrl(
       return checkPkgPath;
     }
     const checkPath = resolve(currentDir, dbPath);
-    if (existsSync(checkPath)) {
+    if (existsSync(checkPath) && !currentDir.includes('apps')) {
       return checkPath;
     }
     const parent = resolve(currentDir, '..');

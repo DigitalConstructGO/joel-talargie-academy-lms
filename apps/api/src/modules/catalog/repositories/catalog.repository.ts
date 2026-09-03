@@ -47,9 +47,12 @@ export class CatalogRepository {
       where: eq(schema.courses.id, id),
     });
   }
-  courseBySlug(slug: string) {
+  courseBySlug(slugOrId: string) {
     return this.db.query.courses.findFirst({
-      where: eq(schema.courses.slug, slug),
+      where: or(
+        eq(schema.courses.slug, slugOrId),
+        eq(schema.courses.id, slugOrId),
+      ),
     });
   }
   courseCategory(categoryId: string) {

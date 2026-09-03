@@ -1,5 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { and, count, desc, eq, or, sql, schema } from '@joel-academy/database';
+import {
+  and,
+  count,
+  desc,
+  eq,
+  inArray,
+  or,
+  sql,
+  schema,
+} from '@joel-academy/database';
 import { DatabaseService } from '../../../common/database/database.service';
 import type {
   PaymentActivityQueryDto,
@@ -206,11 +215,88 @@ export class PaymentsRepository {
     query: PaymentListQueryDto,
     enrollmentId?: string,
   ) {
-    return this.paymentSelect()
-      .where(and(...this.mineConditions(studentId, query, enrollmentId)))
-      .orderBy(desc(schema.payments.submittedAt), desc(schema.payments.id))
-      .limit(query.pageSize)
-      .offset((query.page - 1) * query.pageSize);
+    const existingPayments = await this.paymentSelect().where(
+      and(...this.mineConditions(studentId, query, enrollmentId)),
+    );
+
+    const existingEnrollmentIds = new Set(
+      existingPayments.map((p) => p.enrollmentId),
+    );
+
+    let pendingEnrollmentItems: any[] = [];
+    if (!query.status || query.status === 'PENDING') {
+      const pendingEnrollments = await this.db
+        .select({
+          id: schema.enrollments.id,
+          courseId: schema.enrollments.courseId,
+          courseTitle: schema.courses.title,
+          status: schema.enrollments.status,
+          priceAtEnrollment: schema.enrollments.priceAtEnrollment,
+          discountAtEnrollment: schema.enrollments.discountAtEnrollment,
+          currencyAtEnrollment: schema.enrollments.currencyAtEnrollment,
+          createdAt: schema.enrollments.createdAt,
+        })
+        .from(schema.enrollments)
+        .innerJoin(
+          schema.courses,
+          eq(schema.courses.id, schema.enrollments.courseId),
+        )
+        .where(
+          and(
+            eq(schema.enrollments.studentId, studentId),
+            inArray(schema.enrollments.status, [
+              'PENDING_PAYMENT',
+              'WAITING_APPROVAL',
+            ]),
+            enrollmentId ? eq(schema.enrollments.id, enrollmentId) : undefined,
+          ),
+        );
+
+      pendingEnrollmentItems = pendingEnrollments
+        .filter((e) => !existingEnrollmentIds.has(e.id))
+        .map((e) => ({
+          id: e.id,
+          enrollmentId: e.id,
+          courseId: e.courseId,
+          courseTitle: e.courseTitle,
+          attemptNumber: 1,
+          transactionId: 'PENDING_SUBMISSION',
+          submittedAmount:
+            e.discountAtEnrollment ?? e.priceAtEnrollment ?? '0.00',
+          expectedAmount:
+            e.discountAtEnrollment ?? e.priceAtEnrollment ?? '0.00',
+          currency: e.currencyAtEnrollment ?? 'ETB',
+          paymentDate: null,
+          studentNote: null,
+          status: 'PENDING',
+          amountMismatch: false,
+          declineReason: null,
+          submittedAt: e.createdAt,
+          reviewedAt: null,
+          paymentMethodId: null,
+          paymentMethodName: null,
+          paymentMethodCode: null,
+          paymentMethodType: null,
+          promoCode: null,
+          promoDiscountType: null,
+          promoDiscountValue: null,
+          promoOriginalAmount: null,
+          promoDiscountAmount: null,
+          promoFinalAmount: null,
+        }));
+    }
+
+    const combined = [...existingPayments, ...pendingEnrollmentItems].sort(
+      (a, b) => {
+        const timeA = new Date(a.submittedAt || 0).getTime();
+        const timeB = new Date(b.submittedAt || 0).getTime();
+        return timeB - timeA;
+      },
+    );
+
+    const page = query.page || 1;
+    const pageSize = query.pageSize || 20;
+    return combined.slice((page - 1) * pageSize, page * pageSize);
   }
 
   async countMine(
@@ -218,15 +304,12 @@ export class PaymentsRepository {
     query: PaymentListQueryDto,
     enrollmentId?: string,
   ) {
-    const [row] = await this.db
-      .select({ value: count() })
-      .from(schema.payments)
-      .innerJoin(
-        schema.enrollments,
-        eq(schema.enrollments.id, schema.payments.enrollmentId),
-      )
-      .where(and(...this.mineConditions(studentId, query, enrollmentId)));
-    return Number(row?.value ?? 0);
+    const list = await this.listMine(
+      studentId,
+      { ...query, page: 1, pageSize: 99999 },
+      enrollmentId,
+    );
+    return list.length;
   }
 
   mine(studentId: string, paymentId: string) {
@@ -263,35 +346,123 @@ export class PaymentsRepository {
   }
 
   async listAdmin(query: PaymentListQueryDto) {
-    return this.adminSelect()
-      .where(and(...this.adminConditions(query)))
-      .orderBy(desc(schema.payments.submittedAt), desc(schema.payments.id))
-      .limit(query.pageSize)
-      .offset((query.page - 1) * query.pageSize);
+    const existingPayments = await this.adminSelect().where(
+      and(...this.adminConditions(query)),
+    );
+
+    const existingEnrollmentIds = new Set(
+      existingPayments.map((p) => p.enrollmentId),
+    );
+
+    let pendingEnrollmentItems: any[] = [];
+    if (!query.status || query.status === 'PENDING') {
+      const pendingEnrollments = await this.db
+        .select({
+          id: schema.enrollments.id,
+          studentId: schema.enrollments.studentId,
+          studentEmail: schema.users.email,
+          studentName: schema.userProfiles.firstName,
+          courseId: schema.enrollments.courseId,
+          courseTitle: schema.courses.title,
+          status: schema.enrollments.status,
+          priceAtEnrollment: schema.enrollments.priceAtEnrollment,
+          discountAtEnrollment: schema.enrollments.discountAtEnrollment,
+          currencyAtEnrollment: schema.enrollments.currencyAtEnrollment,
+          createdAt: schema.enrollments.createdAt,
+        })
+        .from(schema.enrollments)
+        .innerJoin(
+          schema.users,
+          eq(schema.users.id, schema.enrollments.studentId),
+        )
+        .innerJoin(
+          schema.courses,
+          eq(schema.courses.id, schema.enrollments.courseId),
+        )
+        .leftJoin(
+          schema.userProfiles,
+          eq(schema.userProfiles.userId, schema.enrollments.studentId),
+        )
+        .where(
+          and(
+            inArray(schema.enrollments.status, [
+              'PENDING_PAYMENT',
+              'WAITING_APPROVAL',
+            ]),
+            query.courseId
+              ? eq(schema.enrollments.courseId, query.courseId)
+              : undefined,
+          ),
+        );
+
+      pendingEnrollmentItems = pendingEnrollments
+        .filter((e) => !existingEnrollmentIds.has(e.id))
+        .map((e) => ({
+          id: e.id,
+          enrollmentId: e.id,
+          studentId: e.studentId,
+          studentEmail: e.studentEmail,
+          studentName: e.studentName ?? 'Student',
+          courseId: e.courseId,
+          courseTitle: e.courseTitle,
+          attemptNumber: 1,
+          transactionId: 'PENDING_SUBMISSION',
+          submittedAmount:
+            e.discountAtEnrollment ?? e.priceAtEnrollment ?? '0.00',
+          expectedAmount:
+            e.discountAtEnrollment ?? e.priceAtEnrollment ?? '0.00',
+          currency: e.currencyAtEnrollment ?? 'ETB',
+          paymentDate: null,
+          studentNote: null,
+          status: 'PENDING',
+          amountMismatch: false,
+          duplicateTransactionCount: 0,
+          declineReason: null,
+          reviewNote: null,
+          mismatchApprovalReason: null,
+          reviewerId: null,
+          submittedAt: e.createdAt,
+          reviewedAt: null,
+          paymentMethodId: null,
+          paymentMethodName: null,
+          paymentMethodCode: null,
+          paymentMethodType: null,
+          promoCode: null,
+          promoDiscountType: null,
+          promoDiscountValue: null,
+          promoOriginalAmount: null,
+          promoDiscountAmount: null,
+          promoFinalAmount: null,
+        }));
+    }
+
+    let combined = [...existingPayments, ...pendingEnrollmentItems];
+
+    if (query.search) {
+      const needle = query.search.toLowerCase();
+      combined = combined.filter(
+        (item) =>
+          item.courseTitle?.toLowerCase().includes(needle) ||
+          item.studentEmail?.toLowerCase().includes(needle) ||
+          item.transactionId?.toLowerCase().includes(needle) ||
+          item.studentName?.toLowerCase().includes(needle),
+      );
+    }
+
+    combined.sort((a, b) => {
+      const timeA = new Date(a.submittedAt || 0).getTime();
+      const timeB = new Date(b.submittedAt || 0).getTime();
+      return timeB - timeA;
+    });
+
+    const page = query.page || 1;
+    const pageSize = query.pageSize || 20;
+    return combined.slice((page - 1) * pageSize, page * pageSize);
   }
 
   async countAdmin(query: PaymentListQueryDto) {
-    const [row] = await this.db
-      .select({ value: count() })
-      .from(schema.payments)
-      .innerJoin(
-        schema.enrollments,
-        eq(schema.enrollments.id, schema.payments.enrollmentId),
-      )
-      .innerJoin(
-        schema.users,
-        eq(schema.users.id, schema.enrollments.studentId),
-      )
-      .innerJoin(
-        schema.courses,
-        eq(schema.courses.id, schema.enrollments.courseId),
-      )
-      .leftJoin(
-        schema.userProfiles,
-        eq(schema.userProfiles.userId, schema.enrollments.studentId),
-      )
-      .where(and(...this.adminConditions(query)));
-    return Number(row?.value ?? 0);
+    const list = await this.listAdmin({ ...query, page: 1, pageSize: 99999 });
+    return list.length;
   }
 
   admin(paymentId: string) {
@@ -360,27 +531,53 @@ export class PaymentsRepository {
     input: { reason?: string; reviewNote?: string },
   ) {
     return this.db.transaction(async (tx) => {
-      await tx.execute(sql`SELECT id FROM payments WHERE id = ${paymentId}`);
-      const payment = await tx.query.payments.findFirst({
-        where: eq(schema.payments.id, paymentId),
-      });
-      if (!payment) throw new Error('PAYMENT_NOT_FOUND');
-      if (payment.status !== 'PENDING')
-        throw new Error('PAYMENT_ALREADY_REVIEWED');
-      await tx.execute(
-        sql`SELECT id FROM enrollments WHERE id = ${payment.enrollmentId}`,
-      );
-      const enrollment = await tx.query.enrollments.findFirst({
-        where: eq(schema.enrollments.id, payment.enrollmentId),
-      });
-      if (!enrollment || enrollment.status !== 'WAITING_APPROVAL')
-        throw new Error('ENROLLMENT_STATUS_INVALID');
-      const receipt = await tx.query.paymentReceipts.findFirst({
-        where: eq(schema.paymentReceipts.paymentId, paymentId),
-      });
-      if (!receipt) throw new Error('RECEIPT_NOT_FOUND');
       const now = new Date();
       const status = decision === 'approve' ? 'APPROVED' : 'DECLINED';
+
+      let payment = await tx.query.payments.findFirst({
+        where: eq(schema.payments.id, paymentId),
+      });
+
+      let enrollment;
+      if (payment) {
+        enrollment = await tx.query.enrollments.findFirst({
+          where: eq(schema.enrollments.id, payment.enrollmentId),
+        });
+      } else {
+        enrollment = await tx.query.enrollments.findFirst({
+          where: eq(schema.enrollments.id, paymentId),
+        });
+        if (enrollment) {
+          const [inserted] = await tx
+            .insert(schema.payments)
+            .values({
+              enrollmentId: enrollment.id,
+              attemptNumber: 1,
+              transactionId: 'MANUAL_ADMIN_ENTRY',
+              transactionIdNormalized: 'MANUAL_ADMIN_ENTRY',
+              amount:
+                enrollment.discountAtEnrollment ??
+                enrollment.priceAtEnrollment ??
+                '0.00',
+              expectedAmountSnapshot:
+                enrollment.discountAtEnrollment ??
+                enrollment.priceAtEnrollment ??
+                '0.00',
+              currency: enrollment.currencyAtEnrollment ?? 'ETB',
+              paymentDate: now,
+              studentNote: 'Approved by administrator',
+              status: 'PENDING',
+              amountMismatch: false,
+              duplicateTransactionCount: 0,
+            })
+            .returning();
+          payment = inserted;
+        }
+      }
+
+      if (!payment) throw new Error('PAYMENT_NOT_FOUND');
+      if (!enrollment) throw new Error('ENROLLMENT_NOT_FOUND');
+
       await tx
         .update(schema.payments)
         .set({
@@ -392,7 +589,8 @@ export class PaymentsRepository {
           reviewNote: input.reviewNote,
           updatedAt: now,
         })
-        .where(eq(schema.payments.id, paymentId));
+        .where(eq(schema.payments.id, payment.id));
+
       await tx
         .update(schema.enrollments)
         .set({
@@ -404,13 +602,17 @@ export class PaymentsRepository {
           updatedAt: now,
         })
         .where(eq(schema.enrollments.id, enrollment.id));
+
       await tx.insert(schema.activityLogs).values({
         actorId,
         action:
           decision === 'approve' ? 'payment.approved' : 'payment.declined',
         entityType: 'payment',
-        entityId: paymentId,
-        before: { status: 'PENDING', enrollmentStatus: 'WAITING_APPROVAL' },
+        entityId: payment.id,
+        before: {
+          status: payment.status,
+          enrollmentStatus: enrollment.status,
+        },
         after: {
           status,
           enrollmentStatus:
@@ -418,8 +620,9 @@ export class PaymentsRepository {
           reason: input.reason,
         },
       });
+
       return {
-        paymentId,
+        paymentId: payment.id,
         status,
         enrollmentStatus:
           decision === 'approve' ? 'ENROLLED' : 'PENDING_PAYMENT',

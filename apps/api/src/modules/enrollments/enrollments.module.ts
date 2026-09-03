@@ -10,5 +10,6 @@ import { EnrollmentsService } from './services/enrollments.service';
   imports: [DatabaseModule, NotificationsModule],
   controllers: [StudentEnrollmentsController, AdminEnrollmentsController],
   providers: [EnrollmentsRepository, EnrollmentsService],
+  exports: [EnrollmentsService],
 })
 export class EnrollmentsModule {}

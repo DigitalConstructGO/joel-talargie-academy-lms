@@ -92,6 +92,34 @@ describe('TG4 — Web-First Telegram Account Linking Specification Tests', () =>
       cancelRegistration: vi.fn(),
     };
 
+    const mockStudentService = {
+      handleStart: vi.fn(),
+      handleHelp: vi.fn(),
+      handleAccount: vi.fn(),
+      handleCourses: vi.fn(),
+      handleMyCourses: vi.fn(),
+      handleProgress: vi.fn(),
+      handlePayments: vi.fn(),
+      handleCertificates: vi.fn(),
+      handleNotifications: vi.fn(),
+      handleSettings: vi.fn(),
+      handleUnlink: vi.fn(),
+    };
+
+    const mockCheckoutService = {
+      checkActiveSession: vi.fn().mockResolvedValue(false),
+      handleStartEnrollment: vi.fn(),
+      handlePromptPromo: vi.fn(),
+      handlePromoInput: vi.fn(),
+      handleSelectPaymentMethod: vi.fn(),
+      handleChoosePaymentMethod: vi.fn(),
+      handleReferenceInput: vi.fn(),
+      handleReceiptUpload: vi.fn(),
+      handleReviewPayment: vi.fn(),
+      handleSubmitPayment: vi.fn(),
+      handleCancelCheckout: vi.fn(),
+    };
+
     updateService = new TelegramUpdateService(
       mockDatabase as any,
       clientService,
@@ -99,6 +127,8 @@ describe('TG4 — Web-First Telegram Account Linking Specification Tests', () =>
       identityResolver,
       mockRegistrationService as any,
       linkService,
+      mockStudentService as any,
+      mockCheckoutService as any,
     );
     controller = new TelegramController(
       configService,

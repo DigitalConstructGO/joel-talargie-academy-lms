@@ -81,8 +81,9 @@ export function TelegramConnectedCard() {
           isAmharic ? 'እባክዎ ቆየት ብለው እንደገና ይሞክሩ።' : 'Please try again in a few moments.',
         );
       }
-    } catch (error: any) {
-      const message = error?.response?.data?.message || error?.message || 'Connection failed';
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
+      const message = err?.response?.data?.message || err?.message || 'Connection failed';
       toast.error(isAmharic ? 'የቴሌግራም ማገናኛ መፍጠር አልተቻለም' : 'Telegram Connection Failed', message);
     } finally {
       setIsRedirecting(false);
@@ -99,10 +100,11 @@ export function TelegramConnectedCard() {
           : 'Your Telegram account has been unlinked from your academy profile.',
       );
       void refetch();
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
       toast.error(
         isAmharic ? 'ግንኙነቱን ማቋረጥ አልተቻለም' : 'Failed to Disconnect Telegram',
-        error?.response?.data?.message || error?.message || 'Please try again.',
+        err?.response?.data?.message || err?.message || 'Please try again.',
       );
     }
   };

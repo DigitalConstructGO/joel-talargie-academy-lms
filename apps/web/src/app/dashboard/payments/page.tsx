@@ -65,12 +65,6 @@ const DEFAULT_FILTERS: PaymentsFilters = {
   submittedTo: undefined,
 };
 
-const STATUS_OPTIONS = [
-  { label: 'Pending', value: 'PENDING' },
-  { label: 'Approved', value: 'APPROVED' },
-  { label: 'Declined', value: 'DECLINED' },
-];
-
 const STATUS_BADGE_VARIANT: Record<PaymentStatus, 'warning' | 'success' | 'destructive'> = {
   PENDING: 'warning',
   APPROVED: 'success',
@@ -240,9 +234,9 @@ export default function StudentPaymentsPage() {
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
 
   const statusOptions = [
-    { label: t('common.pending'), value: 'PENDING' },
-    { label: t('common.verified'), value: 'APPROVED' },
-    { label: t('common.unverified'), value: 'DECLINED' },
+    { label: t('common.pendingPayment'), value: 'PENDING' },
+    { label: t('common.approved'), value: 'APPROVED' },
+    { label: t('common.declined'), value: 'DECLINED' },
   ];
 
   const paymentsQuery = useMyPayments({
@@ -270,7 +264,14 @@ export default function StudentPaymentsPage() {
 
   return (
     <ContentContainer>
-      <PageHeader title={t('sidebar.financial')} description={t('categories.subtitle')} />
+      <PageHeader
+        title={t('sidebar.payments')}
+        description={
+          locale === 'am'
+            ? 'የክፍያ ታሪክዎን እና ደረሰኞችን ይመልከቱ'
+            : 'View and manage all your course payment history and receipt submissions.'
+        }
+      />
 
       {hasPending && (
         <p className="flex items-center gap-2 rounded-xl border border-warning/40 bg-warning/5 px-4 py-3 text-sm text-warning">
@@ -384,10 +385,10 @@ export default function StudentPaymentsPage() {
                   <TableCell>
                     <Badge variant={STATUS_BADGE_VARIANT[payment.status]}>
                       {payment.status === 'APPROVED'
-                        ? t('common.verified')
+                        ? t('common.approved')
                         : payment.status === 'DECLINED'
-                          ? t('common.unverified')
-                          : t('common.pending')}
+                          ? t('common.declined')
+                          : t('common.pendingPayment')}
                     </Badge>
                   </TableCell>
                 </TableRow>

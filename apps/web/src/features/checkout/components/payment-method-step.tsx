@@ -267,11 +267,15 @@ export function PaymentMethodStep({
             ))}
           </dl>
 
-          <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-            {content.tips.map((tip) => (
-              <li key={tip}>{tip}</li>
-            ))}
-          </ul>
+          {content.tips.filter((t) => Boolean(t && t.trim())).length > 0 && (
+            <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+              {content.tips
+                .filter((tip) => Boolean(tip && tip.trim()))
+                .map((tip) => (
+                  <li key={tip}>{tip}</li>
+                ))}
+            </ul>
+          )}
 
           {instructions.referenceInstructions && (
             <p className="text-sm text-muted-foreground">{instructions.referenceInstructions}</p>

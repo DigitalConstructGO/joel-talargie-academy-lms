@@ -17,5 +17,6 @@ import { CatalogService } from './services/catalog.service';
     AdminCurriculumController,
   ],
   providers: [CatalogRepository, CatalogService],
+  exports: [CatalogService],
 })
 export class CatalogModule {}

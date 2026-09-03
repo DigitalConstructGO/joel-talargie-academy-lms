@@ -24,9 +24,9 @@ const liveTelegramApi = {
     unwrap<{ success: boolean }>(await authClient.delete('/telegram/link')),
 };
 
-let mockConnected = false;
-let mockUsername: string | null = null;
-let mockLinkedAt: string | null = null;
+const mockConnected = false;
+const mockUsername: string | null = null;
+const mockLinkedAt: string | null = null;
 
 const mockTelegramApi = {
   getStatus: async (): Promise<TelegramStatus> => {

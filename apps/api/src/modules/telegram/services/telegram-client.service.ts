@@ -211,4 +211,88 @@ export class TelegramClientService {
       return false;
     }
   }
+
+  async sendPhoto(params: {
+    chat_id: number | string;
+    photo: string;
+    caption?: string;
+    parse_mode?: 'Markdown' | 'HTML';
+    reply_markup?: Record<string, unknown>;
+  }): Promise<boolean> {
+    if (!this.config.botToken) return false;
+
+    try {
+      const response = await fetch(`${this.apiUrl}/sendPhoto`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+        signal: AbortSignal.timeout(10_000),
+        ...this.fetchOptions,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.logger.error(
+          `Telegram sendPhoto error [${response.status}]: ${errorText}`,
+        );
+        return false;
+      }
+      return true;
+    } catch (error) {
+      this.logger.error('Failed to send Telegram photo:', error);
+      return false;
+    }
+  }
+
+  async getFile(fileId: string): Promise<{
+    file_id: string;
+    file_path?: string;
+    file_size?: number;
+  } | null> {
+    if (!this.config.botToken) return null;
+
+    try {
+      const response = await fetch(
+        `${this.apiUrl}/getFile?file_id=${encodeURIComponent(fileId)}`,
+        {
+          method: 'GET',
+          signal: AbortSignal.timeout(10_000),
+          ...this.fetchOptions,
+        },
+      );
+
+      if (!response.ok) return null;
+      const data = (await response.json()) as {
+        ok: boolean;
+        result?: { file_id: string; file_path?: string; file_size?: number };
+      };
+      return data.ok ? (data.result ?? null) : null;
+    } catch (error) {
+      this.logger.error('Failed to get Telegram file info:', error);
+      return null;
+    }
+  }
+
+  async downloadFile(filePath: string): Promise<Buffer | null> {
+    if (!this.config.botToken) return null;
+
+    try {
+      const base = (
+        this.config.apiBaseUrl || 'https://api.telegram.org'
+      ).replace(/\/+$/, '');
+      const fileUrl = `${base}/file/bot${this.config.botToken}/${filePath}`;
+      const response = await fetch(fileUrl, {
+        method: 'GET',
+        signal: AbortSignal.timeout(15_000),
+        ...this.fetchOptions,
+      });
+
+      if (!response.ok) return null;
+      const arrayBuffer = await response.arrayBuffer();
+      return Buffer.from(arrayBuffer);
+    } catch (error) {
+      this.logger.error('Failed to download file from Telegram:', error);
+      return null;
+    }
+  }
 }

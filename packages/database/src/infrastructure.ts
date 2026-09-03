@@ -20,6 +20,37 @@ export const createDatabaseClient = (client: Database.Database): AcademyDatabase
     client.pragma('journal_mode = WAL');
     client.pragma('busy_timeout = 5000');
     client.pragma('synchronous = NORMAL');
+    client.exec(`
+      CREATE TABLE IF NOT EXISTS telegram_onboarding_states (
+        telegram_user_id TEXT PRIMARY KEY NOT NULL,
+        step TEXT NOT NULL,
+        email TEXT,
+        otp_hash TEXT,
+        otp_expires_at INTEGER,
+        otp_attempts INTEGER DEFAULT 0 NOT NULL,
+        resend_count INTEGER DEFAULT 0 NOT NULL,
+        last_resend_at INTEGER,
+        email_verified_at INTEGER,
+        paused_at INTEGER,
+        expires_at INTEGER NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS telegram_checkout_sessions (
+        telegram_user_id TEXT PRIMARY KEY NOT NULL,
+        step TEXT NOT NULL,
+        course_id TEXT,
+        promo_code TEXT,
+        payment_method_id TEXT,
+        transaction_id TEXT,
+        receipt_storage_key TEXT,
+        search_query TEXT,
+        filter_type TEXT,
+        expires_at INTEGER NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+    `);
   } catch {}
 
   const sanitizeArg = (arg: any): any => {
@@ -627,7 +658,7 @@ export const linkTelegramAccountToUser = async (
     telegramUsername?: string;
   },
 ) => {
-  return database.transaction(async (tx) => {
+  return database.transaction(async (tx: any) => {
     // Check if telegramUserId is already linked to another user
     const existingProvider = await tx.query.oauthAccounts.findFirst({
       where: and(
@@ -750,6 +781,89 @@ export const deleteTelegramOnboardingState = async (
   await database
     .delete(schema.telegramOnboardingStates)
     .where(eq(schema.telegramOnboardingStates.telegramUserId, telegramUserId));
+};
+
+export const getTelegramCheckoutSession = async (
+  database: AcademyDatabase,
+  telegramUserId: string,
+) => {
+  const session = await database.query.telegramCheckoutSessions.findFirst({
+    where: eq(schema.telegramCheckoutSessions.telegramUserId, telegramUserId),
+  });
+  if (!session) return null;
+  if (new Date() > new Date(session.expiresAt)) {
+    await database
+      .delete(schema.telegramCheckoutSessions)
+      .where(eq(schema.telegramCheckoutSessions.telegramUserId, telegramUserId));
+    return null;
+  }
+  return session;
+};
+
+export const upsertTelegramCheckoutSession = async (
+  database: AcademyDatabase,
+  input: {
+    telegramUserId: string;
+    step: string;
+    courseId?: string | null;
+    promoCode?: string | null;
+    paymentMethodId?: string | null;
+    transactionId?: string | null;
+    receiptStorageKey?: string | null;
+    searchQuery?: string | null;
+    filterType?: string | null;
+    expiresAt?: Date;
+  },
+) => {
+  const existing = await database.query.telegramCheckoutSessions.findFirst({
+    where: eq(schema.telegramCheckoutSessions.telegramUserId, input.telegramUserId),
+  });
+
+  const expiresAt = input.expiresAt ?? new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+
+  const values = {
+    telegramUserId: input.telegramUserId,
+    step: input.step,
+    courseId: input.courseId !== undefined ? input.courseId : (existing?.courseId ?? null),
+    promoCode: input.promoCode !== undefined ? input.promoCode : (existing?.promoCode ?? null),
+    paymentMethodId:
+      input.paymentMethodId !== undefined
+        ? input.paymentMethodId
+        : (existing?.paymentMethodId ?? null),
+    transactionId:
+      input.transactionId !== undefined ? input.transactionId : (existing?.transactionId ?? null),
+    receiptStorageKey:
+      input.receiptStorageKey !== undefined
+        ? input.receiptStorageKey
+        : (existing?.receiptStorageKey ?? null),
+    searchQuery:
+      input.searchQuery !== undefined ? input.searchQuery : (existing?.searchQuery ?? null),
+    filterType: input.filterType !== undefined ? input.filterType : (existing?.filterType ?? null),
+    expiresAt,
+    updatedAt: new Date(),
+  };
+
+  if (existing) {
+    await database
+      .update(schema.telegramCheckoutSessions)
+      .set(values)
+      .where(eq(schema.telegramCheckoutSessions.telegramUserId, input.telegramUserId));
+  } else {
+    await database.insert(schema.telegramCheckoutSessions).values({
+      ...values,
+      createdAt: new Date(),
+    });
+  }
+  return getTelegramCheckoutSession(database, input.telegramUserId);
+};
+
+export const clearTelegramCheckoutSession = async (
+  database: AcademyDatabase,
+  telegramUserId: string,
+) => {
+  await database
+    .delete(schema.telegramCheckoutSessions)
+    .where(eq(schema.telegramCheckoutSessions.telegramUserId, telegramUserId));
 };
 
 export const createTelegramStudentUser = async (

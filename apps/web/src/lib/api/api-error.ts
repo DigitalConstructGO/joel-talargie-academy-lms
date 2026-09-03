@@ -46,6 +46,21 @@ export function extractErrorMessage(error: unknown, fallback = 'Something went w
 
   if (axiosError.response) {
     const body = axiosError.response.data;
+    const details = body?.error?.details;
+    if (Array.isArray(details) && details.length > 0) {
+      const fieldMessages = details
+        .map((d: unknown) =>
+          typeof d === 'string'
+            ? d
+            : typeof d === 'object' && d !== null && 'message' in d
+              ? String((d as { message: unknown }).message)
+              : '',
+        )
+        .filter(Boolean);
+      if (fieldMessages.length > 0) {
+        return fieldMessages.join(', ');
+      }
+    }
     const backendMessage = body?.error?.message ?? body?.message;
     if (backendMessage) return backendMessage;
     const status = axiosError.response.status;

@@ -17,5 +17,6 @@ import { PaymentsService } from './services/payments.service';
   ],
   controllers: [StudentPaymentsController, AdminPaymentsController],
   providers: [PaymentsRepository, PaymentsService],
+  exports: [PaymentsService],
 })
 export class PaymentsModule {}

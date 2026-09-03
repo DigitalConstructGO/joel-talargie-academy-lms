@@ -6,7 +6,15 @@ import {
 } from '@nestjs/common';
 import { DatabaseModule } from '../../common/database/database.module';
 import { SecurityModule } from '../../common/security/security.module';
+import { CatalogModule } from '../catalog/catalog.module';
+import { EnrollmentsModule } from '../enrollments/enrollments.module';
+import { LearningModule } from '../learning/learning.module';
+import { PaymentsModule } from '../payments/payments.module';
+import { CertificatesModule } from '../certificates/certificates.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { StorageModule } from '../storage/storage.module';
+import { PromotionsModule } from '../promotions/promotions.module';
+import { PaymentMethodsModule } from '../payment-methods/payment-methods.module';
 import { TelegramController } from './telegram.controller';
 import { TelegramConfigService } from './services/telegram-config.service';
 import { TelegramClientService } from './services/telegram-client.service';
@@ -14,9 +22,26 @@ import { TelegramIdentityResolverService } from './services/telegram-identity-re
 import { TelegramUpdateService } from './services/telegram-update.service';
 import { TelegramLinkService } from './services/telegram-link.service';
 import { TelegramRegistrationService } from './services/telegram-registration.service';
+import { TelegramFormattingService } from './services/telegram-formatting.service';
+import { TelegramKeyboardService } from './services/telegram-keyboard.service';
+import { TelegramStudentService } from './services/telegram-student.service';
+import { TelegramCheckoutService } from './services/telegram-checkout.service';
+import { TelegramTransactionalNotificationService } from './services/telegram-transactional-notification.service';
 
 @Module({
-  imports: [DatabaseModule, SecurityModule, NotificationsModule],
+  imports: [
+    DatabaseModule,
+    SecurityModule,
+    NotificationsModule,
+    StorageModule,
+    CatalogModule,
+    EnrollmentsModule,
+    LearningModule,
+    PaymentsModule,
+    PaymentMethodsModule,
+    PromotionsModule,
+    CertificatesModule,
+  ],
   controllers: [TelegramController],
   providers: [
     TelegramConfigService,
@@ -25,6 +50,11 @@ import { TelegramRegistrationService } from './services/telegram-registration.se
     TelegramUpdateService,
     TelegramLinkService,
     TelegramRegistrationService,
+    TelegramFormattingService,
+    TelegramKeyboardService,
+    TelegramStudentService,
+    TelegramCheckoutService,
+    TelegramTransactionalNotificationService,
   ],
   exports: [
     TelegramConfigService,
@@ -33,6 +63,11 @@ import { TelegramRegistrationService } from './services/telegram-registration.se
     TelegramUpdateService,
     TelegramLinkService,
     TelegramRegistrationService,
+    TelegramFormattingService,
+    TelegramKeyboardService,
+    TelegramStudentService,
+    TelegramCheckoutService,
+    TelegramTransactionalNotificationService,
   ],
 })
 export class TelegramModule implements OnModuleInit, OnModuleDestroy {

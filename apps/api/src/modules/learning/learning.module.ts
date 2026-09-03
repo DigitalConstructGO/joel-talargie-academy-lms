@@ -17,5 +17,6 @@ import { LearningService } from './services/learning.service';
   ],
   controllers: [StudentLearningController, AdminLearningController],
   providers: [LearningRepository, LearningService],
+  exports: [LearningService],
 })
 export class LearningModule {}
