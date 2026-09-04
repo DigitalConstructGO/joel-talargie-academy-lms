@@ -30,6 +30,7 @@
     "db:seed:performance": "npm run db:seed:performance -w @joel-academy/database",
     "db:export": "npm run db:export -w @joel-academy/database",
     "db:import": "npm run db:import -w @joel-academy/database",
+    "db:clean": "npm run db:clean -w @joel-academy/database",
     "db:check": "npm run db:check -w @joel-academy/database",
     "worker:certificates": "npm run worker:certificates -w @joel-academy/api",
     "worker:email": "npm run worker:email -w @joel-academy/api",
