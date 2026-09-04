@@ -1459,10 +1459,10 @@ export const promoCodes = sqliteTable(
       'promo_codes_window_check',
       sql`${table.validFrom} IS NULL OR ${table.validUntil} IS NULL OR ${table.validUntil} > ${table.validFrom}`,
     ),
-    check('promo_codes_discount_value_check', sql`${table.discountValue} >= 0`),
+    check('promo_codes_discount_value_check', sql`CAST(${table.discountValue} AS REAL) >= 0`),
     check(
       'promo_codes_percentage_bounds_check',
-      sql`${table.discountType} <> 'PERCENTAGE' OR ${table.discountValue} <= 100`,
+      sql`${table.discountType} <> 'PERCENTAGE' OR CAST(${table.discountValue} AS REAL) <= 100`,
     ),
   ],
 );

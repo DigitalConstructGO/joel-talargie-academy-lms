@@ -295,9 +295,7 @@ CREATE TABLE `email_templates` (
 	`created_at` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
 	`updated_at` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
 	FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE restrict,
-	CONSTRAINT "email_templates_version_check" CHECK("email_templates"."version" > 0),
-	CONSTRAINT "email_templates_code_check" CHECK("email_templates"."code" ~ '^[A-Z][A-Z0-9_]{2,79}$'),
-	CONSTRAINT "email_templates_locale_check" CHECK("email_templates"."locale" ~ '^[a-z]{2}(-[A-Z]{2})?$')
+	CONSTRAINT "email_templates_version_check" CHECK("email_templates"."version" > 0)
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `email_templates_active_code_locale_uq` ON `email_templates` (`code`,`locale`) WHERE "email_templates"."is_active" = 1 AND "email_templates"."archived_at" IS NULL;--> statement-breakpoint
@@ -692,8 +690,8 @@ CREATE TABLE `promo_codes` (
 	FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE restrict,
 	CONSTRAINT "promo_codes_max_users_check" CHECK("promo_codes"."max_users" IS NULL OR "promo_codes"."max_users" >= 1),
 	CONSTRAINT "promo_codes_window_check" CHECK("promo_codes"."valid_from" IS NULL OR "promo_codes"."valid_until" IS NULL OR "promo_codes"."valid_until" > "promo_codes"."valid_from"),
-	CONSTRAINT "promo_codes_discount_value_check" CHECK("promo_codes"."discount_value" >= 0),
-	CONSTRAINT "promo_codes_percentage_bounds_check" CHECK("promo_codes"."discount_type" <> 'PERCENTAGE' OR "promo_codes"."discount_value" <= 100)
+	CONSTRAINT "promo_codes_discount_value_check" CHECK(CAST("promo_codes"."discount_value" AS REAL) >= 0),
+	CONSTRAINT "promo_codes_percentage_bounds_check" CHECK("promo_codes"."discount_type" <> 'PERCENTAGE' OR CAST("promo_codes"."discount_value" AS REAL) <= 100)
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `promo_codes_code_uq` ON `promo_codes` (`code`);--> statement-breakpoint
