@@ -40,7 +40,8 @@ async function run(): Promise<void> {
 
   try {
     if (command === 'migrate') {
-      await migrate(drizzle(client), { migrationsFolder: './migrations-sqlite' });
+      const migrationsFolder = resolve(scriptDirectory, '../migrations-sqlite');
+      await migrate(drizzle(client), { migrationsFolder });
       process.stdout.write('Database migrations completed safely.\n');
       return;
     }
