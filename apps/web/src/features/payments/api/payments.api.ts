@@ -45,6 +45,7 @@ const livePaymentsApi = {
         toFormData(input),
         {
           headers: { 'Content-Type': undefined },
+          timeout: 120_000,
         },
       ),
     ),

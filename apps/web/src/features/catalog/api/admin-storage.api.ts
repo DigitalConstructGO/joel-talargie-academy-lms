@@ -18,6 +18,7 @@ export const adminStorageApi = {
     return unwrap<StorageUploadResult>(
       await authClient.post('/storage/course-thumbnails', form, {
         headers: { 'Content-Type': undefined },
+        timeout: 120_000,
       }),
     );
   },
@@ -28,6 +29,7 @@ export const adminStorageApi = {
     return unwrap<StorageUploadResult>(
       await authClient.post('/storage/lesson-resources', form, {
         headers: { 'Content-Type': undefined },
+        timeout: 120_000,
       }),
     );
   },

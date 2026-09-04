@@ -41,6 +41,7 @@ const liveAccountApi = {
     return unwrap<AvatarUploadResult>(
       await authClient.post('/storage/avatar', form, {
         headers: { 'Content-Type': undefined },
+        timeout: 120_000,
       }),
     );
   },
