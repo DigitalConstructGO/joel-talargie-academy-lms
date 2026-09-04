@@ -209,16 +209,23 @@ export function PaymentMethodStep({
   }
 
   if (isErrorInstructions || !instructions || !content || !selectedMethod) {
-    const message = extractErrorMessage(
+    let title = 'Unable to load payment instructions';
+    let description = extractErrorMessage(
       instructionsError,
       'Could not load payment options for this course. Please try again.',
     );
 
+    if (!isErrorInstructions && instructions && instructions.paymentMethods.length === 0) {
+      title = 'No Payment Methods Available';
+      description =
+        'No active payment methods (such as Telebirr, CBE Birr, or Bank Transfer) are currently configured on the platform. Please contact the administrator.';
+    }
+
     return (
       <div className="space-y-6">
         <ErrorState
-          title="Unable to load payment instructions"
-          description={message}
+          title={title}
+          description={description}
           onRetry={onRetryInstructions}
           retryLabel="Try again"
         />
