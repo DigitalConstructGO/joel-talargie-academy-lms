@@ -347,7 +347,7 @@ export class TelegramUpdateService {
       return;
     }
 
-    if (text.startsWith('/courses')) {
+    if (text.startsWith('/courses') || text.startsWith('/course')) {
       await this.studentService.handleCourses(chatId, 1);
       return;
     }
