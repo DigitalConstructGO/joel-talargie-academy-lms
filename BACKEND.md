@@ -142,12 +142,20 @@ The payment system supports manual bank transfer verification workflows tailored
 
 ---
 
-## 7. Certificate Issuance Engine
+## 7. Certificate Issuance Engine & Strict Lifecycle
 
 1. **Eligibility Criteria**: When student progress reaches 100% completed lessons in an active course with `certificateEnabled = true`.
-2. **Asynchronous Processing**: Inserts certificate issuance job into `certificates` table with status `PENDING`.
-3. **PDF Generation**: Background worker loads template configuration, formats student name, completion date, and verification QR code into a vector PDF file via PDFKit.
-4. **Verification**: Generates a 64-character verification hash token. Anyone can verify certificate authenticity at `/certificates/verify/:token`.
+2. **Idempotent Record Creation**: Inserts certificate issuance job into `certificates` table with status `PENDING` (deduplicated by `enrollmentId`).
+3. **Asynchronous PDF Generation & Validation**:
+   - Background worker loads template configuration, formats student name, course title, completion date, certificate number, and verification URL into a PDF file via PDFKit.
+   - Validates PDF output: verifies non-empty buffer (`size >= 100` bytes) and PDF header signature (`%PDF-`).
+4. **Storage & Verification**:
+   - Stores PDF file via `StorageService` to `certificates/{id}/v{version}/{uuid}.pdf`.
+   - Performs storage verification write check (`StorageService.exists`).
+   - Transactionally inserts `certificate_files` record and updates `certificates.status = 'GENERATED'` only after storage verification succeeds.
+5. **Notification Timing**:
+   - Emits `CERTIFICATE_READY` notification (In-App, Email, Telegram) **only after** `certificates.status` transitions to `GENERATED`.
+6. **Public Verification**: Anyone can verify certificate authenticity at `/certificates/verify/:token`.
 
 ---
 

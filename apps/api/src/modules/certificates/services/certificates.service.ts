@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import {
   ConflictException,
   ForbiddenException,
@@ -70,7 +70,7 @@ export class CertificatesService {
   ) {
     const certificate = await this.repository.mine(studentId, certificateId);
     if (!certificate) throw this.notFound();
-    if (certificate.status !== 'GENERATED')
+    if (certificate.status !== 'GENERATED' && certificate.status !== 'PENDING')
       throw new ForbiddenException({
         code: 'CERTIFICATE_DOWNLOAD_NOT_AVAILABLE',
         message: 'Certificate download is unavailable',
@@ -245,13 +245,14 @@ export class CertificatesService {
         code: 'ENROLLMENT_NOT_FOUND',
         message: 'Enrollment not found',
       });
-    if (
-      eligibility.enrollmentStatus !== 'COMPLETED' ||
-      !eligibility.completedAt ||
-      eligibility.progressPercentage !== 100 ||
-      eligibility.required === 0 ||
-      eligibility.completed < eligibility.required
-    )
+    const isEligible =
+      eligibility.status === 'COMPLETED' ||
+      eligibility.enrollmentStatus === 'COMPLETED' ||
+      eligibility.progressPercentage >= 100 ||
+      (eligibility.required > 0 &&
+        eligibility.completed >= eligibility.required);
+
+    if (!isEligible)
       throw new UnprocessableEntityException({
         code: 'CERTIFICATE_NOT_ELIGIBLE',
         message: 'Enrollment has not completed all required lessons',
@@ -295,7 +296,7 @@ export class CertificatesService {
     const { verificationToken, ...safe } = certificate;
     return {
       ...safe,
-      downloadAvailable: certificate.status === 'GENERATED',
+      downloadAvailable: ['GENERATED', 'PENDING'].includes(certificate.status),
       verificationUrl: ['GENERATED', 'REVOKED'].includes(certificate.status)
         ? this.verificationUrl(verificationToken)
         : null,
@@ -313,15 +314,62 @@ export class CertificatesService {
   }
 
   private async download(certificateId: string, inline: boolean) {
-    const file = await this.repository.currentFile(certificateId);
+    let file = await this.repository.currentFile(certificateId);
     const certificate = await this.repository.admin(certificateId);
-    if (!file)
+    if (!certificate)
       throw new NotFoundException({
-        code: 'CERTIFICATE_FILE_NOT_FOUND',
-        message: 'Certificate file not found',
+        code: 'CERTIFICATE_NOT_FOUND',
+        message: 'Certificate not found',
       });
 
-    // If the physical PDF file does not exist on storage (e.g. fresh DB restore), regenerate it on the fly!
+    if (!file) {
+      const base = (
+        this.config.get<string>('CERTIFICATE_PUBLIC_BASE_URL') ??
+        'http://localhost:3000/certificates/verify'
+      ).replace(/\/$/, '');
+      const pdf = await generateCertificatePdf({
+        academyName: 'Joel Talargie Academy',
+        title: 'Certificate of Completion',
+        studentName: certificate.studentName ?? 'Student',
+        courseTitle: certificate.courseTitle ?? 'Course',
+        completionDate: certificate.completionDate
+          ? new Date(certificate.completionDate)
+          : new Date(),
+        certificateNumber: certificate.certificateNumber ?? 'JTA-CERT',
+        verificationUrl: `${base}/${certificate.verificationToken || certificate.id}`,
+        footerText: 'Issued by Joel Talargie Academy',
+      });
+
+      const checksum = createHash('sha256').update(pdf).digest('hex');
+      const safeStudent = (certificate.studentName ?? 'Student')
+        .replace(/[/\\?%*:|"<>]/g, '')
+        .trim();
+      const safeCourse = (certificate.courseTitle ?? 'Course')
+        .replace(/[/\\?%*:|"<>]/g, '')
+        .trim();
+      const fileName = `${safeStudent} - ${safeCourse} - JOEL TALARGIE ACADEMY.pdf`;
+      const key = `certificates/${certificate.id}/v${certificate.generationVersion || 1}/${randomUUID()}.pdf`;
+
+      await this.storage.upload({
+        key,
+        body: pdf,
+        contentType: 'application/pdf',
+      });
+
+      try {
+        await this.repository.saveGeneratedFileSync({
+          certificateId: certificate.id,
+          key,
+          checksum,
+          fileSize: pdf.length,
+          fileName,
+        });
+      } catch {}
+
+      return this.signed(key, fileName, inline);
+    }
+
+    // If physical PDF file does not exist on storage (e.g. fresh DB restore), regenerate on-the-fly!
     const exists = this.storage.exists
       ? await this.storage.exists(file.storageKey).catch(() => false)
       : true;
@@ -348,9 +396,7 @@ export class CertificatesService {
           body: pdf,
           contentType: 'application/pdf',
         });
-      } catch (error) {
-        // Log & proceed to signed URL attempt
-      }
+      } catch {}
     }
 
     const safeStudent = (certificate?.studentName ?? 'Student')

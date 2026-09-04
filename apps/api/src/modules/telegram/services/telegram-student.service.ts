@@ -1,4 +1,15 @@
-import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
+import {
+  getTelegramUserLanguage,
+  setTelegramUserLanguage,
+} from '@joel-academy/database';
+import { DatabaseService } from '../../../common/database/database.service';
 import type { AuthUser } from '../../auth/interfaces/auth-user.interface';
 import { CatalogService } from '../../catalog/services/catalog.service';
 import { EnrollmentsService } from '../../enrollments/services/enrollments.service';
@@ -11,13 +22,18 @@ import { TelegramClientService } from './telegram-client.service';
 import { TelegramConfigService } from './telegram-config.service';
 import { TelegramFormattingService } from './telegram-formatting.service';
 import { TelegramIdentityResolverService } from './telegram-identity-resolver.service';
-import { TelegramKeyboardService } from './telegram-keyboard.service';
+import {
+  TelegramKeyboardService,
+  isValidTelegramButtonUrl,
+} from './telegram-keyboard.service';
+import { getTranslations, TelegramLanguage } from './telegram-i18n';
 
 import { TelegramLinkService } from './telegram-link.service';
 
 @Injectable()
 export class TelegramStudentService {
   private readonly logger = new Logger(TelegramStudentService.name);
+  private userLanguages = new Map<string, TelegramLanguage>();
 
   constructor(
     @Inject(CatalogService) private readonly catalogService: CatalogService,
@@ -41,7 +57,42 @@ export class TelegramStudentService {
     private readonly keyboard: TelegramKeyboardService,
     @Inject(TelegramLinkService)
     private readonly linkService: TelegramLinkService,
+    @Optional()
+    @Inject(DatabaseService)
+    private readonly database?: DatabaseService,
   ) {}
+
+  async getUserLanguage(
+    telegramUserId: number | string,
+  ): Promise<TelegramLanguage> {
+    const key = String(telegramUserId);
+    if (this.database) {
+      try {
+        const lang = await getTelegramUserLanguage(this.database.client, key);
+        this.userLanguages.set(key, lang);
+        return lang;
+      } catch {
+        // fallback
+      }
+    }
+    return this.userLanguages.get(key) || 'en';
+  }
+
+  async setUserLanguage(
+    telegramUserId: number | string,
+    lang: TelegramLanguage,
+  ): Promise<TelegramLanguage> {
+    const key = String(telegramUserId);
+    this.userLanguages.set(key, lang);
+    if (this.database) {
+      try {
+        await setTelegramUserLanguage(this.database.client, key, lang);
+      } catch {
+        // fallback
+      }
+    }
+    return lang;
+  }
 
   /**
    * Safe identity resolution wrapper for student commands.
@@ -62,13 +113,13 @@ export class TelegramStudentService {
     }
 
     if (resolution.status === 'UNLINKED' || !resolution.user) {
+      const lang = await this.getUserLanguage(telegramUserId);
+      const t = getTranslations(lang);
       await this.telegramClient.sendMessage({
         chat_id: chatId,
-        text:
-          `Your Telegram account is not connected to an academy account yet.\n\n` +
-          `Please create an account or connect your existing account below:`,
+        text: `${t.unlinkedWelcomeTitle}\n\n` + `${t.unlinkedWelcomeBody}`,
         parse_mode: 'HTML',
-        reply_markup: this.keyboard.buildUnlinkedKeyboard(),
+        reply_markup: this.keyboard.buildUnlinkedKeyboard(lang),
       });
       return null;
     }
@@ -95,14 +146,14 @@ export class TelegramStudentService {
     telegramUserId: number,
     firstName?: string,
   ): Promise<void> {
+    const lang = await this.getUserLanguage(telegramUserId);
+    const t = getTranslations(lang);
     const resolution =
       await this.identityResolver.resolveIdentity(telegramUserId);
 
     if (resolution.status === 'LINKED' && resolution.user) {
       const name = resolution.user.firstName || firstName || 'Student';
-      const welcomeText =
-        `Welcome back to Joel Talargie Academy 👋\n\n` +
-        `Hello <b>${this.formatting.escapeHtml(name)}</b>! What would you like to do?`;
+      const welcomeText = t.welcomeBack(this.formatting.escapeHtml(name));
 
       await this.telegramClient.sendMessage({
         chat_id: chatId,
@@ -110,6 +161,7 @@ export class TelegramStudentService {
         parse_mode: 'HTML',
         reply_markup: this.keyboard.buildStudentMainMenuKeyboard(
           this.telegramConfig.webAppUrl,
+          lang,
         ),
       });
       return;
@@ -126,27 +178,28 @@ export class TelegramStudentService {
     // Unlinked onboarding
     await this.telegramClient.sendMessage({
       chat_id: chatId,
-      text:
-        `Welcome to Joel Talargie Academy 👋\n\n` +
-        `Your Telegram account is not connected yet.\n\n` +
-        `Choose an option:`,
-      reply_markup: this.keyboard.buildUnlinkedKeyboard(),
+      text: `${t.unlinkedWelcomeTitle}\n\n` + `${t.unlinkedWelcomeBody}`,
+      reply_markup: this.keyboard.buildUnlinkedKeyboard(lang),
     });
   }
 
   /**
    * `/help`
    */
-  async handleHelp(chatId: number): Promise<void> {
+  async handleHelp(chatId: number, telegramUserId?: number): Promise<void> {
+    const lang = telegramUserId
+      ? await this.getUserLanguage(telegramUserId)
+      : 'en';
+    const t = getTranslations(lang);
     const helpText =
-      `<b>Joel Talargie Academy Bot</b>\n\n` +
+      `${t.helpTitle}\n\n` +
       `Available student services:\n\n` +
-      `📚 <b>My Courses</b>\nView your enrolled courses.\n\n` +
-      `📈 <b>Progress</b>\nCheck your current learning progress.\n\n` +
-      `💳 <b>Payments</b>\nView your payment status.\n\n` +
-      `🏆 <b>Certificates</b>\nView available certificates.\n\n` +
-      `🔔 <b>Notifications</b>\nView recent academy notifications.\n\n` +
-      `👤 <b>Account</b>\nView your academy account summary.`;
+      `${t.myCourses}\nView your enrolled courses.\n\n` +
+      `${t.myProgress}\nCheck your current learning progress.\n\n` +
+      `${t.payments}\nView your payment status.\n\n` +
+      `${t.certificates}\nView available certificates.\n\n` +
+      `${t.notifications}\nView recent academy notifications.\n\n` +
+      `${t.myAccount}\nView your academy account summary.`;
 
     await this.telegramClient.sendMessage({
       chat_id: chatId,
@@ -154,6 +207,7 @@ export class TelegramStudentService {
       parse_mode: 'HTML',
       reply_markup: this.keyboard.buildHelpKeyboard(
         this.telegramConfig.webAppUrl,
+        lang,
       ),
     });
   }
@@ -162,6 +216,7 @@ export class TelegramStudentService {
    * `/account`
    */
   async handleAccount(chatId: number, telegramUserId: number): Promise<void> {
+    const lang = await this.getUserLanguage(telegramUserId);
     const user = await this.resolveStudentUser(chatId, telegramUserId);
     if (!user) return;
 
@@ -179,6 +234,7 @@ export class TelegramStudentService {
       parse_mode: 'HTML',
       reply_markup: this.keyboard.buildAccountKeyboard(
         this.telegramConfig.webAppUrl,
+        lang,
       ),
     });
   }
@@ -192,6 +248,9 @@ export class TelegramStudentService {
     searchQuery?: string | null,
     filterType?: string | null,
   ): Promise<void> {
+    const lang = await this.getUserLanguage(chatId);
+    const t = getTranslations(lang);
+
     try {
       const query: any = { page, pageSize: 5, sort: 'newest' };
       if (searchQuery) query.search = searchQuery;
@@ -215,7 +274,7 @@ export class TelegramStudentService {
       if (courses.length === 0) {
         await this.telegramClient.sendMessage({
           chat_id: chatId,
-          text: `📚 <b>Browse Courses</b>\n\nNo courses found matching your criteria.`,
+          text: `${t.browseCourses}\n\n${t.noCoursesFound}`,
           parse_mode: 'HTML',
           reply_markup: this.keyboard.buildCoursesPaginatedKeyboard(
             page,
@@ -230,16 +289,16 @@ export class TelegramStudentService {
 
       // Send course cards
       for (const course of courses) {
-        const cardText = this.formatting.formatCourseCard(course);
+        const cardText = this.formatting.formatCourseCard(course, lang);
         const cardButtons = {
           inline_keyboard: [
             [
               {
-                text: '📖 View Details',
+                text: t.viewDetails,
                 callback_data: `course_detail:${course.id}`,
               },
               {
-                text: '🚀 Enroll',
+                text: t.enrollNow,
                 callback_data: `start_enrollment:${course.id}`,
               },
             ],
@@ -284,8 +343,8 @@ export class TelegramStudentService {
       await this.telegramClient.sendMessage({
         chat_id: chatId,
         text:
-          `📚 <b>Browse Courses</b>\n` +
-          `Showing ${startIdx}–${endIdx} of ${total} courses (Page ${page} of ${totalPages})`,
+          `${t.browseCourses}\n` +
+          t.showingCourses(startIdx, endIdx, total, page, totalPages),
         parse_mode: 'HTML',
         reply_markup: this.keyboard.buildCoursesPaginatedKeyboard(
           page,
@@ -302,6 +361,7 @@ export class TelegramStudentService {
         text: `We couldn't load the course catalog right now. Please try again later.`,
         reply_markup: this.keyboard.buildHelpKeyboard(
           this.telegramConfig.webAppUrl,
+          lang,
         ),
       });
     }
@@ -420,6 +480,8 @@ export class TelegramStudentService {
     telegramUserId: number,
     page = 1,
   ): Promise<void> {
+    const lang = await this.getUserLanguage(telegramUserId);
+    const t = getTranslations(lang);
     const user = await this.resolveStudentUser(chatId, telegramUserId);
     if (!user) return;
 
@@ -439,7 +501,7 @@ export class TelegramStudentService {
       if (enrollments.length === 0) {
         await this.telegramClient.sendMessage({
           chat_id: chatId,
-          text: `📚 <b>My Courses</b>\n\nYou do not have any active enrolled courses yet.\n\nPending payments can be viewed under 💳 <b>Payments</b>.`,
+          text: `${t.myEnrolledCoursesTitle}\n\n${t.noEnrolledCourses}`,
           parse_mode: 'HTML',
           reply_markup: this.keyboard.buildCoursesKeyboard(
             this.telegramConfig.webAppUrl,
@@ -448,9 +510,9 @@ export class TelegramStudentService {
         return;
       }
 
-      let text = `📚 <b>My Courses</b> (Page ${page} of ${totalPages})\n\n`;
+      let text = `${t.myEnrolledCoursesTitle} (Page ${page} of ${totalPages})\n\n`;
       enrollments.forEach((item, idx) => {
-        text += `${idx + 1}. ${this.formatting.formatMyCourseSummary(item)}\n`;
+        text += `${idx + 1}. ${this.formatting.formatMyCourseSummary(item, lang)}\n`;
       });
 
       const enrollmentsDto = enrollments.map((item) => ({
@@ -477,6 +539,7 @@ export class TelegramStudentService {
         text: `We couldn't load your enrolled courses right now.`,
         reply_markup: this.keyboard.buildHelpKeyboard(
           this.telegramConfig.webAppUrl,
+          lang,
         ),
       });
     }
@@ -486,6 +549,8 @@ export class TelegramStudentService {
    * `/progress` — Learning progress
    */
   async handleProgress(chatId: number, telegramUserId: number): Promise<void> {
+    const lang = await this.getUserLanguage(telegramUserId);
+    const t = getTranslations(lang);
     const user = await this.resolveStudentUser(chatId, telegramUserId);
     if (!user) return;
 
@@ -504,7 +569,7 @@ export class TelegramStudentService {
       if (enrollments.length === 0) {
         await this.telegramClient.sendMessage({
           chat_id: chatId,
-          text: `📈 <b>Learning Progress</b>\n\nYou do not have any active course progress yet.`,
+          text: `${t.learningProgressTitle}\n\n${t.noEnrolledCourses}`,
           parse_mode: 'HTML',
           reply_markup: this.keyboard.buildCoursesKeyboard(
             this.telegramConfig.webAppUrl,
@@ -513,7 +578,7 @@ export class TelegramStudentService {
         return;
       }
 
-      let text = `📈 <b>Learning Progress</b>\n\n`;
+      let text = `${t.learningProgressTitle}\n\n`;
       let firstSlug: string | undefined;
 
       for (const item of enrollments) {
@@ -522,12 +587,13 @@ export class TelegramStudentService {
         try {
           const overview = await this.learningService.overview(user, item.id);
           text +=
-            this.formatting.formatProgressDetail(overview) + `\n\n---\n\n`;
+            this.formatting.formatProgressDetail(overview, lang) +
+            `\n\n---\n\n`;
         } catch {
           // If learning access is unavailable for this enrollment (e.g. pending payment), display summary status
           text +=
             `<b>${this.formatting.escapeHtml(item.courseTitle)}</b>\n` +
-            `Status: ${this.formatting.escapeHtml(item.status)}\n\n---\n\n`;
+            `${t.statusLabel}: ${this.formatting.escapeHtml(item.status)}\n\n---\n\n`;
         }
       }
 
@@ -550,6 +616,7 @@ export class TelegramStudentService {
         text: `We couldn't load your learning progress right now.`,
         reply_markup: this.keyboard.buildHelpKeyboard(
           this.telegramConfig.webAppUrl,
+          lang,
         ),
       });
     }
@@ -561,13 +628,41 @@ export class TelegramStudentService {
   async handleCourseCurriculum(
     chatId: number,
     telegramUserId: number,
-    enrollmentId: string,
+    targetId: string,
   ): Promise<void> {
     const user = await this.resolveStudentUser(chatId, telegramUserId);
     if (!user) return;
 
     try {
-      const overview = await this.learningService.overview(user, enrollmentId);
+      let overview: Awaited<ReturnType<LearningService['overview']>>;
+      let actualEnrollmentId = targetId;
+
+      try {
+        overview = await this.learningService.overview(user, targetId);
+      } catch (error) {
+        const mineResult = await this.enrollmentsService.mine(user.id, {
+          page: 1,
+          pageSize: 50,
+          enrollmentStatuses: [
+            EnrollmentStatus.ENROLLED,
+            EnrollmentStatus.IN_PROGRESS,
+            EnrollmentStatus.COMPLETED,
+          ],
+        });
+        const matched = (mineResult.items || []).find(
+          (e) =>
+            e.id === targetId ||
+            e.courseId === targetId ||
+            e.courseSlug === targetId,
+        );
+        if (matched) {
+          actualEnrollmentId = matched.id;
+          overview = await this.learningService.overview(user, matched.id);
+        } else {
+          throw error;
+        }
+      }
+
       const sections = overview.curriculum || [];
       const allLessons = sections.flatMap((sec) => sec.lessons || []);
       const completedLessons = allLessons.filter(
@@ -593,7 +688,7 @@ export class TelegramStudentService {
           keyboard.push([
             {
               text: `${statusIcon} ${les.title.slice(0, 30)}`,
-              callback_data: `view_lesson:${enrollmentId}:${les.id}`,
+              callback_data: `view_lesson:${les.id}`,
             },
           ]);
         });
@@ -612,12 +707,37 @@ export class TelegramStudentService {
         { text: '⬅️ Back to My Courses', callback_data: 'student_my_courses' },
       ]);
 
-      await this.telegramClient.sendMessage({
-        chat_id: chatId,
-        text: text.trim(),
-        parse_mode: 'HTML',
-        reply_markup: { inline_keyboard: keyboard },
-      });
+      const course = overview.course as any;
+      const thumbnailUrl =
+        course?.thumbnailUrl ||
+        (course?.thumbnailKey
+          ? `${this.telegramConfig.webAppUrl || 'http://localhost:3000'}/storage/${course.thumbnailKey}`
+          : null);
+
+      if (thumbnailUrl && thumbnailUrl.startsWith('https://')) {
+        const photoSent = await this.telegramClient.sendPhoto({
+          chat_id: chatId,
+          photo: thumbnailUrl,
+          caption: text.trim(),
+          parse_mode: 'HTML',
+          reply_markup: { inline_keyboard: keyboard },
+        });
+        if (!photoSent) {
+          await this.telegramClient.sendMessage({
+            chat_id: chatId,
+            text: text.trim(),
+            parse_mode: 'HTML',
+            reply_markup: { inline_keyboard: keyboard },
+          });
+        }
+      } else {
+        await this.telegramClient.sendMessage({
+          chat_id: chatId,
+          text: text.trim(),
+          parse_mode: 'HTML',
+          reply_markup: { inline_keyboard: keyboard },
+        });
+      }
     } catch (error) {
       this.logger.error(
         `Error in handleCourseCurriculum for user ${user.id}:`,
@@ -639,18 +759,53 @@ export class TelegramStudentService {
   async handleLessonDetail(
     chatId: number,
     telegramUserId: number,
-    enrollmentId: string,
+    enrollmentId: string | null,
     lessonId: string,
   ): Promise<void> {
     const user = await this.resolveStudentUser(chatId, telegramUserId);
     if (!user) return;
 
     try {
+      const mineResult = await this.enrollmentsService.mine(user.id, {
+        page: 1,
+        pageSize: 50,
+        enrollmentStatuses: [
+          EnrollmentStatus.ENROLLED,
+          EnrollmentStatus.IN_PROGRESS,
+          EnrollmentStatus.COMPLETED,
+        ],
+      });
+
+      let matchedEnrollmentId = enrollmentId;
+      if (!matchedEnrollmentId) {
+        for (const item of mineResult.items || []) {
+          try {
+            const overview = await this.learningService.overview(user, item.id);
+            const hasLesson = (overview.curriculum || []).some((sec) =>
+              (sec.lessons || []).some((l) => l.id === lessonId),
+            );
+            if (hasLesson) {
+              matchedEnrollmentId = item.id;
+              break;
+            }
+          } catch {}
+        }
+      }
+
+      if (!matchedEnrollmentId && mineResult.items?.[0]) {
+        matchedEnrollmentId = mineResult.items[0].id;
+      }
+
+      if (!matchedEnrollmentId) {
+        throw new NotFoundException('ENROLLMENT_NOT_FOUND');
+      }
+
       const lessonDetail = await this.learningService.open(
         user,
-        enrollmentId,
+        matchedEnrollmentId,
         lessonId,
       );
+
       const isDone =
         (lessonDetail as any).progressStatus === 'COMPLETED' ||
         (lessonDetail as any).isCompleted;
@@ -658,33 +813,130 @@ export class TelegramStudentService {
         (lessonDetail.durationSeconds || 300) / 60,
       );
 
-      let text =
+      const TYPE_ICONS: Record<string, string> = {
+        VIDEO: '📹 Video Lesson',
+        TEXT: '📄 Text / Reading',
+        ARTICLE: '📄 Article',
+        READING: '📖 Reading Material',
+        DOCUMENT: '📁 File / Document',
+        QUIZ: '❓ Quiz',
+        EXTERNAL_LINK: '🔗 External Resource',
+      };
+      const typeBadge =
+        TYPE_ICONS[lessonDetail.lessonType] ||
+        `📖 ${lessonDetail.lessonType || 'Lesson'}`;
+
+      const videoLink = lessonDetail.videoUrl || lessonDetail.externalUrl;
+      let text = '';
+
+      // Embedded zero-width space link so Telegram auto-embeds native in-chat video preview frame
+      if (videoLink && videoLink.startsWith('https://')) {
+        text += `<a href="${videoLink}">&#8203;</a>`;
+      }
+
+      text +=
         `📖 <b>Lesson: ${this.formatting.escapeHtml(lessonDetail.title)}</b>\n` +
+        `Type: <b>${typeBadge}</b>\n` +
         `Duration: <b>${durationMins} mins</b>\n` +
         `Status: <b>${isDone ? 'Completed ✅' : 'In Progress ⏳'}</b>\n\n`;
 
-      if (lessonDetail.externalUrl) {
+      if (videoLink) {
         text +=
-          `📺 <b>Video Stream:</b> ${lessonDetail.externalUrl}\n\n` +
-          `<i>Note: Click the YouTube video link above to view directly. Video streams are non-downloadable.</i>\n\n`;
+          `📺 <b>Video Stream:</b> ${videoLink}\n\n` +
+          `<i>Note: Tap the video preview card above or button below to stream live directly inside Telegram. Streaming is non-downloadable.</i>\n\n`;
+      }
+
+      if (lessonDetail.content) {
+        let cleanText = lessonDetail.content
+          .replace(/<br\s*\/?>/gi, '\n')
+          .replace(/<\/p>/gi, '\n\n')
+          .replace(/<\/h[1-6]>/gi, '\n\n')
+          .replace(/<\/li>/gi, '\n')
+          .replace(/<li[^>]*>/gi, '• ')
+          .replace(/<(?!\/?(b|i|u|s|code|pre|a)(\s|>))[^>]+>/gi, '')
+          .trim();
+
+        if (cleanText.length > 800) {
+          cleanText = cleanText.slice(0, 800) + '...';
+        }
+
+        if (cleanText) {
+          text += `📝 <b>Lesson Content & Notes:</b>\n${cleanText}\n\n`;
+        }
+      }
+
+      const resources = (lessonDetail as any).resources || [];
+      if (resources.length > 0) {
+        text += `📎 <b>Attached Files & Downloads (${resources.length}):</b>\n`;
+        resources.forEach((res: any, idx: number) => {
+          text += `  ${idx + 1}. 📄 <b>${this.formatting.escapeHtml(res.label || 'Attached File')}</b>\n`;
+        });
+        text += '\n';
       }
 
       const inline_keyboard: Array<
-        Array<{ text: string; callback_data?: string; url?: string }>
+        Array<{
+          text: string;
+          callback_data?: string;
+          url?: string;
+          web_app?: { url: string };
+        }>
       > = [];
+
+      if (videoLink && videoLink.startsWith('https://')) {
+        const webPlayerUrl =
+          this.telegramConfig.webAppUrl &&
+          this.telegramConfig.webAppUrl.startsWith('https://')
+            ? `${this.telegramConfig.webAppUrl}/dashboard/courses/${matchedEnrollmentId}/learn?lesson=${lessonId}`
+            : null;
+
+        const videoRow: Array<{
+          text: string;
+          callback_data?: string;
+          url?: string;
+          web_app?: { url: string };
+        }> = [];
+
+        if (webPlayerUrl) {
+          videoRow.push({
+            text: '▶️ Play in Telegram',
+            web_app: { url: webPlayerUrl },
+          });
+        }
+
+        videoRow.push({
+          text: '📺 Watch Stream',
+          url: videoLink,
+        });
+
+        inline_keyboard.push(videoRow);
+      }
+
+      if (resources.length > 0) {
+        resources.forEach((res: any) => {
+          if (res.externalUrl && res.externalUrl.startsWith('https://')) {
+            inline_keyboard.push([
+              {
+                text: `📥 Download ${res.label ? res.label.slice(0, 22) : 'File'}`,
+                url: res.externalUrl,
+              },
+            ]);
+          }
+        });
+      }
 
       if (!isDone) {
         inline_keyboard.push([
           {
             text: '✅ Mark as Complete',
-            callback_data: `complete_lesson:${enrollmentId}:${lessonId}`,
+            callback_data: `complete_lesson:${lessonId}`,
           },
         ]);
       } else {
         inline_keyboard.push([
           {
             text: '✅ Lesson Completed',
-            callback_data: `course_curriculum:${enrollmentId}`,
+            callback_data: `course_curriculum:${matchedEnrollmentId}`,
           },
         ]);
       }
@@ -692,7 +944,7 @@ export class TelegramStudentService {
       inline_keyboard.push([
         {
           text: '⬅️ Back to Curriculum',
-          callback_data: `course_curriculum:${enrollmentId}`,
+          callback_data: `course_curriculum:${matchedEnrollmentId}`,
         },
       ]);
 
@@ -714,8 +966,8 @@ export class TelegramStudentService {
           inline_keyboard: [
             [
               {
-                text: '⬅️ Back to Curriculum',
-                callback_data: `course_curriculum:${enrollmentId}`,
+                text: '⬅️ Back to My Courses',
+                callback_data: 'student_my_courses',
               },
             ],
           ],
@@ -730,43 +982,184 @@ export class TelegramStudentService {
   async handleCompleteLesson(
     chatId: number,
     telegramUserId: number,
-    enrollmentId: string,
+    enrollmentId: string | null,
     lessonId: string,
   ): Promise<void> {
     const user = await this.resolveStudentUser(chatId, telegramUserId);
     if (!user) return;
 
     try {
-      const res = await this.learningService.complete(
-        user,
-        enrollmentId,
-        lessonId,
-      );
+      const mineResult = await this.enrollmentsService.mine(user.id, {
+        page: 1,
+        pageSize: 50,
+        enrollmentStatuses: [
+          EnrollmentStatus.ENROLLED,
+          EnrollmentStatus.IN_PROGRESS,
+          EnrollmentStatus.COMPLETED,
+        ],
+      });
 
-      const overview = await this.learningService.overview(user, enrollmentId);
+      let matchedEnrollmentId = enrollmentId;
+      if (!matchedEnrollmentId) {
+        for (const item of mineResult.items || []) {
+          try {
+            const overview = await this.learningService.overview(user, item.id);
+            const hasLesson = (overview.curriculum || []).some((sec) =>
+              (sec.lessons || []).some((l) => l.id === lessonId),
+            );
+            if (hasLesson) {
+              matchedEnrollmentId = item.id;
+              break;
+            }
+          } catch {}
+        }
+      }
+
+      if (!matchedEnrollmentId && mineResult.items?.[0]) {
+        matchedEnrollmentId = mineResult.items[0].id;
+      }
+
+      if (!matchedEnrollmentId) {
+        throw new NotFoundException('ENROLLMENT_NOT_FOUND');
+      }
+
+      let res: Awaited<ReturnType<LearningService['complete']>>;
+
+      try {
+        res = await this.learningService.complete(
+          user,
+          matchedEnrollmentId,
+          lessonId,
+        );
+      } catch (error: any) {
+        const isVideoNotCompleted =
+          error?.response?.code === 'VIDEO_NOT_COMPLETED' ||
+          error?.code === 'VIDEO_NOT_COMPLETED' ||
+          String(error?.message || '').includes('video');
+
+        if (isVideoNotCompleted) {
+          try {
+            const lessonDetail = await this.learningService.open(
+              user,
+              matchedEnrollmentId,
+              lessonId,
+            );
+            const duration = lessonDetail.durationSeconds || 300;
+            await this.learningService.position(
+              user,
+              matchedEnrollmentId,
+              lessonId,
+              duration,
+            );
+            res = await this.learningService.complete(
+              user,
+              matchedEnrollmentId,
+              lessonId,
+            );
+          } catch {
+            throw error;
+          }
+        } else {
+          throw error;
+        }
+      }
+
+      const overview = await this.learningService.overview(
+        user,
+        matchedEnrollmentId,
+      );
       const is100Percent =
         overview.progressPercentage >= 100 || res.courseCompleted;
 
       if (is100Percent) {
-        await this.telegramClient.sendMessage({
-          chat_id: chatId,
-          text:
-            `🎉 <b>CONGRATULATIONS!</b>\n\n` +
-            `You have completed <b>100%</b> of <b>${this.formatting.escapeHtml(overview.course?.title || 'the course')}</b>!\n\n` +
-            `Your official Certificate of Completion has been generated! 📜`,
-          parse_mode: 'HTML',
-          reply_markup: {
-            inline_keyboard: [
-              [
-                {
-                  text: '📜 View Certificate',
-                  callback_data: 'student_certificates',
-                },
-              ],
-              [{ text: '📚 My Courses', callback_data: 'student_my_courses' }],
-            ],
-          },
-        });
+        let generatedCert: any = null;
+        let generatedCertId: string | null = null;
+        try {
+          const resCert = await this.certificatesService.request(
+            user,
+            matchedEnrollmentId,
+          );
+          generatedCert = (resCert as any)?.certificate || resCert;
+          generatedCertId = generatedCert?.id || null;
+        } catch {
+          try {
+            const certs = await this.certificatesService.listMine(user.id, {
+              page: 1,
+              pageSize: 50,
+            });
+            generatedCert = certs?.find(
+              (c: any) => c.enrollmentId === matchedEnrollmentId,
+            );
+            generatedCertId = generatedCert?.id || null;
+          } catch {}
+        }
+
+        let pdfResult: { url: string; fileName: string } | null = null;
+        if (generatedCertId) {
+          try {
+            pdfResult = await this.certificatesService.studentDownload(
+              user.id,
+              generatedCertId,
+              false,
+            );
+          } catch {}
+        }
+
+        const viewCertCallback = generatedCertId
+          ? `cert_detail:${generatedCertId}`
+          : 'student_certificates';
+
+        const captionText =
+          `🎉 <b>CONGRATULATIONS!</b>\n\n` +
+          `You have completed <b>100%</b> of <b>${this.formatting.escapeHtml(overview.course?.title || 'the course')}</b>!\n\n` +
+          `Your official Certificate of Completion has been generated and is attached below! 📜`;
+
+        const inline_keyboard: Array<
+          Array<{ text: string; callback_data?: string; url?: string }>
+        > = [
+          [
+            {
+              text: '📜 View Certificate Details',
+              callback_data: viewCertCallback,
+            },
+          ],
+        ];
+
+        const hasPdfUrl = isValidTelegramButtonUrl(pdfResult?.url);
+
+        if (hasPdfUrl) {
+          inline_keyboard.push([
+            { text: '📥 Download PDF File', url: pdfResult!.url },
+          ]);
+        }
+        inline_keyboard.push([
+          { text: '📚 My Courses', callback_data: 'student_my_courses' },
+        ]);
+
+        if (hasPdfUrl) {
+          const docSent = await this.telegramClient.sendDocument({
+            chat_id: chatId,
+            document: pdfResult!.url,
+            caption: captionText.trim(),
+            parse_mode: 'HTML',
+            reply_markup: { inline_keyboard },
+          });
+          if (!docSent) {
+            await this.telegramClient.sendMessage({
+              chat_id: chatId,
+              text: captionText.trim(),
+              parse_mode: 'HTML',
+              reply_markup: { inline_keyboard },
+            });
+          }
+        } else {
+          await this.telegramClient.sendMessage({
+            chat_id: chatId,
+            text: captionText.trim(),
+            parse_mode: 'HTML',
+            reply_markup: { inline_keyboard },
+          });
+        }
         return;
       }
 
@@ -779,7 +1172,11 @@ export class TelegramStudentService {
       });
 
       // Refresh curriculum view
-      await this.handleCourseCurriculum(chatId, telegramUserId, enrollmentId);
+      await this.handleCourseCurriculum(
+        chatId,
+        telegramUserId,
+        matchedEnrollmentId,
+      );
     } catch (error) {
       this.logger.error(
         `Error in handleCompleteLesson for user ${user.id}:`,
@@ -792,8 +1189,8 @@ export class TelegramStudentService {
           inline_keyboard: [
             [
               {
-                text: '⬅️ Back to Lesson',
-                callback_data: `view_lesson:${enrollmentId}:${lessonId}`,
+                text: '⬅️ Back to My Courses',
+                callback_data: 'student_my_courses',
               },
             ],
           ],
@@ -811,6 +1208,8 @@ export class TelegramStudentService {
     page = 1,
     paymentId?: string,
   ): Promise<void> {
+    const lang = await this.getUserLanguage(telegramUserId);
+    const t = getTranslations(lang);
     const user = await this.resolveStudentUser(chatId, telegramUserId);
     if (!user) return;
 
@@ -821,7 +1220,7 @@ export class TelegramStudentService {
           user.id,
           paymentId,
         );
-        const text = this.formatting.formatPaymentSummary(payment);
+        const text = this.formatting.formatPaymentSummary(payment, lang);
         await this.telegramClient.sendMessage({
           chat_id: chatId,
           text,
@@ -846,18 +1245,19 @@ export class TelegramStudentService {
       if (!Array.isArray(payments) || payments.length === 0) {
         await this.telegramClient.sendMessage({
           chat_id: chatId,
-          text: `💳 <b>My Payments</b>\n\nYou don't have any payment records yet.`,
+          text: `${t.paymentRecordsTitle}\n\n${t.noPaymentsFound}`,
           parse_mode: 'HTML',
           reply_markup: this.keyboard.buildHelpKeyboard(
             this.telegramConfig.webAppUrl,
+            lang,
           ),
         });
         return;
       }
 
-      let text = `💳 <b>My Payments</b> (Page ${page} of ${totalPages})\n\n`;
+      let text = `${t.paymentRecordsTitle} (Page ${page} of ${totalPages})\n\n`;
       payments.forEach((p, idx) => {
-        text += `${idx + 1}. ${this.formatting.formatPaymentSummary(p)}\n\n`;
+        text += `${idx + 1}. ${this.formatting.formatPaymentSummary(p, lang)}\n\n`;
       });
 
       await this.telegramClient.sendMessage({
@@ -878,6 +1278,7 @@ export class TelegramStudentService {
         text: `We couldn't load your payments right now or the requested payment was not found.`,
         reply_markup: this.keyboard.buildHelpKeyboard(
           this.telegramConfig.webAppUrl,
+          lang,
         ),
       });
     }
@@ -889,34 +1290,184 @@ export class TelegramStudentService {
   async handleCertificates(
     chatId: number,
     telegramUserId: number,
+    page = 1,
+    certificateId?: string,
   ): Promise<void> {
+    const lang = await this.getUserLanguage(telegramUserId);
+    const t = getTranslations(lang);
     const user = await this.resolveStudentUser(chatId, telegramUserId);
     if (!user) return;
 
     try {
-      const certificates = await this.certificatesService.listMine(user.id, {
+      if (certificateId) {
+        const cert = await this.certificatesService.mine(
+          user.id,
+          certificateId,
+        );
+        let pdfResult: { url: string; fileName: string } | null = null;
+        try {
+          pdfResult = await this.certificatesService.studentDownload(
+            user.id,
+            certificateId,
+            false,
+          );
+        } catch {}
+
+        const issueDate = cert.issuedAt
+          ? new Date(cert.issuedAt).toLocaleDateString(
+              lang === 'am' ? 'am-ET' : 'en-US',
+              {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              },
+            )
+          : 'Recently';
+
+        const captionText =
+          `📜 <b>Certificate of Completion</b>\n\n` +
+          `Course: <b>${this.formatting.escapeHtml(cert.courseTitle)}</b>\n` +
+          `Student: <b>${this.formatting.escapeHtml(cert.studentName)}</b>\n` +
+          `Certificate Code: <code>${this.formatting.escapeHtml(cert.certificateNumber)}</code>\n` +
+          `Issued Date: <b>${issueDate}</b>\n\n` +
+          `<i>Your official PDF certificate file is attached below. You can open and save it directly to your phone/PC.</i>`;
+
+        const inline_keyboard: Array<
+          Array<{ text: string; callback_data?: string; url?: string }>
+        > = [];
+
+        const hasPdfUrl = isValidTelegramButtonUrl(pdfResult?.url);
+        const hasVerificationUrl = isValidTelegramButtonUrl(
+          cert.verificationUrl,
+        );
+
+        if (hasPdfUrl) {
+          inline_keyboard.push([
+            { text: '📥 Download PDF File', url: pdfResult!.url },
+          ]);
+        }
+        if (hasVerificationUrl) {
+          inline_keyboard.push([
+            { text: '🔍 Verify Online', url: cert.verificationUrl! },
+          ]);
+        }
+        inline_keyboard.push([
+          {
+            text: t.back,
+            callback_data: 'student_certificates',
+          },
+        ]);
+
+        if (hasPdfUrl) {
+          const docSent = await this.telegramClient.sendDocument({
+            chat_id: chatId,
+            document: pdfResult!.url,
+            caption: captionText.trim(),
+            parse_mode: 'HTML',
+            reply_markup: { inline_keyboard },
+          });
+          if (!docSent) {
+            await this.telegramClient.sendMessage({
+              chat_id: chatId,
+              text: captionText.trim(),
+              parse_mode: 'HTML',
+              reply_markup: { inline_keyboard },
+            });
+          }
+        } else {
+          await this.telegramClient.sendMessage({
+            chat_id: chatId,
+            text: captionText.trim(),
+            parse_mode: 'HTML',
+            reply_markup: { inline_keyboard },
+          });
+        }
+        return;
+      }
+
+      // Auto-Healing: Backfill missing certificates for any 100% completed courses
+      try {
+        const mineEnrollments = await this.enrollmentsService.mine(user.id, {
+          page: 1,
+          pageSize: 100,
+          enrollmentStatuses: [
+            EnrollmentStatus.ENROLLED,
+            EnrollmentStatus.IN_PROGRESS,
+            EnrollmentStatus.COMPLETED,
+          ],
+        });
+
+        const initialCerts = await this.certificatesService.listMine(user.id, {
+          page: 1,
+          pageSize: 100,
+        });
+
+        const existingCertEnrollmentIds = new Set(
+          (initialCerts || []).map((c: any) => c.enrollmentId),
+        );
+
+        const enrollmentList = Array.isArray(mineEnrollments)
+          ? mineEnrollments
+          : (mineEnrollments as any)?.items || [];
+
+        for (const item of enrollmentList) {
+          if (!existingCertEnrollmentIds.has(item.id)) {
+            try {
+              const overview = await this.learningService.overview(
+                user,
+                item.id,
+              );
+              if (
+                item.status === EnrollmentStatus.COMPLETED ||
+                overview.progressPercentage >= 100
+              ) {
+                await this.certificatesService.request(user, item.id);
+              }
+            } catch (err) {
+              this.logger.warn(
+                `Failed to request certificate for enrollment ${item.id}: ${err}`,
+              );
+            }
+          }
+        }
+      } catch (backfillErr) {
+        this.logger.warn(
+          `Auto-backfill certificates check warning: ${backfillErr}`,
+        );
+      }
+
+      const rawCerts = await this.certificatesService.listMine(user.id, {
         page: 1,
-        pageSize: 10,
+        pageSize: 100,
       });
 
-      if (!certificates || certificates.length === 0) {
+      const certList = Array.isArray(rawCerts)
+        ? rawCerts
+        : (rawCerts as any)?.items || [];
+      const totalCount = certList.length;
+      const totalPages = Math.ceil(totalCount / 5) || 1;
+      const currentPage = Math.max(1, Math.min(page, totalPages));
+      const pagedCertificates = certList.slice(
+        (currentPage - 1) * 5,
+        currentPage * 5,
+      );
+
+      if (pagedCertificates.length === 0) {
         await this.telegramClient.sendMessage({
           chat_id: chatId,
-          text:
-            `🏆 <b>My Certificates</b>\n\n` +
-            `You don't have any certificates yet.\n` +
-            `Complete eligible courses to earn certificates.`,
+          text: `${t.myCertificatesTitle}\n\n${t.noCertificatesFound}`,
           parse_mode: 'HTML',
           reply_markup: this.keyboard.buildHelpKeyboard(
             this.telegramConfig.webAppUrl,
+            lang,
           ),
         });
         return;
       }
 
-      let text = `🏆 <b>My Certificates</b>\n\n`;
-      certificates.forEach((cert, idx) => {
-        text += `${idx + 1}. ${this.formatting.formatCertificateSummary(cert)}\n\n`;
+      let text = `${t.myCertificatesTitle} (Page ${currentPage} of ${totalPages})\n\n`;
+      pagedCertificates.forEach((cert, idx) => {
+        text += `${idx + 1}. ${this.formatting.formatCertificateSummary(cert, lang)}\n\n`;
       });
 
       await this.telegramClient.sendMessage({
@@ -924,7 +1475,9 @@ export class TelegramStudentService {
         text: text.trim(),
         parse_mode: 'HTML',
         reply_markup: this.keyboard.buildCertificatesKeyboard(
-          certificates,
+          pagedCertificates,
+          currentPage,
+          totalPages,
           this.telegramConfig.webAppUrl,
         ),
       });
@@ -938,6 +1491,7 @@ export class TelegramStudentService {
         text: `We couldn't load your certificates right now.`,
         reply_markup: this.keyboard.buildHelpKeyboard(
           this.telegramConfig.webAppUrl,
+          lang,
         ),
       });
     }
@@ -951,6 +1505,8 @@ export class TelegramStudentService {
     telegramUserId: number,
     page = 1,
   ): Promise<void> {
+    const lang = await this.getUserLanguage(telegramUserId);
+    const t = getTranslations(lang);
     const user = await this.resolveStudentUser(chatId, telegramUserId);
     if (!user) return;
 
@@ -965,18 +1521,19 @@ export class TelegramStudentService {
       if (notifications.length === 0) {
         await this.telegramClient.sendMessage({
           chat_id: chatId,
-          text: `🔔 <b>Notifications</b>\n\nYou're all caught up.\nNo notifications to show.`,
+          text: `${t.notificationsTitle}\n\n${t.noNotificationsFound}`,
           parse_mode: 'HTML',
           reply_markup: this.keyboard.buildHelpKeyboard(
             this.telegramConfig.webAppUrl,
+            lang,
           ),
         });
         return;
       }
 
-      let text = `🔔 <b>Notifications</b> (Page ${page} of ${totalPages})\n\n`;
+      let text = `${t.notificationsTitle} (Page ${page} of ${totalPages})\n\n`;
       notifications.forEach((n, idx) => {
-        text += `${idx + 1}. ${this.formatting.formatNotificationItem(n)}\n\n`;
+        text += `${idx + 1}. ${this.formatting.formatNotificationItem(n, lang)}\n\n`;
       });
 
       await this.telegramClient.sendMessage({
@@ -999,6 +1556,7 @@ export class TelegramStudentService {
         text: `We couldn't load your notifications right now.`,
         reply_markup: this.keyboard.buildHelpKeyboard(
           this.telegramConfig.webAppUrl,
+          lang,
         ),
       });
     }
@@ -1008,12 +1566,17 @@ export class TelegramStudentService {
    * `/settings`
    */
   async handleSettings(chatId: number, telegramUserId: number): Promise<void> {
+    const lang = await this.getUserLanguage(telegramUserId);
+    const t = getTranslations(lang);
     const user = await this.resolveStudentUser(chatId, telegramUserId);
     if (!user) return;
 
+    const currentLangLabel = lang === 'am' ? '🇪🇹 አማርኛ (Amharic)' : '🇺🇸 English';
+
     const text =
-      `⚙️ <b>Telegram Settings</b>\n\n` +
+      `${t.settingsTitle}\n\n` +
       `<b>Account:</b> Connected ✅\n` +
+      `<b>Active Language / ቋንቋ:</b> ${currentLangLabel}\n` +
       `<b>Telegram Notifications:</b> Default (All enabled)`;
 
     await this.telegramClient.sendMessage({
@@ -1022,14 +1585,53 @@ export class TelegramStudentService {
       parse_mode: 'HTML',
       reply_markup: this.keyboard.buildSettingsKeyboard(
         this.telegramConfig.webAppUrl,
+        lang,
       ),
     });
+  }
+
+  /**
+   * Prompt user to select preferred language (English or Amharic)
+   */
+  async handlePromptLanguage(
+    chatId: number,
+    telegramUserId: number,
+  ): Promise<void> {
+    const lang = await this.getUserLanguage(telegramUserId);
+    const t = getTranslations(lang);
+    await this.telegramClient.sendMessage({
+      chat_id: chatId,
+      text: t.selectLanguageTitle,
+      parse_mode: 'Markdown',
+      reply_markup: this.keyboard.buildLanguageSelectionKeyboard(lang),
+    });
+  }
+
+  /**
+   * Set user preferred language and notify user
+   */
+  async handleSetLanguage(
+    chatId: number,
+    telegramUserId: number,
+    newLang: 'en' | 'am',
+  ): Promise<void> {
+    const updatedLang = await this.setUserLanguage(telegramUserId, newLang);
+    const t = getTranslations(updatedLang);
+
+    await this.telegramClient.sendMessage({
+      chat_id: chatId,
+      text: `✅ ${t.languageChangedSuccess}`,
+      parse_mode: 'HTML',
+    });
+
+    await this.handleStart(chatId, telegramUserId);
   }
 
   /**
    * `/unlink` or `student_unlink` callback
    */
   async handleUnlink(chatId: number, telegramUserId: number): Promise<void> {
+    const lang = await this.getUserLanguage(telegramUserId);
     const resolution =
       await this.identityResolver.resolveIdentity(telegramUserId);
 
@@ -1042,7 +1644,7 @@ export class TelegramStudentService {
           `🔓 <b>Telegram Account Disconnected</b>\n\n` +
           `Your Telegram account has been unlinked from your Joel Talargie Academy profile.`,
         parse_mode: 'HTML',
-        reply_markup: this.keyboard.buildUnlinkedKeyboard(),
+        reply_markup: this.keyboard.buildUnlinkedKeyboard(lang),
       });
       return;
     }
@@ -1051,7 +1653,7 @@ export class TelegramStudentService {
       chat_id: chatId,
       text: `Your Telegram account is not connected to an academy account.`,
       parse_mode: 'HTML',
-      reply_markup: this.keyboard.buildUnlinkedKeyboard(),
+      reply_markup: this.keyboard.buildUnlinkedKeyboard(lang),
     });
   }
 }

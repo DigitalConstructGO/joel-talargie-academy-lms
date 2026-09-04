@@ -361,6 +361,12 @@ export const telegramCheckoutSessions = sqliteTable(
   (table) => [index('telegram_checkout_expires_idx').on(table.expiresAt)],
 );
 
+export const telegramUserSettings = sqliteTable('telegram_user_settings', {
+  telegramUserId: text('telegram_user_id').primaryKey().notNull(),
+  language: text('language').notNull().default('en'),
+  ...timestamps,
+});
+
 export const loginAttempts = sqliteTable(
   'login_attempts',
   {
@@ -1623,6 +1629,7 @@ export const schema = {
   accountLinkTokens,
   telegramOnboardingStates,
   telegramCheckoutSessions,
+  telegramUserSettings,
   loginAttempts,
   roles,
   permissions,

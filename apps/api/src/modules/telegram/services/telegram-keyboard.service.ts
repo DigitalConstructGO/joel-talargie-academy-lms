@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { getTranslations, TelegramLanguage } from './telegram-i18n';
 
 export interface InlineKeyboardButton {
   text: string;
@@ -11,39 +12,72 @@ export interface InlineKeyboardMarkup {
   [key: string]: unknown;
 }
 
+export function isValidTelegramButtonUrl(url?: string | null): boolean {
+  if (!url) return false;
+  if (!url.startsWith('https://') && !url.startsWith('http://')) return false;
+  if (url.includes('localhost') || url.includes('127.0.0.1')) return false;
+  return true;
+}
+
 @Injectable()
 export class TelegramKeyboardService {
   /**
+   * Language selection keyboard.
+   */
+  buildLanguageSelectionKeyboard(
+    lang?: TelegramLanguage,
+  ): InlineKeyboardMarkup {
+    const t = getTranslations(lang);
+    return {
+      inline_keyboard: [
+        [
+          { text: '🇺🇸 English', callback_data: 'set_lang:en' },
+          { text: '🇪🇹 አማርኛ (Amharic)', callback_data: 'set_lang:am' },
+        ],
+        [{ text: t.mainMenu, callback_data: 'student_menu' }],
+      ],
+    };
+  }
+
+  /**
    * Main Menu keyboard layout for a linked Student.
    */
-  buildStudentMainMenuKeyboard(webAppUrl?: string): InlineKeyboardMarkup {
+  buildStudentMainMenuKeyboard(
+    webAppUrl?: string,
+    lang?: TelegramLanguage,
+  ): InlineKeyboardMarkup {
+    const t = getTranslations(lang);
     const keyboard: InlineKeyboardButton[][] = [
       [
-        { text: '📚 My Courses', callback_data: 'student_my_courses' },
-        { text: '📈 My Progress', callback_data: 'student_progress' },
+        { text: t.myCourses, callback_data: 'student_my_courses' },
+        { text: t.myProgress, callback_data: 'student_progress' },
       ],
       [
-        { text: '💳 Payments', callback_data: 'student_payments' },
-        { text: '🏆 Certificates', callback_data: 'student_certificates' },
+        { text: t.payments, callback_data: 'student_payments' },
+        { text: t.certificates, callback_data: 'student_certificates' },
       ],
       [
-        { text: '🔔 Notifications', callback_data: 'student_notifications' },
-        { text: '👤 My Account', callback_data: 'student_account' },
+        { text: t.notifications, callback_data: 'student_notifications' },
+        { text: t.myAccount, callback_data: 'student_account' },
       ],
       [
-        { text: '🔍 Browse Courses', callback_data: 'student_courses' },
-        { text: '⚙️ Settings', callback_data: 'student_settings' },
+        { text: t.browseCourses, callback_data: 'student_courses' },
+        { text: t.settings, callback_data: 'student_settings' },
       ],
     ];
 
     const bottomRow: InlineKeyboardButton[] = [];
     if (webAppUrl && webAppUrl.startsWith('https://')) {
       bottomRow.push({
-        text: '🌐 Open Academy',
+        text: t.openAcademy,
         url: `${webAppUrl}/dashboard`,
       });
     }
-    bottomRow.push({ text: '❓ Help', callback_data: 'student_help' });
+    bottomRow.push({ text: t.help, callback_data: 'student_help' });
+    bottomRow.push({
+      text: t.switchLanguage,
+      callback_data: 'prompt_language',
+    });
     keyboard.push(bottomRow);
 
     return { inline_keyboard: keyboard };
@@ -52,16 +86,18 @@ export class TelegramKeyboardService {
   /**
    * Onboarding keyboard for unlinked Telegram users.
    */
-  buildUnlinkedKeyboard(): InlineKeyboardMarkup {
+  buildUnlinkedKeyboard(lang?: TelegramLanguage): InlineKeyboardMarkup {
+    const t = getTranslations(lang);
     return {
       inline_keyboard: [
-        [{ text: 'Create Account', callback_data: 'register_new' }],
+        [{ text: t.createAccount, callback_data: 'register_new' }],
         [
           {
-            text: 'Connect Existing Account',
+            text: t.connectExistingAccount,
             callback_data: 'connect_existing',
           },
         ],
+        [{ text: t.switchLanguage, callback_data: 'prompt_language' }],
       ],
     };
   }
@@ -69,26 +105,34 @@ export class TelegramKeyboardService {
   /**
    * Help screen keyboard.
    */
-  buildHelpKeyboard(webAppUrl?: string): InlineKeyboardMarkup {
+  buildHelpKeyboard(
+    webAppUrl?: string,
+    lang?: TelegramLanguage,
+  ): InlineKeyboardMarkup {
+    const t = getTranslations(lang);
     const keyboard: InlineKeyboardButton[][] = [];
     if (webAppUrl && webAppUrl.startsWith('https://')) {
-      keyboard.push([{ text: 'Open Academy', url: `${webAppUrl}/dashboard` }]);
+      keyboard.push([{ text: t.openAcademy, url: `${webAppUrl}/dashboard` }]);
     }
-    keyboard.push([{ text: 'Main Menu', callback_data: 'student_menu' }]);
+    keyboard.push([{ text: t.mainMenu, callback_data: 'student_menu' }]);
     return { inline_keyboard: keyboard };
   }
 
   /**
    * Account screen keyboard.
    */
-  buildAccountKeyboard(webAppUrl?: string): InlineKeyboardMarkup {
+  buildAccountKeyboard(
+    webAppUrl?: string,
+    lang?: TelegramLanguage,
+  ): InlineKeyboardMarkup {
+    const t = getTranslations(lang);
     const keyboard: InlineKeyboardButton[][] = [];
     const profileUrl = webAppUrl ? `${webAppUrl}/dashboard/profile` : null;
 
     if (profileUrl && profileUrl.startsWith('https://')) {
-      keyboard.push([{ text: 'Open Profile', url: profileUrl }]);
+      keyboard.push([{ text: t.openProfile, url: profileUrl }]);
     }
-    keyboard.push([{ text: 'Main Menu', callback_data: 'student_menu' }]);
+    keyboard.push([{ text: t.mainMenu, callback_data: 'student_menu' }]);
     return { inline_keyboard: keyboard };
   }
 
@@ -332,23 +376,53 @@ export class TelegramKeyboardService {
   buildCertificatesKeyboard(
     certificates: Array<{
       id: string;
+      courseTitle?: string;
       verificationUrl?: string | null;
-      downloadAvailable?: boolean;
     }>,
+    page: number,
+    totalPages: number,
     webAppUrl?: string,
   ): InlineKeyboardMarkup {
     const keyboard: InlineKeyboardButton[][] = [];
 
     for (const cert of certificates) {
+      const title = (cert.courseTitle || 'Certificate').slice(0, 22);
+      const row: InlineKeyboardButton[] = [
+        {
+          text: `📜 ${title}`,
+          callback_data: `cert_detail:${cert.id}`,
+        },
+      ];
       const certUrl =
         cert.verificationUrl ||
         (webAppUrl ? `${webAppUrl}/dashboard/certificates/${cert.id}` : null);
-      if (certUrl && certUrl.startsWith('https://')) {
-        keyboard.push([{ text: 'View Certificate', url: certUrl }]);
+      if (isValidTelegramButtonUrl(certUrl)) {
+        row.push({
+          text: '🌐 Web',
+          url: certUrl!,
+        });
       }
+      keyboard.push(row);
     }
 
-    keyboard.push([{ text: 'Main Menu', callback_data: 'student_menu' }]);
+    const navRow: InlineKeyboardButton[] = [];
+    if (page > 1) {
+      navRow.push({
+        text: '◀️ Previous',
+        callback_data: `certificates_page:${page - 1}`,
+      });
+    }
+    if (page < totalPages) {
+      navRow.push({
+        text: 'Next ▶️',
+        callback_data: `certificates_page:${page + 1}`,
+      });
+    }
+    if (navRow.length > 0) {
+      keyboard.push(navRow);
+    }
+
+    keyboard.push([{ text: '🏠 Main Menu', callback_data: 'student_menu' }]);
     return { inline_keyboard: keyboard };
   }
 
@@ -390,17 +464,24 @@ export class TelegramKeyboardService {
   /**
    * Settings keyboard.
    */
-  buildSettingsKeyboard(webAppUrl?: string): InlineKeyboardMarkup {
+  buildSettingsKeyboard(
+    webAppUrl?: string,
+    lang?: TelegramLanguage,
+  ): InlineKeyboardMarkup {
+    const t = getTranslations(lang);
     const keyboard: InlineKeyboardButton[][] = [];
     const settingsUrl = webAppUrl ? `${webAppUrl}/dashboard/profile` : null;
 
     if (settingsUrl && settingsUrl.startsWith('https://')) {
-      keyboard.push([{ text: 'Open Academy Settings', url: settingsUrl }]);
+      keyboard.push([{ text: t.openAcademySettings, url: settingsUrl }]);
     }
     keyboard.push([
-      { text: '🔓 Disconnect Telegram', callback_data: 'student_unlink' },
+      { text: t.switchLanguage, callback_data: 'prompt_language' },
     ]);
-    keyboard.push([{ text: 'Main Menu', callback_data: 'student_menu' }]);
+    keyboard.push([
+      { text: t.disconnectTelegram, callback_data: 'student_unlink' },
+    ]);
+    keyboard.push([{ text: t.mainMenu, callback_data: 'student_menu' }]);
     return { inline_keyboard: keyboard };
   }
 }

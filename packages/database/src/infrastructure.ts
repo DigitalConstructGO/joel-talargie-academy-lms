@@ -50,6 +50,12 @@ export const createDatabaseClient = (client: Database.Database): AcademyDatabase
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS telegram_user_settings (
+        telegram_user_id TEXT PRIMARY KEY NOT NULL,
+        language TEXT DEFAULT 'en' NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
     `);
   } catch {}
 
@@ -949,4 +955,48 @@ export const createTelegramStudentUser = async (
   await deleteTelegramOnboardingState(database, input.telegramUserId);
 
   return hydrateAuthUser(database, user);
+};
+
+export const getTelegramUserLanguage = async (
+  database: AcademyDatabase,
+  telegramUserId: string,
+): Promise<'en' | 'am'> => {
+  if (!telegramUserId) return 'en';
+  try {
+    const record = await database.query.telegramUserSettings.findFirst({
+      where: eq(schema.telegramUserSettings.telegramUserId, telegramUserId),
+    });
+    return record?.language === 'am' ? 'am' : 'en';
+  } catch {
+    return 'en';
+  }
+};
+
+export const setTelegramUserLanguage = async (
+  database: AcademyDatabase,
+  telegramUserId: string,
+  language: 'en' | 'am',
+): Promise<'en' | 'am'> => {
+  if (!telegramUserId) return 'en';
+  const lang: 'en' | 'am' = language === 'am' ? 'am' : 'en';
+  try {
+    const existing = await database.query.telegramUserSettings.findFirst({
+      where: eq(schema.telegramUserSettings.telegramUserId, telegramUserId),
+    });
+
+    if (existing) {
+      await database
+        .update(schema.telegramUserSettings)
+        .set({ language: lang, updatedAt: new Date() })
+        .where(eq(schema.telegramUserSettings.telegramUserId, telegramUserId));
+    } else {
+      await database.insert(schema.telegramUserSettings).values({
+        telegramUserId,
+        language: lang,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    }
+  } catch {}
+  return lang;
 };

@@ -76,6 +76,12 @@ Assets are partitioned into isolated folder categories:
 | `payment-receipts`  | `storage/payment-receipts/`  | 10 MB         | JPG, PNG, PDF       | Submitted bank transfer proof & receipt images  |
 | `certificates`      | `storage/certificates/`      | 5 MB          | PDF                 | Generated PDF course completion certificates    |
 
+### 5. Certificate PDF Storage & Access
+
+- **Storage Key**: `certificates/{certificateId}/v{version}/{uuid}.pdf`
+- **Validation**: Generated buffers are validated for non-zero size (`size >= 100` bytes) and PDF header signature (`%PDF-`).
+- **Access Control**: Certificate PDF files are private assets. Downloads require student ownership or administrative authorization, served via signed URL or `/api/v1/certificates/:id/download`.
+
 ---
 
 ## 4. File Security & Validation Pipeline

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { getTranslations, TelegramLanguage } from './telegram-i18n';
 
 @Injectable()
 export class TelegramFormattingService {
@@ -33,111 +34,134 @@ export class TelegramFormattingService {
   /**
    * Formats student account summary.
    */
-  formatAccount(user: {
-    firstName?: string | null;
-    lastName?: string | null;
-    email: string;
-    status: string;
-    roles: string[];
-  }): string {
+  formatAccount(
+    user: {
+      firstName?: string | null;
+      lastName?: string | null;
+      email: string;
+      status: string;
+      roles: string[];
+    },
+    lang?: TelegramLanguage,
+  ): string {
+    const t = getTranslations(lang);
     const name =
       [user.firstName, user.lastName].filter(Boolean).join(' ') || 'Student';
     const maskedEmail = this.maskEmail(user.email);
     const rolesList = user.roles.join(', ') || 'Student';
     const statusDisplay =
-      user.status === 'ACTIVE' ? 'Active ✅' : this.escapeHtml(user.status);
+      user.status === 'ACTIVE' ? t.activeBadge : this.escapeHtml(user.status);
 
     return (
-      `👤 <b>My Academy Account</b>\n\n` +
-      `<b>Name:</b> ${this.escapeHtml(name)}\n` +
-      `<b>Email:</b> ${this.escapeHtml(maskedEmail)}\n` +
-      `<b>Role:</b> ${this.escapeHtml(rolesList)}\n` +
-      `<b>Telegram:</b> Connected ✅\n` +
-      `<b>Account Status:</b> ${statusDisplay}`
+      `${t.accountTitle}\n\n` +
+      `<b>${t.nameLabel}:</b> ${this.escapeHtml(name)}\n` +
+      `<b>${t.emailLabel}:</b> ${this.escapeHtml(maskedEmail)}\n` +
+      `<b>${t.roleLabel}:</b> ${this.escapeHtml(rolesList)}\n` +
+      `<b>${t.telegramStatusLabel}:</b> ${t.connectedBadge}\n` +
+      `<b>${t.accountStatusLabel}:</b> ${statusDisplay}`
     );
   }
 
   /**
    * Formats a course card summary for browsing catalog.
    */
-  formatCourseCard(course: {
-    title: string;
-    accessType?: string;
-    price?: string | number;
-    discountPrice?: string | number | null;
-    currency?: string;
-    categoryName?: string | null;
-    difficulty?: string | null;
-  }): string {
+  formatCourseCard(
+    course: {
+      title: string;
+      accessType?: string;
+      price?: string | number;
+      discountPrice?: string | number | null;
+      currency?: string;
+      categoryName?: string | null;
+      difficulty?: string | null;
+    },
+    lang?: TelegramLanguage,
+  ): string {
+    const t = getTranslations(lang);
     const isFree =
       course.accessType === 'FREE' || Number(course.price || 0) === 0;
     const priceDisplay = isFree
-      ? 'FREE'
+      ? t.freeLabel
       : `${this.escapeHtml(course.currency || 'ETB')} ${Number(course.discountPrice || course.price || 0).toLocaleString()}`;
 
     return (
       `📚 <b>${this.escapeHtml(course.title)}</b>\n\n` +
-      `<b>Category:</b> ${this.escapeHtml(course.categoryName || 'General')}\n` +
-      `<b>Price:</b> ${priceDisplay}\n` +
-      `<b>Type:</b> ${isFree ? 'Free' : 'Paid'}`
+      `<b>${t.categoryLabel}:</b> ${this.escapeHtml(course.categoryName || 'General')}\n` +
+      `<b>${t.priceLabel}:</b> ${priceDisplay}\n` +
+      `<b>${t.typeLabel}:</b> ${isFree ? t.freeLabel : t.paidLabel}`
     );
   }
 
   /**
    * Formats my-enrolled course item.
    */
-  formatMyCourseSummary(item: {
-    courseTitle: string;
-    status: string;
-    progressPercentage?: number;
-  }): string {
+  formatMyCourseSummary(
+    item: {
+      courseTitle: string;
+      status: string;
+      progressPercentage?: number;
+    },
+    lang?: TelegramLanguage,
+  ): string {
+    const t = getTranslations(lang);
     const progress = item.progressPercentage ?? 0;
     const bar = this.formatProgressBar(progress);
-    const statusLabel = this.formatEnrollmentStatus(item.status);
+    const statusLabel = this.formatEnrollmentStatus(item.status, lang);
 
     return (
       `📚 <b>${this.escapeHtml(item.courseTitle)}</b>\n` +
-      `Progress: ${bar}\n` +
-      `Status: ${statusLabel}\n`
+      `${t.progressLabel}: ${bar}\n` +
+      `${t.statusLabel}: ${statusLabel}\n`
     );
   }
 
   /**
    * Formats detailed learning progress for a course.
    */
-  formatProgressDetail(overview: {
-    course: { title: string };
-    progressPercentage: number;
-    mandatoryLessonCount: number;
-    completedMandatoryLessonCount: number;
-    enrollmentStatus: string;
-  }): string {
+  formatProgressDetail(
+    overview: {
+      course: { title: string };
+      progressPercentage: number;
+      mandatoryLessonCount: number;
+      completedMandatoryLessonCount: number;
+      enrollmentStatus: string;
+    },
+    lang?: TelegramLanguage,
+  ): string {
+    const t = getTranslations(lang);
     const bar = this.formatProgressBar(overview.progressPercentage);
-    const statusLabel = this.formatEnrollmentStatus(overview.enrollmentStatus);
+    const statusLabel = this.formatEnrollmentStatus(
+      overview.enrollmentStatus,
+      lang,
+    );
 
     return (
-      `📈 <b>Learning Progress</b>\n\n` +
+      `${t.learningProgressTitle}\n\n` +
       `<b>${this.escapeHtml(overview.course.title)}</b>\n` +
       `${bar}\n\n` +
-      `${overview.completedMandatoryLessonCount} / ${overview.mandatoryLessonCount} required lessons completed\n\n` +
-      `<b>Status:</b> ${statusLabel}`
+      `${t.requiredLessonsCompleted(overview.completedMandatoryLessonCount, overview.mandatoryLessonCount)}\n\n` +
+      `<b>${t.statusLabel}:</b> ${statusLabel}`
     );
   }
 
   /**
    * Formats a single payment record summary.
    */
-  formatPaymentSummary(payment: {
-    courseTitle?: string;
-    submittedAmount?: string | number;
-    expectedAmount?: string | number;
-    amount?: string | number;
-    currency?: string;
-    status: string;
-    createdAt?: Date | string;
-    submittedAt?: Date | string;
-    paymentDate?: Date | string;
-  }): string {
+  formatPaymentSummary(
+    payment: {
+      courseTitle?: string;
+      submittedAmount?: string | number;
+      expectedAmount?: string | number;
+      amount?: string | number;
+      currency?: string;
+      status: string;
+      createdAt?: Date | string;
+      submittedAt?: Date | string;
+      paymentDate?: Date | string;
+    },
+    lang?: TelegramLanguage,
+  ): string {
+    const t = getTranslations(lang);
     const amountVal =
       payment.submittedAmount ?? payment.amount ?? payment.expectedAmount ?? 0;
     const amountDisplay = `${this.escapeHtml(payment.currency || 'ETB')} ${Number(amountVal).toLocaleString()}`;
@@ -146,53 +170,72 @@ export class TelegramFormattingService {
     const formattedDate = dateVal
       ? new Date(dateVal).toLocaleDateString()
       : 'N/A';
-    const statusDisplay = this.formatPaymentStatus(payment.status);
+    const statusDisplay = this.formatPaymentStatus(payment.status, lang);
 
     return (
-      `💳 <b>Payment Summary</b>\n\n` +
-      `<b>Course:</b> ${this.escapeHtml(payment.courseTitle || 'Academy Course')}\n` +
-      `<b>Amount:</b> ${amountDisplay}\n` +
-      `<b>Status:</b> ${statusDisplay}\n` +
-      `<b>Date:</b> ${formattedDate}`
+      `${t.paymentSummaryTitle}\n\n` +
+      `<b>${t.courseLabel}:</b> ${this.escapeHtml(payment.courseTitle || 'Academy Course')}\n` +
+      `<b>${t.amountLabel}:</b> ${amountDisplay}\n` +
+      `<b>${t.statusLabel}:</b> ${statusDisplay}\n` +
+      `<b>${t.dateLabel}:</b> ${formattedDate}`
     );
   }
 
   /**
    * Formats a single certificate summary.
    */
-  formatCertificateSummary(cert: {
-    courseTitle?: string;
-    certificateNumber?: string;
-    status: string;
-    issuedAt?: Date | string;
-    createdAt?: Date | string;
-  }): string {
+  formatCertificateSummary(
+    cert: {
+      courseTitle?: string;
+      certificateNumber?: string;
+      status: string;
+      issuedAt?: Date | string;
+      createdAt?: Date | string;
+    },
+    lang?: TelegramLanguage,
+  ): string {
+    const t = getTranslations(lang);
     const dateVal = cert.issuedAt || cert.createdAt;
-    const formattedDate = dateVal
-      ? new Date(dateVal).toLocaleDateString()
-      : 'N/A';
+    let formattedDate = 'Recently';
+    if (dateVal) {
+      const parsedDate = new Date(dateVal);
+      if (!isNaN(parsedDate.getTime())) {
+        formattedDate = parsedDate.toLocaleDateString(
+          lang === 'am' ? 'am-ET' : 'en-US',
+          {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          },
+        );
+      }
+    }
     const isAvailable = cert.status === 'GENERATED';
 
     return (
-      `🏆 <b>My Certificate</b>\n\n` +
-      `<b>Course:</b> ${this.escapeHtml(cert.courseTitle || 'Academy Course')}\n` +
-      `<b>Issued:</b> ${formattedDate}\n` +
-      `<b>Certificate:</b> ${isAvailable ? 'Available ✅' : this.escapeHtml(cert.status)}`
+      `${t.myCertificateTitle}\n\n` +
+      `<b>${t.courseLabel}:</b> ${this.escapeHtml(cert.courseTitle || 'Academy Course')}\n` +
+      `<b>${t.issuedLabel}:</b> ${formattedDate}\n` +
+      `<b>${t.certificates}:</b> ${isAvailable ? t.certificateAvailableBadge : this.escapeHtml(cert.status)}`
     );
   }
 
   /**
    * Formats a single notification item.
    */
-  formatNotificationItem(notif: {
-    title: string;
-    body?: string;
-    message?: string;
-    createdAt: Date | string;
-    readAt?: Date | string | null;
-  }): string {
+  formatNotificationItem(
+    notif: {
+      title: string;
+      body?: string;
+      message?: string;
+      createdAt: Date | string;
+      readAt?: Date | string | null;
+    },
+    lang?: TelegramLanguage,
+  ): string {
+    const t = getTranslations(lang);
     const text = notif.body || notif.message || '';
-    const readBadge = notif.readAt ? ' (Read)' : ' 🟢 (New)';
+    const readBadge = notif.readAt ? t.readBadge : t.newBadge;
     const dateStr = notif.createdAt
       ? new Date(notif.createdAt).toLocaleDateString()
       : '';
@@ -212,42 +255,47 @@ export class TelegramFormattingService {
     return `${local[0]}***${local[local.length - 1]}@${domain}`;
   }
 
-  private formatEnrollmentStatus(status: string): string {
+  private formatEnrollmentStatus(
+    status: string,
+    lang?: TelegramLanguage,
+  ): string {
+    const t = getTranslations(lang);
     switch (status) {
       case 'ENROLLED':
-        return 'Enrolled';
+        return t.statusEnrolled;
       case 'IN_PROGRESS':
-        return 'In Progress';
+        return t.statusInProgress;
       case 'COMPLETED':
-        return 'Completed 🎉';
+        return t.statusCompleted;
       case 'PENDING_PAYMENT':
-        return 'Pending Payment ⏳';
+        return t.statusPendingPayment;
       case 'WAITING_APPROVAL':
-        return 'Waiting Payment Approval ⏳';
+        return t.statusWaitingApproval;
       case 'CANCELLED':
-        return 'Cancelled';
+        return t.statusCancelled;
       case 'ACCESS_REVOKED':
-        return 'Access Revoked';
+        return t.statusAccessRevoked;
       default:
         return this.escapeHtml(status);
     }
   }
 
-  private formatPaymentStatus(status: string): string {
+  private formatPaymentStatus(status: string, lang?: TelegramLanguage): string {
+    const t = getTranslations(lang);
     switch (status) {
       case 'PENDING':
       case 'WAITING_APPROVAL':
-        return 'Pending Review ⏳';
+        return t.paymentPendingReview;
       case 'APPROVED':
       case 'SUCCESS':
-        return 'Approved ✅';
+        return t.paymentApproved;
       case 'DECLINED':
       case 'REJECTED':
-        return 'Declined ❌';
+        return t.paymentDeclined;
       case 'FAILED':
-        return 'Failed ❌';
+        return t.paymentFailed;
       case 'CANCELLED':
-        return 'Cancelled';
+        return t.statusCancelled;
       default:
         return this.escapeHtml(status);
     }

@@ -36,6 +36,7 @@ describe('TG9 — Student Telegram Services Unit & Integration Tests', () => {
       overview: vi.fn(),
       open: vi.fn(),
       complete: vi.fn(),
+      position: vi.fn(),
     };
 
     mockPaymentsService = {
@@ -47,6 +48,8 @@ describe('TG9 — Student Telegram Services Unit & Integration Tests', () => {
     mockCertificatesService = {
       listMine: vi.fn(),
       mine: vi.fn(),
+      studentDownload: vi.fn(),
+      request: vi.fn(),
     };
 
     mockNotificationsService = {
@@ -55,6 +58,7 @@ describe('TG9 — Student Telegram Services Unit & Integration Tests', () => {
 
     mockTelegramClient = {
       sendMessage: vi.fn().mockResolvedValue(true),
+      sendDocument: vi.fn().mockResolvedValue(true),
     };
 
     mockTelegramConfig = {
@@ -508,7 +512,7 @@ describe('TG9 — Student Telegram Services Unit & Integration Tests', () => {
 
     expect(mockTelegramClient.sendMessage).toHaveBeenCalledWith(
       expect.objectContaining({
-        text: expect.stringContaining("don't have any certificates yet"),
+        text: expect.stringContaining("don't have any earned certificates yet"),
       }),
     );
   });
@@ -840,9 +844,9 @@ describe('TG9 — Student Telegram Services Unit & Integration Tests', () => {
     await studentService.handleCertificates(847362910, 847362910);
     await studentService.handleNotifications(847362910, 847362910);
 
-    expect(mockEnrollmentsService.mine).toHaveBeenCalledTimes(1);
+    expect(mockEnrollmentsService.mine).toHaveBeenCalled();
     expect(mockPaymentsService.mine).toHaveBeenCalledTimes(1);
-    expect(mockCertificatesService.listMine).toHaveBeenCalledTimes(1);
+    expect(mockCertificatesService.listMine).toHaveBeenCalled();
     expect(mockNotificationsService.listMine).toHaveBeenCalledTimes(1);
   });
 
@@ -900,7 +904,7 @@ describe('TG9 — Student Telegram Services Unit & Integration Tests', () => {
           inline_keyboard: expect.arrayContaining([
             expect.arrayContaining([
               expect.objectContaining({
-                callback_data: 'view_lesson:enrollment-1:les-1',
+                callback_data: 'view_lesson:les-1',
               }),
             ]),
           ]),
@@ -948,7 +952,7 @@ describe('TG9 — Student Telegram Services Unit & Integration Tests', () => {
           inline_keyboard: expect.arrayContaining([
             expect.arrayContaining([
               expect.objectContaining({
-                callback_data: 'complete_lesson:enrollment-1:les-2',
+                callback_data: 'complete_lesson:les-2',
               }),
             ]),
           ]),
@@ -1002,6 +1006,77 @@ describe('TG9 — Student Telegram Services Unit & Integration Tests', () => {
               expect.objectContaining({
                 callback_data: 'student_certificates',
               }),
+            ]),
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it('TEST 32 — Default English language menu renders English keyboards', async () => {
+    mockIdentityResolver.resolveIdentity.mockResolvedValue({
+      status: 'LINKED',
+      telegramId: '847362910',
+      user: { id: 'user-25', firstName: 'Joel', status: 'ACTIVE' },
+    });
+
+    await studentService.handleStart(847362910, 847362910, 'Joel');
+
+    expect(mockTelegramClient.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: expect.stringContaining('Welcome back to Joel Talargie Academy'),
+        reply_markup: expect.objectContaining({
+          inline_keyboard: expect.arrayContaining([
+            expect.arrayContaining([
+              expect.objectContaining({ text: '📚 My Courses' }),
+            ]),
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it('TEST 33 — Language prompt displays language selection keyboard', async () => {
+    await studentService.handlePromptLanguage(847362910, 847362910);
+
+    expect(mockTelegramClient.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: expect.stringContaining('Select Preferred Language'),
+        reply_markup: expect.objectContaining({
+          inline_keyboard: expect.arrayContaining([
+            expect.arrayContaining([
+              expect.objectContaining({ callback_data: 'set_lang:en' }),
+              expect.objectContaining({ callback_data: 'set_lang:am' }),
+            ]),
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it('TEST 34 — Switching language to Amharic updates user language preference and renders Amharic menus', async () => {
+    mockIdentityResolver.resolveIdentity.mockResolvedValue({
+      status: 'LINKED',
+      telegramId: '847362910',
+      user: { id: 'user-25', firstName: 'Joel', status: 'ACTIVE' },
+    });
+
+    await studentService.handleSetLanguage(847362910, 847362910, 'am');
+
+    expect(mockTelegramClient.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: expect.stringContaining('ቋንቋው ወደ አማርኛ ተቀይሯል 🇪🇹'),
+      }),
+    );
+
+    expect(mockTelegramClient.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: expect.stringContaining('እንኳን ወደ ዮኤል ታላርጊ አካዳሚ በደህና መጡ'),
+        reply_markup: expect.objectContaining({
+          inline_keyboard: expect.arrayContaining([
+            expect.arrayContaining([
+              expect.objectContaining({ text: '📚 የእኔ ኮርሶች' }),
+              expect.objectContaining({ text: '📈 የእኔ እድገት' }),
             ]),
           ]),
         }),

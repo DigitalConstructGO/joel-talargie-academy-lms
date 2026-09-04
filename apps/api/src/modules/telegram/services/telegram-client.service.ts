@@ -244,6 +244,44 @@ export class TelegramClientService {
     }
   }
 
+  async sendDocument(params: {
+    chat_id: number | string;
+    document: string;
+    caption?: string;
+    parse_mode?: 'Markdown' | 'HTML';
+    reply_markup?: Record<string, unknown>;
+  }): Promise<boolean> {
+    if (!this.config.botToken) return false;
+    if (
+      params.document.includes('localhost') ||
+      params.document.includes('127.0.0.1')
+    ) {
+      return false;
+    }
+
+    try {
+      const response = await fetch(`${this.apiUrl}/sendDocument`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+        signal: AbortSignal.timeout(15_000),
+        ...this.fetchOptions,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.logger.error(
+          `Telegram sendDocument error [${response.status}]: ${errorText}`,
+        );
+        return false;
+      }
+      return true;
+    } catch (error) {
+      this.logger.error('Failed to send Telegram document:', error);
+      return false;
+    }
+  }
+
   async getFile(fileId: string): Promise<{
     file_id: string;
     file_path?: string;

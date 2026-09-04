@@ -74,21 +74,42 @@ export async function generateCertificatePdf(
     academyName:
       safeWinAnsiText(rawInput.academyName) || 'Joel Talargie Academy',
     title: safeWinAnsiText(rawInput.title) || 'Certificate of Completion',
-    studentName: safeWinAnsiText(rawInput.studentName) || 'Student',
-    courseTitle: safeWinAnsiText(rawInput.courseTitle) || 'Course',
-    certificateNumber: safeWinAnsiText(rawInput.certificateNumber),
-    verificationUrl: safeWinAnsiText(rawInput.verificationUrl),
+    studentName:
+      safeWinAnsiText(rawInput.studentName) ||
+      rawInput.studentName ||
+      'Student',
+    courseTitle:
+      safeWinAnsiText(rawInput.courseTitle) || rawInput.courseTitle || 'Course',
+    certificateNumber:
+      safeWinAnsiText(rawInput.certificateNumber) ||
+      rawInput.certificateNumber ||
+      'JTA-CERT',
+    verificationUrl:
+      rawInput.verificationUrl || 'https://joel-academy.com/verify',
     footerText: rawInput.footerText
-      ? safeWinAnsiText(rawInput.footerText)
-      : undefined,
+      ? safeWinAnsiText(rawInput.footerText) || rawInput.footerText
+      : 'Issued by Joel Talargie Academy',
   };
 
-  const qrCode = await QRCode.toBuffer(input.verificationUrl, {
-    type: 'png',
-    width: 240,
-    margin: 1,
-    errorCorrectionLevel: 'M',
-  });
+  let qrCode: Buffer;
+  try {
+    const targetUrl =
+      input.verificationUrl && input.verificationUrl.trim().length > 0
+        ? input.verificationUrl
+        : 'https://joel-academy.com/verify';
+    qrCode = await QRCode.toBuffer(targetUrl, {
+      type: 'png',
+      width: 240,
+      margin: 1,
+      errorCorrectionLevel: 'M',
+    });
+  } catch {
+    qrCode = await QRCode.toBuffer('https://joel-academy.com/verify', {
+      type: 'png',
+      width: 240,
+      margin: 1,
+    });
+  }
 
   return new Promise((resolve, reject) => {
     const document = new PDFDocument({

@@ -143,7 +143,13 @@ export class TelegramUpdateService {
     } else if (data === 'student_menu') {
       await this.studentService.handleStart(chatId, fromId);
     } else if (data === 'student_help') {
-      await this.studentService.handleHelp(chatId);
+      await this.studentService.handleHelp(chatId, fromId);
+    } else if (data === 'prompt_language') {
+      await this.studentService.handlePromptLanguage(chatId, fromId);
+    } else if (data === 'set_lang:en') {
+      await this.studentService.handleSetLanguage(chatId, fromId, 'en');
+    } else if (data === 'set_lang:am') {
+      await this.studentService.handleSetLanguage(chatId, fromId, 'am');
     } else if (data === 'student_account') {
       await this.studentService.handleAccount(chatId, fromId);
     } else if (data === 'student_courses') {
@@ -241,8 +247,8 @@ export class TelegramUpdateService {
       );
     } else if (data.startsWith('view_lesson:')) {
       const parts = data.split(':');
-      const enrollmentId = parts[1];
-      const lessonId = parts[2];
+      const lessonId = parts.length > 2 ? parts[2] : parts[1];
+      const enrollmentId = parts.length > 2 ? parts[1] : null;
       await this.studentService.handleLessonDetail(
         chatId,
         fromId,
@@ -251,8 +257,8 @@ export class TelegramUpdateService {
       );
     } else if (data.startsWith('complete_lesson:')) {
       const parts = data.split(':');
-      const enrollmentId = parts[1];
-      const lessonId = parts[2];
+      const lessonId = parts.length > 2 ? parts[2] : parts[1];
+      const enrollmentId = parts.length > 2 ? parts[1] : null;
       await this.studentService.handleCompleteLesson(
         chatId,
         fromId,
@@ -276,7 +282,17 @@ export class TelegramUpdateService {
       const paymentId = data.split(':')[1];
       await this.studentService.handlePayments(chatId, fromId, 1, paymentId);
     } else if (data === 'student_certificates') {
-      await this.studentService.handleCertificates(chatId, fromId);
+      await this.studentService.handleCertificates(chatId, fromId, 1);
+    } else if (data.startsWith('certificates_page:')) {
+      const page = parseInt(data.split(':')[1] || '1', 10);
+      await this.studentService.handleCertificates(
+        chatId,
+        fromId,
+        isNaN(page) ? 1 : page,
+      );
+    } else if (data.startsWith('cert_detail:')) {
+      const certId = data.split(':')[1];
+      await this.studentService.handleCertificates(chatId, fromId, 1, certId);
     } else if (data === 'student_notifications') {
       await this.studentService.handleNotifications(chatId, fromId, 1);
     } else if (data.startsWith('notifications_page:')) {
@@ -317,7 +333,12 @@ export class TelegramUpdateService {
     }
 
     if (text.startsWith('/help')) {
-      await this.studentService.handleHelp(chatId);
+      await this.studentService.handleHelp(chatId, fromUser.id);
+      return;
+    }
+
+    if (text.startsWith('/language') || text.startsWith('/lang')) {
+      await this.studentService.handlePromptLanguage(chatId, fromUser.id);
       return;
     }
 
