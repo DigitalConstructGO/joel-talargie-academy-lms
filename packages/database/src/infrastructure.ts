@@ -184,7 +184,7 @@ export type AuthUserRecord = {
   emailVerified: boolean;
 };
 const hydrateAuthUser = async (
-  database: AcademyDatabase,
+  database: any,
   user: typeof schema.users.$inferSelect,
 ): Promise<AuthUserRecord> => {
   const [profile, assigned] = await Promise.all([
@@ -389,7 +389,7 @@ export const upsertGoogleUser = async (
         });
       }
       return {
-        user: await hydrateAuthUser(database, {
+        user: await hydrateAuthUser(tx, {
           ...googleMatch,
           avatarUrl: input.avatarUrl ?? null,
           emailVerified: true,
@@ -434,7 +434,7 @@ export const upsertGoogleUser = async (
         });
       }
       return {
-        user: await hydrateAuthUser(database, {
+        user: await hydrateAuthUser(tx, {
           ...emailMatch,
           googleId: input.googleId,
           avatarUrl: input.avatarUrl ?? null,
@@ -476,7 +476,7 @@ export const upsertGoogleUser = async (
         .returning();
     if (!role) throw new Error('Student role could not be assigned');
     await tx.insert(schema.userRoles).values({ userId: created.id, roleId: role.id });
-    return { user: await hydrateAuthUser(database, created), event: 'CREATED' };
+    return { user: await hydrateAuthUser(tx, created), event: 'CREATED' };
   });
 export const createStudentUser = async (
   database: AcademyDatabase,
@@ -513,7 +513,7 @@ export const createStudentUser = async (
     await tx
       .insert(schema.emailVerificationTokens)
       .values({ userId: user.id, tokenHash: input.tokenHash, expiresAt: input.tokenExpiresAt });
-    return hydrateAuthUser(database, user);
+    return hydrateAuthUser(tx, user);
   });
 export const createRefreshSession = async (
   database: AcademyDatabase,
