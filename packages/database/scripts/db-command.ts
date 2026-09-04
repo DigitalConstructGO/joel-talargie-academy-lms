@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
+import { createDatabaseClient } from '../src/infrastructure.ts';
 import { schema } from '../src/schema/index.ts';
 import { permissionSeed } from '../src/permission-catalog.ts';
 import { eq } from 'drizzle-orm';
@@ -47,7 +48,7 @@ async function run(): Promise<void> {
     }
 
     if (command === 'seed') {
-      const database: any = drizzle(client, { schema });
+      const database: any = createDatabaseClient(client);
       await database.transaction(async (tx: any) => {
         await tx
           .insert(schema.permissions)

@@ -16,10 +16,10 @@ Thumbs.db
 *.tsbuildinfo
 backups/
 *.sql
-*.db
-*.sqlite
-*.db-shm
-*.db-wal
+!packages/database/migrations-sqlite/*.sql
+!packages/database/migrations/*.sql
+!sqlite.db
+!packages/database/sqlite.db
 
 scratch/
 storage/
