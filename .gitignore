@@ -18,8 +18,10 @@ backups/
 *.sql
 !packages/database/migrations-sqlite/*.sql
 !packages/database/migrations/*.sql
-!sqlite.db
-!packages/database/sqlite.db
+*.db
+*.sqlite
+*.db-shm
+*.db-wal
 
 scratch/
 storage/
