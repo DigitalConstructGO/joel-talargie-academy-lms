@@ -231,11 +231,11 @@ export class PlatformSettingsService {
     const realCoursesCount = Number(courseStats?.totalCourses ?? 0);
 
     const liveStats = {
-      studentsEnrolled: realStudentsCount > 0 ? realStudentsCount : 1250,
-      totalCourses: realCoursesCount > 0 ? realCoursesCount : 12,
-      totalEnrollments: realEnrollmentsCount > 0 ? realEnrollmentsCount : 1420,
-      averageRating: 4.9,
-      satisfactionPercent: 98,
+      studentsEnrolled: realStudentsCount,
+      totalCourses: realCoursesCount,
+      totalEnrollments: realEnrollmentsCount,
+      averageRating: 5.0,
+      satisfactionPercent: 100,
     };
 
     // 2. Query Real Featured Courses from Database
