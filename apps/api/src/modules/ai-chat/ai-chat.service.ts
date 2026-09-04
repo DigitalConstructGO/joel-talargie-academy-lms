@@ -69,11 +69,12 @@ Rules:
     }
 
     const configuredModel =
-      this.configService.get<string>('GEMINI_MODEL') || 'gemini-2.5-flash';
+      this.configService.get<string>('GEMINI_MODEL') || 'gemini-3.6-flash';
 
     const models = Array.from(
       new Set([
         configuredModel,
+        'gemini-3.6-flash',
         'gemini-2.5-flash',
         'gemini-2.0-flash',
         'gemini-1.5-flash',
