@@ -44,7 +44,6 @@ const livePaymentsApi = {
         `/me/enrollments/${encodeURIComponent(enrollmentId)}/payments`,
         toFormData(input),
         {
-          headers: { 'Content-Type': undefined },
           timeout: 120_000,
         },
       ),

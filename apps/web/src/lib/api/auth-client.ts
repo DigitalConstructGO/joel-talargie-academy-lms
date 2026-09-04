@@ -3,21 +3,20 @@ import axios from 'axios';
 const normalizeBaseUrl = (value?: string) => value?.trim().replace(/\/+$/, '');
 
 export const getApiBaseUrl = () => {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL || process.env.INTERNAL_API_URL;
+  if (envUrl) {
+    return normalizeBaseUrl(envUrl)!;
+  }
   if (typeof window !== 'undefined') {
     return '/api/v1';
   }
-  const raw =
-    process.env.INTERNAL_API_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    'http://localhost:4000/api/v1';
-  return normalizeBaseUrl(raw) ?? 'http://localhost:4000/api/v1';
+  return 'http://localhost:4000/api/v1';
 };
 
 export const authClient = axios.create({
   baseURL: getApiBaseUrl(),
   withCredentials: true,
-  headers: { 'Content-Type': 'application/json' },
-  timeout: 30_000,
+  timeout: 60_000,
 });
 
 export const unwrap = <T>(response: { data: { data?: T } | T }): T =>
