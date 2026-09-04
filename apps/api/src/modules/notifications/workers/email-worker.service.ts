@@ -119,13 +119,18 @@ export class EmailWorkerService {
             updatedAt: new Date(),
           })
           .where(eq(schema.emailDeliveries.id, delivery.id));
-        if (delivery.userId)
-          await tx.insert(schema.notificationEvents).values({
-            userId: delivery.userId,
-            emailDeliveryId: delivery.id,
-            eventType: 'email.sent',
-            channel: 'EMAIL',
-          });
+        if (delivery.userId) {
+          try {
+            await tx.insert(schema.notificationEvents).values({
+              userId: delivery.userId,
+              emailDeliveryId: delivery.id,
+              eventType: 'email.sent',
+              channel: 'EMAIL',
+            });
+          } catch {
+            // Ignore event log if userId is not a valid user foreign key
+          }
+        }
       });
     } catch (error) {
       await this.fail(delivery, attempt!.id, error);

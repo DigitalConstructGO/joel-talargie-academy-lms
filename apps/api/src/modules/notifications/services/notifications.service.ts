@@ -108,57 +108,67 @@ export class NotificationsService {
   async notify(input: NotificationRequest) {
     this.validateAction(input.actionUrl);
     const essential = ESSENTIAL.has(input.templateCode);
-    const preferences =
-      await this.repository.db.query.userNotificationPreferences.findFirst({
-        where: (table, { eq }) => eq(table.userId, input.userId),
-      });
-    const suffix = input.category[0]!.toUpperCase() + input.category.slice(1);
-    const emailEnabled =
-      essential ||
-      preferences?.[`email${suffix}` as keyof typeof preferences] !== false;
-    await this.createInApp(
-      {
-        userId: input.userId,
-        type: input.templateCode,
-        title: input.title,
-        message: input.message,
-        actionUrl: input.actionUrl,
-        relatedEntityType: input.relatedEntityType,
-        relatedEntityId: input.relatedEntityId,
-        priority: input.priority,
-        deduplicationKey: input.deduplicationKey,
-        category: input.category,
-      },
-      preferences,
-    );
+    const effectiveUserId =
+      input.userId && input.userId !== 'system_registration'
+        ? input.userId
+        : null;
 
-    // SMS Dispatch
-    const profile = await this.repository.db.query.userProfiles.findFirst({
-      where: (table, { eq }) => eq(table.userId, input.userId),
-    });
-    if (profile?.phone) {
-      const smsEnabled =
+    let emailEnabled = true;
+
+    if (effectiveUserId) {
+      const preferences =
+        await this.repository.db.query.userNotificationPreferences.findFirst({
+          where: (table, { eq }) => eq(table.userId, effectiveUserId),
+        });
+      const suffix = input.category[0]!.toUpperCase() + input.category.slice(1);
+      emailEnabled =
         essential ||
-        preferences?.[`sms${suffix}` as keyof typeof preferences] !== false;
-      const smsText = `[Joel Academy] ${input.title}: ${input.message}`;
-      await this.repository.createSmsDelivery({
-        userId: input.userId,
-        recipientPhone: profile.phone,
-        messageText: smsText,
-        templateCode: input.templateCode,
-        status: smsEnabled ? 'QUEUED' : 'SUPPRESSED',
-        priority: input.priority,
-        deduplicationKey: `sms:${input.deduplicationKey}`,
-        relatedEntityType: input.relatedEntityType,
-        relatedEntityId: input.relatedEntityId,
+        preferences?.[`email${suffix}` as keyof typeof preferences] !== false;
+
+      await this.createInApp(
+        {
+          userId: effectiveUserId,
+          type: input.templateCode,
+          title: input.title,
+          message: input.message,
+          actionUrl: input.actionUrl,
+          relatedEntityType: input.relatedEntityType,
+          relatedEntityId: input.relatedEntityId,
+          priority: input.priority,
+          deduplicationKey: input.deduplicationKey,
+          category: input.category,
+        },
+        preferences,
+      );
+
+      // SMS Dispatch
+      const profile = await this.repository.db.query.userProfiles.findFirst({
+        where: (table, { eq }) => eq(table.userId, effectiveUserId),
       });
-      if (smsEnabled) {
-        void this.sms.sendSms({
+      if (profile?.phone) {
+        const smsEnabled =
+          essential ||
+          preferences?.[`sms${suffix}` as keyof typeof preferences] !== false;
+        const smsText = `[Joel Academy] ${input.title}: ${input.message}`;
+        await this.repository.createSmsDelivery({
+          userId: effectiveUserId,
           recipientPhone: profile.phone,
           messageText: smsText,
           templateCode: input.templateCode,
+          status: smsEnabled ? 'QUEUED' : 'SUPPRESSED',
+          priority: input.priority,
           deduplicationKey: `sms:${input.deduplicationKey}`,
+          relatedEntityType: input.relatedEntityType,
+          relatedEntityId: input.relatedEntityId,
         });
+        if (smsEnabled) {
+          void this.sms.sendSms({
+            recipientPhone: profile.phone,
+            messageText: smsText,
+            templateCode: input.templateCode,
+            deduplicationKey: `sms:${input.deduplicationKey}`,
+          });
+        }
       }
     }
 
@@ -174,7 +184,7 @@ export class NotificationsService {
       });
     const rendered = this.renderer.render(template, input.variables);
     return this.repository.createDelivery({
-      userId: input.userId,
+      userId: effectiveUserId,
       recipientEmail: this.email(input.recipientEmail),
       recipientName: input.recipientName
         ? this.clean(input.recipientName, 200)

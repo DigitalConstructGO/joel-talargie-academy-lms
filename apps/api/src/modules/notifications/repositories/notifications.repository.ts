@@ -136,15 +136,20 @@ export class NotificationsRepository {
         .values(input)
         .onConflictDoNothing()
         .returning();
-      if (delivery && delivery.userId)
-        await tx.insert(schema.notificationEvents).values({
-          userId: delivery.userId,
-          emailDeliveryId: delivery.id,
-          eventType: 'email.queued',
-          channel: 'EMAIL',
-          relatedEntityType: delivery.relatedEntityType,
-          relatedEntityId: delivery.relatedEntityId,
-        });
+      if (delivery && delivery.userId) {
+        try {
+          await tx.insert(schema.notificationEvents).values({
+            userId: delivery.userId,
+            emailDeliveryId: delivery.id,
+            eventType: 'email.queued',
+            channel: 'EMAIL',
+            relatedEntityType: delivery.relatedEntityType,
+            relatedEntityId: delivery.relatedEntityId,
+          });
+        } catch {
+          // Ignore event log if userId is not a valid user foreign key
+        }
+      }
       return delivery ?? null;
     });
   }
