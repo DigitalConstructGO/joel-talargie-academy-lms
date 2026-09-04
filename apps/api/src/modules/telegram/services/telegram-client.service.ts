@@ -111,9 +111,17 @@ export class TelegramClientService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        this.logger.error(
-          `Telegram getUpdates API error [${response.status}]: ${errorText}`,
-        );
+        // If there's a 409 webhook conflict, delete webhook automatically once
+        if (response.status === 409) {
+          this.logger.warn(
+            'Webhook conflict detected in getUpdates (409). Attempting to clear webhook...',
+          );
+          await this.deleteWebhook();
+        } else {
+          this.logger.error(
+            `Telegram getUpdates API error [${response.status}]: ${errorText}`,
+          );
+        }
         return [];
       }
 
@@ -178,11 +186,20 @@ export class TelegramClientService {
     if (!this.config.botToken) return false;
 
     try {
-      const response = await fetch(`${this.apiUrl}/deleteWebhook`, {
-        method: 'POST',
-        signal: AbortSignal.timeout(5_000),
-      });
-      return response.ok;
+      const response = await fetch(
+        `${this.apiUrl}/deleteWebhook?drop_pending_updates=true`,
+        {
+          method: 'POST',
+          signal: AbortSignal.timeout(5_000),
+        },
+      );
+      if (response.ok) {
+        this.logger.log('Telegram webhook deleted successfully.');
+        return true;
+      }
+      const errorText = await response.text();
+      this.logger.warn(`Failed to delete Telegram webhook: ${errorText}`);
+      return false;
     } catch {
       return false;
     }
