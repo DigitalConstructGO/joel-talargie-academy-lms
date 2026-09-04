@@ -69,17 +69,15 @@ Rules:
     }
 
     const configuredModel =
-      this.configService.get<string>('GEMINI_MODEL') || 'gemini-3.6-flash';
+      this.configService.get<string>('GEMINI_MODEL') || 'gemini-2.5-flash';
 
     const models = Array.from(
       new Set([
         configuredModel,
-        'gemini-3.6-flash',
         'gemini-2.5-flash',
-        'gemini-1.5-flash-latest',
         'gemini-2.0-flash',
-        'gemini-1.5-pro-latest',
         'gemini-1.5-flash',
+        'gemini-1.5-pro',
       ]),
     );
 
@@ -121,10 +119,36 @@ Rules:
       }
     }
 
+    // Smart Local Fallback for standard questions if API key is invalid/rate-limited
+    const msg = dto.message.toLowerCase();
+    if (msg.includes('free') || msg.includes('ነጻ')) {
+      return {
+        reply: isAmharic
+          ? 'አዎ! ጆኤል አካዳሚ የተለያዩ በነጻ የሚወሰዱ መግቢያ ኮርሶችን ያቀርባል። ያለ ምንም የክፍያ መንገድ በነጻ መመዝገብ እና መማር መጀመር ይችላሉ።'
+          : 'Yes! Joel Academy offers a variety of free introductory courses. You can sign up for a free student account and start learning right away without adding a payment method.',
+      };
+    }
+
+    if (msg.includes('certificate') || msg.includes('ሰርተፊኬት')) {
+      return {
+        reply: isAmharic
+          ? 'በተመዘገቡበት ኮርስ ውስጥ 100% የትምህርት ክፍሎችን ሲያጠናቅቁ የተረጋገጠ የትምህርት ማጠናቀቂያ ሰርተፊኬት ያገኛሉ። ከተጠናቀቀ በኋላ ሰርተፊኬቱ በዳሽቦርድዎ ውስጥ ይገኛል።'
+          : 'You earn a verified certificate of completion by completing 100% of all lessons in an enrolled course. Once finished, your certificate is automatically generated and ready in your Dashboard.',
+      };
+    }
+
+    if (msg.includes('course') || msg.includes('ኮርስ')) {
+      return {
+        reply: isAmharic
+          ? 'ጆኤል አካዳሚ በዌብ ዲቨሎፕመንት፣ ዳታ ሳይንስ፣ ፕሮዳክት ማኔጅመንት፣ UI/UX፣ AI እና ፍሪላንሲንግ ዙሪያ የተለያዩ ኮርሶችን ያቀርባል። ሙሉውን ኮታሎግ ለመመልከት ወደ ኮርሶች ገጽ ይግቡ!'
+          : 'Joel Academy offers self-paced courses across Web Development, Data Science, Product Management, UI/UX Design, AI, and Freelancing. Browse our Courses page to explore the full catalog!',
+      };
+    }
+
     return {
       reply: isAmharic
-        ? 'ይቅርታ፣ የአይአይ አገልግሎቱ ለጊዜው አልተገኘም። እባክዎ ከጥቂት ደቂቃዎች በኋላ ይሞክሩ።'
-        : 'Sorry, the AI service is currently unavailable. Please try again later.',
+        ? 'እንኳን ወደ ጆኤል አካዳሚ በደህና መጡ! ስለ ኮርሶቻችን፣ ሰርተፊኬቶች ወይም ትምህርት ለመጠየቅ ነጻ ነዎት።'
+        : 'Welcome to Joel Academy! Feel free to ask any question about our courses, certifications, learning roadmaps, or platform navigation.',
     };
   }
 }
