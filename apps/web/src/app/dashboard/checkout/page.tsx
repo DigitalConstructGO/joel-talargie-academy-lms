@@ -249,6 +249,9 @@ export default function CheckoutPage() {
                 enrollmentId={enrollmentId}
                 instructions={instructionsQuery.data}
                 isLoadingInstructions={instructionsQuery.isLoading}
+                isErrorInstructions={instructionsQuery.isError}
+                instructionsError={instructionsQuery.error}
+                onRetryInstructions={() => instructionsQuery.refetch()}
                 onSubmitted={(result, summary) => {
                   setPaymentResult(result);
                   setPaymentSummary(summary);

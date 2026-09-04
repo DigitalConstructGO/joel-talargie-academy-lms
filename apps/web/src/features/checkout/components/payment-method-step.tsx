@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { FileUpload } from '@/components/common/file-upload';
+import { ErrorState } from '@/components/common/error-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { extractErrorCode, extractErrorMessage, extractFieldErrors } from '@/lib/api/api-error';
 import { useSubmitPayment } from '@/features/payments/hooks/use-payments';
@@ -81,6 +82,9 @@ interface PaymentMethodStepProps {
   enrollmentId: string;
   instructions: PaymentInstructions | undefined;
   isLoadingInstructions: boolean;
+  isErrorInstructions?: boolean;
+  instructionsError?: unknown;
+  onRetryInstructions?: () => void;
   onSubmitted: (result: SubmitPaymentResult, summary: SubmittedPaymentSummary) => void;
   onBack: () => void;
 }
@@ -89,6 +93,9 @@ export function PaymentMethodStep({
   enrollmentId,
   instructions,
   isLoadingInstructions,
+  isErrorInstructions,
+  instructionsError,
+  onRetryInstructions,
   onSubmitted,
   onBack,
 }: PaymentMethodStepProps) {
@@ -186,7 +193,7 @@ export function PaymentMethodStep({
     }
   }
 
-  if (isLoadingInstructions || !instructions || !content || !selectedMethod) {
+  if (isLoadingInstructions) {
     return (
       <div className="space-y-4">
         <div className="h-6 w-48 animate-pulse rounded-full bg-primary/10" />
@@ -197,6 +204,29 @@ export function PaymentMethodStep({
         </div>
         <Skeleton className="h-56 rounded-xl" />
         <Skeleton className="h-72 rounded-xl" />
+      </div>
+    );
+  }
+
+  if (isErrorInstructions || !instructions || !content || !selectedMethod) {
+    const message = extractErrorMessage(
+      instructionsError,
+      'Could not load payment options for this course. Please try again.',
+    );
+
+    return (
+      <div className="space-y-6">
+        <ErrorState
+          title="Unable to load payment instructions"
+          description={message}
+          onRetry={onRetryInstructions}
+          retryLabel="Try again"
+        />
+        <div className="flex justify-start">
+          <Button type="button" variant="outline" onClick={onBack}>
+            Back
+          </Button>
+        </div>
       </div>
     );
   }
